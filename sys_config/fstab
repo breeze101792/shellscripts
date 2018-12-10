@@ -1,0 +1,26 @@
+# 
+# /etc/fstab: static file system information
+#
+# <file system>	<dir>	<type>	<options>	<dump>	<pass>
+# UUID=f49ce845-49cd-4015-b03b-103671528cc2
+/dev/sda2           	/         	btrfs     	rw,discard,noatime,nodiratime,ssd,space_cache,subvolid=5,subvol=/	0 0
+#/dev/sda2           	/         	btrfs     	rw,relatime,ssd,space_cache,subvolid=5,subvol=/	0 0
+
+# UUID=f63c62e2-2b2d-4668-bb69-bc74f38b6e1a
+/dev/sda1           	/boot     	btrfs     	rw,discard,noatime,nodiratime,ssd,space_cache,subvolid=5,subvol=/	0 0
+
+# UUID=828749f6-6b7d-4fe9-a09f-6305d1cf8cdd
+/dev/sdb5           	/home     	ext4      	rw,noatime,data=ordered	0 2
+
+# UUID=efe31808-8805-4ba3-afca-804e53aed48a
+/dev/sdb6           	/var      	ext4      	rw,noatime,data=ordered	0 2
+
+# UUID=d9a7b104-6046-4108-a31a-3f8e29ee7552
+/dev/sdb7           	/srv      	ext4      	rw,noatime,data=ordered	0 2
+
+#tempfs noexec,nosuid,nodev
+tmpfs			/tmp		tmpfs		defaults,noatime,mode=1777	0 0
+tmpfs			/home/shaowu/.cache		tmpfs		noatime,nodev,nosuid,size=1G	0 0
+
+#user disk
+/dev/sdb8           	/mnt/warehouse      	ext4      	rw,noatime,data=ordered	0 2
