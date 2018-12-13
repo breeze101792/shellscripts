@@ -16,7 +16,7 @@ function __main
                 shift 1
                 ;;
             -p)
-                LIB_PATH=$2
+                export LIB_PATH=$2
                 shift 2
                 ;;
             *)
@@ -25,7 +25,8 @@ function __main
         esac
     done
     # source shell scripts
-    source $LIB_PATH/lib.sh
+    source $LIB_PATH/base.sh
+    source $LIB_PATH/lib.sh 
 }
 
 __main $@

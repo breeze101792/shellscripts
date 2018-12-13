@@ -118,11 +118,11 @@ setprompt() {
 setprompt
 
 # firefox download path
-if [ ! -d "/tmp/downloads_tmp" ];
-then
-	mkdir /tmp/downloads_tmp
-	ln -sf /tmp/downloads_tmp $HOME/downloads
-fi
+#if [ ! -d "/tmp/downloads_tmp" ];
+#then
+#	mkdir /tmp/downloads_tmp
+#	ln -sf /tmp/downloads_tmp $HOME/downloads
+#fi
 #alias path
 alias -g ...='../..'
 alias -g ....='../../..'
@@ -135,8 +135,5 @@ alias -g ........='../../../../../../..'
 alias ls='ls --color=auto'
 alias ll='ls -alh'
 alias l='ls -a'
-alias dict="/home/shaowu/code/list_vocabulary/main.py  "
 #alias btspeaker='cat /home/shaowu/.usr/script/speaker_connect.bt | bluetoothctl'
 # command
-source /home/shaowu/lab/code/shellscripts/source.sh -p /home/shaowu/lab/code/shellscripts
-alias pyenv="source /home/shaowu/lab/pyenv/default/bin/activate"

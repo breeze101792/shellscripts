@@ -1,4 +1,8 @@
 #!/bin/bash
+# alias
+alias xc="xclip"
+alias xv="xclip -o"
+# function 
 function lg_patch
 {
     cvt --reduced 2440 1028 60
