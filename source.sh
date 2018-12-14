@@ -27,6 +27,9 @@ function __main
     # source shell scripts
     source $LIB_PATH/base.sh
     source $LIB_PATH/lib.sh 
+    if [ -d pacman -Syu uboot-cubieboard2 ];then
+        source $LIB_PATH/lab.sh 
+    fi
 }
 
 __main $@

@@ -91,6 +91,15 @@ zstyle ':vcs_info:*' enable git hg
 zstyle ':vcs_info:*' check-for-changes true
 zstyle ':vcs_info:git*' formats "%{${fg[cyan]}%}[%{${fg[green]}%}%s%{${fg[cyan]}%}][%{${fg[blue]}%}%r/%S%%{${fg[cyan]}%}][%{${fg[blue]}%}%b%{${fg[yellow]}%}%m%u%c%{${fg[cyan]}%}]%{$reset_color%}"
 
+parse_git_branch()
+{
+    #git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/(\1)/'
+    git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/->\1/'
+}
+nonzero_return() {
+	RETVAL=$?
+	[ $RETVAL -ne 0 ] && echo "-$RETVAL-"
+}
 setprompt() {
   setopt prompt_subst
 
@@ -106,7 +115,9 @@ setprompt() {
     %F{cyan}@%f
     ${p_host}
     %F{cyan}][%f
-    %F{blue}%~%f
+    %F{blue}%T-%w%f
+    %F{cyan}][%f
+    %F{blue}%~`parse_git_branch`%f
     %F{cyan}]%f
     %(!.%F{red}%#%f.%F{green}%#%f)
     " "
