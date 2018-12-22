@@ -59,6 +59,9 @@ key[PageDown]=${terminfo[knp]}
 [[ -n "${key[Down]}"    ]]  && bindkey  "${key[Down]}"    down-line-or-history
 [[ -n "${key[Left]}"    ]]  && bindkey  "${key[Left]}"    backward-char
 [[ -n "${key[Right]}"   ]]  && bindkey  "${key[Right]}"   forward-char
+# define extra keys
+bindkey "[C" forward-word
+bindkey "[D" backward-word
 
 # Finally, make sure the terminal is in application mode, when zle is
 # active. Only then are the values from $terminfo valid.
@@ -91,10 +94,14 @@ zstyle ':vcs_info:*' enable git hg
 zstyle ':vcs_info:*' check-for-changes true
 zstyle ':vcs_info:git*' formats "%{${fg[cyan]}%}[%{${fg[green]}%}%s%{${fg[cyan]}%}][%{${fg[blue]}%}%r/%S%%{${fg[cyan]}%}][%{${fg[blue]}%}%b%{${fg[yellow]}%}%m%u%c%{${fg[cyan]}%}]%{$reset_color%}"
 
+set_current_path()
+{
+    pwd > $HS_CONFIG
+}
 parse_git_branch()
 {
     #git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/(\1)/'
-    git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/->\1/'
+    git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1->/'
 }
 nonzero_return() {
 	RETVAL=$?
@@ -117,7 +124,7 @@ setprompt() {
     %F{cyan}][%f
     %F{blue}%T-%w%f
     %F{cyan}][%f
-    %F{blue}%~`parse_git_branch`%f
+    %F{blue}`parse_git_branch`%~`set_current_path`%f
     %F{cyan}]%f
     %(!.%F{red}%#%f.%F{green}%#%f)
     " "
@@ -148,3 +155,12 @@ alias ll='ls -alh'
 alias l='ls -a'
 #alias btspeaker='cat /home/shaowu/.usr/script/speaker_connect.bt | bluetoothctl'
 # command
+#i3_patch()
+#{
+#    if [ -e $tmp_path ]
+#    then
+#        cd $(cat $tmp_path)
+#    fi
+#}
+#i3_patch
+#unset -f i3_patch

@@ -1,13 +1,20 @@
 #!/bin/bash
-export LIB_PATH=$(pwd)
-
+function hs_init()
+{
+    export HS_VER=0.1
+    export HS_SHELL="zsh"
+}
 function refresh
 {
     source $LIB_PATH/source.sh -p $LIB_PATH
 }
 
-function __main
+function hs_main
 {
+    if [[ -z $HS_VER ]]; then
+        hs_init
+    fi
+    echo "Version: $HS_VER"
     while true;
     do
         case $1 in
@@ -19,18 +26,31 @@ function __main
                 export LIB_PATH=$2
                 shift 2
                 ;;
+            -s)
+                export HS_SHELL=$2
+                shift 2
+                ;;
             *)
                 break
                 ;;
         esac
     done
     # source shell scripts
-    source $LIB_PATH/base.sh
+    source $LIB_PATH/env.sh
+    if [ "$HS_SHELL" = "bash" ]
+    then
+        source $LIB_PATH/base_bash.sh
+    else
+        source $LIB_PATH/base_zsh.sh
+    fi
     source $LIB_PATH/lib.sh 
-    if [ -d $LIB_PATH/lab.sh ];then
+    source $LIB_PATH/project.sh 
+    if [ -f $LIB_PATH/lab.sh ]
+    then
         source $LIB_PATH/lab.sh 
     fi
 }
 
-__main $@
-unset -f __main
+hs_main $@
+unset -f hs_main
+unset -f hs_init

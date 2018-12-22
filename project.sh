@@ -12,11 +12,20 @@ groot()
 {
     local tmp_path=$(pwd)
     local cpath=$(pwd)
-    while ! ls $cpath | egrep $1;
+    local target=''
+
+    if (( $# >= 1 ))
+    then
+        target=$1
+    else
+        target=".git"
+    fi
+    echo $target
+    while ! ls $cpath | grep $target;
     do 
         pushd $cpath > /dev/null
         cpath=`pwd`
-        if [ $(pwd) == '/' ];
+        if [ $(pwd) = '/' ];
         then
             echo 'Hit the root'
             popd > /dev/null
@@ -27,25 +36,7 @@ groot()
     done
     cd $cpath
 }
-proot()
-{
-    local cpath=$(pwd)
-    while ! ls $cpath | egrep '*.project';
-    do 
-        pushd $cpath > /dev/null
-        cpath=`pwd`
-        if [ $(pwd) == '/' ];
-        then
-            echo 'Hit the root'
-            cd $cpath
-            popd > /dev/null
-            return
-        fi
-        popd > /dev/null
-        cpath=$cpath"/.."
-    done
-    cd $cpath
-}
+alias proot "*.project"
 make()
 {
     pathpat="(/[^/]*)+:[0-9]+"

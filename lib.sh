@@ -113,6 +113,7 @@ function pureshell()
     echo "Pure bash"
     #env -i sh --norc --noprofile -c "export TERM=xterm && sh"
     #env -i bash -c "export TERM=xterm && bash --norc --noprofile"
-    env -i bash -c "export TERM=xterm && bash --norc"
+    #env -i bash -c "export TERM=xterm && bash --norc"
     #env -i bash -c "bash --norc --noprofile -c \"source ~/.bashrc_pure\""
+    env -i bash -c "bash --norc -C ~/.purebashrc"
 }
