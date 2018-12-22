@@ -1,0 +1,2 @@
+HS_CONFIG_I3_PATCH=y
+

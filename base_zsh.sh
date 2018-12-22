@@ -96,7 +96,7 @@ zstyle ':vcs_info:git*' formats "%{${fg[cyan]}%}[%{${fg[green]}%}%s%{${fg[cyan]}
 
 set_current_path()
 {
-    pwd > $HS_CONFIG
+    pwd > $HS_ENV_CONFIG
 }
 parse_git_branch()
 {
@@ -155,12 +155,10 @@ alias ll='ls -alh'
 alias l='ls -a'
 #alias btspeaker='cat /home/shaowu/.usr/script/speaker_connect.bt | bluetoothctl'
 # command
-#i3_patch()
-#{
-#    if [ -e $tmp_path ]
-#    then
-#        cd $(cat $tmp_path)
-#    fi
-#}
-#i3_patch
-#unset -f i3_patch
+if [ "$HS_CONFIG_I3_PATCH" = "y" ]
+then
+    if [ -e $HS_ENV_CONFIG ]
+    then
+       cd $(cat $HS_ENV_CONFIG)
+    fi
+fi

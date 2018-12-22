@@ -1,1 +1,1 @@
-HS_CONFIG="/tmp/hs_config"
+HS_ENV_CONFIG="/tmp/hs_config"
