@@ -101,7 +101,7 @@ set_current_path()
 parse_git_branch()
 {
     #git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/(\1)/'
-    git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1->/'
+    git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1%F{cyan}][%f/'
 }
 nonzero_return() {
 	RETVAL=$?
@@ -124,7 +124,8 @@ setprompt() {
     %F{cyan}][%f
     %F{blue}%T-%w%f
     %F{cyan}][%f
-    %F{blue}`parse_git_branch`%~`set_current_path`%f
+    %F{white}`parse_git_branch``set_current_path`%f
+    %F{blue}%~%f
     %F{cyan}]%f
     %(!.%F{red}%#%f.%F{green}%#%f)
     " "
