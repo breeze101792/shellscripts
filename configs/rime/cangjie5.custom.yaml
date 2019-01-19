@@ -1,0 +1,22 @@
+# vim: set sw=2 sts=2 et:
+# 用注音反查倉頡碼
+# 註：不支持用空格鍵輸入第一聲
+
+patch:
+  abc_segmentor/extra_tags: {}
+  translator/enable_sentence: false
+  translator/enable_user_dict: false
+  schema/dependencies:
+    - bopomofo
+  reverse_lookup:
+    dictionary: terra_pinyin
+    prism: bopomofo
+    prefix: "`"
+    suffix: "'"
+    tips: 〔注音〕
+    preedit_format:
+      - "xlit|1qaz2wsxedcrfv5tgbyhnujm8ik,9ol.0p;/- 6347'|ㄅㄆㄇㄈㄉㄊㄋㄌㄍㄎㄏㄐㄑㄒㄓㄔㄕㄖㄗㄘㄙㄧㄨㄩㄚㄛㄜㄝㄞㄟㄠㄡㄢㄣㄤㄥㄦˉˊˇˋ˙ |"
+    comment_format:
+      - "xlit|abcdefghijklmnopqrstuvwxyz|日月金木水火土竹戈十大中一弓人心手口尸廿山女田難卜符|"
+  recognizer/patterns/reverse_lookup: "`[-,.;/a-z0-9]*'?$"
+  abc_segmentor/extra_tags: []

@@ -1,0 +1,15 @@
+# default.custom.yaml
+# save it to:
+#   ~/.config/ibus/rime  (linux)
+#   ~/Library/Rime       (macos)
+#   %APPDATA%\Rime       (windows)
+
+patch:
+  schema_list:
+    - schema: cangjie5             # 倉頡五代
+    - schema: cangjie5_express     # 倉頡 快打模式
+    - schema: quick5               # 速成
+    - schema: bopomofo_tw          # 注音 臺灣正體模式
+    - schema: ipa_xsampa    # X-SAMPA 國際音標
+    - schema: emoji         # emoji表情
+  menu/page_size: 10
