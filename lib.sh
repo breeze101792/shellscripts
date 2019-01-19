@@ -6,6 +6,10 @@ alias tstamp='date +%Y%m%d_%H%M%S'
 #alias grep='grep --color=always -n '
 
 ## functions ##
+function retitle()
+{
+    print -Pn "\e]0;$@\a"
+}
 function lg_patch
 {
     cvt --reduced 2440 1028 60
@@ -66,9 +70,9 @@ cdwin()
 ctwin()
 {
     pushd $1 &> /dev/null
-    line=$(sed -e 's|/|\\|g' -e 's|net||g'<<< `pwd`)
+    #line=$(sed -e 's|/|\\|g' -e 's|net||g'<<< `pwd`)
     popd &> /dev/null
-    echo $line
+    echo "Path: \\\\"$HOST$line
 }
 mark()
 {

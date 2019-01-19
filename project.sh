@@ -36,7 +36,7 @@ groot()
     done
     cd $cpath
 }
-alias proot "*.project"
+alias proot="*.project"
 make()
 {
     pathpat="(/[^/]*)+:[0-9]+"

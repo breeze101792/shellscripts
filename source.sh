@@ -1,7 +1,7 @@
 #!/bin/bash
 function hs_init()
 {
-    export HS_VER=0.1
+    export HS_VER=0.1.1
     export HS_SHELL="zsh"
 }
 function refresh
@@ -37,6 +37,7 @@ function hs_main
     done
     # source shell scripts
     source $LIB_PATH/env.sh
+    source $LIB_PATH/config.sh
     if [ "$HS_SHELL" = "bash" ]
     then
         source $LIB_PATH/base_bash.sh
