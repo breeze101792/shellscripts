@@ -50,6 +50,10 @@ function hs_main
     then
         source $LIB_PATH/lab.sh 
     fi
+    if [ -f $LIB_PATH/work.sh ]
+    then
+        source $LIB_PATH/work.sh 
+    fi
 }
 
 hs_main $@

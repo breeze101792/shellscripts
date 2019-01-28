@@ -1,5 +1,6 @@
 
-alias mdebug="screen -S debug /dev/ttyUSB1 115200"
+alias mdebug="screen -S debug -L -Logfile debug_`tstamp`.log /dev/ttyUSB1 115200 "
+alias sdebug="screen -S debug_s -L -Logfile debug_`tstamp`.log"
 function lab_bash_color()
 {
     txtred=$(echo -e '\e[0;31m')

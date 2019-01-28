@@ -69,8 +69,9 @@ cdwin()
 }
 ctwin()
 {
-    pushd $1 &> /dev/null
-    #line=$(sed -e 's|/|\\|g' -e 's|net||g'<<< `pwd`)
+    CURRENT_PATH=`pwd`
+    pushd $CURRENT_PATH &> /dev/null
+    line=$(sed -e 's|/|\\|g' -e 's|net||g'<<< `pwd`)
     popd &> /dev/null
     echo "Path: \\\\"$HOST$line
 }
@@ -120,4 +121,11 @@ function pureshell()
     #env -i bash -c "export TERM=xterm && bash --norc"
     #env -i bash -c "bash --norc --noprofile -c \"source ~/.bashrc_pure\""
     env -i bash -c "bash --norc -C ~/.purebashrc"
+}
+function bisync()
+{
+    local local_path=$1
+    local remote_path=$2
+    rsync -rtuv $local_path/* $remote_path
+    rsync -rtuv $remote_path/* $local_path
 }
