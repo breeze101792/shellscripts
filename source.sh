@@ -45,7 +45,7 @@ function hs_main
         source $LIB_PATH/base_zsh.sh
     fi
     source $LIB_PATH/lib.sh 
-    source $LIB_PATH/project.sh 
+    source $LIB_PATH/project.sh
     if [ -f $LIB_PATH/lab.sh ]
     then
         source $LIB_PATH/lab.sh 

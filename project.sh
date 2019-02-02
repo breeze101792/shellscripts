@@ -1,6 +1,10 @@
 # project releated commands
 
-## git alias ##
+## alias
+alias mdebug="screen -S debug -L -Logfile debug_`tstamp`.log /dev/ttyUSB1 115200 "
+alias sdebug="screen -S debug_s -L -Logfile debug_`tstamp`.log"
+
+# git alias ##
 #export lg1="log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) %C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(bold yellow)%d%C(reset)' --all"
 alias gstatus='git status -uno '
 alias gdiff='git diff --check --no-ext-diff'
@@ -10,8 +14,8 @@ alias glog="git log --graph --abbrev-commit --decorate --format=format:'%C(bold 
 ## functions ##
 groot()
 {
-    local tmp_path=$(pwd)
     local cpath=$(pwd)
+    local tmp_path=$cpath
     local target=''
 
     if (( $# >= 1 ))
@@ -21,10 +25,21 @@ groot()
         target=".git"
     fi
     echo $target
-    while ! ls $cpath | grep $target;
+    local path_array=(`echo $cpath | sed 's/\//\n/g'`)
+    for each_folder in $path_array 
+    do
+        if [ $each_folder = $target ]
+        then
+            cd `echo $cpath | sed "s/$each_folder.*/$each_folder/g"` 
+            echo goto $each_folder
+            return
+        fi
+    done
+    # wallk through files
+    while ! ls -a $tmp_path | grep $target;
     do 
-        pushd $cpath > /dev/null
-        cpath=`pwd`
+        pushd $tmp_path > /dev/null
+        tmp_path=`pwd`
         if [ $(pwd) = '/' ];
         then
             echo 'Hit the root'
@@ -32,11 +47,11 @@ groot()
             return
         fi
         popd > /dev/null
-        cpath=$cpath"/.."
+        tmp_path=$tmp_path"/.."
     done
-    cd $cpath
+    cd $tmp_path
 }
-alias proot="*.project"
+alias proot="groot project"
 make()
 {
     pathpat="(/[^/]*)+:[0-9]+"
@@ -53,8 +68,9 @@ gpush()
     then
         echo "Missing Branch argment";
         return
+    else
+        git push origin HEAD:refs/for/$1
     fi
-    git push origin HEAD:refs/for/$1
 }
 rgit()
 {

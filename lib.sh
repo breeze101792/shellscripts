@@ -34,22 +34,11 @@ function watch_mem
     done
 
 }
-function setup
-{
-    watch_mem
-}
 function rv()
 {
 	echo "Record video for $1 second"
 	ffmpeg -y -i /dev/video0 -t $1  ~/video_`date +%F`.avi
 }
-function pygrid()
-{
-    source /home/shaowu/lab/pyenv/default/bin/activate
-	/home/shaowu/lab/github/pygrid/pygrid.py
-    deactivate
-}
-
 bkfile()
 {
    echo -e "Backup $1\n"
