@@ -21,7 +21,7 @@ function lab_fsed {
 }
 function lab_an_relink()
 {
-    
+
     ln -sf ./build/soong/bootstrap.bash ./bootstrap.bash
     ln -sf ./build/soong/root.bp ./Android.bp
     cd build

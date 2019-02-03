@@ -26,18 +26,18 @@ groot()
     fi
     echo $target
     local path_array=(`echo $cpath | sed 's/\//\n/g'`)
-    for each_folder in $path_array 
+    for each_folder in $path_array
     do
         if [ $each_folder = $target ]
         then
-            cd `echo $cpath | sed "s/$each_folder.*/$each_folder/g"` 
+            cd `echo $cpath | sed "s/$each_folder.*/$each_folder/g"`
             echo goto $each_folder
             return
         fi
     done
     # wallk through files
     while ! ls -a $tmp_path | grep $target;
-    do 
+    do
         pushd $tmp_path > /dev/null
         tmp_path=`pwd`
         if [ $(pwd) = '/' ];

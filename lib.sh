@@ -3,7 +3,7 @@
 alias xc="xclip"
 alias xv="xclip -o"
 alias tstamp='date +%Y%m%d_%H%M%S'
-#alias grep='grep --color=always -n '
+alias grep='grep --color=always '
 
 ## functions ##
 function retitle()
@@ -42,13 +42,13 @@ function rv()
 bkfile()
 {
    echo -e "Backup $1\n"
-   mv $1 $1_$(tstamp).backup 
+   mv $1 $1_$(tstamp).backup
 }
 logfile()
 {
     local logfile=$1
     shift 1
-    $@ 2>&1 | tee $logfile 
+    $@ 2>&1 | tee $logfile
 }
 cdwin()
 {
@@ -100,7 +100,7 @@ epath()
     else
         export PATH=$1:$PATH;
     fi;
-   
+
 }
 function pureshell()
 {

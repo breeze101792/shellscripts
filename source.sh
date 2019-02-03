@@ -44,15 +44,15 @@ function hs_main
     else
         source $LIB_PATH/base_zsh.sh
     fi
-    source $LIB_PATH/lib.sh 
+    source $LIB_PATH/lib.sh
     source $LIB_PATH/project.sh
     if [ -f $LIB_PATH/lab.sh ]
     then
-        source $LIB_PATH/lab.sh 
+        source $LIB_PATH/lab.sh
     fi
     if [ -f $LIB_PATH/work.sh ]
     then
-        source $LIB_PATH/work.sh 
+        source $LIB_PATH/work.sh
     fi
 }
 
