@@ -12,6 +12,30 @@ alias glog="git log --graph --abbrev-commit --decorate --format=format:'%C(bold 
 #alias lg="git $lg1"
 
 ## functions ##
+# vim funcions
+function pvinit()
+{
+    # project init
+    find . -type f -name "*.h" -o -name "*.c" -o -name "*.cpp" -o -name "*.java" > cscope.files
+    cscope -b
+
+}
+function gcc_setup()
+{
+    if [ "$1" != "clang"]
+    then
+        local gcc_ver=7
+        alias gcc='gcc-$gcc_ver'
+        alias cc='gcc-$gcc_ver'
+        alias g++='g++-$gcc_ver'
+        alias c++='c++-$gcc_ver'
+    fi
+}
+function pvim()
+{
+    export CSCOPE_DB=`pwd`/cscope.out
+    vim $@
+}
 groot()
 {
     local cpath=$(pwd)

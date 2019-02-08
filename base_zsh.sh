@@ -63,6 +63,9 @@ key[PageDown]=${terminfo[knp]}
 bindkey "[C" forward-word
 bindkey "[D" backward-word
 
+bindkey ";5C" forward-word
+bindkey ";5D" backward-word
+
 # Finally, make sure the terminal is in application mode, when zle is
 # active. Only then are the values from $terminfo valid.
 if (( ${+terminfo[smkx]} )) && (( ${+terminfo[rmkx]} )); then
