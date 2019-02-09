@@ -90,7 +90,7 @@ hex2bin()
 {
     cat $1 | sed s/,//g | sed s/0x//g | xxd -r -p - $2
 }
-epath()
+function epath()
 {
     #echo "Export Path $1";
     if grep -q $1 <<<$PATH;
@@ -117,4 +117,8 @@ function bisync()
     local remote_path=$2
     rsync -rtuv $local_path/* $remote_path
     rsync -rtuv $remote_path/* $local_path
+}
+function pln()
+{
+    ln -s `pwd`/$1 $2
 }

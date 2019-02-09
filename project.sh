@@ -1,5 +1,6 @@
 # project releated commands
-
+## env
+epath ${HOME}/.bin
 ## alias
 alias mdebug="screen -S debug -L -Logfile debug_`tstamp`.log /dev/ttyUSB1 115200 "
 alias sdebug="screen -S debug_s -L -Logfile debug_`tstamp`.log"

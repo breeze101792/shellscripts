@@ -57,6 +57,10 @@ function fConfigQraphic()
         circus)
             QEMU_GRAPHIC+=("-vga circus")
             ;;
+        virtio)
+            QEMU_GRAPHIC+=("-vga virtio")
+            G_MONITOR_TYPE="sdl"
+            ;;
         vmware)
             QEMU_GRAPHIC+=("-vga vmware")
             ;;
@@ -77,9 +81,16 @@ function fConfigQraphic()
             exit 1
             ;;
     esac
+
     if [ "${G_MONITOR_TYPE}" == "spice" ]
     then
         QEMU_GRAPHIC+=("-spice port=5900,addr=127.0.0.1,disable-ticketing")
+    elif [ "${G_MONITOR_TYPE}" == "sdl" ]
+    then
+        QEMU_GRAPHIC+=("-display sdl,gl=on")
+    elif [ "${G_MONITOR_TYPE}" == "gtk" ]
+    then
+        QEMU_GRAPHIC+=("-display gtk,gl=on")
     fi
 
 
@@ -107,7 +118,6 @@ function fRun()
 }
 function main()
 {
-    echo Starting $CONFIG_HOST_NAME
     local G_DRIVE_COUNT=2
 
     # source galobal settings
@@ -157,7 +167,7 @@ function main()
         esac
     done
 
-    echo Start Programs
+    echo Starting $CONFIG_HOST_NAME
     fConfigBIOS
     fConfigQraphic
     fConfigNet
