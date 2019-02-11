@@ -95,7 +95,7 @@ function epath()
     #echo "Export Path $1";
     if grep -q $1 <<<$PATH;
     then
-        lprint 0 "$1 has alread in your PATH";
+        print "$1 has alread in your PATH";
         return;
     else
         export PATH=$1:$PATH;

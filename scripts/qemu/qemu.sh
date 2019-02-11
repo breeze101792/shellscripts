@@ -149,6 +149,11 @@ function main()
                 G_DRIVE_COUNT=$(($G_DRIVE_COUNT + 1))
                 shift 2
                 ;;
+            -pd|--physical-disk)
+                QEMU_DRIVE+=("-drive file=${2},index=${G_DRIVE_COUNT},media=disk,cache=writeback,if=virtio,format=raw")
+                G_DRIVE_COUNT=$(($G_DRIVE_COUNT + 1))
+                shift 2
+                ;;
             -q|--graphic)
                 CONFIG_GRAPHIC_GPU=$2
                 shift 2
