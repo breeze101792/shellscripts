@@ -80,7 +80,7 @@ mark()
     ccyellow=$(echo -e "\033[0;33m")
     ccend=$(echo -e "\033[0m")
     echo $ccred$hi_word$ccend
-    $@ 2>&1 | sed -E -e "s%${hi_word}%${ccred}&${ccend}%g"
+    $@ 2>&1 | sed -E -e "s%${hi_word}%${ccred}&${ccend}%ig"
 }
 # function __mark_genstr()
 # {
@@ -115,7 +115,7 @@ mark_build()
     local ccred=$(echo -e "\033[0;31m")
     local ccyellow=$(echo -e "\033[0;33m")
     local ccend=$(echo -e "\033[0m")
-    $@ 2>&1 | sed -E -e "s%[Uu]ndefined%$ccred&$ccend%g" -e "s%[Ff]atl%$ccred&$ccend%g" -e "s%[Ee]rror%$ccred&$ccend%g" -e "s%[Ff]ail%$ccred&$ccend%g" -e "s%[Ww]arning%$ccyellow&$ccend%g"
+    $@ 2>&1 | sed -E -e "s%undefined%$ccred&$ccend%ig" -e "s%fatl%$ccred&$ccend%ig" -e "s%error%$ccred&$ccend%ig" -e "s%fail%$ccred&$ccend%ig" -e "s%warning%$ccyellow&$ccend%ig"
 }
 wdiff()
 {
