@@ -170,10 +170,6 @@ alias -g ......='../../../../..'
 alias -g .......='../../../../../..'
 alias -g ........='../../../../../../..'
 
-## alias
-alias ls='ls --color=auto'
-alias ll='ls -alh'
-alias l='ls -a'
 #alias btspeaker='cat /home/shaowu/.usr/script/speaker_connect.bt | bluetoothctl'
 # command
 if [ "$HS_CONFIG_I3_PATCH" = "y" ]

@@ -14,7 +14,7 @@ function check_cmd_status()
     RETVAL=$1
     case $RETVAL in
         1)
-            echo -e "-[\033[38;5;11mError\033[38;5;15m]"
+            echo -e "-[\033[33;5;11mError\033[38;5;15m\033[00m]"
             return $RETVAL
             ;;
         0)
