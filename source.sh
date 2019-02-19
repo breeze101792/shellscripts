@@ -6,7 +6,7 @@ function hs_init()
 }
 function refresh
 {
-    source $LIB_PATH/source.sh -p $LIB_PATH
+    source $LIB_PATH/source.sh -p $LIB_PATH -s $HS_SHELL
 }
 
 function hs_main

@@ -3,7 +3,7 @@
 alias xc="xclip"
 alias xv="xclip -o"
 alias tstamp='date +%Y%m%d_%H%M%S'
-alias grep='grep --color=always '
+alias cgrep='grep --color=always '
 
 ## functions ##
 function retitle()
@@ -93,7 +93,8 @@ hex2bin()
 function epath()
 {
     #echo "Export Path $1";
-    if grep -q $1 <<<$PATH;
+    # if grep -q $1 <<<$PATH;
+    if echo ${PATH} | grep -q $1
     then
         print "$1 has alread in your PATH";
         return;

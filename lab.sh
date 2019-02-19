@@ -15,9 +15,14 @@ function lab_fsed {
    local find=$(unregex "$1")
    local replace=$(unregex "$2")
    shift 2
+   for each_file in $(grep -rn $find | cut -d ':' -f 1 )
+   do
+       echo -e "Replace in :$each_file"
+       # sed -i "s/$find/$replace/g" "$each_file"
+   done
    # sed -i is only supported in GNU sed.
    #sed -i "s/$find/$replace/g" "$@"
-   perl -p -i -e "s/$find/$replace/g" "$@"
+   # perl -p -i -e "s/$find/$replace/g" "$@"
 }
 function lab_an_relink()
 {
