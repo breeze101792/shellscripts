@@ -66,21 +66,56 @@ ctwin()
 }
 mark()
 {
+# Black        0;30     Dark Gray     1;30
+# Red          0;31     Light Red     1;31
+# Green        0;32     Light Green   1;32
+# Brown/Orange 0;33     Yellow        1;33
+# Blue         0;34     Light Blue    1;34
+# Purple       0;35     Light Purple  1;35
+# Cyan         0;36     Light Cyan    1;36
+# Light Gray   0;37     White         1;37
     local hi_word=$1
     shift 1
-    pathpat="(/[^/]*)+:[0-9]+"
     ccred=$(echo -e "\033[0;31m")
     ccyellow=$(echo -e "\033[0;33m")
     ccend=$(echo -e "\033[0m")
-    $@ 2>&1 | sed -E -e "/$hi_word/ s%$pathpat%$ccred&$ccend%g"
+    echo $ccred$hi_word$ccend
+    $@ 2>&1 | sed -E -e "s%${hi_word}%${ccred}&${ccend}%ig"
 }
-mark_err()
+# function __mark_genstr()
+# {
+#     local pattern_array=${1[@]}
+#     local color_start=$(echo -e "\033[0;31m")
+#     local color_end=$(echo -e "\033[0m")
+#     local sed_str=""
+#     echo ${1[*]}
+#     for each_str in ${pattern_array[@]}
+#     do
+#         echo $each_str
+#         $sed_str=echo -e "${sed_str} -e \"s%${each_str}%${ccred}&${ccend}%g\""
+#     done
+#     echo -e $sed_str
+
+# }
+# mark_test()
+# {
+#     local error_array=("[Ee]rr" "[Ee]rror")
+#     local warning_array=("[Ww]arning")
+#     __mark_genstr $error_array
+#     return
+#     local error_str="$(__mark_genstr $error_array)"
+#     local warinig_str="$(__mark_genstr $warinig_array)"
+#     # $@ 2>&1 | sed -E $error_array $warinig_array
+#     echo -e "${error_array}"
+#     $@ 2>&1 | sed -E $(__mark_genstr $error_array) $(__mark_genstr $warinig_array)
+
+# }
+mark_build()
 {
-    pathpat="(/[^/]*)+:[0-9]+"
-    ccred=$(echo -e "\033[0;31m")
-    ccyellow=$(echo -e "\033[0;33m")
-    ccend=$(echo -e "\033[0m")
-    $@ 2>&1 | sed -E -e "/[Uu]ndefined[: ]/ s%$pathpat%$ccred&$ccend%g" -e "/[Ff]atl[: ]/ s%$pathpat%$ccred&$ccend%g" -e "/[Ee]rror[: ]/ s%$pathpat%$ccred&$ccend%g" -e "/[Ww]arning[: ]/ s%$pathpat%$ccyellow&$ccend%g"
+    local ccred=$(echo -e "\033[0;31m")
+    local ccyellow=$(echo -e "\033[0;33m")
+    local ccend=$(echo -e "\033[0m")
+    $@ 2>&1 | sed -E -e "s%undefined%$ccred&$ccend%ig" -e "s%fatl%$ccred&$ccend%ig" -e "s%error%$ccred&$ccend%ig" -e "s%fail%$ccred&$ccend%ig" -e "s%warning%$ccyellow&$ccend%ig"
 }
 wdiff()
 {

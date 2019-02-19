@@ -22,7 +22,8 @@ G_DRIVE_COUNT=2
 function fEnvInit()
 {
     QEMU_CPU+=("-smp cores=${CONFIG_CPU_NUM}")
-    QEMU_MEMORY=("-m 1G,slots=4,maxmem=${CONFIG_MEM_SIZE}")
+    # QEMU_MEMORY=("-m 1G,slots=4,maxmem=${CONFIG_MEM_SIZE}")
+    QEMU_MEMORY=("-m ${CONFIG_MEM_SIZE}")
 }
 function fAddUSB()
 {
@@ -97,7 +98,7 @@ function fConfigQraphic()
 }
 function fConfigNet()
 {
-    QEMU_NET+=("-netdev user,id=net0,hostfwd=tcp::4096-:22")
+    QEMU_NET+=("-netdev user,id=net0,hostfwd=tcp::${CONFIG_NET_SSH}-:22")
     QEMU_NET+=("-device virtio-net-pci,romfile=/usr/share/qemu/efi-virtio.rom,netdev=net0")
 }
 function fRunSpice()
