@@ -131,7 +131,7 @@ function epath()
     # if grep -q $1 <<<$PATH;
     if echo ${PATH} | grep -q $1
     then
-        print "$1 has alread in your PATH";
+        echo "$1 has alread in your PATH";
         return;
     else
         export PATH=$1:$PATH;
