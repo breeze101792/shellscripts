@@ -69,14 +69,14 @@ bindkey ";5D" backward-word
 # Finally, make sure the terminal is in application mode, when zle is
 # active. Only then are the values from $terminfo valid.
 if (( ${+terminfo[smkx]} )) && (( ${+terminfo[rmkx]} )); then
-	function zle-line-init () {
-		echoti smkx
-	}
-	function zle-line-finish () {
-		echoti rmkx
-	}
-	zle -N zle-line-init
-	zle -N zle-line-finish
+    function zle-line-init () {
+        echoti smkx
+    }
+    function zle-line-finish () {
+        echoti rmkx
+    }
+    zle -N zle-line-init
+    zle -N zle-line-finish
 fi
 
 ## home user bin to PATH ##
@@ -97,6 +97,22 @@ zstyle ':vcs_info:*' enable git hg
 zstyle ':vcs_info:*' check-for-changes true
 zstyle ':vcs_info:git*' formats "%{${fg[cyan]}%}[%{${fg[green]}%}%s%{${fg[cyan]}%}][%{${fg[blue]}%}%r/%S%%{${fg[cyan]}%}][%{${fg[blue]}%}%b%{${fg[yellow]}%}%m%u%c%{${fg[cyan]}%}]%{$reset_color%}"
 
+function check_cmd_status()
+{
+    RETVAL=$?
+    case $RETVAL in 
+        1)
+            echo "%B%F{yellow}Error%b%F{cyan}][%f"
+            ;;
+        0)
+            return 0
+            ;;
+        *)
+            return $RETVAL
+            ;;
+    esac
+}
+
 set_current_path()
 {
     pwd > $HS_ENV_CONFIG
@@ -107,8 +123,8 @@ parse_git_branch()
     git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1%F{cyan}][%f/'
 }
 nonzero_return() {
-	RETVAL=$?
-	[ $RETVAL -ne 0 ] && echo "-$RETVAL-"
+    RETVAL=$?
+    [ $RETVAL -ne 0 ] && echo "-$RETVAL-"
 }
 setprompt() {
   setopt prompt_subst
@@ -127,6 +143,7 @@ setprompt() {
     %F{cyan}][%f
     %F{blue}%T-%w%f
     %F{cyan}][%f
+    $(check_cmd_status)
     %F{white}`parse_git_branch``set_current_path`%f
     %F{blue}%~%f
     %F{cyan}]%f
@@ -142,8 +159,8 @@ setprompt
 # firefox download path
 #if [ ! -d "/tmp/downloads_tmp" ];
 #then
-#	mkdir /tmp/downloads_tmp
-#	ln -sf /tmp/downloads_tmp $HOME/downloads
+#   mkdir /tmp/downloads_tmp
+#   ln -sf /tmp/downloads_tmp $HOME/downloads
 #fi
 #alias path
 alias -g ...='../..'
