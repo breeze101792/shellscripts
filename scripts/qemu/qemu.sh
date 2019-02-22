@@ -22,7 +22,8 @@ G_DRIVE_COUNT=2
 function fEnvInit()
 {
     QEMU_CPU+=("-smp cores=${CONFIG_CPU_NUM}")
-    QEMU_MEMORY=("-m 1G,slots=4,maxmem=${CONFIG_MEM_SIZE}")
+    # QEMU_MEMORY=("-m 1G,slots=4,maxmem=${CONFIG_MEM_SIZE}")
+    QEMU_MEMORY=("-m ${CONFIG_MEM_SIZE}")
 }
 function fAddUSB()
 {
@@ -97,7 +98,7 @@ function fConfigQraphic()
 }
 function fConfigNet()
 {
-    QEMU_NET+=("-netdev user,id=net0,hostfwd=tcp::4096-:22")
+    QEMU_NET+=("-netdev user,id=net0,hostfwd=tcp::${CONFIG_NET_SSH}-:22")
     QEMU_NET+=("-device virtio-net-pci,romfile=/usr/share/qemu/efi-virtio.rom,netdev=net0")
 }
 function fRunSpice()
@@ -146,6 +147,11 @@ function main()
             -d|--disk)
                 # QEMU_DRIVE+=("-drive file=${2},index=${G_DRIVE_COUNT},media=disk,cache=none,if=virtio,format=qcow2")
                 QEMU_DRIVE+=("-drive file=${2},index=${G_DRIVE_COUNT},media=disk,cache=writeback,if=virtio,format=qcow2")
+                G_DRIVE_COUNT=$(($G_DRIVE_COUNT + 1))
+                shift 2
+                ;;
+            -pd|--physical-disk)
+                QEMU_DRIVE+=("-drive file=${2},index=${G_DRIVE_COUNT},media=disk,cache=writeback,if=virtio,format=raw")
                 G_DRIVE_COUNT=$(($G_DRIVE_COUNT + 1))
                 shift 2
                 ;;

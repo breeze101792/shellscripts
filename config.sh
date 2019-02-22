@@ -1,2 +1,2 @@
-HS_CONFIG_I3_PATCH=y
+export HS_CONFIG_I3_PATCH=y
 
