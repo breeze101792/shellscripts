@@ -37,7 +37,12 @@ function watch_mem
 function rv()
 {
 	echo "Record video for $1 second"
-	ffmpeg -y -i /dev/video0 -t $1  ~/video_`date +%F`.avi
+    local video_path="${HOME}/media/videos/.recording"
+    if [ ! -d ${video_path} ]
+    then
+        mkdir -p ${video_path}
+    fi
+	ffmpeg -y -i /dev/video0 -t $1  ${video_path}/video_`tstamp`.avi
 }
 bkfile()
 {
