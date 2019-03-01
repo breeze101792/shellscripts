@@ -4,6 +4,8 @@ alias xc="xclip"
 alias xv="xclip -o"
 alias tstamp='date +%Y%m%d_%H%M%S'
 alias cgrep='grep --color=always '
+alias sgrep='grep --color=always -rnIi  '
+alias ffind='find . -name $@'
 
 ## functions ##
 function retitle()
