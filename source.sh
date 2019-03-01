@@ -1,12 +1,12 @@
 #!/bin/bash
 function hs_init()
 {
-    export HS_VER=0.1.1
+    export HS_VER=0.1.2
     export HS_SHELL="zsh"
 }
 function refresh
 {
-    source $LIB_PATH/source.sh -p $LIB_PATH -s $HS_SHELL
+    source $HS_LIB_PATH/source.sh -p $HS_LIB_PATH -s $HS_SHELL
 }
 
 function hs_main
@@ -14,6 +14,7 @@ function hs_main
     if [[ -z $HS_VER ]]; then
         hs_init
     fi
+
     echo "Version: $HS_VER"
     while true;
     do
@@ -23,7 +24,7 @@ function hs_main
                 shift 1
                 ;;
             -p)
-                export LIB_PATH=$2
+                export HS_LIB_PATH=$2
                 shift 2
                 ;;
             -s)
@@ -36,23 +37,23 @@ function hs_main
         esac
     done
     # source shell scripts
-    source $LIB_PATH/env.sh
-    source $LIB_PATH/config.sh
+    source $HS_LIB_PATH/scripts/env.sh
+    source $HS_LIB_PATH/scripts/config.sh
     if [ "$HS_SHELL" = "bash" ]
     then
-        source $LIB_PATH/base_bash.sh
+        source $HS_LIB_PATH/scripts/base_bash.sh
     else
-        source $LIB_PATH/base_zsh.sh
+        source $HS_LIB_PATH/scripts/base_zsh.sh
     fi
-    source $LIB_PATH/lib.sh
-    source $LIB_PATH/project.sh
-    if [ -f $LIB_PATH/lab.sh ]
+    source $HS_LIB_PATH/scripts/lib.sh
+    source $HS_LIB_PATH/scripts/project.sh
+    if [ -f $HS_LIB_PATH/scripts/lab.sh ]
     then
-        source $LIB_PATH/lab.sh
+        source $HS_LIB_PATH/scripts/lab.sh
     fi
-    if [ -f $LIB_PATH/work.sh ]
+    if [ -f $HS_LIB_PATH/scripts/work.sh ]
     then
-        source $LIB_PATH/work.sh
+        source $HS_LIB_PATH/scripts/work.sh
     fi
 }
 

@@ -12,13 +12,13 @@ function lab_unregex {
 }
 
 function lab_fsed {
-   local find=$(unregex "$1")
-   local replace=$(unregex "$2")
+   local find=$(lab_unregex "$1")
+   local replace=$(lab_unregex "$2")
    shift 2
    for each_file in $(grep -rn $find | cut -d ':' -f 1 )
    do
        echo -e "Replace in :$each_file"
-       # sed -i "s/$find/$replace/g" "$each_file"
+       sed -i "s/$find/$replace/g" "$each_file"
    done
    # sed -i is only supported in GNU sed.
    #sed -i "s/$find/$replace/g" "$@"
@@ -39,3 +39,31 @@ function lab_an_relink()
     ln -sf ./make/envsetup.sh ./envsetup.sh
     cd ..
 }
+# function __mark_genstr()
+# {
+#     local pattern_array=${1[@]}
+#     local color_start=$(echo -e "\033[0;31m")
+#     local color_end=$(echo -e "\033[0m")
+#     local sed_str=""
+#     echo ${1[*]}
+#     for each_str in ${pattern_array[@]}
+#     do
+#         echo $each_str
+#         $sed_str=echo -e "${sed_str} -e \"s%${each_str}%${ccred}&${ccend}%g\""
+#     done
+#     echo -e $sed_str
+
+# }
+# mark_test()
+# {
+#     local error_array=("[Ee]rr" "[Ee]rror")
+#     local warning_array=("[Ww]arning")
+#     __mark_genstr $error_array
+#     return
+#     local error_str="$(__mark_genstr $error_array)"
+#     local warinig_str="$(__mark_genstr $warinig_array)"
+#     # $@ 2>&1 | sed -E $error_array $warinig_array
+#     echo -e "${error_array}"
+#     $@ 2>&1 | sed -E $(__mark_genstr $error_array) $(__mark_genstr $warinig_array)
+
+# }

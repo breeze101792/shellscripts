@@ -12,7 +12,32 @@ alias gdiff='git diff --check --no-ext-diff'
 alias glog="git log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold cyan)%aD%C(reset) %C(bold green)(%ar)%C(reset)%C(bold yellow)%d%C(reset)%n''          %C(white)%s%C(reset) %C(dim white)- %an%C(reset)' --all"
 #alias lg="git $lg1"
 
+
 ## functions ##
+# project commands
+function pjinit()
+{
+    if [ $# = 0 ]
+    then
+        local pj_name=$(echo `pwd` |rev| cut -d'/' -f 1| rev)
+    else
+        local pj_name=$1
+    fi
+    local pj_postfix="proj"
+    echo "export PJ_ROOT=`pwd`" > ${pj_name}.${pj_postfix}
+    echo "export PJ_NAME=$pj_name" > ${pj_name}.${pj_postfix}
+    echo "export PJ_DATE=`date`" >> ${pj_name}.${pj_postfix}
+
+}
+function pjroot()
+{
+    if [[ -z $PJ_ROOT ]]
+    then
+        groot proj
+    else
+        cd $PJ_ROOT
+    fi
+}
 # vim funcions
 function pvinit()
 {
@@ -37,46 +62,6 @@ function pvim()
     export CSCOPE_DB=`pwd`/cscope.out
     vim $@
 }
-groot()
-{
-    local cpath=$(pwd)
-    local tmp_path=$cpath
-    local target=''
-
-    if (( $# >= 1 ))
-    then
-        target=$1
-    else
-        target=".git"
-    fi
-    echo $target
-    local path_array=(`echo $cpath | sed 's/\//\n/g'`)
-    for each_folder in $path_array
-    do
-        if [ $each_folder = $target ]
-        then
-            cd `echo $cpath | sed "s/$each_folder.*/$each_folder/g"`
-            echo goto $each_folder
-            return
-        fi
-    done
-    # wallk through files
-    while ! ls -a $tmp_path | grep $target;
-    do
-        pushd $tmp_path > /dev/null
-        tmp_path=`pwd`
-        if [ $(pwd) = '/' ];
-        then
-            echo 'Hit the root'
-            popd > /dev/null
-            return
-        fi
-        popd > /dev/null
-        tmp_path=$tmp_path"/.."
-    done
-    cd $tmp_path
-}
-alias proot="groot project"
 make()
 {
     pathpat="(/[^/]*)+:[0-9]+"
@@ -100,4 +85,37 @@ gpush()
 rgit()
 {
     repo forall -vc "git $@"
+}
+mark()
+{
+# Black        0;30     Dark Gray     1;30
+# Red          0;31     Light Red     1;31
+# Green        0;32     Light Green   1;32
+# Brown/Orange 0;33     Yellow        1;33
+# Blue         0;34     Light Blue    1;34
+# Purple       0;35     Light Purple  1;35
+# Cyan         0;36     Light Cyan    1;36
+# Light Gray   0;37     White         1;37
+    local hi_word=$1
+    shift 1
+    ccred=$(echo -e "\033[0;31m")
+    ccyellow=$(echo -e "\033[0;33m")
+    ccend=$(echo -e "\033[0m")
+    echo $ccred$hi_word$ccend
+    $@ 2>&1 | sed -E -e "s%${hi_word}%${ccred}&${ccend}%ig"
+}
+mark_build()
+{
+    local ccred=$(echo -e "\033[0;31m")
+    local ccyellow=$(echo -e "\033[0;33m")
+    local ccend=$(echo -e "\033[0m")
+    $@ 2>&1 | sed -E -e "s%undefined%$ccred&$ccend%ig" -e "s%fatl%$ccred&$ccend%ig" -e "s%error%$ccred&$ccend%ig" -e "s%fail%$ccred&$ccend%ig" -e "s%warning%$ccyellow&$ccend%ig"
+}
+wdiff()
+{
+    diff -rq $1 $2 | cut -f2 -d' '| uniq | sort
+}
+hex2bin()
+{
+    cat $1 | sed s/,//g | sed s/0x//g | xxd -r -p - $2
 }
