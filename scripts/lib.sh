@@ -1,7 +1,9 @@
 #!/bin/bash
 ## alias ##
-alias ls='ls --color=auto'
+alias ls='ls --color=auto --group-directories-first -X '
+# alias ls='ls --color=auto'
 alias ll='ls -alh'
+alias llt='ls -alht'
 alias l='ls -a'
 alias xc="xclip"
 alias xv="xclip -o"

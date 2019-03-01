@@ -47,10 +47,7 @@ function hs_main
     fi
     source $HS_LIB_PATH/scripts/lib.sh
     source $HS_LIB_PATH/scripts/project.sh
-    if [ -f $HS_LIB_PATH/scripts/lab.sh ]
-    then
-        source $HS_LIB_PATH/scripts/lab.sh
-    fi
+    source $HS_LIB_PATH/scripts/lab.sh
     if [ -f $HS_LIB_PATH/scripts/work.sh ]
     then
         source $HS_LIB_PATH/scripts/work.sh
