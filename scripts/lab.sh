@@ -1,4 +1,7 @@
-
+function lab_vm_init()
+{
+    VBoxClient --clipboard
+}
 function lab_bash_color()
 {
     txtred=$(echo -e '\e[0;31m')

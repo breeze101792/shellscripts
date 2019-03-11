@@ -39,13 +39,6 @@ function pjroot()
     fi
 }
 # vim funcions
-function pvinit()
-{
-    # project init
-    find . -type f -name "*.h" -o -name "*.c" -o -name "*.cpp" -o -name "*.java" > cscope.files
-    cscope -b
-
-}
 function gcc_setup()
 {
     if [ "$1" != "clang"]
@@ -57,9 +50,35 @@ function gcc_setup()
         alias c++='c++-$gcc_ver'
     fi
 }
+function pvinit()
+{
+    local src_path=($@)
+    echo ${src_path[@]}
+    ctags -R
+    local count=0
+    while true
+    do
+        current_path=${src_path[$count]}
+        echo -e "Searching folder: $current_path"
+        if [ "$current_path" = "" ]
+        then
+            echo "Finished"
+            break
+        else
+            find ${current_path} -type f -name "*.h" -o -name "*.c" -o -name "*.cpp" -o -name "*.java" >> cscope.files
+        fi
+        let count++
+    done
+    cscope -b
+    mv cscope.out cscope.db
+}
+
 function pvim()
 {
+    local cpath=`pwd`
+    groot "cscope.db"
     export CSCOPE_DB=`pwd`/cscope.out
+    cd $cpath
     vim $@
 }
 make()

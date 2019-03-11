@@ -5,5 +5,5 @@
 export HS_ENV_CONFIG="${HOME}/.cache/hs_config"
 
 # Terminal configs
-export TERM="xterm-256color"
+# export TERM="xterm-256color"
 

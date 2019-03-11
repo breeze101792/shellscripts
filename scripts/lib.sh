@@ -10,9 +10,15 @@ alias xv="xclip -o"
 alias tstamp='date +%Y%m%d_%H%M%S'
 alias cgrep='grep --color=always '
 alias sgrep='grep --color=always -rnIi  '
-alias ffind='find . -name $@'
-
+alias vim='TERM=xterm-256color && vim '
 ## functions ##
+function ffind()
+{
+    pattern=$1
+    echo Looking for $pattern
+    find . -name "*$pattern*"
+
+}
 function retitle()
 {
     print -Pn "\e]0;$@\a"
@@ -22,6 +28,10 @@ function lg_patch
     cvt --reduced 2440 1028 60
     xrandr --newmode "2440x1028R"  164.75  2440 2488 2520 2600  1028 1031 1041 1058 +hsync -vsync
     xrandr --addmode HDMI-0 "2440x1028R"
+}
+function vm_init()
+{
+    VBoxClient --clipboard
 }
 function watch_mem
 {
