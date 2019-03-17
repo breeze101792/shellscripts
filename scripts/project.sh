@@ -12,7 +12,6 @@ alias gdiff='git diff --check --no-ext-diff'
 alias glog="git log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold cyan)%aD%C(reset) %C(bold green)(%ar)%C(reset)%C(bold yellow)%d%C(reset)%n''          %C(white)%s%C(reset) %C(dim white)- %an%C(reset)' --all"
 #alias lg="git $lg1"
 
-
 ## functions ##
 # project commands
 function pjinit()
@@ -77,7 +76,7 @@ function pvim()
 {
     local cpath=`pwd`
     groot "cscope.db"
-    export CSCOPE_DB=`pwd`/cscope.out
+    export CSCOPE_DB=`pwd`/cscope.db
     cd $cpath
     vim $@
 }

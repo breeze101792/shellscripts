@@ -1,3 +1,18 @@
+function lab_ancon()
+{
+    local dev_ip="192.168.7.19"
+    adb disconnect $dev_ip
+    adb connect $dev_ip
+    sleep 1
+    adb root
+    adb connect $dev_ip
+}
+function lab_tftp_set()
+{
+    rm ${HOME}/tftp
+    ln -sf  `pwd`/$1 ${HOME}/tftp
+    ls -al ${HOME} | grep tftp
+}
 function lab_vm_init()
 {
     VBoxClient --clipboard
