@@ -120,12 +120,13 @@ function bisync()
 }
 function pln()
 {
-    ln -s `pwd`/$1 $2
+    ln -sf `pwd`/$1 $2
 }
-groot()
+function groot()
 {
     local cpath=$(pwd)
     local tmp_path=$cpath
+    locat target_path=""
     local target=''
 
     if (( $# >= 1 ))
@@ -156,8 +157,9 @@ groot()
             return
         fi
         popd > /dev/null
+        target_path=$tmp_path
         tmp_path=$tmp_path"/.."
     done
-    echo "goto $tmp_path"
-    cd $tmp_path
+    echo "goto $target_path"
+    cd $target_path
 }

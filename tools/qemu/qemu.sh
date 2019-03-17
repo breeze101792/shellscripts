@@ -91,6 +91,7 @@ function fConfigQraphic()
         QEMU_GRAPHIC+=("-display sdl,gl=on")
     elif [ "${G_MONITOR_TYPE}" == "gtk" ]
     then
+        # QEMU_GRAPHIC+=("-display sdl,gl=on")
         QEMU_GRAPHIC+=("-display gtk,gl=on")
     fi
 
