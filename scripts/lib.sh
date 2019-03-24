@@ -126,7 +126,7 @@ function groot()
 {
     local cpath=$(pwd)
     local tmp_path=$cpath
-    locat target_path=""
+    local target_path=""
     local target=''
 
     if (( $# >= 1 ))
@@ -157,8 +157,8 @@ function groot()
             return
         fi
         popd > /dev/null
-        target_path=$tmp_path
         tmp_path=$tmp_path"/.."
+        target_path=$tmp_path
     done
     echo "goto $target_path"
     cd $target_path

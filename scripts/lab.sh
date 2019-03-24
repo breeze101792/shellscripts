@@ -3,7 +3,7 @@ function lab_ancon()
     local dev_ip="192.168.7.19"
     adb disconnect $dev_ip
     adb connect $dev_ip
-    sleep 1
+    sleep 0.5
     adb root
     adb connect $dev_ip
 }
@@ -56,6 +56,11 @@ function lab_an_relink()
     ln -sf ./make/CleanSpec.mk ./CleanSpec.mk
     ln -sf ./make/envsetup.sh ./envsetup.sh
     cd ..
+}
+function lab_i3_reload()
+{
+    i3-msg reload
+    i3-msg restart
 }
 # function __mark_genstr()
 # {

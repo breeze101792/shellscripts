@@ -77,6 +77,7 @@ function pvim()
     local cpath=`pwd`
     groot "cscope.db"
     export CSCOPE_DB=`pwd`/cscope.db
+    echo $CSCOPE_DB
     cd $cpath
     vim $@
 }
@@ -92,13 +93,31 @@ make()
 gpush()
 {
     echo "Push commit to Branch $1"
-    if [ $# != 1 ]
+        local cbranch=""
+        local remote=""
+        local branch=""
+    if [ $# = 0 ]
     then
-        echo "Missing Branch argment";
-        return
-    else
-        git push origin HEAD:refs/for/$1
+        local cbranch=$(git branch| sed -e 's/* //g')
+        local remote=$(git branch -r | grep $cbranch | grep -ve "HEAD" |rev |cut -d'/' -f2 | rev)
+        local branch=$(git branch -r | grep $cbranch | grep -ve "HEAD" |rev |cut -d'/' -f1 | rev)
+        echo "[1] Auto push to $remote $branch";
+        # git push $remote HEAD:refs/for/$branch
+    elif [ $# = 1 ]
+    then
+        local cbranch=$1
+        local remote=$(git branch -r | grep $cbranch | grep -ve "HEAD" |rev |cut -d'/' -f2 | rev)
+        local branch=$(git branch -r | grep $cbranch | grep -ve "HEAD" |rev |cut -d'/' -f1 | rev)
+        echo "[2] Auto push to $remote $branch";
+        # git push $remote HEAD:refs/for/$branch
+    elif [ $# = 2 ]
+    then
+        local remote=$1
+        local branch=$2
+        echo "[3] Auto push to $remote $branch";
+        # git push $remote HEAD:refs/for/$branch
     fi
+    git push $remote HEAD:refs/for/$branch
 }
 rgit()
 {
