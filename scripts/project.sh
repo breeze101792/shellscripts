@@ -49,12 +49,14 @@ function gcc_setup()
         alias c++='c++-$gcc_ver'
     fi
 }
-function pvinit()
+function pvinit_en()
 {
+    local proj_path=$HS_ENV_IDE_PATH/$1
+    shift 1
     local src_path=($@)
-    echo ${src_path[@]}
-    ctags -R
     local count=0
+    echo ${src_path[@]}
+    mkdir $proj_path
     while true
     do
         current_path=${src_path[$count]}
@@ -64,11 +66,62 @@ function pvinit()
             echo "Finished"
             break
         else
+            ln -sf `pwd`/$current_path $proj_path/$current_path
+            # find ${current_path} -type f -name "*.h" -o -name "*.c" -o -name "*.cpp" -o -name "*.java" >> cscope.files
+        fi
+        let count++
+    done
+    pushd $proj_path
+        find ${current_path} -type f -name "*.h" -o -name "*.c" -o -name "*.cpp" -o -name "*.java" >> cscope.files
+        ctags -R
+        cscope -b
+        mv cscope.out cscope.db
+    popd
+
+}
+function pvinit_bak()
+{
+    local src_path=($@)
+    echo ${src_path[@]}
+    ctags -R
+    local count=0
+    while true
+    do
+        current_path=${src_path[$count]}
+        if [ "$current_path" = "" ]
+        then
+            echo "Finished"
+            break
+        else
+            echo -e "Searching folder: $current_path"
             find ${current_path} -type f -name "*.h" -o -name "*.c" -o -name "*.cpp" -o -name "*.java" >> cscope.files
         fi
         let count++
     done
     cscope -b
+    mv cscope.out cscope.db
+}
+function pvinit()
+{
+    local src_path=($@)
+    echo ${src_path[@]}
+    local count=0
+    rm cscope.db proj.files tags
+    while true
+    do
+        current_path=${src_path[$count]}
+        if [ "$current_path" = "" ]
+        then
+            echo "Finished"
+            break
+        else
+            echo -e "Searching folder: $current_path"
+            find ${current_path} -type f -name "*.h" -o -name "*.c" -o -name "*.cpp" -o -name "*.java" >> proj.files
+        fi
+        let count++
+    done
+    cscope -b -i proj.files
+    ctags -L proj.files
     mv cscope.out cscope.db
 }
 

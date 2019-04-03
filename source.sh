@@ -1,7 +1,7 @@
 #!/bin/bash
 function hs_init()
 {
-    export HS_VER=0.1.2
+    export HS_VER=0.1.3
     export HS_SHELL="zsh"
 }
 function refresh
