@@ -4,7 +4,7 @@ epath ${HOME}/.bin
 ## alias
 alias mdebug="screen -S debug -L -Logfile debug_`tstamp`.log /dev/ttyUSB1 115200 "
 alias sdebug="screen -S debug_s -L -Logfile debug_`tstamp`.log"
-
+alias proot="groot .project"
 # git alias ##
 #export lg1="log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) %C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(bold yellow)%d%C(reset)' --all"
 alias gstatus='git status -uno '
@@ -134,7 +134,7 @@ function pvim()
     cd $cpath
     vim $@
 }
-make()
+function make()
 {
     pathpat="(/[^/]*)+:[0-9]+"
     ccred=$(echo -e "\033[0;31m")
@@ -142,6 +142,14 @@ make()
     ccend=$(echo -e "\033[0m")
     /usr/bin/make "$@" 2>&1 | sed -E -e "/[Uu]ndefined[: ]/ s%$pathpat%$ccred&$ccend%g" -e "/[Ff]atl[: ]/ s%$pathpat%$ccred&$ccend%g" -e "/[Ee]rror[: ]/ s%$pathpat%$ccred&$ccend%g" -e "/[Ww]arning[: ]/ s%$pathpat%$ccyellow&$ccend%g"
     return ${PIPESTATUS[0]}
+}
+function gcheckoutByDate()
+{
+    # local checkout_date="2019-04-10 00:00"
+    local checkout_date=$1
+    local cBranch=`git rev-parse --abbrev-ref HEAD`
+    local target_commit=`git rev-list -n 1 --first-parent --before=$checkout_date $cBranch`
+    git checkout $target_commit
 }
 gpush()
 {
@@ -151,7 +159,7 @@ gpush()
         local branch=""
     if [ $# = 0 ]
     then
-        local cbranch=$(git branch| sed -e 's/* //g')
+        local cbranch=$(git branch| sed -e '/^[^*]/d' -e 's/* //g')
         local remote=$(git branch -r | grep $cbranch | grep -ve "HEAD" |rev |cut -d'/' -f2 | rev)
         local branch=$(git branch -r | grep $cbranch | grep -ve "HEAD" |rev |cut -d'/' -f1 | rev)
         echo "[1] Auto push to $remote $branch";
@@ -208,4 +216,14 @@ wdiff()
 hex2bin()
 {
     cat $1 | sed s/,//g | sed s/0x//g | xxd -r -p - $2
+}
+# repo enhance
+function fGitCheckoutByDate()
+{
+    local checkout_date=$1
+    local cBranch=$2
+    local target_commit=`git rev-list -n 1 --first-parent --before=$checkout_date $cBranch`
+    echo branch: $cBranch/$target_commit
+    # echo git checkout $target_commit
+    git checkout $target_commit
 }

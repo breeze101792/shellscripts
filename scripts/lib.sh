@@ -12,6 +12,14 @@ alias cgrep='grep --color=always '
 alias sgrep='grep --color=always -rnIi  '
 alias vim='TERM=xterm-256color && vim '
 ## functions ##
+function doloop()
+{
+    for each_input in $($1)
+    do
+        # echo $2 $each_input
+        bash -c "$2 $each_input"
+    done
+}
 function ffind()
 {
     pattern=$1
