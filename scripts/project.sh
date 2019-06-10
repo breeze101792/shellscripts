@@ -1,7 +1,11 @@
 # project releated commands
-## env
+########################################################
+#####    Settings                                     #####
+########################################################
 epath ${HOME}/.bin
-## alias
+########################################################
+#####    Alias                                     #####
+########################################################
 alias mdebug="screen -S debug -L -Logfile debug_`tstamp`.log /dev/ttyUSB1 115200 "
 alias sdebug="screen -S debug_s -L -Logfile debug_`tstamp`.log"
 alias proot="groot .project"
@@ -12,7 +16,9 @@ alias gdiff='git diff --check --no-ext-diff'
 alias glog="git log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold cyan)%aD%C(reset) %C(bold green)(%ar)%C(reset)%C(bold yellow)%d%C(reset)%n''          %C(white)%s%C(reset) %C(dim white)- %an%C(reset)' --all"
 #alias lg="git $lg1"
 
-## functions ##
+########################################################
+#####    Functions                                 #####
+########################################################
 # project commands
 function pjinit()
 {
@@ -143,15 +149,42 @@ function make()
     /usr/bin/make "$@" 2>&1 | sed -E -e "/[Uu]ndefined[: ]/ s%$pathpat%$ccred&$ccend%g" -e "/[Ff]atl[: ]/ s%$pathpat%$ccred&$ccend%g" -e "/[Ee]rror[: ]/ s%$pathpat%$ccred&$ccend%g" -e "/[Ww]arning[: ]/ s%$pathpat%$ccyellow&$ccend%g"
     return ${PIPESTATUS[0]}
 }
+function gforall()
+{
+    find . -name ".git" | while read dir;
+    do
+        cd `dirname ${dir}`
+        echo "Project Dir: ${dir}"
+        bash -c "$@" || { echo "checkout optee os file"; popd; exit 1; }
+        cd -
+    done
+}
+function gitclone()
+{
+    if [ $# != 3 ]
+    then
+        echo "gitclone shoulde have 3 args."
+        echo "gitclone [Server] [project] [branch]"
+        return false
+    fi
+    local git_project=$2
+    local git_branch=$3
+
+    echo "Clone ${git_project}:${git_branch} from ${git_host}"
+    git clone http://${git_host}/${git_project} -b ${git_branch}
+}
 function gcheckoutByDate()
 {
-    # local checkout_date="2019-04-10 00:00"
+    pwd
     local checkout_date=$1
-    local cBranch=`git rev-parse --abbrev-ref HEAD`
-    local target_commit=`git rev-list -n 1 --first-parent --before=$checkout_date $cBranch`
+    local cBranch=$2
+    local target_commit=`git rev-list -n 1 --first-parent --before="$checkout_date" $cBranch`
+    echo branch: $cBranch
+    echo commit: $target_commit
+    echo git checkout $target_commit
     git checkout $target_commit
 }
-gpush()
+function gpush()
 {
     echo "Push commit to Branch $1"
         local cbranch=""
@@ -180,7 +213,7 @@ gpush()
     fi
     git push $remote HEAD:refs/for/$branch
 }
-rgit()
+rforall()
 {
     repo forall -vc "git $@"
 }

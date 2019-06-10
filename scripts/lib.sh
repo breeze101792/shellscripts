@@ -1,17 +1,27 @@
 #!/bin/bash
-## alias ##
+########################################################
+########################################################
+#####                                              #####
+#####    For HS Lib Functions                      #####
+#####                                              #####
+########################################################
+########################################################
+#####    Alias                                     #####
+########################################################
 alias ls='ls --color=auto --group-directories-first -X '
 # alias ls='ls --color=auto'
-alias ll='ls -alh'
-alias llt='ls -alht'
-alias l='ls -a'
+alias l='ls -a --color=auto'
+alias ll='l -lh'
+alias llt='ll -t'
 alias xc="xclip"
 alias xv="xclip -o"
 alias tstamp='date +%Y%m%d_%H%M%S'
 alias cgrep='grep --color=always '
 alias sgrep='grep --color=always -rnIi  '
 alias vim='TERM=xterm-256color && vim '
-## functions ##
+########################################################
+#####    Functions                                 #####
+########################################################
 function doloop()
 {
     for each_input in $($1)
@@ -24,75 +34,8 @@ function ffind()
 {
     pattern=$1
     echo Looking for $pattern
-    find . -name "*$pattern*"
+    find . -iname "*$pattern*"
 
-}
-function retitle()
-{
-    print -Pn "\e]0;$@\a"
-}
-function lg_patch
-{
-    cvt --reduced 2440 1028 60
-    xrandr --newmode "2440x1028R"  164.75  2440 2488 2520 2600  1028 1031 1041 1058 +hsync -vsync
-    xrandr --addmode HDMI-0 "2440x1028R"
-}
-function vm_init()
-{
-    VBoxClient --clipboard
-}
-function watch_mem
-{
-    local threshold='512000'
-    local interval='60'
-    while true
-    do
-        local mem_ava=$(free | grep Mem | sed "s/ \+/ /g" | cut -d' ' -f 7)
-        if [ $mem_ava -lt $threshold ];
-        then
-            notify-send -i /path//to/icon.png "Out of memory!!!" "Avaliable Memory:$mem_ava KB"
-            sleep 10
-        else
-            echo "Avaliable Memory: $mem_ava KB"
-            sleep $interval
-        fi
-    done
-
-}
-function rv()
-{
-	echo "Record video for $1 second"
-    local video_path="${HOME}/media/videos/.recording"
-    if [ ! -d ${video_path} ]
-    then
-        mkdir -p ${video_path}
-    fi
-	ffmpeg -y -i /dev/video0 -t $1  ${video_path}/video_`tstamp`.avi
-}
-bkfile()
-{
-   echo -e "Backup $1\n"
-   mv $1 $1_$(tstamp).backup
-}
-logfile()
-{
-    local logfile=$1
-    shift 1
-    $@ 2>&1 | tee $logfile
-}
-cdwin()
-{
-    echo "I receive the variable --> $1"
-    line=$(sed -e 's#^J:##' -e 's#\\#/#g' <<< "$1")
-    cd "$line"
-}
-ctwin()
-{
-    CURRENT_PATH=`pwd`
-    pushd $CURRENT_PATH &> /dev/null
-    line=$(sed -e 's|/|\\|g' -e 's|net||g'<<< `pwd`)
-    popd &> /dev/null
-    echo "Path: \\\\"$HOST$line
 }
 function epath()
 {
@@ -113,22 +56,12 @@ function pureshell()
     if [ -f ~/.purebashrc ]
     then
         # the purebashrc shour contain execu
-        env -i bash -c "export TERM=xterm && source ~/.purebashrc && bash -norc"
+        env -i bash -c "export TERM=xterm && source ~/.purebashrc && bash --norc"
+        # env -i bash -c "export TERM=xterm && bash --rcfile  ~/.purebashrc"
     else
         env -i bash -c "export TERM=xterm && bash --norc"
     fi
 
-}
-function bisync()
-{
-    local local_path=$1
-    local remote_path=$2
-    rsync -rtuv $local_path/* $remote_path
-    rsync -rtuv $remote_path/* $local_path
-}
-function pln()
-{
-    ln -sf `pwd`/$1 $2
 }
 function groot()
 {

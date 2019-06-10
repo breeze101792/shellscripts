@@ -4,6 +4,8 @@
 # Vars
 export HS_ENV_CONFIG="${HOME}/.cache/hs_config"
 export HS_ENV_IDE_PATH="${HOME}/projects"
+export HS_ENV_ENABLE=true
+export HS_ENV_TFTP_PATH="${HOME}/tftp"
 
 # Terminal configs
 export TERM="xterm-256color"

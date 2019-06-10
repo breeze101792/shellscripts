@@ -1,23 +1,10 @@
-
-function lab_ancon()
-{
-    local dev_ip="192.168.7.19"
-    adb disconnect $dev_ip
-    adb connect $dev_ip
-    sleep 0.5
-    adb root
-    adb connect $dev_ip
-}
-function lab_tftp_set()
-{
-    rm ${HOME}/tftp
-    ln -sf  `pwd`/$1 ${HOME}/tftp
-    ls -al ${HOME} | grep tftp
-}
-function lab_vm_init()
-{
-    VBoxClient --clipboard
-}
+########################################################
+########################################################
+#####                                              #####
+#####    For HS Lab Functions                      #####
+#####                                              #####
+########################################################
+########################################################
 function lab_bash_color()
 {
     txtred=$(echo -e '\e[0;31m')
@@ -42,21 +29,6 @@ function lab_fsed {
    # sed -i is only supported in GNU sed.
    #sed -i "s/$find/$replace/g" "$@"
    # perl -p -i -e "s/$find/$replace/g" "$@"
-}
-function lab_an_relink()
-{
-
-    ln -sf ./build/soong/bootstrap.bash ./bootstrap.bash
-    ln -sf ./build/soong/root.bp ./Android.bp
-    cd build
-    echo `pwd`
-    ln -sf ./make/buildspec.mk.default ./buildspec.mk.default
-    ln -sf ./make/core ./core
-    ln -sf ./make/tools ./tools
-    ln -sf ./make/target ./target
-    ln -sf ./make/CleanSpec.mk ./CleanSpec.mk
-    ln -sf ./make/envsetup.sh ./envsetup.sh
-    cd ..
 }
 function lab_i3_reload()
 {

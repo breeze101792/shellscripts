@@ -1,8 +1,7 @@
 #!/bin/bash
 function hs_init()
 {
-    export HS_VER=0.1.3
-    export HS_SHELL="zsh"
+    export HS_VER=0.1.4
 }
 function refresh
 {
@@ -11,10 +10,13 @@ function refresh
 
 function hs_main
 {
-    if [[ -z $HS_VER ]]; then
-        hs_init
+    if [ "${HS_ENV_ENABLE}" = "false" ]
+    then
+        echo "Skip HS Env"
+        return
     fi
 
+    hs_init
     echo "Version: $HS_VER"
     while true;
     do
@@ -37,15 +39,21 @@ function hs_main
         esac
     done
     # source shell scripts
-    source $HS_LIB_PATH/scripts/env.sh
-    source $HS_LIB_PATH/scripts/config.sh
+    source $HS_LIB_PATH/scripts/env_config.sh
+    if [ -f $HOME/.hsconfig.sh ]
+    then
+        source $HOME/.hsconfig.sh
+    fi
     if [ "$HS_SHELL" = "bash" ]
     then
+        export HS_SHELL="bash"
         source $HS_LIB_PATH/scripts/base_bash.sh
     else
+        export HS_SHELL="zsh"
         source $HS_LIB_PATH/scripts/base_zsh.sh
     fi
     source $HS_LIB_PATH/scripts/lib.sh
+    source $HS_LIB_PATH/scripts/tools.sh
     source $HS_LIB_PATH/scripts/project.sh
     source $HS_LIB_PATH/scripts/lab.sh
     if [ -f $HS_LIB_PATH/scripts/work.sh ]
