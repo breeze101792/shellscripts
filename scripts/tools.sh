@@ -54,7 +54,7 @@ ctwin()
 {
     CURRENT_PATH=`pwd`
     pushd $CURRENT_PATH &> /dev/null
-    line=$(sed -e 's|/|\\|g' -e 's|net||g'<<< `pwd`)
+    line=$(sed -e 's|/|\\|g' -e 's|net||g' -e 's|shawn\.tseng\\||g'<<< `pwd`)
     popd &> /dev/null
     echo "Path: \\\\"$HOST$line
 }
