@@ -48,7 +48,11 @@ cdwin()
 {
     echo "I receive the variable --> $1"
     line=$(sed -e 's#^J:##' -e 's#\\#/#g' <<< "$1")
-    cd "$line"
+    echo "Path: $line"
+    if [ -d ${line} ]
+    then
+        cd "$line"
+    fi
 }
 ctwin()
 {

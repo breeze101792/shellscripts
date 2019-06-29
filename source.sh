@@ -1,7 +1,7 @@
 #!/bin/bash
 function hs_init()
 {
-    export HS_VER=0.1.4
+    export HS_VER=0.1.5
 }
 function refresh
 {
@@ -56,6 +56,7 @@ function hs_main
     source $HS_LIB_PATH/scripts/tools.sh
     source $HS_LIB_PATH/scripts/project.sh
     source $HS_LIB_PATH/scripts/lab.sh
+    # End of shell
     if [ -f $HS_LIB_PATH/scripts/work.sh ]
     then
         source $HS_LIB_PATH/scripts/work.sh

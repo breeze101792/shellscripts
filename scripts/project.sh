@@ -55,76 +55,27 @@ function gcc_setup()
         alias c++='c++-$gcc_ver'
     fi
 }
-function pvinit_en()
-{
-    local proj_path=$HS_ENV_IDE_PATH/$1
-    shift 1
-    local src_path=($@)
-    local count=0
-    echo ${src_path[@]}
-    mkdir $proj_path
-    while true
-    do
-        current_path=${src_path[$count]}
-        echo -e "Searching folder: $current_path"
-        if [ "$current_path" = "" ]
-        then
-            echo "Finished"
-            break
-        else
-            ln -sf `pwd`/$current_path $proj_path/$current_path
-            # find ${current_path} -type f -name "*.h" -o -name "*.c" -o -name "*.cpp" -o -name "*.java" >> cscope.files
-        fi
-        let count++
-    done
-    pushd $proj_path
-        find ${current_path} -type f -name "*.h" -o -name "*.c" -o -name "*.cpp" -o -name "*.java" >> cscope.files
-        ctags -R
-        cscope -b
-        mv cscope.out cscope.db
-    popd
-
-}
-function pvinit_bak()
-{
-    local src_path=($@)
-    echo ${src_path[@]}
-    ctags -R
-    local count=0
-    while true
-    do
-        current_path=${src_path[$count]}
-        if [ "$current_path" = "" ]
-        then
-            echo "Finished"
-            break
-        else
-            echo -e "Searching folder: $current_path"
-            find ${current_path} -type f -name "*.h" -o -name "*.c" -o -name "*.cpp" -o -name "*.java" >> cscope.files
-        fi
-        let count++
-    done
-    cscope -b
-    mv cscope.out cscope.db
-}
 function pvinit()
 {
     local src_path=($@)
     echo ${src_path[@]}
-    local count=0
-    rm cscope.db proj.files tags
-    while true
+    [ -f cscope.db ] && rm cscope.db 2> /dev/null
+    [ -f proj.files ] && rm proj.files 2> /dev/null
+    [ -f tags ] && rm tags 2> /dev/null
+
+    for each_path in ${src_path[@]}
     do
-        current_path=${src_path[$count]}
-        if [ "$current_path" = "" ]
+        echo "Searching path: ${each_path}"
+        if [ "$each_path" = "" ]
         then
             echo "Finished"
             break
         else
-            echo -e "Searching folder: $current_path"
-            find ${current_path} -type f -name "*.h" -o -name "*.c" -o -name "*.cpp" -o -name "*.java" >> proj.files
+            echo -e "Searching folder: $each_path"
+            # find ${each_path} -type f -name "*.h" -o -name "*.c" -o -name "*.cpp" -o -name "*.java" >> proj.files
+            # find ${each_path} \( -type f -name "*.h" -o -name "*.c" -o -name "*.cpp" -o -name "*.java" \) -a \( -not -path "*/build/*" -a -not -path "*/auto_gen*" \) >> proj.files
+            find ${each_path} \( -type f -name "*.h" -o -name "*.c" -o -name "*.cpp" -o -name "*.java" \) -a \( -not -path "*/auto_gen*" -a  -not -path "*/build" \) >> proj.files
         fi
-        let count++
     done
     cscope -b -i proj.files
     ctags -L proj.files
@@ -159,19 +110,23 @@ function gforall()
         cd -
     done
 }
-function gitclone()
+function gclone()
 {
-    if [ $# != 3 ]
+    echo "new"
+    if (( $# < 3 ))
     then
         echo "gitclone shoulde have 3 args."
         echo "gitclone [Server] [project] [branch]"
-        return false
+        echo "$@"
+        return -1
     fi
+    local git_host=$1
     local git_project=$2
     local git_branch=$3
+    shift 3
 
     echo "Clone ${git_project}:${git_branch} from ${git_host}"
-    git clone http://${git_host}/${git_project} -b ${git_branch}
+    git clone http://${git_host}/${git_project} -b ${git_branch} $@
 }
 function gcheckoutByDate()
 {
@@ -217,7 +172,7 @@ rforall()
 {
     repo forall -vc "git $@"
 }
-mark()
+function mark()
 {
 # Black        0;30     Dark Gray     1;30
 # Red          0;31     Light Red     1;31
@@ -227,13 +182,40 @@ mark()
 # Purple       0;35     Light Purple  1;35
 # Cyan         0;36     Light Cyan    1;36
 # Light Gray   0;37     White         1;37
-    local hi_word=$1
-    shift 1
-    ccred=$(echo -e "\033[0;31m")
-    ccyellow=$(echo -e "\033[0;33m")
+    if [[ $# = 1 ]]
+    then
+        local clr_idx=1
+        local hi_word=$1
+        shift 1
+    else
+        local clr_idx=$1
+        local hi_word=$2
+        shift 2
+    fi
+    local color_array=(
+        # $(echo -e "\033[0;30m")
+        $(echo -e "\033[0;31m")
+        $(echo -e "\033[0;32m")
+        $(echo -e "\033[0;33m")
+        $(echo -e "\033[0;34m")
+        $(echo -e "\033[0;35m")
+        $(echo -e "\033[0;36m")
+        $(echo -e "\033[0;37m")
+        $(echo -e "\033[1;30m")
+        $(echo -e "\033[1;31m")
+        $(echo -e "\033[1;32m")
+        $(echo -e "\033[1;33m")
+        $(echo -e "\033[1;34m")
+        $(echo -e "\033[1;35m")
+        $(echo -e "\033[1;36m")
+        $(echo -e "\033[1;37m")
+    )
+    # ccred=$(echo -e "\033[0;31m")
+    # ccyellow=$(echo -e "\033[0;33m")
     ccend=$(echo -e "\033[0m")
-    echo $ccred$hi_word$ccend
-    $@ 2>&1 | sed -E -e "s%${hi_word}%${ccred}&${ccend}%ig"
+    # echo $ccred$hi_word$ccend
+    # $@ 2>&1 | sed -E -e "s%${hi_word}%${color_array[$clr_idx]}&${ccend}%ig"
+    sed -E -e "s%${hi_word}%${color_array[$clr_idx]}&${ccend}%ig"
 }
 mark_build()
 {

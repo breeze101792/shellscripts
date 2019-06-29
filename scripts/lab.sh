@@ -9,7 +9,8 @@ function lab_bash_color()
 {
     txtred=$(echo -e '\e[0;31m')
     txtrst=$(echo -e '\e[0m')
-    bash | sed -e "s/FAIL/${txtred}FAIL${txtrst}/g"
+    # bash | sed -e "s/FAIL/${txtred}FAIL${txtrst}/g"
+    zsh | sed -e "s/FAIL/${txtred}FAIL${txtrst}/g"
 }
 function lab_unregex {
    # This is a function because dealing with quotes is a pain.
@@ -37,13 +38,27 @@ function lab_i3_reload()
 }
 function lab_addMode()
 {
-	export width=$1
-	export height=$2
+    export width=$1
+    export height=$2
 
-	cvt --reduced $width $height 60
-	local res=$(cvt --reduced $width $height 60|grep R | sed 's/Modeline//g' )
-	echo xrandr --newmode $res
-	#xrandr --addmode HDMI-0 $(echo $res|cut -d' ' -f 1)
+    cvt --reduced $width $height 60
+    local res=$(cvt --reduced $width $height 60|grep R | sed 's/Modeline//g' )
+    echo xrandr --newmode $res
+    #xrandr --addmode HDMI-0 $(echo $res|cut -d' ' -f 1)
+
+}
+function mark_test()
+{
+    # local pattern_array=( "error" "fail" "fatl"  "undefined")
+    local pattern_red=( "error" "fail" "fatl" "undefined")
+    local pattern_yellow=( "warning" "test" )
+    local pattern_array=( ${pattern_red[@]} ${pattern_yellow[@]}  )
+    local filter_array=""
+    # $@ 2>&1 | sed -E -e "s%undefined%$ccred&$ccend%ig" -e "s%fatl%$ccred&$ccend%ig" -e "s%error%$ccred&$ccend%ig" -e "s%fail%$ccred&$ccend%ig" -e "s%warning%$ccyellow&$ccend%ig"
+    for each_pattern in ${pattern_array[@]}
+    do
+        mark 1 $each_pattern
+    done
 
 }
 # function __mark_genstr()
@@ -73,4 +88,30 @@ function lab_addMode()
 #     echo -e "${error_array}"
 #     $@ 2>&1 | sed -E $(__mark_genstr $error_array) $(__mark_genstr $warinig_array)
 
+# }
+
+# function pvinit_bak()
+# {
+#     local src_path=($@)
+#     echo ${src_path[@]}
+#     local count=0
+#     rm cscope.db proj.files tags 2> /dev/null
+#     while true
+#     do
+#         current_path=${src_path[$count]}
+#         echo $count
+#         echo "Searching path: ${current_path}"
+#         if [ "$current_path" = "" ]
+#         then
+#             echo "Finished"
+#             break
+#         else
+#             echo -e "Searching folder: $current_path"
+#             find ${current_path} -type f -name "*.h" -o -name "*.c" -o -name "*.cpp" -o -name "*.java" >> proj.files
+#         fi
+#         let count++
+#     done
+#     cscope -b -i proj.files
+#     ctags -L proj.files
+#     mv cscope.out cscope.db
 # }

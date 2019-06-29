@@ -12,6 +12,7 @@
 export HS_ENV_CONFIG="${HOME}/.cache/hs_config"
 export HS_ENV_IDE_PATH="${HOME}/projects"
 export HS_ENV_TFTP_PATH="${HOME}/tftp"
+export HS_ENV_WORK_SCRIPTS="${HS_LIB_PATH}/../work_script/work.sh"
 # enable HS System
 export HS_ENV_ENABLE=true
 
