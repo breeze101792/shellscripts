@@ -84,6 +84,10 @@ function pvinit()
 
 function pvim()
 {
+    if [ -d $1 ]
+    then
+        echo "Please enter a file name"
+    fi
     local cpath=`pwd`
     groot "cscope.db"
     export CSCOPE_DB=`pwd`/cscope.db
@@ -241,4 +245,10 @@ function fGitCheckoutByDate()
     echo branch: $cBranch/$target_commit
     # echo git checkout $target_commit
     git checkout $target_commit
+}
+function pyenv()
+{
+    source ${HS_ENV_PYTHEN_ENV_PATH}/activate
+    $@
+    deactivate
 }

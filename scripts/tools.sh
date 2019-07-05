@@ -22,7 +22,8 @@ function pln()
 }
 function retitle()
 {
-    print -Pn "\e]0;$@\a"
+    # print -Pn "\e]0;$@\a"
+    echo -en "\033]0;$@\a"
 }
 function lg_patch
 {
