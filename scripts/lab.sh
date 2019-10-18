@@ -31,11 +31,21 @@ function lab_fsed {
    #sed -i "s/$find/$replace/g" "$@"
    # perl -p -i -e "s/$find/$replace/g" "$@"
 }
-function lab_i3_reload()
-{
-    i3-msg reload
-    i3-msg restart
-}
+#function lab_fsed_resc {
+#   local find=$(lab_unregex "$1")
+#   local replace=$(lab_unregex "$2")
+#   shift 2
+#   for each_file in $(grep -rn $find | cut -d ':' -f 1 )
+#   do
+#       echo -e "Replace in :$each_file"
+#       # sed -i "s/TTYControl((xsh.Screen.Send, xsh.Screen.WaitForString, xsh.Session.Sleep, xsh.Screen))/TTYControl(xsh.Screen.Send, xsh.Screen.WaitForString, xsh.Session.Sleep, xsh.Screen)/g" "$each_file"
+#       # sed -i "s/((xsh.Screen.Send, xsh.Screen.WaitForString, xsh.Session.Sleep, xsh.Screen))/(xsh.Screen.Send, xsh.Screen.WaitForString, xsh.Session.Sleep, xsh.Screen)/g" "$each_file"
+#       sed -i "s/(xsh.Screen.Send, xsh.Screen.WaitForString, None)/(xsh.Screen.Send, xsh.Screen.WaitForString, xsh.Session.Sleep, xsh.Screen)/g" "$each_file"
+#   done
+#   # sed -i is only supported in GNU sed.
+#   #sed -i "s/$find/$replace/g" "$@"
+#   # perl -p -i -e "s/$find/$replace/g" "$@"
+#}
 function lab_addMode()
 {
     export width=$1
@@ -47,7 +57,7 @@ function lab_addMode()
     #xrandr --addmode HDMI-0 $(echo $res|cut -d' ' -f 1)
 
 }
-function mark_test()
+function lab_mark_test()
 {
     # local pattern_array=( "error" "fail" "fatl"  "undefined")
     local pattern_red=( "error" "fail" "fatl" "undefined")
@@ -60,6 +70,10 @@ function mark_test()
         mark 1 $each_pattern
     done
 
+}
+function lab_ret()
+{
+    return 1
 }
 # function __mark_genstr()
 # {

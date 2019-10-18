@@ -115,7 +115,10 @@ function check_cmd_status()
 
 set_current_path()
 {
-    pwd > $HS_ENV_CONFIG
+    if [ -e $HS_ENV_CONFIG ] && [ -d $(cat $HS_ENV_CONFIG) ]
+    then
+        pwd > $HS_ENV_CONFIG
+    fi
 }
 parse_git_branch()
 {
@@ -176,6 +179,6 @@ if [ "$HS_CONFIG_I3_PATCH" = "y" ]
 then
     if [ -e $HS_ENV_CONFIG ] && [ -d $(cat $HS_ENV_CONFIG) ]
     then
-       cd $(cat $HS_ENV_CONFIG)
+        cd $(cat $HS_ENV_CONFIG)
     fi
 fi

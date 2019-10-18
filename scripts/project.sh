@@ -1,13 +1,17 @@
 # project releated commands
 ########################################################
-#####    Settings                                     #####
 ########################################################
-epath ${HOME}/.bin
+#####                                              #####
+#####    Settings                                  #####
+#####                                              #####
+########################################################
+########################################################
+epath ${HOME}/.bin > /dev/null
 ########################################################
 #####    Alias                                     #####
 ########################################################
-alias mdebug="screen -S debug -L -Logfile debug_`tstamp`.log /dev/ttyUSB1 115200 "
-alias sdebug="screen -S debug_s -L -Logfile debug_`tstamp`.log"
+alias mdebug="screen -S debug -L -Logfile debug_$(tstamp).log /dev/ttyUSB1 115200 "
+alias sdebug="screen -S debug_s -L -Logfile debug_$(tstamp).log"
 alias proot="groot .project"
 # git alias ##
 #export lg1="log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) %C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(bold yellow)%d%C(reset)' --all"
@@ -17,7 +21,11 @@ alias glog="git log --graph --abbrev-commit --decorate --format=format:'%C(bold 
 #alias lg="git $lg1"
 
 ########################################################
+########################################################
+#####                                              #####
 #####    Functions                                 #####
+#####                                              #####
+########################################################
 ########################################################
 # project commands
 function pjinit()
@@ -55,9 +63,28 @@ function gcc_setup()
         alias c++='c++-$gcc_ver'
     fi
 }
+########################################################
+#####    VIM                                      #####
+########################################################
+function pvupdate()
+{
+    local cpath=${PWD}
+    froot proj.files
+
+    cscope -b -i proj.files
+    ctags -L proj.files
+    mv cscope.out cscope.db
+    echo "Update linking files"
+    cd ${cpath}
+}
 function pvinit()
 {
     local src_path=($@)
+    if [ "$#" = "0" ]
+    then
+        echo "Please enter folder name"
+        return -1
+    fi
     echo ${src_path[@]}
     [ -f cscope.db ] && rm cscope.db 2> /dev/null
     [ -f proj.files ] && rm proj.files 2> /dev/null
@@ -65,16 +92,17 @@ function pvinit()
 
     for each_path in ${src_path[@]}
     do
-        echo "Searching path: ${each_path}"
-        if [ "$each_path" = "" ]
+        local tmp_path=$(realpath ${each_path})
+        echo "Searching path: ${tmp_path}"
+        if [ "$tmp_path" = "" ]
         then
-            echo "Finished"
-            break
+            # echo "Finished"
+            continue
         else
-            echo -e "Searching folder: $each_path"
-            # find ${each_path} -type f -name "*.h" -o -name "*.c" -o -name "*.cpp" -o -name "*.java" >> proj.files
-            # find ${each_path} \( -type f -name "*.h" -o -name "*.c" -o -name "*.cpp" -o -name "*.java" \) -a \( -not -path "*/build/*" -a -not -path "*/auto_gen*" \) >> proj.files
-            find ${each_path} \( -type f -name "*.h" -o -name "*.c" -o -name "*.cpp" -o -name "*.java" \) -a \( -not -path "*/auto_gen*" -a  -not -path "*/build" \) >> proj.files
+            echo -e "Searching folder: $tmp_path"
+            # find ${tmp_path} -type f -name "*.h" -o -name "*.c" -o -name "*.cpp" -o -name "*.java" >> proj.files
+            # find ${tmp_path} \( -type f -name "*.h" -o -name "*.c" -o -name "*.cpp" -o -name "*.java" \) -a \( -not -path "*/build/*" -a -not -path "*/auto_gen*" \) >> proj.files
+            find ${tmp_path} \( -type f -name "*.h" -o -name "*.c" -o -name "*.cpp" -o -name "*.java" \) -a \( -not -path "*/auto_gen*" -a  -not -path "*/build" \) >> proj.files
         fi
     done
     cscope -b -i proj.files
@@ -84,29 +112,32 @@ function pvinit()
 
 function pvim()
 {
+    # if [ -d $1 ]
+    # then
+    #     echo "Please enter a file name"
+    # fi
+    local target_file=$(realpath ${1})
     local cpath=`pwd`
     groot "cscope.db"
+    # export CSCOPE_DB=`pwd`/cscope.db
     export CSCOPE_DB=`pwd`/cscope.db
     echo $CSCOPE_DB
     cd $cpath
-    vim $@
+    vim ${target_file}
+    # unset var
+    unset CSCOPE_DB
 }
-function make()
-{
-    pathpat="(/[^/]*)+:[0-9]+"
-    ccred=$(echo -e "\033[0;31m")
-    ccyellow=$(echo -e "\033[0;33m")
-    ccend=$(echo -e "\033[0m")
-    /usr/bin/make "$@" 2>&1 | sed -E -e "/[Uu]ndefined[: ]/ s%$pathpat%$ccred&$ccend%g" -e "/[Ff]atl[: ]/ s%$pathpat%$ccred&$ccend%g" -e "/[Ee]rror[: ]/ s%$pathpat%$ccred&$ccend%g" -e "/[Ww]arning[: ]/ s%$pathpat%$ccyellow&$ccend%g"
-    return ${PIPESTATUS[0]}
-}
+########################################################
+#####    GIT                                      #####
+########################################################
 function gforall()
 {
     find . -name ".git" | while read dir;
     do
         cd `dirname ${dir}`
         echo "Project Dir: ${dir}"
-        bash -c "$@" || { echo "checkout optee os file"; popd; exit 1; }
+        # bash -c "$@" || { echo "checkout optee os file"; popd; exit 1; }
+        eval "$@" || { echo "checkout optee os file"; popd; exit 1; }
         cd -
     done
 }
@@ -141,10 +172,10 @@ function gcheckoutByDate()
 }
 function gpush()
 {
-    echo "Push commit to Branch $1"
-        local cbranch=""
-        local remote=""
-        local branch=""
+    local cbranch=""
+    local remote=""
+    local branch=""
+    local commit="HEAD"
     if [ $# = 0 ]
     then
         local cbranch=$(git branch| sed -e '/^[^*]/d' -e 's/* //g')
@@ -165,13 +196,35 @@ function gpush()
         local branch=$2
         echo "[3] Auto push to $remote $branch";
         # git push $remote HEAD:refs/for/$branch
+    elif [ $# = 3 ]
+    then
+        local remote=$1
+        local branch=$2
+        local commit=$3
+        echo "[3] Auto push to $remote $branch";
+        # git push $remote HEAD:refs/for/$branch
     fi
-    git push $remote HEAD:refs/for/$branch
+    echo "Push ${commit} to ${remote}/${branch}"
+    git push $remote ${commit}:refs/for/$branch
 }
 rforall()
 {
     repo forall -vc "git $@"
 }
+# repo enhance
+function fGitCheckoutByDate()
+{
+    local checkout_date=$1
+    local cBranch=$2
+    local target_commit=`git rev-list -n 1 --first-parent --before=$checkout_date $cBranch`
+    echo branch: $cBranch/$target_commit
+    # echo git checkout $target_commit
+    git checkout $target_commit
+}
+
+########################################################
+#####    Build                                     #####
+########################################################
 function mark()
 {
 # Black        0;30     Dark Gray     1;30
@@ -222,7 +275,26 @@ mark_build()
     local ccred=$(echo -e "\033[0;31m")
     local ccyellow=$(echo -e "\033[0;33m")
     local ccend=$(echo -e "\033[0m")
-    $@ 2>&1 | sed -E -e "s%undefined%$ccred&$ccend%ig" -e "s%fatl%$ccred&$ccend%ig" -e "s%error%$ccred&$ccend%ig" -e "s%fail%$ccred&$ccend%ig" -e "s%warning%$ccyellow&$ccend%ig"
+    $@ 2>&1 | sed -E -e "s%undefined%$ccred&$ccend%ig" -e "s%fatal%$ccred&$ccend%ig" -e "s%error%$ccred&$ccend%ig" -e "s%fail%$ccred&$ccend%ig" -e "s%warning%$ccyellow&$ccend%ig"
+}
+function make()
+{
+    pathpat="(/[^/]*)+:[0-9]+"
+    ccred=$(echo -e "\033[0;31m")
+    ccyellow=$(echo -e "\033[0;33m")
+    ccend=$(echo -e "\033[0m")
+    # /usr/bin/make "$@" 2>&1 | sed -E -e "/[Uu]ndefined[: ]/ s%$pathpat%$ccred&$ccend%g" -e "/[Ff]atl[: ]/ s%$pathpat%$ccred&$ccend%g" -e "/[Ee]rror[: ]/ s%$pathpat%$ccred&$ccend%g" -e "/[Ww]arning[: ]/ s%$pathpat%$ccyellow&$ccend%g"
+    mark_build /usr/bin/make "$@"
+    return ${PIPESTATUS[0]}
+}
+########################################################
+#####    Others                                    #####
+########################################################
+function pyenv()
+{
+    source ${HS_ENV_PYTHEN_ENV_PATH}/activate
+    $@
+    deactivate
 }
 wdiff()
 {
@@ -231,14 +303,4 @@ wdiff()
 hex2bin()
 {
     cat $1 | sed s/,//g | sed s/0x//g | xxd -r -p - $2
-}
-# repo enhance
-function fGitCheckoutByDate()
-{
-    local checkout_date=$1
-    local cBranch=$2
-    local target_commit=`git rev-list -n 1 --first-parent --before=$checkout_date $cBranch`
-    echo branch: $cBranch/$target_commit
-    # echo git checkout $target_commit
-    git checkout $target_commit
 }

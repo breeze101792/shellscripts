@@ -19,21 +19,25 @@ alias tstamp='date +%Y%m%d_%H%M%S'
 alias cgrep='grep --color=always '
 alias sgrep='grep --color=always -rnIi  '
 alias vim='TERM=xterm-256color && vim '
+alias vi='TERM=xterm-256color && vim -m '
 ########################################################
 #####    Functions                                 #####
 ########################################################
 function doloop()
 {
-    for each_input in $($1)
+    local gen_list_cmd=$1
+    local do_cmd=$2
+    for each_input in $(bash -c ${gen_list_cmd})
     do
-        # echo $2 $each_input
-        bash -c "$2 $each_input"
+        echo ${do_cmd} $each_input
+        # bash -c "${do_cmd} ${each_input}"
+        eval "${do_cmd} ${each_input}"
     done
 }
 function ffind()
 {
     pattern=$1
-    echo Looking for $pattern
+    # echo Looking for $pattern
     find . -iname "*$pattern*"
 
 }
@@ -44,7 +48,8 @@ function epath()
     if echo ${PATH} | grep -q $1
     then
         echo "$1 has alread in your PATH";
-        return;
+        # exit 1
+        return 1
     else
         export PATH=$1:$PATH;
     fi;
@@ -89,6 +94,7 @@ function droot()
             echo 'Hit the root'
             popd > /dev/null
             return 1
+            # exit 1
         fi
         popd > /dev/null
         target_path=$tmp_path
@@ -120,6 +126,7 @@ function froot()
         then
             echo 'Hit the root'
             popd > /dev/null
+            # exit 1
             return 1
         fi
         popd > /dev/null
@@ -132,4 +139,8 @@ function groot()
 {
     local pattern=$1
     droot ${pattern} || froot ${pattern}
+}
+function echoerr()
+{
+    >&2 echo $@
 }
