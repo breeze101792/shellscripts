@@ -5,10 +5,10 @@ function setup()
     local shell_name=$(echo $SHELL | rev | cut -d '/' -f 1 | rev)
     if [ "$shell_name" = "bash" ]
     then
-        echo $SCRIPT_PATH/source.sh -s $shell_name -p `pwd`
+        echo source $SCRIPT_PATH/source.sh -s=$shell_name -p=`pwd`
     elif [ "$shell_name" = "zsh" ]
     then
-        echo $SCRIPT_PATH/source.sh -s $shell_name -p `pwd`
+        echo source $SCRIPT_PATH/source.sh -s=$shell_name -p=`pwd`
     fi
 }
 function setup_config()
