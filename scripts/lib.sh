@@ -45,26 +45,41 @@ function epath()
 {
     #echo "Export Path $1";
     # if grep -q $1 <<<$PATH;
-    if echo ${PATH} | grep -q $1
+    local target_path=$(realpath $1)
+    if echo ${PATH} | grep -q ${target_path}
     then
-        echo "$1 has alread in your PATH";
+        echo "${target_path} has alread in your PATH";
         # exit 1
         return 1
     else
-        export PATH=$1:$PATH;
+        echo -E "export PATH=${target_path}:"'$PATH;'
+        export PATH=${target_path}:$PATH;
     fi;
 
 }
 function pureshell()
 {
-    echo "Pure bash"
-    if [ -f ~/.purebashrc ]
+    if [ "${#}" = "0" ]
     then
-        # the purebashrc shour contain execu
-        env -i bash -c "export TERM=xterm && source ~/.purebashrc && bash --norc"
-        # env -i bash -c "export TERM=xterm && bash --rcfile  ~/.purebashrc"
+        echo "Pure bash"
+        if [ -f ~/.purebashrc ]
+        then
+            # the purebashrc shour contain execu
+            env -i bash -c "export TERM=xterm && source ~/.purebashrc && bash --norc"
+            # env -i bash -c "export TERM=xterm && bash --rcfile  ~/.purebashrc"
+        else
+            env -i bash -c "export TERM=xterm && bash --norc"
+        fi
     else
-        env -i bash -c "export TERM=xterm && bash --norc"
+        echo "Pure bash"
+        if [ -f ~/.purebashrc ]
+        then
+            # the purebashrc shour contain execu
+            env -i bash -c "export TERM=xterm && source ~/.purebashrc && bash --norc -C $@"
+            # env -i bash -c "export TERM=xterm && bash --rcfile  ~/.purebashrc"
+        else
+            env -i bash -c "export TERM=xterm && bash --norc -C $@"
+        fi
     fi
 
 }
@@ -86,7 +101,7 @@ function droot()
     while ! echo ${tmp_path} | rev |  cut -d'/' -f 1 | rev   |  grep -i $target;
     do
         tmp_path=$tmp_path"/.."
-        pushd $tmp_path > /dev/null
+        pushd "$tmp_path" > /dev/null
         tmp_path=`pwd`
         # echo "Searching in $tmp_path"
         if [ $(pwd) = '/' ];
@@ -119,7 +134,7 @@ function froot()
     while ! ls -a $tmp_path | grep -i $target;
     do
         tmp_path=$tmp_path"/.."
-        pushd $tmp_path > /dev/null
+        pushd "$tmp_path" > /dev/null
         tmp_path=`pwd`
         echo "Searching in $tmp_path"
         if [ $(pwd) = '/' ];

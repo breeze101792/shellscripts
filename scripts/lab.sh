@@ -5,6 +5,40 @@
 #####                                              #####
 ########################################################
 ########################################################
+function lab_printlc()
+{
+    # printf label and it's content
+    local label=$1
+    local content=$2
+    local frame_width=64
+    local label_width=$((24-1))
+    local content_width=$((${frame_width}-${label_width}))
+    local padding_char=' '
+    local label_cnt=$(echo "${label}" | sed "s/[\(\)]/#/g"| wc -m)
+    local content_cnt=$(echo "${content}" |sed "s/[\(\)]/#/g"| wc -m)
+    local label_padding_cnt=$(( ${label_width} - ${label_cnt} ))
+    local content_padding_cnt=$(( ${content_width} - ${content_cnt} ))
+    local label_padding=$(seq -s'-' 0 ${label_padding_cnt} | tr -d '[:digit:]' | sed "s/-/${padding_char}/g")
+    local content_padding=$(seq -s'-' 0 ${content_padding_cnt} | tr -d '[:digit:]' | sed "s/-/${padding_char}/g")
+    # echo $1: $2
+    # printf "%s%s:%s%s" ${label} ${label_padding} ${content} ${content_padding}
+    echo -e "${label}${label_padding}:${content_padding}${content}"
+}
+function lab_sys_status()
+{
+    local cpu_num=$(nproc)
+    local memory=$(free -h  | grep -i mem | tr -s ' ' | cut -d ' ' -f2)
+
+    lab_printlc "Hostname" ${HOSTNAME}
+    lab_printlc "CPU(s)" ${cpu_num}
+    lab_printlc "Memory" ${memory}
+}
+function lab_elapse()
+{
+    local start_time=$2
+    local end_time=$1
+    date --date="${start_time} - ${end_time} " +%Y%m%d_%H%M%S
+}
 function lab_bash_color()
 {
     txtred=$(echo -e '\e[0;31m')

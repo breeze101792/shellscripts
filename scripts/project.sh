@@ -10,15 +10,28 @@ epath ${HOME}/.bin > /dev/null
 ########################################################
 #####    Alias                                     #####
 ########################################################
-alias mdebug="screen -S debug -L -Logfile debug_$(tstamp).log /dev/ttyUSB1 115200 "
-alias sdebug="screen -S debug_s -L -Logfile debug_$(tstamp).log"
-alias proot="groot .project"
+alias proot=proj_root
 # git alias ##
-#export lg1="log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) %C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(bold yellow)%d%C(reset)' --all"
+# alias glog2="git log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) %C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(bold yellow)%d%C(reset)' --all"
 alias gstatus='git status -uno '
 alias gdiff='git diff --check --no-ext-diff'
 alias glog="git log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold cyan)%aD%C(reset) %C(bold green)(%ar)%C(reset)%C(bold yellow)%d%C(reset)%n''          %C(white)%s%C(reset) %C(dim white)- %an%C(reset)' --all"
 #alias lg="git $lg1"
+########################################################
+########################################################
+#####                                              #####
+#####    Debug                                     #####
+#####                                              #####
+########################################################
+########################################################
+function mdebug()
+{
+    screen -S debug -L -Logfile debug_$(tstamp).log /dev/ttyUSB1 115200
+}
+function sdebug()
+{
+    screen -S debug_s -L -Logfile debug_$(tstamp).log
+}
 
 ########################################################
 ########################################################
@@ -28,39 +41,72 @@ alias glog="git log --graph --abbrev-commit --decorate --format=format:'%C(bold 
 ########################################################
 ########################################################
 # project commands
-function pjinit()
+function proj_root()
 {
-    if [ $# = 0 ]
+    if [[ -z $PROJ_ROOT ]]
     then
-        local pj_name=$(echo `pwd` |rev| cut -d'/' -f 1| rev)
+        if groot ".hs_*proj"
+        then
+            return 0
+        else
+            return 1
+        fi
     else
-        local pj_name=$1
+        cd $PROJ_ROOT
+        return 0
     fi
-    local pj_postfix="proj"
-    echo "export PJ_ROOT=`pwd`" > ${pj_name}.${pj_postfix}
-    echo "export PJ_NAME=$pj_name" > ${pj_name}.${pj_postfix}
-    echo "export PJ_DATE=`date`" >> ${pj_name}.${pj_postfix}
+}
+function proj_man()
+{
+    echo "Test"
+    for arg in $@
+    do
+        echo loop ${arg}
+        case $arg in
+            -l|--list-project)
+                ls ${HS_ENV_PROJ_PATH}
+                ;;
+            -i=*|--init=*)
+                echo "init"
+                export PROJ_FILE=${arg#*=}
+                echo "Select Project: ${PROJ_FILE}"
+                source ${HS_ENV_PROJ_PATH}/${PROJ_FILE}
+                proj_envsetup
 
+                local proj_postfix="proj"
+                local proj_prefix=".hs_"
+                local proj_local_file=${proj_prefix}${PROJ_NAME}.${proj_postfix}
+                touch ${proj_local_file}
+                echo "# $PROJ_NAME" >> ${proj_local_file}
+                printf "export PROJ_FILE=%s\n" ${PROJ_FILE} >> ${proj_local_file}
+                echo "export PROJ_ROOT=$(realpath ${PWD})" >> ${proj_local_file}
+                echo -e "export PROJ_DATE=\"`date`\"" >> ${proj_local_file}
+                source ${proj_local_file}
+                ;;
+            # --xxxxxxx=*)
+            #     REPO_CHECKOUT_DEPTH=${arg#*=}
+            #     DO_SET_CHECKOUT_DEPTH=y
+            #     ;;
+            *)
+                echo Unknown
+                break
+                ;;
+        esac
+    done
+    echo "End"
 }
-function pjroot()
+function proj_refresh()
 {
-    if [[ -z $PJ_ROOT ]]
+    local cpath=$(pwd)
+    if proj_root
     then
-        groot proj
-    else
-        cd $PJ_ROOT
+        source .hs_*.proj
     fi
-}
-# vim funcions
-function gcc_setup()
-{
-    if [ "$1" != "clang"]
+
+    if [ -f "${PROJ_FILE}" ]
     then
-        local gcc_ver=7
-        alias gcc='gcc-$gcc_ver'
-        alias cc='gcc-$gcc_ver'
-        alias g++='g++-$gcc_ver'
-        alias c++='c++-$gcc_ver'
+        echo "Select Project: $1"
+        source ${PROJ_FILE}
     fi
 }
 ########################################################
@@ -303,4 +349,15 @@ wdiff()
 hex2bin()
 {
     cat $1 | sed s/,//g | sed s/0x//g | xxd -r -p - $2
+}
+function gcc_setup()
+{
+    if [ "$1" != "clang"]
+    then
+        local gcc_ver=7
+        alias gcc='gcc-$gcc_ver'
+        alias cc='gcc-$gcc_ver'
+        alias g++='g++-$gcc_ver'
+        alias c++='c++-$gcc_ver'
+    fi
 }

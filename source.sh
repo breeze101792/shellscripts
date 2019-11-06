@@ -21,15 +21,17 @@ function hs_main
     fi
     local flag_env_silence=""
     local flag_env_change_shell_path=""
+    local flag_env_shell=""
+    local flag_env_lib_path=""
 
     for arg in $@
     do
         case $arg in
             -p=*|--lib-path=*)
-                export HS_LIB_PATH=${arg#*=}
+                flag_env_lib_path=${arg#*=}
                 ;;
             -s=*|--shell-type=*)
-                export HS_SHELL=${arg#*=}
+                flag_env_shell=${arg#*=}
                 ;;
             -S|--silence)
                 flag_env_silence="y"
@@ -76,14 +78,37 @@ function hs_main
     #     esac
     # done
     # source shell scripts
-    set -a
+    # set -a
+    # test if -a is enable or not
+    # shopt -po allexport
     ##########################################
     # setup configs
     ##########################################
+    if [ "${flag_env_lib_path}" = "" ]
+    then
+        export HS_LIB_PATH=$(pwd)
+    else
+        export HS_LIB_PATH=${flag_env_lib_path}
+    fi
     source $HS_LIB_PATH/scripts/env_config.sh
     if [ -f $HOME/.hsconfig.sh ]
     then
         source $HOME/.hsconfig.sh
+    fi
+    ##########################################
+    # setup custom configs
+    ##########################################
+    source ${HS_LIB_PATH}/scripts/shell_common.sh
+    if [ "${flag_env_shell}" = "" ]
+    then
+        export HS_SHELL=bash
+    else
+        export HS_SHELL=${flag_env_shell}
+    fi
+
+    if [ "${flag_env_silence}" = "y" ]
+    then
+        HS_ENV_SILENCE="y"
     fi
     if [ "${flag_env_silence}" = "y" ]
     then
@@ -122,8 +147,14 @@ function hs_main
     then
         source $HS_LIB_PATH/scripts/work.sh
     fi
-    set +a
+
+    proj_refresh > /dev/null
+    # set +a
 }
 
 hs_main $@
 unset -f hs_main
+##########################################
+# Post Setting
+##########################################
+# retitle "HS Shell"

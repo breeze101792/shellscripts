@@ -127,7 +127,7 @@ function session
     if [ "$#" = "1" ]
     then
         local tmp_name=$(tmux ls |grep ${1}| cut -d ':' -f 1)
-        if [ ${tmp_name} != "" ] &&  tmux ls
+        if [ "${tmp_name}" != "" ] &&  tmux ls
         then
             session_name=${tmp_name}
         else
@@ -153,29 +153,33 @@ function session
 }
 function print_title
 {
-    local content=$1
+    local content=$*
     local padding_char=' '
-    local width=64
-    # this is content + 1
-    local content_cnt=$(eval echo ${content} | wc -m)
-    content_cnt=$(($content_cnt-1))
-    if ((${content_cnt} % 2 == 1))
-    then
-        content=${content}${padding_char}
-    fi
-    local content_pad_cnt=$(((${width} - 4*2 - ${content_cnt}) / 2))
-    local pading=$(seq -s${padding_char} 0 ${content_pad_cnt} | tr -d '[:digit:]')
-    # if [ "$#" = "1" ]
-    # then
-    #     local tmp_name=$(tmux ls |grep ${1}| cut -d ':' -f 1)
-    # else
-    #     # session_name="Tmp Session"
-    #     tmux ls
-    #     return
-    # fi
-    # seq -s'#' 0 $(tput cols) | tr -d '[:digit:]'
-    seq -s'#' 0 ${width} | tr -d '[:digit:]'
-    printf "####%s%s%s####\n" ${pading} ${content} ${pading}
-    seq -s'#' 0 ${width} | tr -d '[:digit:]'
+    local width=72
+
+    local frame_char='#'
+    local frame_width=4
+    local frame_padding=$(seq -s"${frame_char}" 0 ${frame_width} | tr -d '[:digit:]')
+
+    seq -s"${frame_char}" 0 ${width} | tr -d '[:digit:]'
+
+    echo -e "\n${content}\n" | while read -r line
+    do
+        # this is content + 1
+        local content_cnt=$(eval echo ${line} | wc -m)
+        content_cnt=$(($content_cnt-1))
+        if ((${content_cnt} % 2 == 1))
+        then
+            line=${line}${padding_char}
+        fi
+        local content_pad_cnt=$(((${width} - ${frame_width}*2 - ${content_cnt}) / 2))
+        # local pading=$(seq -s${padding_char} 0 ${content_pad_cnt} | tr -d '[:digit:]')
+        local pading=$(seq -s'-' 0 ${content_pad_cnt} | tr -d '[:digit:]' | sed "s/-/${padding_char}/g")
+        # echo -e $(seq -s${padding_char} 0 ${content_pad_cnt} )
+
+        # printf "%s%s%s%s%s\n" "${frame_padding}" "${pading}" "${line}" "${pading}" "${frame_padding}"
+        echo -e "${frame_padding}${pading}${line}${pading}${frame_padding}"
+    done
+    seq -s"${frame_char}" 0 ${width} | tr -d '[:digit:]'
 
 }

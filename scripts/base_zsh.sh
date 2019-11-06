@@ -97,38 +97,40 @@ zstyle ':vcs_info:*' enable git hg
 zstyle ':vcs_info:*' check-for-changes true
 zstyle ':vcs_info:git*' formats "%{${fg[cyan]}%}[%{${fg[green]}%}%s%{${fg[cyan]}%}][%{${fg[blue]}%}%r/%S%%{${fg[cyan]}%}][%{${fg[blue]}%}%b%{${fg[yellow]}%}%m%u%c%{${fg[cyan]}%}]%{$reset_color%}"
 
-function check_cmd_status()
-{
-    RETVAL=$?
-    case $RETVAL in 
-        1)
-            echo "%B%F{yellow}Error%b%F{cyan}][%f"
-            ;;
-        0)
-            return 0
-            ;;
-        *)
-            return $RETVAL
-            ;;
-    esac
-}
+# function check_cmd_status()
+# {
+#     RETVAL=$?
+#     case $RETVAL in 
+#         1)
+#             echo "%B%F{yellow}Error%b%F{cyan}][%f"
+#             ;;
+#         0)
+#             return 0
+#             ;;
+#         *)
+#             return $RETVAL
+#             ;;
+#     esac
+# }
 
-set_current_path()
-{
-    if [ -e $HS_ENV_CONFIG ] && [ -d $(cat $HS_ENV_CONFIG) ]
-    then
-        pwd > $HS_ENV_CONFIG
-    fi
-}
-parse_git_branch()
-{
-    #git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/(\1)/'
-    git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1%F{cyan}][%f/'
-}
-nonzero_return() {
-    RETVAL=$?
-    [ $RETVAL -ne 0 ] && echo "-$RETVAL-"
-}
+# set_current_path()
+# {
+#     if [ -e "${HS_ENV_CONFIG}" ] && [ -f "${HS_ENV_CONFIG}" ]
+#     then
+#         echo `pwd` > ${HS_ENV_CONFIG}
+#     else
+#         echo "[Set Current path fail]"
+#     fi
+# }
+#parse_git_branch()
+#{
+#    #git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/(\1)/'
+#    git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1%F{cyan}][%f/'
+#}
+# nonzero_return() {
+#     RETVAL=$?
+#     [ $RETVAL -ne 0 ] && echo "-$RETVAL-"
+# }
 setprompt() {
   setopt prompt_subst
 
@@ -145,10 +147,11 @@ setprompt() {
     ${p_host}
     %F{cyan}][%f
     %F{blue}%T-%w%f
-    %F{cyan}][%f
-    $(check_cmd_status)
-    %F{white}`parse_git_branch``set_current_path`%f
-    %F{blue}%~%f
+    %F{cyan}]%f
+    $(item_promote $(check_cmd_status $?))
+    $(item_promote $(parse_git_branch))
+    %F{white}`set_working_path -s`%f
+    %F{blue}[%~%f
     %F{cyan}]%f
     %(!.%F{red}%#%f.%F{green}%#%f)
     " "
@@ -175,10 +178,13 @@ alias -g ........='../../../../../../..'
 
 #alias btspeaker='cat /home/shaowu/.usr/script/speaker_connect.bt | bluetoothctl'
 # command
-if [ "$HS_CONFIG_I3_PATCH" = "y" ]
+if [ "${HS_CONFIG_I3_PATCH}" = "y" ]
 then
-    if [ -e $HS_ENV_CONFIG ] && [ -d $(cat $HS_ENV_CONFIG) ]
-    then
-        cd $(cat $HS_ENV_CONFIG)
-    fi
+    set_working_path -g
+    # if [ -e ${HS_ENV_CONFIG} ] && [ -f "${HS_ENV_CONFIG}" ] && [ -d "$(cat ${HS_ENV_CONFIG})" ]
+    # then
+    #     cd "$(cat $HS_ENV_CONFIG)"
+    # else
+    #     echo "Goto Current path fail $(cat ${HS_ENV_CONFIG})"
+    # fi
 fi
