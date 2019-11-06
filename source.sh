@@ -19,9 +19,9 @@ function hs_main
         echo "Skip HS Env"
         return
     fi
-    local flag_env_silence=""
-    local flag_env_change_shell_path=""
-    local flag_env_shell=""
+    local flag_env_silence="n"
+    local flag_env_change_shell_path="n"
+    local flag_env_shell="zsh"
     local flag_env_lib_path=""
 
     for arg in $@
@@ -109,10 +109,9 @@ function hs_main
     if [ "${flag_env_silence}" = "y" ]
     then
         HS_ENV_SILENCE="y"
-    fi
-    if [ "${flag_env_silence}" = "y" ]
+    elif [ "${flag_env_silence}" = "n" ]
     then
-        HS_ENV_SILENCE="y"
+        HS_ENV_SILENCE="n"
     fi
     if [ "${flag_env_change_shell_path}" = "y" ]
     then
@@ -141,7 +140,10 @@ function hs_main
     source $HS_LIB_PATH/scripts/tools.sh
     source $HS_LIB_PATH/scripts/project.sh
     source $HS_LIB_PATH/scripts/others.sh
-    source $HS_LIB_PATH/scripts/lab.sh
+    if [ -f $HS_LIB_PATH/scripts/lab.sh ]
+    then
+        source $HS_LIB_PATH/scripts/lab.sh
+    fi
     # End of shell
     if [ -f $HS_LIB_PATH/scripts/work.sh ]
     then
