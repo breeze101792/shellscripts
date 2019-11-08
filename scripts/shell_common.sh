@@ -25,7 +25,7 @@ function set_working_path()
 {
     case $1 in
         -s|--set-current-path)
-            if [ -e "${HS_ENV_CONFIG}" ] && [ -f "${HS_ENV_CONFIG}" ]
+            if [ -n "${HS_ENV_CONFIG}" ]
             then
                 echo `pwd` > ${HS_ENV_CONFIG}
             else
@@ -34,7 +34,7 @@ function set_working_path()
             fi
             ;;
         -g|--go-to-setting-path|*)
-            if [ -e ${HS_ENV_CONFIG} ] && [ -f "${HS_ENV_CONFIG}" ] && [ -d "$(cat ${HS_ENV_CONFIG})" ]
+            if [ -n "${HS_ENV_CONFIG}" ] && [ -f "${HS_ENV_CONFIG}" ] && [ -d "$(cat ${HS_ENV_CONFIG})" ]
             then
                 cd "$(cat $HS_ENV_CONFIG)"
             else

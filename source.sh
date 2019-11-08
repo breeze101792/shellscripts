@@ -19,9 +19,9 @@ function hs_main
         echo "Skip HS Env"
         return
     fi
-    local flag_env_silence="n"
-    local flag_env_change_shell_path="n"
-    local flag_env_shell="zsh"
+    local flag_env_silence=""
+    local flag_env_change_shell_path=""
+    local flag_env_shell=""
     local flag_env_lib_path=""
 
     for arg in $@
@@ -37,7 +37,7 @@ function hs_main
                 flag_env_silence="y"
                 ;;
             --change-shell-path=*)
-                flag_env_change_shell_path="n"
+                flag_env_change_shell_path=${arg#*=}
                 ;;
             # --xxxxxxx=*)
             #     REPO_CHECKOUT_DEPTH=${arg#*=}
@@ -115,10 +115,10 @@ function hs_main
     fi
     if [ "${flag_env_change_shell_path}" = "y" ]
     then
-        HS_CONFIG_I3_PATCH="y"
+        HS_CONFIG_CHANGE_DIR="y"
     elif [ "${flag_env_change_shell_path}" = "n" ]
     then
-        HS_CONFIG_I3_PATCH="n"
+        HS_CONFIG_CHANGE_DIR="n"
     fi
     ##########################################
     # shell init

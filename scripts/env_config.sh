@@ -14,7 +14,7 @@ export HS_SHELL=""
 export HS_VER=0.2.1
 export HS_ENV_CONFIG="${HOME}/.cache/hs_config"
 export HS_ENV_IDE_PATH="${HOME}/projects"
-export HS_ENV_SLINK_PATH="${HOME}/tftp"
+export HS_ENV_SLINK_PATH="${HOME}/slink"
 export HS_ENV_PYTHEN_ENV_PATH="${HOME}/env/pyenv/bin"
 export HS_ENV_SILENCE=n
 export HS_ENV_WORK_PATH="${HS_LIB_PATH}/../work_script"
@@ -30,7 +30,7 @@ export HS_ENV_ENABLE=true
 #####                                              #####
 ########################################################
 ########################################################
-export HS_CONFIG_I3_PATCH=y
+export HS_CONFIG_CHANGE_DIR=y
 
 ########################################################
 ########################################################

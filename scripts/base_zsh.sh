@@ -178,7 +178,7 @@ alias -g ........='../../../../../../..'
 
 #alias btspeaker='cat /home/shaowu/.usr/script/speaker_connect.bt | bluetoothctl'
 # command
-if [ "${HS_CONFIG_I3_PATCH}" = "y" ]
+if [ "${HS_CONFIG_CHANGE_DIR}" = "y" ]
 then
     set_working_path -g
     # if [ -e ${HS_ENV_CONFIG} ] && [ -f "${HS_ENV_CONFIG}" ] && [ -d "$(cat ${HS_ENV_CONFIG})" ]
