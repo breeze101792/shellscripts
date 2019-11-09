@@ -9,7 +9,9 @@ function hs_print()
 }
 function refresh
 {
+    local cpath=$(realpath .)
     source $HS_PATH_LIB/source.sh -p=${HS_PATH_LIB} -s=${HS_ENV_SHELL}
+    cd ${cpath}
 }
 
 function hs_main

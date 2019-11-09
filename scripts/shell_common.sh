@@ -17,9 +17,7 @@ function item_promote()
         # printf "%s%s%s" ${start_str} ${content} ${end_str}
         echo -e ${start_str}${content}${end_str}
         # echo -e "-[\033[33;5;11mError\033[38;5;15m\033[00m]"
-
     fi
-
 }
 function hs_config()
 {
@@ -30,10 +28,10 @@ function hs_config()
         local content=$3
         if [ -f "${HS_FILE_CONFIG}" ] && hs_config -e "${target_var}" > /dev/null
         then
-            sed -i "s|${target_var}=.*|${target_var}=${content}|g" ${HS_FILE_CONFIG}
             # echo ${target_var}
+            sed -i "s|${target_var}=.*|${target_var}=${content}|g" ${HS_FILE_CONFIG}
         else
-            printf "%s=%s" ${target_var} ${content} >> ${HS_FILE_CONFIG}
+            printf "%s=%s\n" ${target_var} ${content} >> ${HS_FILE_CONFIG}
         fi
     elif [ "$#" = "2" ] && [ "$1" = "-g" ]
     then
@@ -87,7 +85,7 @@ function set_working_path()
             #     return 1
             # fi
             ;;
-        *)
+        -e|*)
             echo $(hs_config -g "${HS_VAR_CURRENT_DIR}")
             ;;
     esac

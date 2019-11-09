@@ -21,6 +21,17 @@ function vm_init()
 {
     VBoxClient --clipboard
 }
+function gcc_setup()
+{
+    if [ "$1" != "clang"]
+    then
+        local gcc_ver=7
+        alias gcc='gcc-$gcc_ver'
+        alias cc='gcc-$gcc_ver'
+        alias g++='g++-$gcc_ver'
+        alias c++='c++-$gcc_ver'
+    fi
+}
 ########################################################
 ########################################################
 #####                                              #####
@@ -29,14 +40,3 @@ function vm_init()
 ########################################################
 ########################################################
 
-function sed_replace()
-{
-    local pattern=$1
-    local target_string=$2
-
-    for each_file in $(grep -rn ${pattern} | cut -d ":" -f 1 | sort | uniq)
-    do
-        echo "Replacing ${pattern} with ${target_string} in ${each_file}"
-        sed -i "s/${pattern}/${target_string}/g" $(realpath ${each_file})
-    done
-}

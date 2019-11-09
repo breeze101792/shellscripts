@@ -338,9 +338,9 @@ function make()
 ########################################################
 function pyenv()
 {
-    source ${HS_PATH_PYTHEN_ENV}/activate
+    source ${HS_PATH_PYTHEN_ENV}/bin/activate
     $@
-    deactivate
+    # deactivate
 }
 wdiff()
 {
@@ -349,15 +349,4 @@ wdiff()
 hex2bin()
 {
     cat $1 | sed s/,//g | sed s/0x//g | xxd -r -p - $2
-}
-function gcc_setup()
-{
-    if [ "$1" != "clang"]
-    then
-        local gcc_ver=7
-        alias gcc='gcc-$gcc_ver'
-        alias cc='gcc-$gcc_ver'
-        alias g++='g++-$gcc_ver'
-        alias c++='c++-$gcc_ver'
-    fi
 }

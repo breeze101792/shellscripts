@@ -35,7 +35,7 @@ export HS_CONFIG_FUNCTION_EXPORT=y
 # export HS_PATH_LIB=$
 export HS_PATH_IDE_PATH="${HOME}/projects"
 export HS_PATH_SLINK_PATH="${HOME}/slink"
-export HS_PATH_PYTHEN_ENV="${HOME}/env/pyenv/bin"
+export HS_PATH_PYTHEN_ENV="${HOME}/env/pyenv"
 export HS_PATH_WORK="${HS_PATH_LIB}/../work_script"
 export HS_PATH_PROJ=""
 ########################################################
