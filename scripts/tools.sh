@@ -9,9 +9,9 @@ function slink()
         target_path=$(realpath ${PWD})
     fi
 
-    rm ${HS_ENV_SLINK_PATH}
-    ln -sf  ${target_path} ${HS_ENV_SLINK_PATH}
-    ls -al ${HS_ENV_SLINK_PATH}
+    rm ${HS_PATH_SLINK_PATH}
+    ln -sf  ${target_path} ${HS_PATH_SLINK_PATH}
+    ls -al ${HS_PATH_SLINK_PATH}
 }
 bkfile()
 {

@@ -3,12 +3,12 @@ function item_promote()
     if [[ $# == 1 ]]
     then
         local content=$1
-        if [ "${HS_SHELL}" = "bash" ] || [ "${HS_SHELL}" = "sh" ]
+        if [ "${HS_ENV_SHELL}" = "bash" ] || [ "${HS_ENV_SHELL}" = "sh" ]
         then
             local color="cyan"
             local start_str='\033[00m-['
             local end_str='\033[00m]-'
-        elif [ "${HS_SHELL}" = "zsh" ]
+        elif [ "${HS_ENV_SHELL}" = "zsh" ]
         then
             local color="cyan"
             local start_str='%F{'${color}'}[%f'
@@ -21,26 +21,74 @@ function item_promote()
     fi
 
 }
+function hs_config()
+{
+    if [ "$#" = "3" ] && [ "$1" = "-s" ]
+    then
+        # echo "$*"
+        local target_var=$2
+        local content=$3
+        if [ -f "${HS_FILE_CONFIG}" ] && hs_config -e "${target_var}" > /dev/null
+        then
+            sed -i "s|${target_var}=.*|${target_var}=${content}|g" ${HS_FILE_CONFIG}
+            # echo ${target_var}
+        else
+            printf "%s=%s" ${target_var} ${content} >> ${HS_FILE_CONFIG}
+        fi
+    elif [ "$#" = "2" ] && [ "$1" = "-g" ]
+    then
+        local target_var=$2
+        if [ -f "${HS_FILE_CONFIG}" ]
+        then
+            # echo ${target_var}
+            echo $(cat ${HS_FILE_CONFIG} | grep "${target_var}=" | cut -d "=" -f 2-)
+        fi
+    elif [ "$#" = "2" ] && [ "$1" = "-e" ]
+    then
+        local target_var=$2
+        if [ -f "${HS_FILE_CONFIG}" ]
+        then
+            # echo ${target_var}
+            if cat ${HS_FILE_CONFIG} | grep "${target_var}="
+            then
+                return 0
+            else
+                return 1
+            fi
+        else
+            return 1
+        fi
+    else
+        echo "Unknown Options"
+        return 1
+    fi
+    return 0
+}
 function set_working_path()
 {
     case $1 in
         -s|--set-current-path)
-            if [ -n "${HS_ENV_CONFIG}" ]
-            then
-                echo `pwd` > ${HS_ENV_CONFIG}
-            else
-                echo "[Set Current path fail]"
-                return 1
-            fi
+            hs_config -s "${HS_VAR_CURRENT_DIR}" $(realpath ${PWD})
+            # if [ -n "${HS_FILE_CONFIG}" ]
+            # then
+            #     echo `pwd` > ${HS_FILE_CONFIG}
+            # else
+            #     echo "[Set Current path fail]"
+            #     return 1
+            # fi
             ;;
-        -g|--go-to-setting-path|*)
-            if [ -n "${HS_ENV_CONFIG}" ] && [ -f "${HS_ENV_CONFIG}" ] && [ -d "$(cat ${HS_ENV_CONFIG})" ]
-            then
-                cd "$(cat $HS_ENV_CONFIG)"
-            else
-                echo "Goto Current path fail $(cat ${HS_ENV_CONFIG})"
-                return 1
-            fi
+        -g|--go-to-setting-path)
+            cd $(hs_config -g "${HS_VAR_CURRENT_DIR}")
+            # if [ -n "${HS_FILE_CONFIG}" ] && [ -f "${HS_FILE_CONFIG}" ] && [ -d "$(cat ${HS_FILE_CONFIG})" ]
+            # then
+            #     cd "$(cat $HS_FILE_CONFIG)"
+            # else
+            #     echo "Goto Current path fail $(cat ${HS_FILE_CONFIG})"
+            #     return 1
+            # fi
+            ;;
+        *)
+            echo $(hs_config -g "${HS_VAR_CURRENT_DIR}")
             ;;
     esac
 }
@@ -50,10 +98,10 @@ function check_cmd_status()
     RETVAL=$1
     case $RETVAL in
         1)
-            if [ "${HS_SHELL}" = "bash" ] || [ "${HS_SHELL}" = "sh" ]
+            if [ "${HS_ENV_SHELL}" = "bash" ] || [ "${HS_ENV_SHELL}" = "sh" ]
             then
                 echo -e "-[\033[33;5;11mError\033[38;5;15m\033[00m]"
-            elif [ "${HS_SHELL}" = "zsh" ]
+            elif [ "${HS_ENV_SHELL}" = "zsh" ]
             then
                 # echo "%B%F{yellow}Error%b%F{cyan}][%f"
                 echo "%B%F{yellow}Error%b%f"

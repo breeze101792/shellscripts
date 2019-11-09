@@ -64,13 +64,13 @@ function proj_man()
         echo loop ${arg}
         case $arg in
             -l|--list-project)
-                ls ${HS_ENV_PROJ_PATH}
+                ls ${HS_PATH_PROJ}
                 ;;
             -i=*|--init=*)
                 echo "init"
                 export PROJ_FILE=${arg#*=}
                 echo "Select Project: ${PROJ_FILE}"
-                source ${HS_ENV_PROJ_PATH}/${PROJ_FILE}
+                source ${HS_PATH_PROJ}/${PROJ_FILE}
                 proj_envsetup
 
                 local proj_postfix="proj"
@@ -338,7 +338,7 @@ function make()
 ########################################################
 function pyenv()
 {
-    source ${HS_ENV_PYTHEN_ENV_PATH}/activate
+    source ${HS_PATH_PYTHEN_ENV}/activate
     $@
     deactivate
 }

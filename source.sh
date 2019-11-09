@@ -9,7 +9,7 @@ function hs_print()
 }
 function refresh
 {
-    source $HS_LIB_PATH/source.sh -p=${HS_LIB_PATH} -s=${HS_SHELL}
+    source $HS_PATH_LIB/source.sh -p=${HS_PATH_LIB} -s=${HS_ENV_SHELL}
 }
 
 function hs_main
@@ -33,64 +33,28 @@ function hs_main
             -s=*|--shell-type=*)
                 flag_env_shell=${arg#*=}
                 ;;
-            -S|--silence)
-                flag_env_silence="y"
+            -S=*|--silence=*)
+                flag_env_silence=${arg#*=}
                 ;;
             --change-shell-path=*)
                 flag_env_change_shell_path=${arg#*=}
                 ;;
-            # --xxxxxxx=*)
-            #     REPO_CHECKOUT_DEPTH=${arg#*=}
-            #     DO_SET_CHECKOUT_DEPTH=y
-            #     ;;
             *)
-                break
+                echo "Options not found. ${arg}"
                 ;;
         esac
     done
-
-    # while true;
-    # do
-    #     case $1 in
-    #         -t|--test)
-    #             echo "$1"
-    #             shift 1
-    #             ;;
-    #         -p|--lib_path)
-    #             export HS_LIB_PATH=$2
-    #             shift 2
-    #             ;;
-    #         -s|--shell-type)
-    #             export HS_SHELL=$2
-    #             shift 2
-    #             ;;
-    #         -S|--silence)
-    #             flag_env_silence="y"
-    #             shift 1
-    #             ;;
-    #         --change-shell-path)
-    #             flag_env_change_shell_path="y"
-    #             shift 1
-    #             ;;
-    #         *)
-    #             break
-    #             ;;
-    #     esac
-    # done
     # source shell scripts
-    # set -a
-    # test if -a is enable or not
-    # shopt -po allexport
     ##########################################
     # setup configs
     ##########################################
     if [ "${flag_env_lib_path}" = "" ]
     then
-        export HS_LIB_PATH=$(pwd)
+        export HS_PATH_LIB=$(pwd)
     else
-        export HS_LIB_PATH=${flag_env_lib_path}
+        export HS_PATH_LIB=${flag_env_lib_path}
     fi
-    source $HS_LIB_PATH/scripts/env_config.sh
+    source $HS_PATH_LIB/scripts/env_config.sh
     if [ -f $HOME/.hsconfig.sh ]
     then
         source $HOME/.hsconfig.sh
@@ -98,12 +62,12 @@ function hs_main
     ##########################################
     # setup custom configs
     ##########################################
-    source ${HS_LIB_PATH}/scripts/shell_common.sh
+    source ${HS_PATH_LIB}/scripts/shell_common.sh
     if [ "${flag_env_shell}" = "" ]
     then
-        export HS_SHELL=bash
+        export HS_ENV_SHELL=bash
     else
-        export HS_SHELL=${flag_env_shell}
+        export HS_ENV_SHELL=${flag_env_shell}
     fi
 
     if [ "${flag_env_silence}" = "y" ]
@@ -121,37 +85,52 @@ function hs_main
         HS_CONFIG_CHANGE_DIR="n"
     fi
     ##########################################
+    # shell preset
+    ##########################################
+    if [ "${HS_CONFIG_FUNCTION_EXPORT}" = "y" ]
+    then
+        set -a
+        # test if -a is enable or not
+        # shopt -po allexport
+    fi
+    ##########################################
     # shell init
     ##########################################
-    if [ "$HS_SHELL" = "bash" ]
+    if [ "$HS_ENV_SHELL" = "bash" ]
     then
-        export HS_SHELL="bash"
-        source $HS_LIB_PATH/scripts/base_bash.sh
+        export HS_ENV_SHELL="bash"
+        source $HS_PATH_LIB/scripts/base_bash.sh
     else
-        export HS_SHELL="zsh"
-        source $HS_LIB_PATH/scripts/base_zsh.sh
+        export HS_ENV_SHELL="zsh"
+        source $HS_PATH_LIB/scripts/base_zsh.sh
     fi
-    source $HS_LIB_PATH/scripts/lib.sh
-    hs_print "Version: $HS_VER"
+    source $HS_PATH_LIB/scripts/lib.sh
+    hs_print "Version: $HS_ENV_VER"
+    source $HS_PATH_LIB/scripts/tools.sh
+    source $HS_PATH_LIB/scripts/project.sh
+    source $HS_PATH_LIB/scripts/others.sh
     ##########################################
-    # Post init
+    # shell post init
+    ##########################################
+    if [ "${HS_CONFIG_FUNCTION_EXPORT}" = "y" ]
+    then
+        set +a
+    fi
+    ##########################################
+    # Source Other settings
     ##########################################
 
-    source $HS_LIB_PATH/scripts/tools.sh
-    source $HS_LIB_PATH/scripts/project.sh
-    source $HS_LIB_PATH/scripts/others.sh
-    if [ -f $HS_LIB_PATH/scripts/lab.sh ]
+    if [ -f $HS_PATH_LIB/scripts/lab.sh ]
     then
-        source $HS_LIB_PATH/scripts/lab.sh
+        source $HS_PATH_LIB/scripts/lab.sh
     fi
     # End of shell
-    if [ -f $HS_LIB_PATH/scripts/work.sh ]
+    if [ -f $HS_PATH_LIB/scripts/work.sh ]
     then
-        source $HS_LIB_PATH/scripts/work.sh
+        source $HS_PATH_LIB/scripts/work.sh
     fi
 
     proj_refresh > /dev/null
-    # set +a
 }
 
 hs_main $@
