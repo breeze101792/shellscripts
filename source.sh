@@ -10,7 +10,7 @@ function hs_print()
 function refresh
 {
     local cpath=$(realpath .)
-    source $HS_PATH_LIB/source.sh -p=${HS_PATH_LIB} -s=${HS_ENV_SHELL}
+    source $HS_PATH_LIB/source.sh -p=${HS_PATH_LIB} -s=${HS_ENV_SHELL} -S=${HS_ENV_SILENCE} --refresh
     cd ${cpath}
 }
 
@@ -21,6 +21,14 @@ function hs_main
         echo "Skip HS Env"
         return
     fi
+    ##########################################
+    # Vars
+    ##########################################
+    local flag_var_refresh="n"
+
+    ##########################################
+    # configs
+    ##########################################
     local flag_env_silence=""
     local flag_env_change_shell_path=""
     local flag_env_shell=""
@@ -40,6 +48,9 @@ function hs_main
                 ;;
             --change-shell-path=*)
                 flag_env_change_shell_path=${arg#*=}
+                ;;
+            --refresh)
+                flag_var_refresh="y"
                 ;;
             *)
                 echo "Options not found. ${arg}"
@@ -118,6 +129,11 @@ function hs_main
     then
         set +a
     fi
+    if [ "${flag_var_refresh}" = "n" ]
+    then
+        retitle "Wellcome back"
+    fi
+
     ##########################################
     # Source Other settings
     ##########################################
