@@ -9,9 +9,9 @@ function slink()
         target_path=$(realpath ${PWD})
     fi
 
-    rm ${HS_PATH_SLINK_PATH}
-    ln -sf  ${target_path} ${HS_PATH_SLINK_PATH}
-    ls -al ${HS_PATH_SLINK_PATH}
+    rm ${HS_PATH_SLINK}
+    ln -sf  ${target_path} ${HS_PATH_SLINK}
+    ls -al ${HS_PATH_SLINK}
 }
 bkfile()
 {
@@ -143,48 +143,17 @@ function session
     then
         echo "Start session: ${session_name}"
         retitle ${session_name}
-        tmux a -t ${session_name}
+        tmux a -dt ${session_name}
     else
         echo "Create session: ${session_name}"
         retitle ${session_name}
-        tmux new -s ${session_name}
+        pureshell tmux new -s ${session_name}
     fi
     # tmux a -t ${session_name} || tmux new -s ${session_name}
 }
-function print_title
-{
-    local content=$*
-    local padding_char=' '
-    local width=72
-
-    local frame_char='#'
-    local frame_width=4
-    local frame_padding=$(seq -s"${frame_char}" 0 ${frame_width} | tr -d '[:digit:]')
-
-    seq -s"${frame_char}" 0 ${width} | tr -d '[:digit:]'
-
-    echo -e "\n${content}\n" | while read -r line
-    do
-        # this is content + 1
-        local content_cnt=$(eval echo ${line} | wc -m)
-        content_cnt=$(($content_cnt-1))
-        if ((${content_cnt} % 2 == 1))
-        then
-            line=${line}${padding_char}
-        fi
-        local content_pad_cnt=$(((${width} - ${frame_width}*2 - ${content_cnt}) / 2))
-        # local pading=$(seq -s${padding_char} 0 ${content_pad_cnt} | tr -d '[:digit:]')
-        local pading=$(seq -s'-' 0 ${content_pad_cnt} | tr -d '[:digit:]' | sed "s/-/${padding_char}/g")
-        # echo -e $(seq -s${padding_char} 0 ${content_pad_cnt} )
-
-        # printf "%s%s%s%s%s\n" "${frame_padding}" "${pading}" "${line}" "${pading}" "${frame_padding}"
-        echo -e "${frame_padding}${pading}${line}${pading}${frame_padding}"
-    done
-    seq -s"${frame_char}" 0 ${width} | tr -d '[:digit:]'
-
-}
 function sed_replace()
 {
+    # replace $1 with $2 under this folder
     local pattern=$1
     local target_string=$2
 
@@ -193,4 +162,13 @@ function sed_replace()
         echo "Replacing ${pattern} with ${target_string} in ${each_file}"
         sed -i "s/${pattern}/${target_string}/g" $(realpath ${each_file})
     done
+}
+function sys_status()
+{
+    local cpu_num=$(nproc)
+    local memory=$(free -h  | grep -i mem | tr -s ' ' | cut -d ' ' -f2)
+
+    printlc "Hostname" ${HOSTNAME}
+    printlc "CPU(s)" ${cpu_num}
+    printlc "Memory" ${memory}
 }

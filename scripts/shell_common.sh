@@ -122,3 +122,23 @@ function parse_git_branch()
     # zsh
     # git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1%F{cyan}][%f/'
 }
+function export_sh_func()
+{
+    local target_shell=$1
+    if [ "${HS_ENV_SHELL}" = "bash" ]
+    then
+        if [ -f "${target_shell}" ]
+        then
+            for each_cmd in $(cat ${target_shell} | grep "^function.*()$" | sed "s/^function//g" | sed "s/()$//g" )
+            do
+                # echo eval "export -f ${each_cmd}"
+                eval "export -f ${each_cmd}"
+            done
+        else
+            echo "${target_shell} not found"
+            return 1
+        fi
+    else
+        echo "Only work in bash"
+    fi
+}

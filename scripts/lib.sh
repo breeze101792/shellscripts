@@ -27,7 +27,7 @@ function doloop()
 {
     local gen_list_cmd=$1
     local do_cmd=$2
-    for each_input in $(bash -c ${gen_list_cmd})
+    for each_input in $(eval ${gen_list_cmd})
     do
         echo ${do_cmd} $each_input
         # bash -c "${do_cmd} ${each_input}"
@@ -59,26 +59,29 @@ function epath()
 }
 function pureshell()
 {
+    local term_type=xterm-256color
+    local pureshell_rc=~/.purebashrc
     if [ "${#}" = "0" ]
     then
         echo "Pure bash"
         if [ -f ~/.purebashrc ]
         then
             # the purebashrc shour contain execu
-            env -i bash -c "export TERM=xterm && source ~/.purebashrc && bash --norc"
-            # env -i bash -c "export TERM=xterm && bash --rcfile  ~/.purebashrc"
+            env -i bash -c "export TERM=${term_type} && source ${pureshell_rc} && bash --norc"
+            # env -i bash -c "export TERM=${term_type} && bash --rcfile  ${pureshell_rc}"
         else
-            env -i bash -c "export TERM=xterm && bash --norc"
+            env -i bash -c "export TERM=${term_type} && bash --norc"
         fi
     else
         echo "Pure bash"
-        if [ -f ~/.purebashrc ]
+        local excute_cmd=$@
+        if [ -f ${pureshell_rc} ]
         then
             # the purebashrc shour contain execu
-            env -i bash -c "export TERM=xterm && source ~/.purebashrc && bash --norc -C $@"
-            # env -i bash -c "export TERM=xterm && bash --rcfile  ~/.purebashrc"
+            env -i bash -c "export TERM=${term_type} && source ${pureshell_rc} && bash --norc -c \"${excute_cmd}\""
+            # env -i bash -c "export TERM=${term_type} && bash --rcfile  ${pureshell_rc}"
         else
-            env -i bash -c "export TERM=xterm && bash --norc -C $@"
+            env -i bash -c "export TERM=${term_type} && bash --norc -c \"${excute_cmd}\""
         fi
     fi
 
@@ -158,4 +161,114 @@ function groot()
 function echoerr()
 {
     >&2 echo $@
+}
+function printt
+{
+    local width=$((80))
+    local frame_char='#'
+    local frame_width=$((4))
+    local frame_height=$((1))
+    while true
+    do
+        case $1 in
+            -w|--width)
+                width=$2
+                shift 2
+                ;;
+            -fw|--frame-width)
+                frame_width=$2
+                shift 2
+                ;;
+            -fh|--frame-height)
+                frame_height=$2
+                shift 2
+                ;;
+            -fc|--frame-char)
+                frame_char=$2
+                shift 2
+                ;;
+            *)
+                break
+                ;;
+        esac
+    done
+
+    local padding_char=' '
+    local content="$*"
+    local frame_padding=$(seq -s"${frame_char}" 0 ${frame_width} | tr -d '[:digit:]')
+
+    for each_time in $(seq 1 ${frame_height})
+    do
+        seq -s"${frame_char}" 0 ${width} | tr -d '[:digit:]'
+    done
+
+    echo -e "\n${content}\n" | while IFS='' read -r line
+    do
+        # this is content + 1
+        # local content_cnt=$(eval echo ${line} | wc -m)
+        local content_cnt=$(echo -e "${line}" | wc -m)
+        # echo "\"${line}\"->$content_cnt"
+        content_cnt=$(($content_cnt-1))
+        if ((${content_cnt} % 2 == 1))
+        then
+            line=${line}${padding_char}
+        fi
+        local content_pad_cnt=$(((${width} - ${frame_width}*2 - ${content_cnt}) / 2))
+        # local pading=$(seq -s${padding_char} 0 ${content_pad_cnt} | tr -d '[:digit:]')
+        local pading=$(seq -s'-' 0 ${content_pad_cnt} | tr -d '[:digit:]' | sed "s/-/${padding_char}/g")
+        # echo -e $(seq -s${padding_char} 0 ${content_pad_cnt} )
+
+        # printf "%s%s%s%s%s\n" "${frame_padding}" "${pading}" "${line}" "${pading}" "${frame_padding}"
+        echo -e "${frame_padding}${pading}${line}${pading}${frame_padding}"
+    done
+    for each_time in $(seq 1 ${frame_height})
+    do
+        seq -s"${frame_char}" 0 ${width} | tr -d '[:digit:]'
+    done
+
+}
+function printlc()
+{
+    local label_width=$((24))
+    local content_width=$((32))
+    local divide_char=":"
+    while true
+    do
+        case $1 in
+            -lw|--label-width)
+                label_width=$((0 + $2))
+                shift 2
+                ;;
+            -cw|--content-width)
+                content_width=$((0 + $2))
+                shift 2
+                ;;
+            -d|--divide)
+                divide_char=$2
+                shift 2
+                ;;
+
+            *)
+                break
+                ;;
+        esac
+
+    done
+    # print label : content
+    # printf label and it's content
+    local label=$1
+    local content=$2
+    local frame_width=$((${label_width} + ${content_width} + 1))
+    
+    local padding_char=' '
+    local label_cnt=$((0 + $(echo "${label}" | sed "s/[\(\)]/#/g"| wc -m)))
+    local content_cnt=$((0 + $(echo "${content}" |sed "s/[\(\)]/#/g"| wc -m)))
+
+    local label_padding_cnt=$(( ${label_width} - ${label_cnt} ))
+    local content_padding_cnt=$(( ${content_width} - ${content_cnt} ))
+    local label_padding="$(seq -s'-' 0 ${label_padding_cnt} | tr -d '[:digit:]' | sed "s/-/${padding_char}/g")"
+    local content_padding="$(seq -s'-' 0 ${content_padding_cnt} | tr -d '[:digit:]' | sed "s/-/${padding_char}/g")"
+    # echo $1: $2
+    # printf "%s%s:%s%s" ${label} ${label_padding} ${content} ${content_padding}
+    echo -e "${label}${label_padding}${divide_char}${content_padding}${content}"
 }

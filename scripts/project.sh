@@ -281,15 +281,15 @@ function mark()
 # Purple       0;35     Light Purple  1;35
 # Cyan         0;36     Light Cyan    1;36
 # Light Gray   0;37     White         1;37
-    if [[ $# = 1 ]]
+
+    if [ "$1" = "-c" ] || [ "$1" = "-C" ] || [ "$1" = "--color" ]
     then
-        local clr_idx=1
-        local hi_word=$1
-        shift 1
-    else
-        local clr_idx=$1
-        local hi_word=$2
+        local clr_idx=$2
         shift 2
+        local hi_word=$1
+    else
+        local clr_idx=1
+        local hi_word="$1"
     fi
     local color_array=(
         # $(echo -e "\033[0;30m")
@@ -323,16 +323,16 @@ mark_build()
     local ccend=$(echo -e "\033[0m")
     $@ 2>&1 | sed -E -e "s%undefined%$ccred&$ccend%ig" -e "s%fatal%$ccred&$ccend%ig" -e "s%error%$ccred&$ccend%ig" -e "s%fail%$ccred&$ccend%ig" -e "s%warning%$ccyellow&$ccend%ig"
 }
-function make()
-{
-    pathpat="(/[^/]*)+:[0-9]+"
-    ccred=$(echo -e "\033[0;31m")
-    ccyellow=$(echo -e "\033[0;33m")
-    ccend=$(echo -e "\033[0m")
-    # /usr/bin/make "$@" 2>&1 | sed -E -e "/[Uu]ndefined[: ]/ s%$pathpat%$ccred&$ccend%g" -e "/[Ff]atl[: ]/ s%$pathpat%$ccred&$ccend%g" -e "/[Ee]rror[: ]/ s%$pathpat%$ccred&$ccend%g" -e "/[Ww]arning[: ]/ s%$pathpat%$ccyellow&$ccend%g"
-    mark_build /usr/bin/make "$@"
-    return ${PIPESTATUS[0]}
-}
+# function make()
+# {
+#     pathpat="(/[^/]*)+:[0-9]+"
+#     ccred=$(echo -e "\033[0;31m")
+#     ccyellow=$(echo -e "\033[0;33m")
+#     ccend=$(echo -e "\033[0m")
+#     # /usr/bin/make "$@" 2>&1 | sed -E -e "/[Uu]ndefined[: ]/ s%$pathpat%$ccred&$ccend%g" -e "/[Ff]atl[: ]/ s%$pathpat%$ccred&$ccend%g" -e "/[Ee]rror[: ]/ s%$pathpat%$ccred&$ccend%g" -e "/[Ww]arning[: ]/ s%$pathpat%$ccyellow&$ccend%g"
+#     mark_build /usr/bin/make "$@"
+#     return ${PIPESTATUS[0]}
+# }
 ########################################################
 #####    Others                                    #####
 ########################################################

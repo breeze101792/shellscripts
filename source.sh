@@ -100,12 +100,7 @@ function hs_main
     ##########################################
     # shell preset
     ##########################################
-    if [ "${HS_CONFIG_FUNCTION_EXPORT}" = "y" ]
-    then
-        set -a
-        # test if -a is enable or not
-        # shopt -po allexport
-    fi
+
     ##########################################
     # shell init
     ##########################################
@@ -125,9 +120,12 @@ function hs_main
     ##########################################
     # shell post init
     ##########################################
-    if [ "${HS_CONFIG_FUNCTION_EXPORT}" = "y" ]
+    if [ "${HS_ENV_SHELL}" = "bash" ] &&[ "${HS_CONFIG_FUNCTION_EXPORT}" = "y" ]
     then
-        set +a
+        export_sh_func ${HS_PATH_LIB}/scripts/shell_common.sh
+        export_sh_func ${HS_PATH_LIB}/scripts/lib.sh
+        export_sh_func ${HS_PATH_LIB}/scripts/tools.sh
+        export_sh_func ${HS_PATH_LIB}/scripts/project.sh
     fi
     if [ "${flag_var_refresh}" = "n" ]
     then
@@ -147,8 +145,6 @@ function hs_main
     then
         source $HS_PATH_LIB/scripts/work.sh
     fi
-
-    proj_refresh > /dev/null
 }
 
 hs_main $@
