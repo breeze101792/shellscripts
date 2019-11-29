@@ -148,7 +148,7 @@ function pvinit()
             echo -e "Searching folder: $tmp_path"
             # find ${tmp_path} -type f -name "*.h" -o -name "*.c" -o -name "*.cpp" -o -name "*.java" >> proj.files
             # find ${tmp_path} \( -type f -name "*.h" -o -name "*.c" -o -name "*.cpp" -o -name "*.java" \) -a \( -not -path "*/build/*" -a -not -path "*/auto_gen*" \) >> proj.files
-            find ${tmp_path} \( -type f -name "*.h" -o -name "*.c" -o -name "*.cpp" -o -name "*.java" \) -a \( -not -path "*/auto_gen*" -a  -not -path "*/build" \) >> proj.files
+            find ${tmp_path} \( -type f -name "*.h" -o -name "*.c" -o -name "*.cpp" -o -name "*.java" \) -a \( -not -path "*/auto_gen*" -a  -not -path "*/build" \) | xargs realpath >> proj.files
         fi
     done
     cscope -b -i proj.files
@@ -282,15 +282,15 @@ function mark()
 # Cyan         0;36     Light Cyan    1;36
 # Light Gray   0;37     White         1;37
 
-    if [ "$1" = "-c" ] || [ "$1" = "-C" ] || [ "$1" = "--color" ]
-    then
-        local clr_idx=$2
-        shift 2
-        local hi_word=$1
-    else
-        local clr_idx=1
-        local hi_word="$1"
-    fi
+# Color       #define       Value       RGB
+# black     COLOR_BLACK       0     0, 0, 0
+# red       COLOR_RED         1     max,0,0
+# green     COLOR_GREEN       2     0,max,0
+# yellow    COLOR_YELLOW      3     max,max,0
+# blue      COLOR_BLUE        4     0,0,max
+# magenta   COLOR_MAGENTA     5     max,0,max
+# cyan      COLOR_CYAN        6     0,max,max
+# white     COLOR_WHITE       7     max,max,max
     local color_array=(
         # $(echo -e "\033[0;30m")
         $(echo -e "\033[0;31m")
@@ -309,19 +309,54 @@ function mark()
         $(echo -e "\033[1;36m")
         $(echo -e "\033[1;37m")
     )
-    # ccred=$(echo -e "\033[0;31m")
-    # ccyellow=$(echo -e "\033[0;33m")
-    ccend=$(echo -e "\033[0m")
+
+    local clr_idx=1
+    local hi_word=""
+    local clr_code=""
+    local ccstart=${color_array[1]}
+    local ccend=$(echo -e "\033[0m")
+
+    if [ "$1" = "-c" ] || [ "$1" = "-C" ] || [ "$1" = "--color" ]
+    then
+        clr_idx=$2
+        shift 2
+        hi_word=$*
+        local ccstart=${color_array[$clr_idx]}
+    elif [ "$1" = "-s" ] || [ "$1" = "-S" ] || [ "$1" = "--color-name" ]
+    then
+        local color_name=$2
+        shift 2
+        hi_word=$*
+        case ${color_name} in
+            red)
+                ccstart=$(tput setaf 1)
+                ;;
+            green)
+                ccstart=$(tput setaf 2)
+                ;;
+            yellow)
+                ccstart=$(tput setaf 3)
+                ;;
+            blue)
+                ccstart=$(tput setaf 4)
+                ;;
+        esac
+    else
+        hi_word=$*
+    fi
     # echo $ccred$hi_word$ccend
     # $@ 2>&1 | sed -E -e "s%${hi_word}%${color_array[$clr_idx]}&${ccend}%ig"
-    sed -E -e "s%${hi_word}%${color_array[$clr_idx]}&${ccend}%ig"
+    sed -u -E -e "s%${hi_word}%${ccstart}&${ccend}%ig"
 }
 mark_build()
 {
-    local ccred=$(echo -e "\033[0;31m")
-    local ccyellow=$(echo -e "\033[0;33m")
-    local ccend=$(echo -e "\033[0m")
-    $@ 2>&1 | sed -E -e "s%undefined%$ccred&$ccend%ig" -e "s%fatal%$ccred&$ccend%ig" -e "s%error%$ccred&$ccend%ig" -e "s%fail%$ccred&$ccend%ig" -e "s%warning%$ccyellow&$ccend%ig"
+    # local ccred=$(echo -e "\033[0;31m")
+    # local ccyellow=$(echo -e "\033[0;33m")
+    # local ccend=$(echo -e "\033[0m")
+    # $@ 2>&1 | sed -E -e "s%undefined%$ccred&$ccend%ig" -e "s%fatal%$ccred&$ccend%ig" -e "s%error%$ccred&$ccend%ig" -e "s%fail%$ccred&$ccend%ig" -e "s%warning%$ccyellow&$ccend%ig"
+
+    $@ 2>&1 | mark -s yellow "undefined" |  mark -s red "fatal" | mark -s red "error" | mark -s red "fail" | mark -s yellow "warning"
+
 }
 # function make()
 # {

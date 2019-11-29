@@ -172,3 +172,27 @@ function sys_status()
     printlc "CPU(s)" ${cpu_num}
     printlc "Memory" ${memory}
 }
+function erun()
+{
+    # enhanced run
+    echo $1
+    if [ "$#" = "0" ]
+    then
+        echo "erun [Your command]"
+        return 1
+    elif [ "$1" = "-c" ] || [ "$1" = "-C" ]
+    then
+        shift 1
+        local excute_cmd="source $HOME/tools/shellscripts/source.sh -p=$HOME/tools/shellscripts -s=bash --change-shell-path=n --silence=y && $@"
+    else
+        local excute_cmd=$@
+    fi
+
+    local start_time=$(tstamp)
+    echo "Start cmd: ${excute_cmd}"
+    printt "$(printlc -lw 32 -cw 0 -d " " "Start Jobs at ${start_time}" "")" | mark -s green "#"
+    # mark_build "${excute_cmd}"
+    eval "${excute_cmd}"
+    printt "$(printlc -lw 32 -cw 0 -d " " "Finished Jobs" "")\n$(printlc -lw 8 -cw 24 "Start" ${start_time})\n$(printlc -lw 8 -cw 24  "End" $(tstamp))" | mark -s green "#"
+    echo "Finished cmd: ${excute_cmd}"
+}

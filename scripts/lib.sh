@@ -34,6 +34,19 @@ function doloop()
         eval "${do_cmd} ${each_input}"
     done
 }
+function looptimes()
+{
+    local times=10
+    for each_time in $(seq 0 ${times})
+    do
+        echo Times: ${each_time}
+        echo "==========================================="
+        eval $@
+        echo "==========================================="
+        echo Sleep 3 seconds
+        sleep 3
+    done
+}
 function ffind()
 {
     pattern=$1
