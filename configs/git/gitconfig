@@ -1,0 +1,9 @@
+[user]
+    email = [Email]
+    name = [Name]
+[core]
+    fileMode = false
+[color]
+    ui = auto
+[commit]
+    template = ~/.gitmessage
