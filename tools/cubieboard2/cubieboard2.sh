@@ -72,6 +72,14 @@ function fPostInstall()
     sudo umount mnt
     sync
 }
+function fSystemInit()
+{
+    printt ${FUNCNAME[0]}
+    # for pacman init
+    pacman-key --init
+    pacman-key --populate archlinuxarm
+    pacman -Syu uboot-cubieboard2
+}
 
 function fmain()
 {
