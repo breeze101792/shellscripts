@@ -147,7 +147,7 @@ function session
     else
         echo "Create session: ${session_name}"
         retitle ${session_name}
-        pureshell tmux new -s ${session_name}
+        pureshell tmux -2 new -s ${session_name}
     fi
     # tmux a -t ${session_name} || tmux new -s ${session_name}
 }
