@@ -1,4 +1,10 @@
-
+########################################################
+########################################################
+#####                                              #####
+#####    For HS Tools Functions                    #####
+#####                                              #####
+########################################################
+########################################################
 function slink()
 {
     local target_path=""
@@ -167,15 +173,15 @@ function sys_status()
 {
     local cpu_num=$(nproc)
     local memory=$(free -h  | grep -i mem | tr -s ' ' | cut -d ' ' -f2)
+    local sep="\n"
 
-    printlc "Hostname" ${HOSTNAME}
-    printlc "CPU(s)" ${cpu_num}
-    printlc "Memory" ${memory}
+    # local contant=("$(printlc 'Hostname' $(hostname))" "$(printlc 'CPU(s)' ${cpu_num})" "$(printlc 'Memory' ${memory})")
+    # echo $contant
+    printt "$(printlc 'Hostname' $(hostname))${sep}$(printlc 'CPU(s)' ${cpu_num})${sep}$(printlc 'Memory' ${memory})"
 }
 function erun()
 {
     # enhanced run
-    echo $1
     if [ "$#" = "0" ]
     then
         echo "erun [Your command]"
@@ -188,11 +194,34 @@ function erun()
         local excute_cmd=$@
     fi
 
-    local start_time=$(tstamp)
-    echo "Start cmd: ${excute_cmd}"
+    local start_time=$(date "+%Y-%m-%d_%H:%M:%S")
+    echo "Start cmd: $(printc -s yellow ${excute_cmd})"
     printt "$(printlc -lw 32 -cw 0 -d " " "Start Jobs at ${start_time}" "")" | mark -s green "#"
     # mark_build "${excute_cmd}"
     eval "${excute_cmd}"
-    printt "$(printlc -lw 32 -cw 0 -d " " "Finished Jobs" "")\n$(printlc -lw 8 -cw 24 "Start" ${start_time})\n$(printlc -lw 8 -cw 24  "End" $(tstamp))" | mark -s green "#"
-    echo "Finished cmd: ${excute_cmd}"
+    local end_time=$(date "+%Y-%m-%d_%H:%M:%S")
+    printt "$(printlc -lw 32 -cw 0 -d " " "Finished Jobs" "")\n$(printlc -lw 8 -cw 24 "Start" ${start_time})\n$(printlc -lw 8 -cw 24  "End" ${end_time})" | mark -s green "#"
+    echo "Finished cmd: $(printc -s yellow ${excute_cmd})"
 }
+function renter()
+{
+    local cpath=$(realpath .)
+    local idx=$((1))
+    while true
+    do
+        local tmp_path=$(realpath . | rev | cut -d '/' -f ${idx}- |rev)
+        if [ -d ${tmp_path} ]
+        then
+            echo "Goto ${tmp_path}"
+            cd ${tmp_path}
+        elif [ "${tmp_path}" = "/" ]
+        then
+            break
+        fi
+        idx=$((idx + 1))
+        break
+    done
+    # cd ${HOME}
+    # cd ${cpath}
+}
+

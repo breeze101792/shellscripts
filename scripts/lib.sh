@@ -1,4 +1,3 @@
-#!/bin/bash
 ########################################################
 ########################################################
 #####                                              #####
@@ -9,7 +8,6 @@
 #####    Alias                                     #####
 ########################################################
 alias ls='ls --color=auto --group-directories-first -X '
-# alias ls='ls --color=auto'
 alias l='ls -a --color=auto'
 alias ll='l -lh'
 alias llt='ll -t'
@@ -17,7 +15,8 @@ alias xc="xclip"
 alias xv="xclip -o"
 alias tstamp='date +%Y%m%d_%H%M%S'
 alias cgrep='grep --color=always '
-alias sgrep='grep --color=always -rnIi  '
+alias sgrep='grep -rnIi  '
+alias scgrep='grep --color=always -rnIi  '
 alias vim='TERM=xterm-256color && vim '
 alias vi='TERM=xterm-256color && vim -m '
 ########################################################
@@ -272,7 +271,7 @@ function printlc()
     local label=$1
     local content=$2
     local frame_width=$((${label_width} + ${content_width} + 1))
-    
+
     local padding_char=' '
     local label_cnt=$((0 + $(echo "${label}" | sed "s/[\(\)]/#/g"| wc -m)))
     local content_cnt=$((0 + $(echo "${content}" |sed "s/[\(\)]/#/g"| wc -m)))
@@ -284,4 +283,87 @@ function printlc()
     # echo $1: $2
     # printf "%s%s:%s%s" ${label} ${label_padding} ${content} ${content_padding}
     echo -e "${label}${label_padding}${divide_char}${content_padding}${content}"
+}
+function printc()
+{
+# Black        0;30     Dark Gray     1;30
+# Red          0;31     Light Red     1;31
+# Green        0;32     Light Green   1;32
+# Brown/Orange 0;33     Yellow        1;33
+# Blue         0;34     Light Blue    1;34
+# Purple       0;35     Light Purple  1;35
+# Cyan         0;36     Light Cyan    1;36
+# Light Gray   0;37     White         1;37
+
+# Color       #define       Value       RGB
+# black     COLOR_BLACK       0     0, 0, 0
+# red       COLOR_RED         1     max,0,0
+# green     COLOR_GREEN       2     0,max,0
+# yellow    COLOR_YELLOW      3     max,max,0
+# blue      COLOR_BLUE        4     0,0,max
+# magenta   COLOR_MAGENTA     5     max,0,max
+# cyan      COLOR_CYAN        6     0,max,max
+# white     COLOR_WHITE       7     max,max,max
+    local color_array=(
+        # $(echo -e "\033[0;30m")
+        $(echo -e "\033[0;31m")
+        $(echo -e "\033[0;32m")
+        $(echo -e "\033[0;33m")
+        $(echo -e "\033[0;34m")
+        $(echo -e "\033[0;35m")
+        $(echo -e "\033[0;36m")
+        $(echo -e "\033[0;37m")
+        $(echo -e "\033[1;30m")
+        $(echo -e "\033[1;31m")
+        $(echo -e "\033[1;32m")
+        $(echo -e "\033[1;33m")
+        $(echo -e "\033[1;34m")
+        $(echo -e "\033[1;35m")
+        $(echo -e "\033[1;36m")
+        $(echo -e "\033[1;37m")
+    )
+
+    local clr_idx=1
+    local hi_word=""
+    local clr_code=""
+    local ccstart=${color_array[1]}
+    local ccend=$(echo -e "\033[0m")
+
+    if [ "$1" = "-c" ] || [ "$1" = "-C" ] || [ "$1" = "--color" ]
+    then
+        clr_idx=$2
+        shift 2
+        hi_word=$*
+        local ccstart=${color_array[$clr_idx]}
+    elif [ "$1" = "-s" ] || [ "$1" = "-S" ] || [ "$1" = "--color-name" ]
+    then
+        local color_name=$2
+        shift 2
+        hi_word=$*
+        case ${color_name} in
+            red)
+                ccstart=$(tput setaf 1)
+                ;;
+            green)
+                ccstart=$(tput setaf 2)
+                ;;
+            yellow)
+                ccstart=$(tput setaf 3)
+                ;;
+            blue)
+                ccstart=$(tput setaf 4)
+                ;;
+        esac
+    else
+        hi_word=$*
+    fi
+    # echo $hi_word
+    # sed -u -E -e "s%${hi_word}%${ccstart}&${ccend}%ig"
+    # printf "%s%s%s" ${ccstart} ${hi_word} ${ccend}
+    echo "${ccstart}${hi_word}${ccend}"
+}
+function join_by()
+{
+    local IFS="$1"; shift; echo "$*";
+    # local d=$1; shift; echo -n "$1"; shift; printf "%s" "${@/#/$d}";
 }
