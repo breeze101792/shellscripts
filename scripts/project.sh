@@ -24,14 +24,49 @@ alias glog="git log --graph --abbrev-commit --decorate --format=format:'%C(bold 
 #####                                              #####
 ########################################################
 ########################################################
-function mdebug()
-{
-    screen -S debug -L -Logfile debug_$(tstamp).log /dev/ttyUSB1 115200
-}
+# Serial debug
 function sdebug()
 {
-    screen -S debug_s -L -Logfile debug_$(tstamp).log
+    local target_dev=/dev/ttyUSB0
+    local baud_rate=115200
+    local session_name="Debug"
+    while true
+    do
+        if [ "$#" = 0 ]
+        then
+            break
+        fi
+        case $1 in
+            -d|--device)
+                target_dev=$2
+                shift 1
+                ;;
+            -b|--baud-rate)
+                baud_rate=$2
+                shift 1
+                ;;
+            -s|--session-name)
+                session_name=$2
+                shift 1
+                ;;
+            -h|--help)
+                echo "sdebug Usage"
+                printlc -cp false -d "->" "-d|--device" "Set device"
+                printlc -cp false -d "->" "-b|--baud-rate" "Set Baud Rate"
+                printlc -cp false -d "->" "-s|--session-name" "Set Session Name"
+                return 0
+                ;;
+            *)
+                echo "Unknown Options"
+                return 1
+                ;;
+        esac
+        shift 1
+    done
+    retitle ${session_name}
+    screen -S ${session_name} -L -Logfile debug_$(tstamp).log ${target_dev} ${baud_rate}
 }
+alias mdebug="sdebug --device /dev/ttyUSB1"
 
 ########################################################
 ########################################################

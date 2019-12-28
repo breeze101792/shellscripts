@@ -244,6 +244,7 @@ function printlc()
     local label_width=$((24))
     local content_width=$((32))
     local divide_char=":"
+    local flag_content_padding=true
     while true
     do
         case $1 in
@@ -259,7 +260,10 @@ function printlc()
                 divide_char=$2
                 shift 2
                 ;;
-
+            -cp|--content-padding)
+                flag_content_padding=$2
+                shift 2
+                ;;
             *)
                 break
                 ;;
@@ -282,7 +286,12 @@ function printlc()
     local content_padding="$(seq -s'-' 0 ${content_padding_cnt} | tr -d '[:digit:]' | sed "s/-/${padding_char}/g")"
     # echo $1: $2
     # printf "%s%s:%s%s" ${label} ${label_padding} ${content} ${content_padding}
-    echo -e "${label}${label_padding}${divide_char}${content_padding}${content}"
+    if [ "${flag_content_padding}" = "true" ]
+    then
+        echo -e "${label}${label_padding}${divide_char}${content_padding}${content}"
+    else
+        echo -e "${label}${label_padding}${divide_char}${content}"
+    fi
 }
 function printc()
 {

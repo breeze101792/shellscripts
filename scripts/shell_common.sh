@@ -21,6 +21,7 @@ function item_promote()
 }
 function hs_config()
 {
+    # get and set hs_config
     if [ "$#" = "3" ] && [ "$1" = "-s" ]
     then
         # echo "$*"
