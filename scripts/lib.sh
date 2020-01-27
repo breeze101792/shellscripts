@@ -11,8 +11,6 @@ alias ls='ls --color=auto --group-directories-first -X '
 alias l='ls -a --color=auto'
 alias ll='l -lh'
 alias llt='ll -t'
-alias xc="xclip"
-alias xv="xclip -o"
 alias tstamp='date +%Y%m%d_%H%M%S'
 alias cgrep='grep --color=always '
 alias sgrep='grep -rnIi  '
@@ -375,4 +373,46 @@ function join_by()
 {
     local IFS="$1"; shift; echo "$*";
     # local d=$1; shift; echo -n "$1"; shift; printf "%s" "${@/#/$d}";
+}
+function clipboard()
+{
+    if [ "$#" = 0 ]
+    then
+        eval "clipboard -g"
+        return 0
+    fi
+    while true
+    do
+        if [ "$#" = 0 ]
+        then
+            break
+        fi
+        case $1 in
+            -s|--set-clipboard)
+                hs_config -s "${HS_VAR_CLIPBOARD}" "${2}"
+                shift 1
+                ;;
+            -g|--get-clipboard)
+                hs_config -g "${HS_VAR_CLIPBOARD}"
+                shift 1
+                ;;
+            -d|--get-current-dir)
+                # get current dir
+                hs_config -g "${HS_VAR_CURRENT_DIR}"
+                shift 1
+                ;;
+            -h|--help)
+                echo "sdebug Usage"
+                printlc -cp false -d "->" "-s|--set-clipboard" "Set Clipbboard"
+                printlc -cp false -d "->" "-g|--get-clipboard" "Get Clipbboard"
+                printlc -cp false -d "->" "-d|--get-current-dir" "Get current dir vars"
+                return 0
+                ;;
+            *)
+                echo "Unknown Options"
+                return 1
+                ;;
+        esac
+        shift 1
+    done
 }
