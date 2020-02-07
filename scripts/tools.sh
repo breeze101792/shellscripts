@@ -233,4 +233,17 @@ function renter()
     # cd ${HOME}
     # cd ${cpath}
 }
-
+function user_mount()
+{
+    # user_mount /dev/sda1 /mnt/tmp
+    if [[ $# != 2 ]]
+    then
+        echo "Please enter target_device & target_dir"
+        return 1
+    fi
+    local uid=${UID}
+    local gid=${GID}
+    local target_dev=$1
+    local target_dir=$2
+    sudo mount -o uid=${uid},gid=${gid} ${target_dev} ${target_dir}
+}
