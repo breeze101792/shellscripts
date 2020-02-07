@@ -11,7 +11,6 @@ alias ls='ls --color=auto --group-directories-first -X '
 alias l='ls -a --color=auto'
 alias ll='l -lh'
 alias llt='ll -t'
-alias tstamp='date +%Y%m%d_%H%M%S'
 alias cgrep='grep --color=always '
 alias sgrep='grep -rnIi  '
 alias scgrep='grep --color=always -rnIi  '
@@ -20,6 +19,10 @@ alias vi='TERM=xterm-256color && vim -m '
 ########################################################
 #####    Functions                                 #####
 ########################################################
+function tstamp()
+{
+    date +%Y%m%d_%H%M%S
+}
 function doloop()
 {
     local gen_list_cmd=$1
@@ -46,9 +49,41 @@ function looptimes()
 }
 function ffind()
 {
-    pattern=$1
-    # echo Looking for $pattern
-    find . -iname "*$pattern*"
+    local flag_color="n"
+    while true
+    do
+        if [ "$#" = 0 ]
+        then
+            break
+        fi
+        case $1 in
+            -c|--color)
+                flag_color="y"
+                ;;
+            -n|--no-color)
+                flag_color="n"
+                ;;
+            -h|--help)
+                echo "sdebug Usage"
+                printlc -cp false -d "->" "-d|--device" "Set device"
+                printlc -cp false -d "->" "-b|--baud-rate" "Set Baud Rate"
+                printlc -cp false -d "->" "-s|--session-name" "Set Session Name"
+                return 0
+                ;;
+            *)
+                # echo Looking for $pattern
+                break
+                ;;
+        esac
+        shift 1
+    done
+    local pattern=$1
+    if [ "$flag_color" = "y" ]
+    then
+        find . -iname "*${pattern}*" | mark ${pattern}
+    else
+        find . -iname "*${pattern}*"
+    fi
 
 }
 function epath()
@@ -336,13 +371,13 @@ function printc()
     local ccstart=${color_array[1]}
     local ccend=$(echo -e "\033[0m")
 
-    if [ "$1" = "-c" ] || [ "$1" = "-C" ] || [ "$1" = "--color" ]
+    if [ "$1" = "-i" ] || [ "$1" = "-I" ] || [ "$1" = "--inedx-color" ]
     then
         clr_idx=$2
         shift 2
         hi_word=$*
         local ccstart=${color_array[$clr_idx]}
-    elif [ "$1" = "-s" ] || [ "$1" = "-S" ] || [ "$1" = "--color-name" ]
+    elif [ "$1" = "-c" ] || [ "$1" = "-C" ] || [ "$1" = "--color-name" ]
     then
         local color_name=$2
         shift 2
@@ -361,13 +396,18 @@ function printc()
                 ccstart=$(tput setaf 4)
                 ;;
         esac
+    elif [ "$1" = "-h" ] || [ "$1" = "--help" ]
+    then
+        echo "printc"
+        printlc -cp false -d "->" "-c|--color-name" "print with color name"
+        printlc -cp false -d "->" "-i|--index-color" "print with color index"
     else
         hi_word=$*
     fi
     # echo $hi_word
     # sed -u -E -e "s%${hi_word}%${ccstart}&${ccend}%ig"
     # printf "%s%s%s" ${ccstart} ${hi_word} ${ccend}
-    echo "${ccstart}${hi_word}${ccend}"
+    echo -ne "${ccstart}${hi_word}${ccend}"
 }
 function join_by()
 {
@@ -415,4 +455,44 @@ function clipboard()
         esac
         shift 1
     done
+########################################################
+#####    Error Functions                           #####
+########################################################
+
+function error_check()
+{
+    local result=$?
+    echo $#,$*
+    if [[ $# == 2 ]]
+    then
+        local function_name=$1
+        local line_info=$2
+        echo "Trace: ${function_name} +${line_info}"
+    fi
+    if [ $result != 0 ]
+    then
+        local cmd=""
+        echo "An Error Occur, error code <$result>"
+        echo -en "continue(y/n)? "
+        read cmd
+        if [ "${cmd}" = "y" ]
+        then
+            printc -c red "Emergency Command>"
+            read cmd
+            eval "${cmd}"
+            error_check ${funcstack[@]:1:1}${FUNCNAME[0]} ${LINENO}
+        fi
+    fi
+    return ${result}
+}
+function cmd_debug()
+{
+    # set -f	set -o noglob	Disable file name generation using metacharacters (globbing).
+    # set -v	set -o verbose	Prints shell input lines as they are read.
+    # set -x	set -o xtrace	Print command traces before executing command.
+    local cmd=$*
+
+    set -x
+    eval "${cmd}"
+    set +x
 }

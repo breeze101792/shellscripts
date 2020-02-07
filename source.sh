@@ -41,6 +41,12 @@ function hs_main
     local flag_env_shell=""
     local flag_env_lib_path=""
 
+    ##########################################
+    # Others
+    ##########################################
+    local title_message="DO IT NOW"
+
+
     for arg in $@
     do
         case $arg in
@@ -136,7 +142,7 @@ function hs_main
     fi
     if [ "${flag_var_refresh}" = "n" ]
     then
-        retitle "Wellcome back"
+        retitle "${title_message}"
     fi
 
     ##########################################

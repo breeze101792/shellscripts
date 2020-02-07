@@ -253,40 +253,69 @@ function gcheckoutByDate()
 }
 function gpush()
 {
+    # gerrit push
     local cbranch=""
     local remote=""
     local branch=""
     local commit="HEAD"
-    if [ $# = 0 ]
+    local push_word="for"
+    while true
+    do
+        if [ "$#" = 0 ]
+        then
+            break
+        fi
+        case $1 in
+            -r|--remote)
+                remote=$2
+                shift 1
+                ;;
+            -b|--branch)
+                branch=$2
+                shift 1
+                ;;
+            -c|--commit)
+                commit=$2
+                shift 1
+                ;;
+            -d|--draft)
+                push_word="drafts"
+                ;;
+            -h|--help)
+                echo "gpush Usage"
+                printlc -cp false -d "->" "-r|--remote" "Set remote"
+                printlc -cp false -d "->" "-b|--branch" "Set branch"
+                printlc -cp false -d "->" "-c|--commit" "Set commit"
+                printlc -cp false -d "->" "-d|--draft" "Set dfaft"
+                return 0
+                ;;
+            *)
+                echo "Unknown Options"
+                return 1
+                ;;
+        esac
+        shift 1
+    done
+
+    if [ "${cbranch}" = "" ]
     then
         local cbranch=$(git branch| sed -e '/^[^*]/d' -e 's/* //g')
-        local remote=$(git branch -r | grep $cbranch | grep -ve "HEAD" |rev |cut -d'/' -f2 | rev)
-        local branch=$(git branch -r | grep $cbranch | grep -ve "HEAD" |rev |cut -d'/' -f1 | rev)
-        echo "[1] Auto push to $remote $branch";
-        # git push $remote HEAD:refs/for/$branch
-    elif [ $# = 1 ]
-    then
-        local cbranch=$1
-        local remote=$(git branch -r | grep $cbranch | grep -ve "HEAD" |rev |cut -d'/' -f2 | rev)
-        local branch=$(git branch -r | grep $cbranch | grep -ve "HEAD" |rev |cut -d'/' -f1 | rev)
-        echo "[2] Auto push to $remote $branch";
-        # git push $remote HEAD:refs/for/$branch
-    elif [ $# = 2 ]
-    then
-        local remote=$1
-        local branch=$2
-        echo "[3] Auto push to $remote $branch";
-        # git push $remote HEAD:refs/for/$branch
-    elif [ $# = 3 ]
-    then
-        local remote=$1
-        local branch=$2
-        local commit=$3
-        echo "[3] Auto push to $remote $branch";
-        # git push $remote HEAD:refs/for/$branch
     fi
+    if [ "${remote}" = "" ]
+    then
+        local remote=$(git branch -r | grep $cbranch | grep -ve "HEAD" |rev |cut -d'/' -f2 | rev)
+    fi
+    if [ "${branch}" = "" ]
+    then
+        local branch=$(git branch -r | grep $cbranch | grep -ve "HEAD" |rev |cut -d'/' -f1 | rev)
+    fi
+
+
+    local cmd="git push ${remote} ${commit}:refs/${push_word}/${branch}"
     echo "Push ${commit} to ${remote}/${branch}"
-    git push $remote ${commit}:refs/for/$branch
+    echo "${cmd}"
+    # git push ${remote} ${commit}:refs/${push_word}/${branch}
+    eval ${cmd}
 }
 rforall()
 {
@@ -389,9 +418,12 @@ mark_build()
     # local ccyellow=$(echo -e "\033[0;33m")
     # local ccend=$(echo -e "\033[0m")
     # $@ 2>&1 | sed -E -e "s%undefined%$ccred&$ccend%ig" -e "s%fatal%$ccred&$ccend%ig" -e "s%error%$ccred&$ccend%ig" -e "s%fail%$ccred&$ccend%ig" -e "s%warning%$ccyellow&$ccend%ig"
-
-    $@ 2>&1 | mark -s yellow "undefined" |  mark -s red "fatal" | mark -s red "error" | mark -s red "fail" | mark -s yellow "warning"
-
+    if [[ $# == 0 ]]
+    then
+        mark -s yellow "undefined" |  mark -s red "fatal" | mark -s red "error" | mark -s red "fail" | mark -s yellow "warning"
+    else
+        $@ 2>&1 | mark -s yellow "undefined" |  mark -s red "fatal" | mark -s red "error" | mark -s red "fail" | mark -s yellow "warning"
+    fi
 }
 # function make()
 # {
@@ -404,14 +436,26 @@ mark_build()
 #     return ${PIPESTATUS[0]}
 # }
 ########################################################
-#####    Others                                    #####
+#####    Dev                                       #####
 ########################################################
+function pyenv_create()
+{
+    if [[ $# == 0 ]]
+    then
+        return 1
+    fi
+    local target_path=$(realpath ${1})
+    virtualenv --system-site-packages -p python3 ${target_path}
+}
 function pyenv()
 {
     source ${HS_PATH_PYTHEN_ENV}/bin/activate
     $@
     # deactivate
 }
+########################################################
+#####    Others                                    #####
+########################################################
 wdiff()
 {
     diff -rq $1 $2 | cut -f2 -d' '| uniq | sort

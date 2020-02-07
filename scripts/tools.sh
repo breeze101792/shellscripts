@@ -182,26 +182,35 @@ function sys_status()
 function erun()
 {
     # enhanced run
-    if [ "$#" = "0" ]
-    then
-        echo "erun [Your command]"
-        return 1
-    elif [ "$1" = "-c" ] || [ "$1" = "-C" ]
-    then
+    local excute_cmd=""
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -s|--Source-HS)
+                local excute_cmd="source $HOME/tools/shellscripts/source.sh -p=$HOME/tools/shellscripts -s="${HS_ENV_SHELL}" --change-shell-path=n --silence=y && "
+                ;;
+            -h|--help)
+                echo "erun"
+                printlc -cp false -d "->" "-s|--Source-HS" "Source HS config"
+                return 0
+                ;;
+
+            *)
+                local excute_cmd="${excute_cmd}$@"
+                break
+                ;;
+        esac
         shift 1
-        local excute_cmd="source $HOME/tools/shellscripts/source.sh -p=$HOME/tools/shellscripts -s=bash --change-shell-path=n --silence=y && $@"
-    else
-        local excute_cmd=$@
-    fi
+    done
 
     local start_time=$(date "+%Y-%m-%d_%H:%M:%S")
-    echo "Start cmd: $(printc -s yellow ${excute_cmd})"
+    echo "Start cmd: $(printc -c yellow ${excute_cmd})"
     printt "$(printlc -lw 32 -cw 0 -d " " "Start Jobs at ${start_time}" "")" | mark -s green "#"
     # mark_build "${excute_cmd}"
     eval "${excute_cmd}"
     local end_time=$(date "+%Y-%m-%d_%H:%M:%S")
-    printt "$(printlc -lw 32 -cw 0 -d " " "Finished Jobs" "")\n$(printlc -lw 8 -cw 24 "Start" ${start_time})\n$(printlc -lw 8 -cw 24  "End" ${end_time})" | mark -s green "#"
-    echo "Finished cmd: $(printc -s yellow ${excute_cmd})"
+    printt "$(printlc -lw 32 -cw 0 -d " " "Job Finished" "")\n$(printlc -lw 8 -cw 24 "Start" ${start_time})\n$(printlc -lw 8 -cw 24  "End" ${end_time})" | mark -s green "#"
+    echo "Finished cmd: $(printc -c yellow ${excute_cmd})"
 }
 function renter()
 {

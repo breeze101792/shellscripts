@@ -79,13 +79,6 @@ if (( ${+terminfo[smkx]} )) && (( ${+terminfo[rmkx]} )); then
     zle -N zle-line-finish
 fi
 
-## home user bin to PATH ##
-export PATH=$PATH:$HOME/.usr/bin/
-
-## Default Editor  ##
-export EDITOR=vim
-export VISUAL=vim
-
 #------------------------------
 # Prompt
 #------------------------------
@@ -181,10 +174,4 @@ alias -g ........='../../../../../../..'
 if [ "${HS_CONFIG_CHANGE_DIR}" = "y" ]
 then
     set_working_path -g
-    # if [ -e ${HS_FILE_CONFIG} ] && [ -f "${HS_FILE_CONFIG}" ] && [ -d "$(cat ${HS_FILE_CONFIG})" ]
-    # then
-    #     cd "$(cat $HS_FILE_CONFIG)"
-    # else
-    #     echo "Goto Current path fail $(cat ${HS_FILE_CONFIG})"
-    # fi
 fi

@@ -10,7 +10,7 @@
 # Don't Set this flags
 # Vars
 export HS_ENV_SHELL=""
-export HS_ENV_VER=0.2.1
+export HS_ENV_VER=0.2.3
 export HS_ENV_SILENCE=n
 # enable HS System
 export HS_ENV_ENABLE=true
@@ -68,3 +68,10 @@ export HS_VAR_CLIPBOARD="CLIPBOARD"
 
 # Terminal configs
 export TERM="xterm-256color"
+
+## home user bin to PATH ##
+# export PATH=$PATH:$HOME/bin/
+
+## Default Editor  ##
+export EDITOR=vim
+export VISUAL=vim

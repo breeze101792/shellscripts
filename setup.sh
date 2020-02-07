@@ -21,22 +21,23 @@ function setup()
     while true
     do
         case $1 in
-            --tmux)
+            -t|--tmux)
                 setup_tmux
-                shift 1
-                break
                 ;;
-            --shell)
+            -s|--shell)
                 setup_shell
-                shift 1
-                break
+                ;;
+            -h|--help)
+                echo "Setup Usage"
+                printf "%s%s%s\n" "-t|--tmux" "->" "Set tmux"
+                printf "%s%s%s\n" "-s|--shell" "->" "Set shell"
+                return 0
                 ;;
             *)
-                echo "Unknown Options"
-                shift 1
                 break
                 ;;
         esac
+        shift 1
     done
 }
 setup $@
