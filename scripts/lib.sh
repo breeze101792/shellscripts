@@ -434,12 +434,10 @@ function clipboard()
                 ;;
             -g|--get-clipboard)
                 hs_config -g "${HS_VAR_CLIPBOARD}"
-                shift 1
                 ;;
             -d|--get-current-dir)
                 # get current dir
                 hs_config -g "${HS_VAR_CURRENT_DIR}"
-                shift 1
                 ;;
             -h|--help)
                 echo "sdebug Usage"
