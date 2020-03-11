@@ -7,8 +7,8 @@ bindkey -e
 # The following lines were added by compinstall
 zstyle :compinstall filename '/home/shaowu/.zshrc'
 
-autoload -Uz compinit
-compinit
+# autoload -Uz compinit
+# compinit
 # End of lines added by compinstall
 
 # custom zsh
@@ -18,6 +18,10 @@ zstyle ':completion:*' menu select
 autoload -Uz compinit promptinit
 compinit
 promptinit
+
+# bash completion compatiable
+autoload bashcompinit
+bashcompinit
 
 # This will set the default prompt to the walters theme
 prompt walters

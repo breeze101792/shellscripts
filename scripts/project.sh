@@ -160,13 +160,34 @@ function pvupdate()
 }
 function pvinit()
 {
-    local src_path=($@)
+    local file_ext=()
+    local find_cmd=""
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -a|--append)
+                file_ext+="-o -name \"*.${2}\""
+                shift 1
+                ;;
+            -h|--help)
+                echo "pvinit"
+                printlc -cp false -d "->" "-a|--append" "append file extension on search"
+                return 0
+                ;;
+            *)
+                break
+                ;;
+        esac
+        shift 1
+    done
     if [ "$#" = "0" ]
     then
         echo "Please enter folder name"
         return -1
     fi
-    echo ${src_path[@]}
+    local src_path=($@)
+    echo Searching Path:${src_path[@]}
+    echo file_ext: $file_ext
     [ -f cscope.db ] && rm cscope.db 2> /dev/null
     [ -f proj.files ] && rm proj.files 2> /dev/null
     [ -f tags ] && rm tags 2> /dev/null
@@ -177,13 +198,11 @@ function pvinit()
         echo "Searching path: ${tmp_path}"
         if [ "$tmp_path" = "" ]
         then
-            # echo "Finished"
             continue
         else
             echo -e "Searching folder: $tmp_path"
-            # find ${tmp_path} -type f -name "*.h" -o -name "*.c" -o -name "*.cpp" -o -name "*.java" >> proj.files
-            # find ${tmp_path} \( -type f -name "*.h" -o -name "*.c" -o -name "*.cpp" -o -name "*.java" \) -a \( -not -path "*/build/*" -a -not -path "*/auto_gen*" \) >> proj.files
-            find ${tmp_path} \( -type f -name "*.h" -o -name "*.c" -o -name "*.cpp" -o -name "*.java" \) -a \( -not -path "*/auto_gen*" -a  -not -path "*/build" \) | xargs realpath >> proj.files
+            find_cmd="find ${tmp_path} \( -type f -name '*.h' -o -name '*.c' -o -name '*.cpp' -o -name '*.java' ${file_ext[@]} \) -a \( -not -path '*/auto_gen*' -a -not -path '*/build' \) | xargs realpath >> proj.files"
+            eval ${find_cmd}
         fi
     done
     cscope -b -i proj.files
@@ -259,6 +278,7 @@ function gpush()
     local branch=""
     local commit="HEAD"
     local push_word="for"
+    local excute_flag="y"
     while true
     do
         if [ "$#" = 0 ]
@@ -281,12 +301,16 @@ function gpush()
             -d|--draft)
                 push_word="drafts"
                 ;;
+            -f|--fake)
+                excute_flag="n"
+                ;;
             -h|--help)
                 echo "gpush Usage"
                 printlc -cp false -d "->" "-r|--remote" "Set remote"
                 printlc -cp false -d "->" "-b|--branch" "Set branch"
                 printlc -cp false -d "->" "-c|--commit" "Set commit"
                 printlc -cp false -d "->" "-d|--draft" "Set dfaft"
+                printlc -cp false -d "->" "-f|--fake" "Set fake"
                 return 0
                 ;;
             *)
@@ -299,25 +323,44 @@ function gpush()
 
     if [ "${cbranch}" = "" ]
     then
-        local cbranch=$(git branch| sed -e '/^[^*]/d' -e 's/* //g')
+        local cbranch=$(git branch| sed -e '/^[^*]/d' -e 's/* //g' | tr -d "[:blank:]")
+        echo "Auto set current branch to |${cbranch}|"
     fi
     if [ "${remote}" = "" ]
     then
-        local remote=$(git branch -r | grep $cbranch | grep -ve "HEAD" |rev |cut -d'/' -f2 | rev)
+        local remote=$(git branch -r | grep "/$cbranch$" | grep -ve "HEAD" |rev |cut -d'/' -f2 | rev | tr -d "[:blank:]")
+        # git show remote
+        echo "Auto set remote to |${remote}|"
     fi
     if [ "${branch}" = "" ]
     then
-        local branch=$(git branch -r | grep $cbranch | grep -ve "HEAD" |rev |cut -d'/' -f1 | rev)
+        local branch=$(git branch -r | grep "/$cbranch$" | grep -ve "HEAD" |rev |cut -d'/' -f1 | rev | tr -d "[:blank:]")
+        echo "Auto set branch to |${branch}|"
     fi
 
 
+    printt "Auto Push ${commit} to ${remote}/${branch}" | mark -s green "#"
     local cmd="git push ${remote} ${commit}:refs/${push_word}/${branch}"
-    echo "Push ${commit} to ${remote}/${branch}"
-    echo "${cmd}"
-    # git push ${remote} ${commit}:refs/${push_word}/${branch}
-    eval ${cmd}
+    # echo "Push ${commit} to ${remote}/${branch}"
+    echo "Eval Command: ${cmd}"
+    if [ "${excute_flag}" = "y" ]
+    then
+        eval ${cmd}
+    fi
 }
-rforall()
+function ginfo()
+{
+    local fetch_url="$(git remote show $(git remote show) | grep Fetch |cut -d':' -f 2- | tr -d '[:blank:]')"
+    local branch_name="$(git remote show $(git remote show) | grep 'HEAD branch' |cut -d':' -f 2- | tr -d '[:blank:]')"
+    local rel_branch_name="$(git branch -a | grep '\->' | cut -d'/' -f 4)"
+    local current_branch=$(git branch| sed -e '/^[^*]/d' -e 's/* //g' | tr -d "[:blank:]")
+    git remote show $(git remote show) | head -n 4
+    echo "Fetch cmd: git clone ${fetch_url} -b ${branch_name}"
+    echo "Fetch cmd: git clone ${fetch_url} -b ${rel_branch_name}"
+    echo "Fetch cmd: git clone ${fetch_url} -b ${current_branch}"
+
+}
+function rforall()
 {
     repo forall -vc "git $@"
 }

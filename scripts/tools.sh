@@ -26,9 +26,32 @@ bkfile()
 }
 logfile()
 {
-    local logname="logfile_`tstamp`.log"
-    echo "$@" | tee $logname
+
+    if [ "$1" = "-p" ]
+    then
+        if [ ! -d "${2}" ]
+        then
+            echo "Create Log Folder: $2"
+            mkdir ${2}
+        fi
+
+        local logname="$(realpath $2)/logfile_`tstamp`.log"
+        shift 2
+    else
+        local logname="logfile_`tstamp`.log"
+    fi
+    local start_date=$(date)
+
+    echo "Command:\"$@\"" > $logname
+    echo "Start Date: ${start_date}" >> $logname
+    echo "================================================" >> $logname
     eval "$@" 2>&1 | tee -a $logname
+    echo "================================================" >> $logname
+    echo "Command Finished:\"$@\"" >> $logname
+    echo "Start Date: ${start_date}" >> $logname
+    echo "End   Date: $(date)" >> $logname
+
+    echo "Log file has been stored in ${logname}" | mark -s green ${logname}
 }
 function rln()
 {
@@ -207,28 +230,38 @@ function erun()
     echo "Start cmd: $(printc -c yellow ${excute_cmd})"
     printt "$(printlc -lw 32 -cw 0 -d " " "Start Jobs at ${start_time}" "")" | mark -s green "#"
     # mark_build "${excute_cmd}"
-    eval "${excute_cmd}"
+    if [ -n "${HS_PATH_LOG}" ]
+    then
+        if [ ! -d "${HS_PATH_LOG}" ]
+        then
+            mkdir ${HS_PATH_LOG}
+        fi
+        logfile -p "${HS_PATH_LOG}" eval "${excute_cmd}"
+    else
+        echo "Log file path not define.HS_PATH_LOG=${HS_PATH_LOG}"
+        eval "${excute_cmd}"
+    fi
     local end_time=$(date "+%Y-%m-%d_%H:%M:%S")
     printt "$(printlc -lw 32 -cw 0 -d " " "Job Finished" "")\n$(printlc -lw 8 -cw 24 "Start" ${start_time})\n$(printlc -lw 8 -cw 24  "End" ${end_time})" | mark -s green "#"
     echo "Finished cmd: $(printc -c yellow ${excute_cmd})"
 }
 function renter()
 {
-    local cpath=$(realpath .)
+    local cpath=$(realpath ${PWD})
     local idx=$((1))
     while true
     do
-        local tmp_path=$(realpath . | rev | cut -d '/' -f ${idx}- |rev)
+        local tmp_path=$(pwd | rev | cut -d '/' -f ${idx}- |rev)
         if [ -d ${tmp_path} ]
         then
             echo "Goto ${tmp_path}"
-            cd ${tmp_path}
+            cd $(realpath ${tmp_path})
+            break
         elif [ "${tmp_path}" = "/" ]
         then
             break
         fi
         idx=$((idx + 1))
-        break
     done
     # cd ${HOME}
     # cd ${cpath}
@@ -246,4 +279,54 @@ function user_mount()
     local target_dev=$1
     local target_dir=$2
     sudo mount -o uid=${uid},gid=${gid} ${target_dev} ${target_dir}
+}
+function extract()
+{
+    if [ -f $1 ] ; then
+        case $1 in
+            *.tar.bz2|*.tbz2)
+                tar xvjf $1
+                ;;
+            *.tar.xz)
+                tar xvJf $1
+                ;;
+            *.tar.gz|*.tgz)
+                tar xvzf $1
+                ;;
+            *.bz2)
+                bunzip2 $1
+                ;;
+            *.rar)
+                unrar x $1
+                ;;
+            *.gz)
+                gunzip $1
+                ;;
+            *.tar)
+                tar xvf $1
+                ;;
+            *.zip)
+                unzip $1
+                ;;
+            *.Z)
+                uncompress $1
+                ;;
+            *.7z)
+                7z x $1
+                ;;
+            *)
+                echo "Unknown file type, use 7z to extract it"
+                7z x $1
+                ;;
+        esac
+    else
+        echo "'$1' is not a valid file!"
+    fi
+}
+function user_mount()
+{
+    local uid=${UID}
+    local gid=${GID}
+    local target_disk=$1
+    sudo mount -o uid=$uid,gid=$gid ${target_disk} /mnt/tmp
 }

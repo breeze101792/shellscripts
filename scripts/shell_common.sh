@@ -22,7 +22,8 @@ function item_promote()
 function hs_config()
 {
     # get and set hs_config
-    if [ "$#" = "3" ] && [ "$1" = "-s" ]
+    # if [ "$#" = "3" ] && [ "$1" = "-s" ]
+    if [ "$1" = "-s" ]
     then
         # echo "$*"
         local target_var=$2
@@ -30,10 +31,13 @@ function hs_config()
         if [ -f "${HS_FILE_CONFIG}" ] && hs_config -e "${target_var}" > /dev/null
         then
             # echo ${target_var}
-            sed -i "s|${target_var}=.*|${target_var}=${content}|g" ${HS_FILE_CONFIG}
-        else
-            printf "%s=%s\n" ${target_var} ${content} >> ${HS_FILE_CONFIG}
+            # sed -i "s|${target_var}=.*|${target_var}=${content}|g" ${HS_FILE_CONFIG}
+            sed -i "/${target_var}=.*/d" ${HS_FILE_CONFIG}
+            # printf "%s=%s\n" "${target_var}" "${content}" >> ${HS_FILE_CONFIG}
+        # else
+            # printf "%s=%s\n" "${target_var}" "${content}" >> ${HS_FILE_CONFIG}
         fi
+        printf "%s=%s\n" "${target_var}" "${content}" >> ${HS_FILE_CONFIG}
     elif [ "$#" = "2" ] && [ "$1" = "-g" ]
     then
         local target_var=$2
@@ -67,7 +71,9 @@ function set_working_path()
 {
     case $1 in
         -s|--set-current-path)
-            hs_config -s "${HS_VAR_CURRENT_DIR}" $(realpath ${PWD})
+            # hs_config -s "${HS_VAR_CURRENT_DIR}" $(realpath ${PWD})
+            # hs_config -s "${HS_VAR_CURRENT_DIR}" "${PWD}"
+            hs_config -s "${HS_VAR_CURRENT_DIR}" "$(realpath .)"
             # if [ -n "${HS_FILE_CONFIG}" ]
             # then
             #     echo `pwd` > ${HS_FILE_CONFIG}
@@ -77,7 +83,7 @@ function set_working_path()
             # fi
             ;;
         -g|--go-to-setting-path)
-            cd $(hs_config -g "${HS_VAR_CURRENT_DIR}")
+            cd "$(hs_config -g "${HS_VAR_CURRENT_DIR}")"
             # if [ -n "${HS_FILE_CONFIG}" ] && [ -f "${HS_FILE_CONFIG}" ] && [ -d "$(cat ${HS_FILE_CONFIG})" ]
             # then
             #     cd "$(cat $HS_FILE_CONFIG)"
