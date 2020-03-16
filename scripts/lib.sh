@@ -440,7 +440,7 @@ function clipboard()
                 hs_config -g "${HS_VAR_CURRENT_DIR}"
                 ;;
             -h|--help)
-                echo "sdebug Usage"
+                echo "Clibboard Usage"
                 printlc -cp false -d "->" "-s|--set-clipboard" "Set Clipbboard"
                 printlc -cp false -d "->" "-g|--get-clipboard" "Get Clipbboard"
                 printlc -cp false -d "->" "-d|--get-current-dir" "Get current dir vars"
