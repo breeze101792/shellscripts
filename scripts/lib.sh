@@ -104,7 +104,9 @@ function epath()
 }
 function pureshell()
 {
-    local term_type=xterm-256color
+    local env_term=xterm-256color
+    local env_home="${HOME}"
+    local env_vars="export TERM=${env_term} && export HOME=${env_home}"
     local pureshell_rc=~/.purebashrc
     if [ "${#}" = "0" ]
     then
@@ -112,10 +114,10 @@ function pureshell()
         if [ -f ~/.purebashrc ]
         then
             # the purebashrc shour contain execu
-            env -i bash -c "export TERM=${term_type} && source ${pureshell_rc} && bash --norc"
-            # env -i bash -c "export TERM=${term_type} && bash --rcfile  ${pureshell_rc}"
+            env -i bash -c "${env_vars} && source ${pureshell_rc} && bash --norc"
+            # env -i bash -c "${env_vars} && bash --rcfile  ${pureshell_rc}"
         else
-            env -i bash -c "export TERM=${term_type} && bash --norc"
+            env -i bash -c "${env_vars} && bash --norc"
         fi
     else
         echo "Pure bash"
@@ -123,10 +125,10 @@ function pureshell()
         if [ -f ${pureshell_rc} ]
         then
             # the purebashrc shour contain execu
-            env -i bash -c "export TERM=${term_type} && source ${pureshell_rc} && bash --norc -c \"${excute_cmd}\""
-            # env -i bash -c "export TERM=${term_type} && bash --rcfile  ${pureshell_rc}"
+            env -i bash -c "${env_vars} && source ${pureshell_rc} && bash --norc -c \"${excute_cmd}\""
+            # env -i bash -c "${env_vars} && bash --rcfile  ${pureshell_rc}"
         else
-            env -i bash -c "export TERM=${term_type} && bash --norc -c \"${excute_cmd}\""
+            env -i bash -c "export TERM=${env_term} && export HOME=${env_home} && bash --norc -c \"${excute_cmd}\""
         fi
     fi
 
