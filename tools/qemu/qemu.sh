@@ -1,6 +1,31 @@
 #!/bin/bash
-## Configs
-# source config.sh
+## Profile config
+if [ -z "${CONFIG_HOST_NAME}" ]
+then
+    export CONFIG_HOST_NAME="Linux"
+fi
+if [ -z "${CONFIG_BIOS_MODE}" ]
+then
+    export CONFIG_BIOS_MODE="bios"
+fi
+if [ -z "${CONFIG_GRAPHIC_GPU}" ]
+then
+    export CONFIG_GRAPHIC_GPU="qxl"
+fi
+if [ -z "${CONFIG_CPU_NUM}" ]
+then
+    export CONFIG_CPU_NUM=4
+fi
+if [ -z "${CONFIG_MEM_SIZE}" ]
+then
+    export CONFIG_MEM_SIZE=4G
+fi
+if [ -z "${CONFIG_NET_SSH}" ]
+then
+    export CONFIG_NET_SSH=4000
+fi
+
+## Qemu Configs
 QEMU_EXC="qemu-system-x86_64"
 QEMU_BIOS=("")
 QEMU_GRAPHIC=("")
@@ -19,6 +44,27 @@ G_CONFIG_FILE="./config.sh"
 G_USB_COUNT=0
 G_DRIVE_COUNT=2
 ## Functions
+function fHelp()
+{
+            
+    printf "qemu help\n"
+    printf "    %s %s\n" "-b|--bios" "Options: bios, uefi"
+    printf "    %s %s\n" "-q|--graphic" "Options: qxl, std, circus, virtio, vmware, spice, curses, none"
+    printf "    %s %s\n" "-u|--usb" "Options: vendorID:productID ex.1d6b:0003"
+    printf "    %s %s\n" "-c|--cdrom" "Options: /path/to/your/file"
+    printf "    %s %s\n" "-d|--disk" "Options: /path/to/your/file"
+    printf "    %s %s\n" "--create-disk" "Options: --create-disk disk_name disk_size(M,G)"
+    printf "    %s %s\n" "-pd|--physical-disk" "Options: /path/to/your/file"
+    printf "    %s %s\n" "-s|--setting" "Options: "
+    printf "    %s\n" "Settings config:
+    CONFIG_HOST_NAME='Linux'
+    CONFIG_BIOS_MODE='bios'
+    CONFIG_GRAPHIC_GPU='spice'
+    CONFIG_CPU_NUM=12
+    CONFIG_MEM_SIZE=16G
+    CONFIG_NET_SSH=4096"
+    printf "    %s %s\n" "-h|--help" "Options: "
+}
 function fEnvInit()
 {
     QEMU_CPU+=("-smp cores=${CONFIG_CPU_NUM}")
@@ -31,6 +77,14 @@ function fAddUSB()
     local product_id=`echo $1 | cut -d':' -f2`
     QEMU_USB+=("-device usb-host,vendorid=0x${vendor_id},productid=0x${product_id},id=hostdev0,bus=xhci.$G_USB_COUNT")
 }
+function fCreateDisk()
+{
+    local disk_name=$1
+    local disk_size=$2
+
+    # qemu-img create -f qcow2 linux.img 8G
+    qemu-img create -f qcow2 ${disk_name} ${disk_size}
+}
 ## Config
 function fConfigBIOS()
 {
@@ -42,6 +96,9 @@ function fConfigBIOS()
         fi
         QEMU_BIOS+=("-drive if=pflash,format=raw,file=./OVMF_VARS.fd")
         QEMU_BIOS=("-drive if=pflash,format=raw,readonly,file=/usr/share/ovmf/x64/OVMF_CODE.fd")
+    elif [ "${CONFIG_BIOS_MODE}" == "bios" ]
+    then
+        echo "Use Bios"
     fi
     # echo -e "Leave it empty to legacy bios"
 }
@@ -128,50 +185,60 @@ function main()
         G_CONFIG_FILE=$2
         shift 2
     fi
-    source $G_CONFIG_FILE
+    if [ -f "${G_CONFIG_FILE}" ]
+    then
+        source $G_CONFIG_FILE
+    fi
 
-    while true
+    while [[ $# != 0 ]]
     do
         case $1 in
+            --create-disk)
+                fCreateDisk $2 $3
+                shift 2
+                return 0
+                ;;
             -u|--usb)
                 fAddUSB $2
-                shift 2
+                shift 1
                 ;;
             -b|--bios)
                 CONFIG_BIOS_MODE=$2
-                shift 2
+                shift 1
                 ;;
             -c|--cdrom)
                 QEMU_DRIVE+=("-drive file=${2},index=1,media=cdrom,if=virtio")
-                shift 2
+                shift 1
                 ;;
             -d|--disk)
                 # QEMU_DRIVE+=("-drive file=${2},index=${G_DRIVE_COUNT},media=disk,cache=none,if=virtio,format=qcow2")
                 QEMU_DRIVE+=("-drive file=${2},index=${G_DRIVE_COUNT},media=disk,cache=writeback,if=virtio,format=qcow2")
                 G_DRIVE_COUNT=$(($G_DRIVE_COUNT + 1))
-                shift 2
+                shift 1
                 ;;
             -pd|--physical-disk)
                 QEMU_DRIVE+=("-drive file=${2},index=${G_DRIVE_COUNT},media=disk,cache=writeback,if=virtio,format=raw")
                 G_DRIVE_COUNT=$(($G_DRIVE_COUNT + 1))
-                shift 2
+                shift 1
                 ;;
             -q|--graphic)
                 CONFIG_GRAPHIC_GPU=$2
-                shift 2
+                shift 1
                 ;;
             -s|--setting)
                 echo -e "config file should be in the first paramater"
                 exit 2
                 ;;
             -h|--help)
-                echo Help function
-                exit 0
+                fHelp
+                return 0
                 ;;
             *)
-                break;
+                fHelp
+                return 1
                 ;;
         esac
+        shift 1
     done
 
     echo Starting $CONFIG_HOST_NAME
