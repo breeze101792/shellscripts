@@ -154,9 +154,9 @@ function hs_main
         source $HS_PATH_LIB/scripts/lab.sh
     fi
     # End of shell
-    if [ -f $HS_PATH_LIB/scripts/work.sh ]
+    if [ -f ${HS_PATH_WORK}/work.sh ]
     then
-        source $HS_PATH_LIB/scripts/work.sh
+        source ${HS_PATH_WORK}/work.sh
     fi
 }
 

@@ -38,7 +38,7 @@ export HS_PATH_IDE_PATH="${HOME}/projects"
 export HS_PATH_SLINK="${HOME}/slink"
 export HS_PATH_PYTHEN_ENV="${HOME}/env/pyenv"
 export HS_PATH_LOG="${HOME}/log"
-export HS_PATH_WORK="${HS_PATH_LIB}/../work_script"
+export HS_PATH_WORK="${HS_PATH_LIB}/work"
 export HS_PATH_PROJ=""
 ########################################################
 ########################################################
