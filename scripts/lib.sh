@@ -108,7 +108,7 @@ function droot()
                 flag_ignore_case="n"
                 ;;
             -h|--help)
-                echo "erun"
+                echo "droot"
                 printlc -cp false -d "->" "-s|--Source-HS" "Source HS config"
                 return 0
                 ;;
@@ -163,7 +163,7 @@ function froot()
                 flag_ignore_case="n"
                 ;;
             -h|--help)
-                echo "erun"
+                echo "froot"
                 printlc -cp false -d "->" "-s|--Source-HS" "Source HS config"
                 return 0
                 ;;

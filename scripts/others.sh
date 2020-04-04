@@ -183,15 +183,36 @@ function sys_status()
 function user_mount()
 {
     # user_mount /dev/sda1 /mnt/tmp
-    if [[ $# != 2 ]]
-    then
-        echo "Please enter target_device & target_dir"
-        return 1
-    fi
     local uid=${UID}
     local gid=${GID}
-    local target_dev=$1
-    local target_dir=$2
+
+    local target_dev=""
+    local target_dir="/mnt/tmp"
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -p|--path)
+                target_dir=$2
+                shift 1
+                ;;
+            -d|--device)
+                target_dev=$2
+                shift 1
+                ;;
+            -h|--help)
+                echo "user_mount"
+                printlc -cp false -d "->" "-p|--path" "Mount point"
+                printlc -cp false -d "->" "-d|--device" "Mount device"
+                return 0
+                ;;
+
+            *)
+                local excute_cmd="${excute_cmd}$@"
+                break
+                ;;
+        esac
+        shift 1
+    done
     sudo mount -o uid=${uid},gid=${gid} ${target_dev} ${target_dir}
 }
 function join_by()
