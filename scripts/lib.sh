@@ -17,36 +17,42 @@ alias scgrep='grep --color=always -rnIi  '
 alias vim='TERM=xterm-256color && vim '
 alias vi='TERM=xterm-256color && vim -m '
 ########################################################
-#####    Functions                                 #####
+#####    Shell Env                                 #####
 ########################################################
-function tstamp()
+function pureshell()
 {
-    date +%Y%m%d_%H%M%S
+    local env_term=xterm-256color
+    local env_home="${HOME}"
+    local env_vars="export TERM=${env_term} && export HOME=${env_home}"
+    local pureshell_rc=~/.purebashrc
+    if [ "${#}" = "0" ]
+    then
+        echo "Pure bash"
+        if [ -f ~/.purebashrc ]
+        then
+            # the purebashrc shour contain execu
+            env -i bash -c "${env_vars} && source ${pureshell_rc} && bash --norc"
+            # env -i bash -c "${env_vars} && bash --rcfile  ${pureshell_rc}"
+        else
+            env -i bash -c "${env_vars} && bash --norc"
+        fi
+    else
+        echo "Pure bash"
+        local excute_cmd=$@
+        if [ -f ${pureshell_rc} ]
+        then
+            # the purebashrc shour contain execu
+            env -i bash -c "${env_vars} && source ${pureshell_rc} && bash --norc -c \"${excute_cmd}\""
+            # env -i bash -c "${env_vars} && bash --rcfile  ${pureshell_rc}"
+        else
+            env -i bash -c "export TERM=${env_term} && export HOME=${env_home} && bash --norc -c \"${excute_cmd}\""
+        fi
+    fi
+
 }
-function doloop()
-{
-    local gen_list_cmd=$1
-    local do_cmd=$2
-    for each_input in $(eval ${gen_list_cmd})
-    do
-        echo ${do_cmd} $each_input
-        # bash -c "${do_cmd} ${each_input}"
-        eval "${do_cmd} ${each_input}"
-    done
-}
-function looptimes()
-{
-    local times=10
-    for each_time in $(seq 0 ${times})
-    do
-        echo Times: ${each_time}
-        echo "==========================================="
-        eval $@
-        echo "==========================================="
-        echo Sleep 3 seconds
-        sleep 3
-    done
-}
+########################################################
+#####    Folder Manipulation                       #####
+########################################################
 function ffind()
 {
     local flag_color="n"
@@ -86,69 +92,43 @@ function ffind()
     fi
 
 }
-function epath()
-{
-    #echo "Export Path $1";
-    # if grep -q $1 <<<$PATH;
-    local target_path=$(realpath $1)
-    if echo ${PATH} | grep -q ${target_path}
-    then
-        echo "${target_path} has alread in your PATH";
-        # exit 1
-        return 1
-    else
-        echo -E "export PATH=${target_path}:"'$PATH;'
-        export PATH=${target_path}:$PATH;
-    fi;
-
-}
-function pureshell()
-{
-    local env_term=xterm-256color
-    local env_home="${HOME}"
-    local env_vars="export TERM=${env_term} && export HOME=${env_home}"
-    local pureshell_rc=~/.purebashrc
-    if [ "${#}" = "0" ]
-    then
-        echo "Pure bash"
-        if [ -f ~/.purebashrc ]
-        then
-            # the purebashrc shour contain execu
-            env -i bash -c "${env_vars} && source ${pureshell_rc} && bash --norc"
-            # env -i bash -c "${env_vars} && bash --rcfile  ${pureshell_rc}"
-        else
-            env -i bash -c "${env_vars} && bash --norc"
-        fi
-    else
-        echo "Pure bash"
-        local excute_cmd=$@
-        if [ -f ${pureshell_rc} ]
-        then
-            # the purebashrc shour contain execu
-            env -i bash -c "${env_vars} && source ${pureshell_rc} && bash --norc -c \"${excute_cmd}\""
-            # env -i bash -c "${env_vars} && bash --rcfile  ${pureshell_rc}"
-        else
-            env -i bash -c "export TERM=${env_term} && export HOME=${env_home} && bash --norc -c \"${excute_cmd}\""
-        fi
-    fi
-
-}
 function droot()
 {
     local cpath=$(pwd)
     local tmp_path=$cpath
     local target_path=${cpath}
-    local target=''
+    local target=".git"
+    local flag_ignore_case="y"
+    local grep_args=("")
 
-    if (( $# >= 1 ))
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -c|--case)
+                flag_ignore_case="n"
+                ;;
+            -h|--help)
+                echo "erun"
+                printlc -cp false -d "->" "-s|--Source-HS" "Source HS config"
+                return 0
+                ;;
+
+            *)
+                target=$1
+                break
+                ;;
+        esac
+        shift 1
+    done
+
+    if [ "${flag_ignore_case}" = "y" ]
     then
-        target=$1
-    else
-        target=".git"
+        grep_args+="-i"
     fi
+
     local path_array=(`echo $cpath | sed 's/\//\n/g'`)
     # wallk through files
-    while ! echo ${tmp_path} | rev |  cut -d'/' -f 1 | rev   |  grep -i $target;
+    while ! echo ${tmp_path} | rev |  cut -d'/' -f 1 | rev   |  grep ${grep_args} $target;
     do
         tmp_path=$tmp_path"/.."
         pushd "$tmp_path" > /dev/null
@@ -172,16 +152,37 @@ function froot()
     local cpath=$(pwd)
     local tmp_path=$cpath
     local target_path=${cpath}
-    local target=''
+    local target=".git"
+    local flag_ignore_case="y"
+    local grep_args=("")
 
-    if (( $# >= 1 ))
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -c|--case)
+                flag_ignore_case="n"
+                ;;
+            -h|--help)
+                echo "erun"
+                printlc -cp false -d "->" "-s|--Source-HS" "Source HS config"
+                return 0
+                ;;
+
+            *)
+                target=$1
+                break
+                ;;
+        esac
+        shift 1
+    done
+
+    if [ "${flag_ignore_case}" = "y" ]
     then
-        target=$1
-    else
-        target=".git"
+        grep_args+="-i"
     fi
+
     # wallk through files
-    while ! ls -a $tmp_path | grep -i $target;
+    while ! ls -a $tmp_path | grep ${grep_args} $target;
     do
         tmp_path=$tmp_path"/.."
         pushd "$tmp_path" > /dev/null
@@ -205,6 +206,9 @@ function groot()
     local pattern=$1
     droot ${pattern} || froot ${pattern}
 }
+########################################################
+#####    Output                                    #####
+########################################################
 function echoerr()
 {
     >&2 echo $@
@@ -411,55 +415,86 @@ function printc()
     # printf "%s%s%s" ${ccstart} ${hi_word} ${ccend}
     echo -ne "${ccstart}${hi_word}${ccend}"
 }
-function join_by()
+function mark()
 {
-    local IFS="$1"; shift; echo "$*";
-    # local d=$1; shift; echo -n "$1"; shift; printf "%s" "${@/#/$d}";
-}
-function clipboard()
-{
-    if [ "$#" = 0 ]
+# Black        0;30     Dark Gray     1;30
+# Red          0;31     Light Red     1;31
+# Green        0;32     Light Green   1;32
+# Brown/Orange 0;33     Yellow        1;33
+# Blue         0;34     Light Blue    1;34
+# Purple       0;35     Light Purple  1;35
+# Cyan         0;36     Light Cyan    1;36
+# Light Gray   0;37     White         1;37
+
+# Color       #define       Value       RGB
+# black     COLOR_BLACK       0     0, 0, 0
+# red       COLOR_RED         1     max,0,0
+# green     COLOR_GREEN       2     0,max,0
+# yellow    COLOR_YELLOW      3     max,max,0
+# blue      COLOR_BLUE        4     0,0,max
+# magenta   COLOR_MAGENTA     5     max,0,max
+# cyan      COLOR_CYAN        6     0,max,max
+# white     COLOR_WHITE       7     max,max,max
+    local color_array=(
+        # $(echo -e "\033[0;30m")
+        $(echo -e "\033[0;31m")
+        $(echo -e "\033[0;32m")
+        $(echo -e "\033[0;33m")
+        $(echo -e "\033[0;34m")
+        $(echo -e "\033[0;35m")
+        $(echo -e "\033[0;36m")
+        $(echo -e "\033[0;37m")
+        $(echo -e "\033[1;30m")
+        $(echo -e "\033[1;31m")
+        $(echo -e "\033[1;32m")
+        $(echo -e "\033[1;33m")
+        $(echo -e "\033[1;34m")
+        $(echo -e "\033[1;35m")
+        $(echo -e "\033[1;36m")
+        $(echo -e "\033[1;37m")
+    )
+
+    local clr_idx=1
+    local hi_word=""
+    local clr_code=""
+    local ccstart=${color_array[1]}
+    local ccend=$(echo -e "\033[0m")
+
+    if [ "$1" = "-c" ] || [ "$1" = "-C" ] || [ "$1" = "--color" ]
     then
-        eval "clipboard -g"
-        return 0
-    fi
-    while true
-    do
-        if [ "$#" = 0 ]
-        then
-            break
-        fi
-        case $1 in
-            -s|--set-clipboard)
-                hs_config -s "${HS_VAR_CLIPBOARD}" "${2}"
-                shift 1
+        clr_idx=$2
+        shift 2
+        hi_word=$*
+        local ccstart=${color_array[$clr_idx]}
+    elif [ "$1" = "-s" ] || [ "$1" = "-S" ] || [ "$1" = "--color-name" ]
+    then
+        local color_name=$2
+        shift 2
+        hi_word=$*
+        case ${color_name} in
+            red)
+                ccstart=$(tput setaf 1)
                 ;;
-            -g|--get-clipboard)
-                hs_config -g "${HS_VAR_CLIPBOARD}"
+            green)
+                ccstart=$(tput setaf 2)
                 ;;
-            -d|--get-current-dir)
-                # get current dir
-                hs_config -g "${HS_VAR_CURRENT_DIR}"
+            yellow)
+                ccstart=$(tput setaf 3)
                 ;;
-            -h|--help)
-                echo "Clibboard Usage"
-                printlc -cp false -d "->" "-s|--set-clipboard" "Set Clipbboard"
-                printlc -cp false -d "->" "-g|--get-clipboard" "Get Clipbboard"
-                printlc -cp false -d "->" "-d|--get-current-dir" "Get current dir vars"
-                return 0
-                ;;
-            *)
-                echo "Unknown Options"
-                return 1
+            blue)
+                ccstart=$(tput setaf 4)
                 ;;
         esac
-        shift 1
-    done
+    else
+        hi_word=$*
+    fi
+    # echo $ccred$hi_word$ccend
+    # $@ 2>&1 | sed -E -e "s%${hi_word}%${color_array[$clr_idx]}&${ccend}%ig"
+    sed -u -E -e "s%${hi_word}%${ccstart}&${ccend}%ig"
 }
 ########################################################
 #####    Error Functions                           #####
 ########################################################
-
 function error_check()
 {
     local result=$?

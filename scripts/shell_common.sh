@@ -1,3 +1,34 @@
+########################################################
+########################################################
+#####                                              #####
+#####    Shell Setup Functions                     #####
+#####                                              #####
+########################################################
+########################################################
+function epath()
+{
+    #echo "Export Path $1";
+    # if grep -q $1 <<<$PATH;
+    local target_path=$(realpath $1)
+    if echo ${PATH} | grep -q ${target_path}
+    then
+        echo "${target_path} has alread in your PATH";
+        # exit 1
+        return 1
+    else
+        echo -E "export PATH=${target_path}:"'$PATH;'
+        export PATH=${target_path}:$PATH;
+    fi;
+
+}
+function shell_setup()
+{
+    epath ${HOME}/.bin > /dev/null
+    if [ "${HS_CONFIG_CHANGE_DIR}" = "y" ]
+    then
+        set_working_path -g
+    fi
+}
 function item_promote()
 {
     if [[ $# == 1 ]]
@@ -73,7 +104,7 @@ function set_working_path()
         -s|--set-current-path)
             # hs_config -s "${HS_VAR_CURRENT_DIR}" $(realpath ${PWD})
             # hs_config -s "${HS_VAR_CURRENT_DIR}" "${PWD}"
-            hs_config -s "${HS_VAR_CURRENT_DIR}" "$(realpath .)"
+            hs_config -s "${HS_VAR_CURRENT_DIR}" "$(pwd)"
             # if [ -n "${HS_FILE_CONFIG}" ]
             # then
             #     echo `pwd` > ${HS_FILE_CONFIG}

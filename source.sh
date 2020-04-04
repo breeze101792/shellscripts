@@ -128,7 +128,7 @@ function hs_main
     source $HS_PATH_LIB/scripts/lib.sh
     hs_print "Version: $HS_ENV_VER"
     source $HS_PATH_LIB/scripts/tools.sh
-    source $HS_PATH_LIB/scripts/project.sh
+    source $HS_PATH_LIB/scripts/development.sh
     source $HS_PATH_LIB/scripts/others.sh
     ##########################################
     # shell post init
@@ -138,7 +138,7 @@ function hs_main
         export_sh_func ${HS_PATH_LIB}/scripts/shell_common.sh
         export_sh_func ${HS_PATH_LIB}/scripts/lib.sh
         export_sh_func ${HS_PATH_LIB}/scripts/tools.sh
-        export_sh_func ${HS_PATH_LIB}/scripts/project.sh
+        export_sh_func ${HS_PATH_LIB}/scripts/development.sh
     fi
     if [ "${flag_var_refresh}" = "n" ]
     then

@@ -65,9 +65,4 @@ set colored-stats on
 set editing-mode vi
 set keymap vi
 
-
-
-if [ "${HS_CONFIG_CHANGE_DIR}" = "y" ]
-then
-    set_working_path -g
-fi
+shell_setup bash
