@@ -36,13 +36,13 @@ prompt walters
 # Key Settings
 #------------------------------
 
-#[[ -n "${key[Up]}"   ]] && bindkey "${key[Up]}"   up-line-or-beginning-search
-#[[ -n "${key[Down]}" ]] && bindkey "${key[Down]}" down-line-or-beginning-search
+# [[ -n "${key[Up]}"   ]] && bindkey "${key[Up]}"   up-line-or-beginning-search
+# [[ -n "${key[Down]}" ]] && bindkey "${key[Down]}" down-line-or-beginning-search
 #
 ## home & end
-#bindkey "${terminfo[khome]}" beginning-of-line
-#bindkey "${terminfo[kend]}" end-of-line
-#bindkey "${terminfo[kdch1]}" delete-char
+# bindkey "${terminfo[khome]}" beginning-of-line
+# bindkey "${terminfo[kend]}" end-of-line
+# bindkey "${terminfo[kdch1]}" delete-char
 
 # create a zkbd compatible hash;
 # to add other keys to this hash, see: man 5 terminfo
