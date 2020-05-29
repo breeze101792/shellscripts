@@ -24,19 +24,23 @@ if [ -z "${CONFIG_NET_SSH}" ]
 then
     export CONFIG_NET_SSH=4000
 fi
-
+if [ -z "${CONFIG_AUDIO}" ]
+then
+    export CONFIG_AUDIO="none"
+fi
 ## Qemu Configs
 QEMU_EXC="qemu-system-x86_64"
 QEMU_BIOS=("")
 QEMU_GRAPHIC=("")
 QEMU_CPU=("-enable-kvm" "-cpu host")
 QEMU_MEMORY=("")
-
+QEMU_AUDIO=("")
 QEMU_DRIVE=("")
 QEMU_USB=("-device nec-usb-xhci,id=xhci")
 QEMU_USB+=("-device usb-tablet")
 QEMU_NET=("")
 # QEMU_NET+=("-netdev tap,id=mynet0")
+QEMU_OTHER=("")
 ## Golbal Var
 G_MONITOR_TYPE="spice"
 G_MONITOR_SPICE_PORT=5900
@@ -50,11 +54,13 @@ function fHelp()
     printf "qemu help\n"
     printf "    %s %s\n" "-b|--bios" "Options: bios, uefi"
     printf "    %s %s\n" "-q|--graphic" "Options: qxl, std, circus, virtio, vmware, spice, curses, none"
+    printf "    %s %s\n" "-a|--audio" "Options: all, hda, none"
     printf "    %s %s\n" "-u|--usb" "Options: vendorID:productID ex.1d6b:0003"
     printf "    %s %s\n" "-c|--cdrom" "Options: /path/to/your/file"
     printf "    %s %s\n" "-d|--disk" "Options: /path/to/your/file"
     printf "    %s %s\n" "--create-disk" "Options: --create-disk disk_name disk_size(M,G)"
     printf "    %s %s\n" "-pd|--physical-disk" "Options: /path/to/your/file"
+    printf "    %s %s\n" "-o|--other" "Options: Other options"
     printf "    %s %s\n" "-s|--setting" "Options: "
     printf "    %s\n" "Settings config:
     CONFIG_HOST_NAME='Linux'
@@ -102,18 +108,20 @@ function fConfigBIOS()
     fi
     # echo -e "Leave it empty to legacy bios"
 }
-function fConfigQraphic()
+function fConfigGraphic()
 {
-    local $CONFIG_GRAPHIC_GPU=$1
     case $CONFIG_GRAPHIC_GPU in
         qxl)
             QEMU_GRAPHIC+=("-vga qxl")
+            G_MONITOR_TYPE="spice"
             ;;
         std)
             QEMU_GRAPHIC+=("-vga std")
+            G_MONITOR_TYPE="qemu"
             ;;
         circus)
             QEMU_GRAPHIC+=("-vga circus")
+            G_MONITOR_TYPE="qemu"
             ;;
         virtio)
             QEMU_GRAPHIC+=("-vga virtio")
@@ -121,9 +129,11 @@ function fConfigQraphic()
             ;;
         vmware)
             QEMU_GRAPHIC+=("-vga vmware")
+            G_MONITOR_TYPE="qemu"
             ;;
         spice)
             QEMU_GRAPHIC+=("-vga qxl")
+            G_MONITOR_TYPE="spice"
             ;;
         curses)
             QEMU_GRAPHIC+=("-curses")
@@ -151,12 +161,32 @@ function fConfigQraphic()
         # QEMU_GRAPHIC+=("-display sdl,gl=on")
         QEMU_GRAPHIC+=("-display gtk,gl=on")
     fi
-
-
+}
+function fConfigAudio()
+{
+    case ${CONFIG_AUDIO} in
+        all)
+            QEMU_AUDIO+=("-soundhw all")
+            ;;
+        hda)
+            QEMU_AUDIO+=("-soundhw hda")
+            ;;
+        none)
+            # None audio will be added
+            # QEMU_AUDIO+=("")
+            ;;
+        *)
+            echo "Error Audio Settings"
+            echo "Fallback to all"
+            QEMU_AUDIO+=("-soundhw all")
+            ;;
+    esac
 }
 function fConfigNet()
 {
-    QEMU_NET+=("-netdev user,id=net0,hostfwd=tcp::${CONFIG_NET_SSH}-:22")
+    # QEMU_NET+=("-netdev user,id=net0,hostfwd=tcp::${CONFIG_NET_SSH}-:22")
+    QEMU_NET+=("-netdev user,id=net0,net=192.168.76.0/24,dhcpstart=192.168.76.9,hostfwd=tcp::${CONFIG_NET_SSH}-:22")
+    -netdev user,id=mynet0,net=192.168.76.0/24,dhcpstart=192.168.76.9
     QEMU_NET+=("-device virtio-net-pci,romfile=/usr/share/qemu/efi-virtio.rom,netdev=net0")
 }
 function fRunSpice()
@@ -170,7 +200,7 @@ function fRunSpice()
 }
 function fRun()
 {
-    local exec_str="$QEMU_EXC ${QEMU_BIOS[@]} ${QEMU_GRAPHIC[@]} ${QEMU_CPU[@]} ${QEMU_MEMORY[@]} ${QEMU_NET[@]} ${QEMU_DRIVE[@]} ${QEMU_USB[@]} $@"
+    local exec_str="$QEMU_EXC ${QEMU_BIOS[@]} ${QEMU_GRAPHIC[@]} ${QEMU_CPU[@]} ${QEMU_MEMORY[@]} ${QEMU_AUDIO[@]} ${QEMU_NET[@]} ${QEMU_DRIVE[@]} ${QEMU_USB[@]} ${QEMU_OTHER[@]} $@"
     echo -e "\"${exec_str}\"\n"
     fRunSpice &
     exec ${exec_str}
@@ -225,9 +255,18 @@ function main()
                 CONFIG_GRAPHIC_GPU=$2
                 shift 1
                 ;;
+            -a|--audio)
+                CONFIG_AUDIO=$2
+                shift 1
+                ;;
             -s|--setting)
                 echo -e "config file should be in the first paramater"
                 exit 2
+                ;;
+            -o|--other)
+                shift 1
+                QEMU_OTHER+=($@)
+                break
                 ;;
             -h|--help)
                 fHelp
@@ -243,8 +282,9 @@ function main()
 
     echo Starting $CONFIG_HOST_NAME
     fConfigBIOS
-    fConfigQraphic
+    fConfigGraphic
     fConfigNet
+    fConfigAudio
     fEnvInit
     fRun $@
 }
