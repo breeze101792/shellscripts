@@ -2,7 +2,7 @@
 ########################################################
 ########################################################
 #####                                              #####
-#####    For HS Source Script                      #####
+#####    For sHellScript Source Script             #####
 #####                                              #####
 ########################################################
 ########################################################
@@ -45,30 +45,38 @@ function hs_main
     # Others
     ##########################################
     local title_message="DO IT NOW"
+    local excute_command=""
 
 
-    for arg in $@
+    while [[ "$#" != 0 ]]
     do
-        case $arg in
+        case $1 in
             -p=*|--lib-path=*)
-                flag_env_lib_path=${arg#*=}
+                flag_env_lib_path=${1#*=}
                 ;;
             -s=*|--shell-type=*)
-                flag_env_shell=${arg#*=}
+                flag_env_shell=${1#*=}
                 ;;
             -S=*|--silence=*)
-                flag_env_silence=${arg#*=}
+                flag_env_silence=${1#*=}
                 ;;
             --change-shell-path=*)
-                flag_env_change_shell_path=${arg#*=}
+                flag_env_change_shell_path=${1#*=}
                 ;;
             --refresh)
                 flag_var_refresh="y"
                 ;;
+            -x|--excute)
+                shift 1
+                excute_command=$*
+                break
+                ;;
             *)
-                echo "Options not found. ${arg}"
+                # echo "Options not found. ${arg}"
+                break
                 ;;
         esac
+        shift 1
     done
     # source shell scripts
     ##########################################
@@ -133,7 +141,7 @@ function hs_main
     ##########################################
     # shell post init
     ##########################################
-    if [ "${HS_ENV_SHELL}" = "bash" ] &&[ "${HS_CONFIG_FUNCTION_EXPORT}" = "y" ]
+    if [ "${HS_ENV_SHELL}" = "bash" ] && [ "${HS_CONFIG_FUNCTION_EXPORT}" = "y" ]
     then
         export_sh_func ${HS_PATH_LIB}/scripts/shell_common.sh
         export_sh_func ${HS_PATH_LIB}/scripts/lib.sh
@@ -157,6 +165,14 @@ function hs_main
     if [ -f ${HS_PATH_WORK}/work.sh ]
     then
         source ${HS_PATH_WORK}/work.sh
+    fi
+
+    ##########################################
+    # Excute Command
+    ##########################################
+    if [ ! -z "${excute_command}" ]
+    then
+        eval "${excute_command}"
     fi
 }
 

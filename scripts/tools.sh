@@ -9,6 +9,19 @@
 ########################################################
 #####    File Function                             #####
 ########################################################
+function waitsync()
+{
+    # waitsync [target_file]
+    # wait for target file exist
+    local target=$1
+    local interval=1
+    while [ ! -e ${target} ];
+    do
+        echo "Wait for ${target}"
+        sleep ${interval}
+    done
+    echo "Found ${target}"
+}
 function clipboard()
 {
     if [ "$#" = 0 ]

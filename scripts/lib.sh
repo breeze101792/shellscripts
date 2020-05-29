@@ -498,7 +498,7 @@ function mark()
 function error_check()
 {
     local result=$?
-    echo $#,$*
+    # echo $#,$*,$result
     if [[ $# == 2 ]]
     then
         local function_name=$1
@@ -513,8 +513,9 @@ function error_check()
         read cmd
         if [ "${cmd}" = "y" ]
         then
-            printc -c red "Emergency Command>"
-            read cmd
+            printc -c red "Open Emergency Shell"
+            # read cmd
+            cmd=bash
             eval "${cmd}"
             error_check ${funcstack[@]:1:1}${FUNCNAME[0]} ${LINENO}
         fi

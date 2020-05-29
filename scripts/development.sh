@@ -75,11 +75,13 @@ function pvinit()
         echo "Searching path: ${tmp_path}"
         if [ "$tmp_path" = "" ]
         then
+            echo "Continue"
             continue
         else
             echo -e "Searching folder: $tmp_path"
             find_cmd="find ${tmp_path} \( -type f -name '*.h' -o -name '*.c' -o -name '*.cpp' -o -name '*.java' ${file_ext[@]} \) -a \( -not -path '*/auto_gen*' -o -not -path '*/build' ${file_exclude[@]} \) | xargs realpath >> proj.files"
-            eval ${find_cmd}
+            # echo ${find_cmd}
+            eval "${find_cmd}"
         fi
     done
     cscope -b -i proj.files
@@ -93,14 +95,14 @@ function pvim()
     # then
     #     echo "Please enter a file name"
     # fi
-    local target_file=$(realpath ${1})
+    local vim_args=$@
     local cpath=`pwd`
     groot "cscope.db"
     # export CSCOPE_DB=`pwd`/cscope.db
     export CSCOPE_DB=`pwd`/cscope.db
     echo $CSCOPE_DB
     cd $cpath
-    vim ${target_file}
+    vim ${vim_args}
     # unset var
     unset CSCOPE_DB
 }
@@ -156,32 +158,58 @@ alias mdebug="sdebug --device /dev/ttyUSB1"
 ########################################################
 logfile()
 {
+    local logdir=""
+    local logname="logfile_`tstamp`.log"
 
-    if [ "$1" = "-p" ]
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -p|--path)
+                if [ ! -d "${2}" ]
+                then
+                    echo "Create Log Folder: $2"
+                    mkdir ${2}
+                fi
+
+                local logdir="$(realpath $2)"
+                shift 1
+                ;;
+            -f|--file-name)
+                local logname="${2}"
+                shift 1
+                ;;
+            -h|--help)
+                echo "logfile"
+                printlc -cp false -d "->" "-p|--path" "path name"
+                printlc -cp false -d "->" "-f|--file-name" "file name"
+                return 0
+                ;;
+
+            *)
+                break
+                ;;
+        esac
+        shift 1
+    done
+    if [ -z "${logdir}" ]
     then
-        if [ ! -d "${2}" ]
-        then
-            echo "Create Log Folder: $2"
-            mkdir ${2}
-        fi
-
-        local logname="$(realpath $2)/logfile_`tstamp`.log"
-        shift 2
+        local fulllogname=${logname}
     else
-        local logname="logfile_`tstamp`.log"
+        local fulllogname=${logdir}/${logname}
     fi
     local start_date=$(date)
 
-    echo "Command:\"$@\"" > $logname
-    echo "Start Date: ${start_date}" >> $logname
-    echo "================================================" >> $logname
-    eval "$@" 2>&1 | tee -a $logname
-    echo "================================================" >> $logname
-    echo "Command Finished:\"$@\"" >> $logname
-    echo "Start Date: ${start_date}" >> $logname
-    echo "End   Date: $(date)" >> $logname
+    echo "Logfile Command:\"$@\""
+    echo "Command:\"$@\"" > $fulllogname
+    echo "Start Date: ${start_date}" >> $fulllogname
+    echo "================================================" >> $fulllogname
+    eval "$@" 2>&1 | tee -a $fulllogname
+    echo "================================================" >> $fulllogname
+    echo "Command Finished:\"$@\"" >> $fulllogname
+    echo "Start Date: ${start_date}" >> $fulllogname
+    echo "End   Date: $(date)" >> $fulllogname
 
-    echo "Log file has been stored in ${logname}" | mark -s green ${logname}
+    echo "Log file has been stored in ${fulllogname}" | mark -s green ${fulllogname}
 }
 function slink()
 {
@@ -250,11 +278,20 @@ function erun()
 {
     # enhanced run
     local excute_cmd=""
+    local history_file="${HS_PATH_LOG}/erun_history.log"
+    local flag_log_enable="y"
+    local flag_color_enable="n"
     while [[ "$#" != 0 ]]
     do
         case $1 in
             -s|--Source-HS)
-                local excute_cmd="source $HOME/tools/shellscripts/source.sh -p=$HOME/tools/shellscripts -s="${HS_ENV_SHELL}" --change-shell-path=n --silence=y && "
+                local excute_cmd="source $HOME/tools/shellscripts/source.sh -p=$HOME/tools/shellscripts -s=${HS_ENV_SHELL} --change-shell-path=n --silence=y && "
+                ;;
+            -L|--no-log)
+                flag_log_enable="n"
+                ;;
+            -c|--color)
+                flag_color_enable="y"
                 ;;
             -h|--help)
                 echo "erun"
@@ -263,7 +300,7 @@ function erun()
                 ;;
 
             *)
-                local excute_cmd="${excute_cmd}$@"
+                local excute_cmd="${excute_cmd} $@"
                 break
                 ;;
         esac
@@ -274,20 +311,97 @@ function erun()
     echo "Start cmd: $(printc -c yellow ${excute_cmd})"
     printt "$(printlc -lw 32 -cw 0 -d " " "Start Jobs at ${start_time}" "")" | mark -s green "#"
     # mark_build "${excute_cmd}"
-    if [ -n "${HS_PATH_LOG}" ]
+    if [ -n "${HS_PATH_LOG}" ] && [ "${flag_log_enable}" = "y" ]
     then
         if [ ! -d "${HS_PATH_LOG}" ]
         then
             mkdir ${HS_PATH_LOG}
         fi
-        logfile -p "${HS_PATH_LOG}" eval "${excute_cmd}"
+        local logfile="${HS_PATH_LOG}/logfile_$(tstamp).log"
+        printf "Cmd:%s\nLogfile:%s\n----------------------------\n" "${excute_cmd}" "${logfile}" >> ${history_file}
+
+        logfile -f "${logfile}" "${excute_cmd}"
     else
-        echo "Log file path not define.HS_PATH_LOG=${HS_PATH_LOG}"
+        # echo "Log file path not define.HS_PATH_LOG=${HS_PATH_LOG}"
         eval "${excute_cmd}"
     fi
     local end_time=$(date "+%Y-%m-%d_%H:%M:%S")
     printt "$(printlc -lw 32 -cw 0 -d " " "Job Finished" "")\n$(printlc -lw 8 -cw 24 "Start" ${start_time})\n$(printlc -lw 8 -cw 24  "End" ${end_time})" | mark -s green "#"
     echo "Finished cmd: $(printc -c yellow ${excute_cmd})"
+}
+function ecd()
+{
+    echo "Lab Enhanced cd"
+
+    local cpath=$(pwd)
+    local target_path="${HOME}"
+
+
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -s|--hs-script|hs)
+                target_path=${HS_PATH_LIB}
+                ;;
+            -c|--document|doc|document)
+                target_path=${HS_PATH_DOCUMENT}
+                ;;
+            -d|--download|dl|download)
+                target_path=${HS_PATH_DOWNLOAD}
+                ;;
+            --log|log)
+                target_path=${HS_PATH_LOG}
+                ;;
+            -l|--lab|lab)
+                target_path=${HS_PATH_LAB}
+                if [ ! -d "${target_path}" ]
+                then
+                    mkdir ${target_path}
+                fi
+                ;;
+            -b|--build|build)
+                target_path=${HS_PATH_BUILD}
+                ;;
+            -p|--proj|proj|project|projects)
+                local tmp_path=$(echo ${HS_PATH_PROJ})
+                if [ -n "${2}" ]
+                then
+                    target_path=${tmp_path}/*${2}*
+                    echo "HAL to ${2}"
+                else
+                    target_path=${tmp_path}
+                fi
+                ;;
+            -h|--help)
+                echo "enhanced cd|ecd"
+                printlc -cp false -d "->" "-l|--lab|lab" "cd to target path"
+                printlc -cp false -d "->" "-b|--build|build" "cd to target path"
+                printlc -cp false -d "->" "-p|--proj|proj|" "cd to target path"
+                printlc -cp false -d "->" "-d|--download|download)|" "cd to target path"
+                return 0
+                ;;
+
+            *)
+                echo "Target not found"
+                cd ${cpath}
+                return 1
+                ;;
+        esac
+        shift 1
+    done
+
+    if [ -d "${target_path}" ]
+    then
+        echo goto ${target_path} | mark -s green ${target_path}
+        eval "cd ${target_path}"
+        ls
+        return 0
+    else
+        echo "Can't find ${target_path}"
+        cd ${cpath}
+        return 1
+    fi
+
 }
 ########################################################
 #####    Git Function                              #####
@@ -425,6 +539,12 @@ function ginfo()
     echo "Fetch cmd: git reset --hard $(git remote)/${branch_name}"
     echo "Fetch cmd: git reset --hard $(git remote)/${rel_branch_name}"
     echo "Fetch cmd: git reset --hard $(git remote)/${current_branch}"
+    echo "---- Pull Online Branch----"
+    echo "Fetch cmd: git pull $(git remote) ${branch_name}"
+    echo "Fetch cmd: git pull $(git remote) ${rel_branch_name}"
+    echo "Fetch cmd: git pull $(git remote) ${current_branch}"
+    echo "---- track Online Branch ----"
+    echo "Fetch cmd: git branch --set-upstream-to=$(git remote)/${branch_name} ${current_branch} "
 
 }
 function rforall()
