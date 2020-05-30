@@ -11,6 +11,7 @@
 # Vars
 export HS_ENV_SHELL=""
 export HS_ENV_VER=0.2.4
+export HS_ENV_TITLE="DO IT NOW"
 export HS_ENV_SILENCE=n
 # enable HS System
 export HS_ENV_ENABLE=true

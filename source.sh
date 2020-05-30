@@ -44,7 +44,6 @@ function hs_main
     ##########################################
     # Others
     ##########################################
-    local title_message="DO IT NOW"
     local excute_command=""
 
 
@@ -92,6 +91,10 @@ function hs_main
     if [ -f $HOME/.hsconfig.sh ]
     then
         source $HOME/.hsconfig.sh
+    fi
+    if [ -f $HOME/.hsconfig ]
+    then
+        source $HOME/.hsconfig
     fi
     ##########################################
     # setup custom configs
@@ -150,7 +153,7 @@ function hs_main
     fi
     if [ "${flag_var_refresh}" = "n" ]
     then
-        retitle "${title_message}"
+        retitle "${HS_ENV_TITLE}"
     fi
 
     ##########################################
