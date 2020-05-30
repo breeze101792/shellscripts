@@ -7,9 +7,11 @@ function setup_shell()
     if [ "$shell_name" = "bash" ]
     then
         echo source $SCRIPT_PATH/source.sh -s=$shell_name -p=${SCRIPT_PATH}
+        echo source $SCRIPT_PATH/source.sh -s=$shell_name -p=${SCRIPT_PATH} >> ~/.bashrc
     elif [ "$shell_name" = "zsh" ]
     then
         echo source $SCRIPT_PATH/source.sh -s=$shell_name -p=${SCRIPT_PATH}
+        echo source $SCRIPT_PATH/source.sh -s=$shell_name -p=${SCRIPT_PATH} >> ~/.zshrc
     fi
 }
 function setup_tmux()
@@ -34,7 +36,7 @@ function setup()
                 return 0
                 ;;
             *)
-                break
+                setup_shell
                 ;;
         esac
         shift 1
