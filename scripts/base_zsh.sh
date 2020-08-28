@@ -86,8 +86,8 @@ if (( ${+terminfo[smkx]} && ${+terminfo[rmkx]} )); then
 fi
 
 # # define extra keys
-# bindkey "[C" forward-word
-# bindkey "[D" backward-word
+# bindkey "^[[4~" forward-word
+# bindkey "^[[1~" backward-word
 
 # bindkey ";5C" forward-word
 # bindkey ";5D" backward-word
