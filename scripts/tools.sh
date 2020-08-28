@@ -151,3 +151,15 @@ function tstamp()
 {
     date +%Y%m%d_%H%M%S
 }
+function fakeshell()
+{
+    local precmd=$1
+    local postcmd=""
+    local cmd=""
+    echo "Fake shell"
+
+    while printf "FShell>" && read cmd
+    do
+        eval "${precmd} ${cmd} ${postcmd}"
+    done
+}

@@ -136,6 +136,7 @@ function hs_main
         export HS_ENV_SHELL="zsh"
         source $HS_PATH_LIB/scripts/base_zsh.sh
     fi
+    source $HS_PATH_LIB/scripts/env_platform.sh
     source $HS_PATH_LIB/scripts/lib.sh
     hs_print "Version: $HS_ENV_VER"
     source $HS_PATH_LIB/scripts/tools.sh
@@ -151,7 +152,7 @@ function hs_main
         export_sh_func ${HS_PATH_LIB}/scripts/tools.sh
         export_sh_func ${HS_PATH_LIB}/scripts/development.sh
     fi
-    if [ "${flag_var_refresh}" = "n" ]
+    if [ "${flag_var_refresh}" = "n" ] && [ ${HS_ENV_SILENCE} = "n" ]
     then
         retitle "${HS_ENV_TITLE}"
     fi

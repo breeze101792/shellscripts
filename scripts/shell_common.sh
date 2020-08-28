@@ -37,11 +37,11 @@ function item_promote()
         if [ "${HS_ENV_SHELL}" = "bash" ] || [ "${HS_ENV_SHELL}" = "sh" ]
         then
             local color="cyan"
-            local start_str='\033[00m-['
-            local end_str='\033[00m]-'
+            local start_str='\033[00m['
+            local end_str='\033[00m]'
         elif [ "${HS_ENV_SHELL}" = "zsh" ]
         then
-            local color="cyan"
+            local color="white"
             local start_str='%F{'${color}'}[%f'
             local end_str='%F{'${color}'}]%f'
         fi
@@ -136,7 +136,7 @@ function check_cmd_status()
         1)
             if [ "${HS_ENV_SHELL}" = "bash" ] || [ "${HS_ENV_SHELL}" = "sh" ]
             then
-                echo -e "-[\033[33;5;11mError\033[38;5;15m\033[00m]"
+                echo -e "\033[33;5;11mError\033[38;5;15m"
             elif [ "${HS_ENV_SHELL}" = "zsh" ]
             then
                 # echo "%B%F{yellow}Error%b%F{cyan}][%f"

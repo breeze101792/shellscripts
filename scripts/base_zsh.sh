@@ -6,7 +6,7 @@ SAVEHIST=1000
 # bindkey -e
 # End of lines configured by zsh-newuser-install
 # The following lines were added by compinstall
-zstyle :compinstall filename '/home/shaowu/.zshrc'
+zstyle :compinstall filename "${HOME}/.zshrc"
 
 # autoload -Uz compinit
 # compinit
@@ -147,21 +147,20 @@ setprompt() {
   fi
 
   PS1=${(j::Q)${(Z:Cn:):-$'
-    %F{cyan}[%f
-    %(!.%F{red}%n%f.%F{green}%n%f)
-    %F{cyan}@%f
+    %F{white}[%f
+    %(!.%F{red}%n%f.%F{yellow}%n%f)
+    %F{white}@%f
     ${p_host}
-    %F{cyan}][%f
-    %F{blue}%T-%w%f
-    %F{cyan}]%f
+    %F{white}][%f
+    %F{white}%T-%w%f
+    %F{white}]%f
     $(item_promote $(check_cmd_status $?))
     $(item_promote $(parse_git_branch))
     %F{white}`set_working_path -s`%f
-    %F{blue}[%~%f
-    %F{cyan}]%f
-    %(!.%F{red}%#%f.%F{green}%#%f)
-    " "
-  '}}
+    %F{white}[%f
+    %F{cyan}%~%f
+    %F{white}]%f
+  '}}$'\n%(!.%F{red}%#%f.%F{white}%#%f) '
 
   PS2=$'%_>'
   RPROMPT=$'${vcs_info_msg_0_}'

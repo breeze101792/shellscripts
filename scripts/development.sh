@@ -10,7 +10,7 @@
 #####    Alias                                     #####
 ########################################################
 # git alias ##
-# alias glog2="git log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) %C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(bold yellow)%d%C(reset)' --all"
+alias glog2="git log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) %C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(bold yellow)%d%C(reset)' --all"
 alias gstatus='git status -uno '
 alias gdiff='git diff --check --no-ext-diff'
 alias glog="git log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold cyan)%aD%C(reset) %C(bold green)(%ar)%C(reset)%C(bold yellow)%d%C(reset)%n''          %C(white)%s%C(reset) %C(dim white)- %an%C(reset)' --all"
@@ -281,6 +281,8 @@ function erun()
     local history_file="${HS_PATH_LOG}/erun_history.log"
     local flag_log_enable="y"
     local flag_color_enable="n"
+    local flag_send_mail="n"
+
     while [[ "$#" != 0 ]]
     do
         case $1 in
@@ -292,6 +294,9 @@ function erun()
                 ;;
             -c|--color)
                 flag_color_enable="y"
+                ;;
+            -m|--mail)
+                flag_send_mail="y"
                 ;;
             -h|--help)
                 echo "erun"
@@ -307,7 +312,8 @@ function erun()
         shift 1
     done
 
-    local start_time=$(date "+%Y-%m-%d_%H:%M:%S")
+    # local start_time=$(date "+%Y-%m-%d_%H:%M:%S")
+    local start_time=$(date)
     echo "Start cmd: $(printc -c yellow ${excute_cmd})"
     printt "$(printlc -lw 32 -cw 0 -d " " "Start Jobs at ${start_time}" "")" | mark -s green "#"
     # mark_build "${excute_cmd}"
@@ -325,9 +331,16 @@ function erun()
         # echo "Log file path not define.HS_PATH_LOG=${HS_PATH_LOG}"
         eval "${excute_cmd}"
     fi
-    local end_time=$(date "+%Y-%m-%d_%H:%M:%S")
-    printt "$(printlc -lw 32 -cw 0 -d " " "Job Finished" "")\n$(printlc -lw 8 -cw 24 "Start" ${start_time})\n$(printlc -lw 8 -cw 24  "End" ${end_time})" | mark -s green "#"
+    # local end_time=$(date "+%Y-%m-%d_%H:%M:%S")
+    local end_time=$(date)
+    # echo $(elapse "${start_time}" "${end_time}")
+    printt "$(printlc -lw 50 -cw 0 -d " " "Job Finished" "")\n$(printlc -lw 14 -cw 36 "Start" "${start_time}")\n$(printlc -lw 14 -cw 36  "End" "${end_time}")\n$(printlc -lw 14 -cw 36  "Elapse" "$(elapse "${start_time}" "${end_time}")")" | mark -s green "#"
     echo "Finished cmd: $(printc -c yellow ${excute_cmd})"
+
+    if [ "${flag_send_mail}" = "y" ]
+    then
+        printf "Command finished: %s\nCommand Log: %s\n" ${excute_cmd} ${logfile} | mail -s "[Notify][ERUN] Command finished" ${HS_ENV_MAIL}
+    fi
 }
 function ecd()
 {
@@ -342,6 +355,9 @@ function ecd()
         case $1 in
             -s|--hs-script|hs)
                 target_path=${HS_PATH_LIB}
+                ;;
+            --slink|slink)
+                target_path=${HS_PATH_SLINK}
                 ;;
             -c|--document|doc|document)
                 target_path=${HS_PATH_DOCUMENT}
@@ -362,6 +378,15 @@ function ecd()
             -b|--build|build)
                 target_path=${HS_PATH_BUILD}
                 ;;
+            ${HS_VAR_ECD_NAME_1})
+                target_path=${HS_PATH_ECD_1}
+                ;;
+            ${HS_VAR_ECD_NAME_2})
+                target_path=${HS_PATH_ECD_2}
+                ;;
+            ${HS_VAR_ECD_NAME_3})
+                target_path=${HS_PATH_ECD_3}
+                ;;
             -p|--proj|proj|project|projects)
                 local tmp_path=$(echo ${HS_PATH_PROJ})
                 if [ -n "${2}" ]
@@ -374,10 +399,18 @@ function ecd()
                 ;;
             -h|--help)
                 echo "enhanced cd|ecd"
-                printlc -cp false -d "->" "-l|--lab|lab" "cd to target path"
-                printlc -cp false -d "->" "-b|--build|build" "cd to target path"
-                printlc -cp false -d "->" "-p|--proj|proj|" "cd to target path"
-                printlc -cp false -d "->" "-d|--download|download)|" "cd to target path"
+                printlc -cp false -d "->" "-s|--hs-script|hs" "cd to ${HS_PATH_LIB}"
+                printlc -cp false -d "->" "--slink|slink" "cd to ${HS_PATH_SLINK}"
+                printlc -cp false -d "->" "-l|--lab|lab" "cd to ${HS_PATH_LAB}"
+                printlc -cp false -d "->" "-b|--build|build" "cd to ${HS_PATH_BUILD}"
+                printlc -cp false -d "->" "-p|--proj|proj|" "cd to ${HS_PATH_PROJ}"
+                printlc -cp false -d "->" "-d|--download|download)" "cd to ${HS_PATH_DOWNLOAD}"
+                printlc -cp false -d "->" "-c|--document|document)" "cd to ${HS_PATH_DOCUMENT}"
+
+                printlc -cp false -d "->" "${HS_VAR_ECD_NAME_1}" "cd to ${HS_PATH_ECD_1}"
+                printlc -cp false -d "->" "${HS_VAR_ECD_NAME_2}" "cd to ${HS_PATH_ECD_2}"
+                printlc -cp false -d "->" "${HS_VAR_ECD_NAME_3}" "cd to ${HS_PATH_ECD_3}"
+                echo "Note if you have any issue with case, please do shopt -s extglob"
                 return 0
                 ;;
 
@@ -402,6 +435,82 @@ function ecd()
         return 1
     fi
 
+}
+function fcd()
+{
+
+    local cpath=$(pwd)
+    local depth=3
+    local target_folder=""
+
+
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -d|--depth)
+                depth=$2
+                shift 1
+                ;;
+            -h|--help)
+                echo "fast cd|fcd"
+                printlc -cp false -d "->" "-d|--depth" "Depth: default is 3"
+                return 0
+                ;;
+
+            *)
+                target_folder=${@}
+                ;;
+        esac
+        shift 1
+    done
+    echo "Fast cd to ${target_folder}"
+
+    if [[ ${depth} > 0 ]]
+    then
+        echo "Finding in Layer 0"
+        test -d ${target_folder} && cd ${target_folder} && return 0
+    fi
+
+    if [[ ${depth} > 1 ]]
+    then
+        echo "Finding in Layer 1"
+        if ls * | grep "^${target_folder}$"
+        then
+            test -d */${target_folder} && cd */${target_folder} && return 0
+            return 1
+        fi
+    fi
+
+    if [[ ${depth} > 2 ]]
+    then
+        echo "Finding in Layer 2"
+        if ls */* | grep "^${target_folder}$"
+        then
+            test -d */*/${target_folder} && cd */*/${target_folder} && return 0
+            return 1
+        fi
+    fi
+
+    if [[ ${depth} > 3 ]]
+    then
+        echo "Finding in Layer 3"
+        if ls */*/* | grep "^${target_folder}$"
+        then
+            test -d */*/*/${target_folder} && cd */*/*/${target_folder} && return 0
+            return 1
+        fi
+    fi
+
+    if [[ ${depth} > 4 ]]
+    then
+        echo "Finding in Layer 4"
+        if ls */*/*/* | grep "^${target_folder}$"
+        then
+            test -d */*/*/*/${target_folder} && cd */*/*/*/${target_folder} && return 0
+            return 1
+        fi
+    fi
+    return 1
 }
 ########################################################
 #####    Git Function                              #####
@@ -433,13 +542,14 @@ function gclone()
     shift 3
 
     echo "Clone ${git_project}:${git_branch} from ${git_host}"
+    echo "git clone http://${git_host}/${git_project} -b ${git_branch} $@"
     git clone http://${git_host}/${git_project} -b ${git_branch} $@
 }
 function gcheckoutByDate()
 {
     pwd
     local checkout_date=$1
-    local cBranch=$2
+    local cBranch=$(git rev-parse --abbrev-ref HEAD)
     local target_commit=`git rev-list -n 1 --first-parent --before="$checkout_date" $cBranch`
     echo branch: $cBranch
     echo commit: $target_commit
@@ -545,11 +655,33 @@ function ginfo()
     echo "Fetch cmd: git pull $(git remote) ${current_branch}"
     echo "---- track Online Branch ----"
     echo "Fetch cmd: git branch --set-upstream-to=$(git remote)/${branch_name} ${current_branch} "
+    echo "---- Others ----"
+    echo "CMD: git log --pretty='format:%p->%h %cn(%an) %s' -n 1"
 
 }
 function rforall()
 {
-    repo forall -vc "git $@"
+    if [ "$#" = "0" ]
+    then
+        echo "git -h"
+    fi
+    repo forall -j ${HS_ENV_CPU_NUMBER} -vc "pwd && git $@"
+}
+function rreset()
+{
+    repo forall -vc "git reset --hard HEAD"
+    repo forall -vc "git clean -fd"
+    repo sync -j 64
+}
+function rdate()
+{
+    if [ "$#" != "1" ]
+    then
+        echo "Date not found."
+        echo "ex. rdate \"2020-07-22 02:00\""
+    fi
+    local checkout_date=$1
+    repo forall -j ${HS_ENV_CPU_NUMBER}  -c "pwd && git reset --hard \$(git rev-list -n 1 --first-parent --before=\"${checkout_date}\" \$(git rev-parse --abbrev-ref HEAD))"
 }
 ########################################################
 #####    Binary                                    #####

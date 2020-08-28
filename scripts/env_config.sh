@@ -10,11 +10,13 @@
 # Don't Set this flags
 # Vars
 export HS_ENV_SHELL=""
-export HS_ENV_VER=0.2.4
+export HS_ENV_VER=0.2.5
 export HS_ENV_TITLE="DO IT NOW"
 export HS_ENV_SILENCE=n
 # enable HS System
 export HS_ENV_ENABLE=true
+export HS_ENV_MAIL=""
+export HS_ENV_CPU_NUMBER="8"
 
 ########################################################
 ########################################################
@@ -26,6 +28,15 @@ export HS_ENV_ENABLE=true
 export HS_CONFIG_CHANGE_DIR=y
 # Only work on bash
 export HS_CONFIG_FUNCTION_EXPORT=n
+########################################################
+########################################################
+#####                                              #####
+#####    For HS Platform Config Zone               #####
+#####                                              #####
+########################################################
+########################################################
+export HS_PLATFORM_WSL=n
+export HS_PLATFORM_VM=n
 
 ########################################################
 ########################################################
@@ -43,9 +54,16 @@ export HS_PATH_PROJ="${HOME}/projects"
 export HS_PATH_WORK="${HS_PATH_LIB}/../work"
 export HS_PATH_SLINK="${HOME}/slink"
 export HS_PATH_LOG="${HOME}/log"
-# export HS_PATH_IDE_PATH="${HOME}/projects"
 
 export HS_PATH_PYTHEN_ENV="${HOME}/env/pyenv"
+# ECD
+export HS_VAR_ECD_NAME_1="1"
+export HS_PATH_ECD_1="${HOME}"
+export HS_VAR_ECD_NAME_2="2"
+export HS_PATH_ECD_2="${HOME}"
+export HS_VAR_ECD_NAME_3="@(3|4)"
+export HS_PATH_ECD_3="${HOME}"
+
 ########################################################
 ########################################################
 #####                                              #####

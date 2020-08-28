@@ -280,7 +280,7 @@ function printt
 }
 function printlc()
 {
-    local label_width=$((24))
+    local label_width=$((32))
     local content_width=$((32))
     local divide_char=":"
     local flag_content_padding=true
@@ -522,7 +522,7 @@ function error_check()
     fi
     return ${result}
 }
-function cmd_debug()
+function shell_debug()
 {
     # set -f	set -o noglob	Disable file name generation using metacharacters (globbing).
     # set -v	set -o verbose	Prints shell input lines as they are read.
@@ -532,4 +532,41 @@ function cmd_debug()
     set -x
     eval "${cmd}"
     set +x
+    # if [[ ${level} == 0 ]]
+    # then
+    #     # set +f
+    #     set +v
+    #     set +x
+    # elif [[ ${level} == 1 ]]
+    # then
+    #     # set +f
+    #     set -v
+    #     set +x
+    # elif [[ ${level} == 2 ]]
+    # then
+    #     # set +f
+    #     set +v
+    #     set -x
+    # fi
+}
+function elapse()
+{
+    # usage elapse [Start Date] [End Date]
+    if (( $# != 2 ))
+    then
+        echo "usage elapse [Start Date] [End Date]"
+        return 1
+    fi
+    local start_date=$1
+    local end_date=$2
+
+    local start_time=$(date -d"${start_date}" +%s)
+    local end_time=$(date -d"${end_date}" +%s)
+
+    local diff_time=$((${end_time} - ${start_time}))
+    local dd=$((${diff_time} / 60 / 60 / 24))
+    local hh=$((${diff_time} / 60 / 60 % 24))
+    local mm=$((${diff_time} / 60 % 60))
+    local ss=$((${diff_time} % 60 + 0))
+    echo "${dd}d:${hh}h:${mm}m:${ss}s"
 }
