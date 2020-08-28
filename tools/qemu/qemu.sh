@@ -50,7 +50,6 @@ G_DRIVE_COUNT=2
 ## Functions
 function fHelp()
 {
-            
     printf "qemu help\n"
     printf "    %s %s\n" "-b|--bios" "Options: bios, uefi"
     printf "    %s %s\n" "-q|--graphic" "Options: qxl, std, circus, virtio, vmware, spice, curses, none"
@@ -68,7 +67,8 @@ function fHelp()
     CONFIG_GRAPHIC_GPU='spice'
     CONFIG_CPU_NUM=12
     CONFIG_MEM_SIZE=16G
-    CONFIG_NET_SSH=4096"
+    CONFIG_NET_SSH=4096
+    CONFIG_AUDIO=none"
     printf "    %s %s\n" "-h|--help" "Options: "
 }
 function fEnvInit()
@@ -186,7 +186,7 @@ function fConfigNet()
 {
     # QEMU_NET+=("-netdev user,id=net0,hostfwd=tcp::${CONFIG_NET_SSH}-:22")
     QEMU_NET+=("-netdev user,id=net0,net=192.168.76.0/24,dhcpstart=192.168.76.9,hostfwd=tcp::${CONFIG_NET_SSH}-:22")
-    -netdev user,id=mynet0,net=192.168.76.0/24,dhcpstart=192.168.76.9
+    # -netdev user,id=mynet0,net=192.168.76.0/24,dhcpstart=192.168.76.9
     QEMU_NET+=("-device virtio-net-pci,romfile=/usr/share/qemu/efi-virtio.rom,netdev=net0")
 }
 function fRunSpice()
