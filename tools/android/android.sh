@@ -4,8 +4,16 @@
 ####    Build Configs
 ###############################################
 ###############################################
-export BUILD_ROOT_PATH="$(pwd)"
-export BUILD_JOBS="12"
+export BUILD_JOBS="$(($(nproc) - 2))"
+
+if [ -z "${BUILD_LUNCH}" ]
+then
+    export BUILD_LUNCH=""
+fi
+if [ -z "${BUILD_COMPILE}" ]
+then
+    export BUILD_COMPILE=""
+fi
 
 ###############################################
 ###############################################
@@ -20,27 +28,62 @@ export CONFIG_DOWNLOAD_DEPTH=10
 ####    Android Config
 ###############################################
 ###############################################
-export ANDROID_ROOT_PATH="${BUILD_ROOT_PATH}/aosp"
-export ANDROID_MANIFEST="https://android.googlesource.com/platform/manifest"
-export ANDROID_BRANCH="android-10.0.0_r32"
-export ANDROID_TARGET="aosp_crosshatch-userdebug"
+if [ -z "${ANDROID_DISTRO}" ]
+then
+    export ANDROID_DISTRO="aosp"
+fi
+if [ -z "${ANDROID_MANIFEST}" ]
+then
+    export ANDROID_MANIFEST="https://android.googlesource.com/platform/manifest"
+fi
+if [ -z "${ANDROID_BRANCH}" ]
+then
+    export ANDROID_BRANCH="android-10.0.0_r32"
+fi
+if [ -z "${ANDROID_TARGET}" ]
+then
+    export ANDROID_TARGET="aosp_crosshatch-userdebug"
+fi
+###############################################
+###############################################
+####    Path Config
+###############################################
+###############################################
+export PATH_BUILD_ROOT="$(pwd)"
+export PATH_ANDROID_ROOT="${PATH_BUILD_ROOT}/${ANDROID_DISTRO}"
 
 ###############################################
 ###############################################
-####    Patch Functions
+####    Base Functions
 ###############################################
 ###############################################
-function print_title()
+function fPrint_title()
 {
     echo "###############################################"
     echo "###############################################"
     echo "####    $@"
     echo "###############################################"
     echo "###############################################"
+    echo ""
 }
-function error_check()
+function fError_check()
 {
     return 0
+}
+function fEnvSetup()
+{
+    fPrint_title "${FUNCNAME[0]}"
+}
+function fBuildInfo()
+{
+    fPrint_title "${FUNCNAME[0]}"
+    echo "###############################################"
+    echo "####    Build Info"
+    echo "###############################################"
+    echo "####    Manifest        :${ANDROID_MANIFEST}"
+    echo "####    Branch          :${ANDROID_BRANCH}"
+    echo "####    Target          :${ANDROID_TARGET}"
+    echo "###############################################"
 }
 
 ###############################################
@@ -48,46 +91,72 @@ function error_check()
 ####    Functions
 ###############################################
 ###############################################
-function fDownload()
+function fDownload_Android()
 {
-    print_title "${FUNCNAME[0]}"
+    fPrint_title "${FUNCNAME[0]}"
     local init_args=()
     local sync_args=()
     init_args+=("--depth=${CONFIG_DOWNLOAD_DEPTH}")
-    sync_args+=("")
-    cd ${BUILD_ROOT_PATH}
-    if [ ! -d "${ANDROID_ROOT_PATH}" ]
+    sync_args+=("--no-clone-bundle -f")
+    cd ${PATH_BUILD_ROOT}
+    if [ ! -d "${PATH_ANDROID_ROOT}/framework" ]
     then
-        mkdir ${ANDROID_ROOT_PATH}
-        pushd ${ANDROID_ROOT_PATH}
-        {
-            repo init -u ${ANDROID_MANIFEST} -b ${ANDROID_BRANCH} ${init_args[@]}
-            error_check ${FUNCNAME[0]} ${LINENO}
+        mkdir ${PATH_ANDROID_ROOT}
+        cd ${PATH_ANDROID_ROOT}
+        echo "repo init -u ${ANDROID_MANIFEST} -b ${ANDROID_BRANCH} ${init_args[@]}"
+        repo init -u ${ANDROID_MANIFEST} -b ${ANDROID_BRANCH} ${init_args[@]}
+        fError_check ${FUNCNAME[0]} ${LINENO}
 
-            repo sync -j ${CONFIG_DOWNLOAD_THREAD} ${sync_args[@]}
-            error_check ${FUNCNAME[0]} ${LINENO}
-        }
-        popd
+        echo "repo sync -j ${CONFIG_DOWNLOAD_THREAD} ${sync_args[@]}"
+        repo sync -j ${CONFIG_DOWNLOAD_THREAD} ${sync_args[@]}
+        fError_check ${FUNCNAME[0]} ${LINENO}
     else
         echo "File already exist!!!"
         echo "Skip download."
     fi
     return 0
 }
+function fDownload_DeviceBlobs()
+{
+    fPrint_title "${FUNCNAME[0]}"
+    if [ "${ANDROID_DISTRO}" = "lineage" ] && [ "${ANDROID_TARGET}" = "z3c" ]
+    then
+        local vendor_name="sony"
+        cd ${PATH_ANDROID_ROOT}/vendor
+        if [ ! -d "${PATH_ANDROID_ROOT}/vendor/${vendor_name}" ]
+        then
+            git clone https://github.com/TheMuppets/proprietary_vendor_sony.git -b ${ANDROID_BRANCH} ${vendor_name} --depth=${CONFIG_DOWNLOAD_DEPTH}
+        fi
+    elif [ "${ANDROID_DISTRO}" = "lineage" ] && [ "${ANDROID_TARGET}" = "flo" ]
+    then
+        local vendor_name="asus"
+        cd ${PATH_ANDROID_ROOT}/vendor
+        if [ ! -d "${PATH_ANDROID_ROOT}/vendor/${vendor_name}" ]
+        then
+            git clone https://github.com/TheMuppets/proprietary_vendor_asus.git -b ${ANDROID_BRANCH} ${vendor_name} --depth=${CONFIG_DOWNLOAD_DEPTH}
+        fi
+    fi
+    return 0
+}
+function fDownload()
+{
+    fDownload_Android
+    fDownload_DeviceBlobs
+}
 
 function fBuild()
 {
-    print_title "${FUNCNAME[0]}"
-    cd ${ANDROID_ROOT_PATH}
+    fPrint_title "${FUNCNAME[0]}"
+    cd ${PATH_ANDROID_ROOT}
 
-    source ${ANDROID_ROOT_PATH}/build/envsetup.sh
-    error_check ${FUNCNAME[0]} ${LINENO}
+    source ${PATH_ANDROID_ROOT}/build/envsetup.sh
+    fError_check ${FUNCNAME[0]} ${LINENO}
 
     lunch ${ANDROID_TARGET}
-    error_check ${FUNCNAME[0]} ${LINENO}
+    fError_check ${FUNCNAME[0]} ${LINENO}
 
     m
-    error_check ${FUNCNAME[0]} ${LINENO}
+    fError_check ${FUNCNAME[0]} ${LINENO}
     return 0
 }
 
@@ -107,6 +176,10 @@ function fMain()
     while [[ ${#} > 0 ]]
     do
         case ${@} in
+            -a|--all)
+                flag_download=y
+                flag_build=y
+                ;;
             -d|--download)
                 flag_download=y
                 ;;
@@ -124,6 +197,7 @@ function fMain()
         esac
         shift 1
     done
+    fBuildInfo
 
     if [ "${flag_download}" = "y" ]
     then
@@ -134,5 +208,6 @@ function fMain()
     then
         fBuild
     fi
+    cd ${PATH_BUILD_ROOT}
 }
 fMain $@

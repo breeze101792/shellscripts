@@ -49,6 +49,12 @@ function looptimes()
 ########################################################
 #####    Others Function                           #####
 ########################################################
+function audio_default()
+{
+    local audio_dev=$(pactl list sinks | grep Name |grep hdmi | cut -d ':' -f 2)
+    echo "Set Default Audio Device to${audio_dev}"
+    eval pactl set-default-sink "${audio_dev}"
+}
 function rv()
 {
     echo "Record video for $1 second"
