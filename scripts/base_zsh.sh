@@ -148,7 +148,7 @@ setprompt() {
 
   PS1=${(j::Q)${(Z:Cn:):-$'
     %F{white}[%f
-    %(!.%F{red}%n%f.%F{yellow}%n%f)
+    %(!.%F{red}%n%f.%F{white}%n%f)
     %F{white}@%f
     ${p_host}
     %F{white}][%f
