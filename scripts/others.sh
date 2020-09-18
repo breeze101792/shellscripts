@@ -29,7 +29,7 @@ function doloop()
     do
         echo ${do_cmd} $each_input
         # bash -c "${do_cmd} ${each_input}"
-        eval "${do_cmd} ${each_input}"
+        eval "${do_cmd} \"${each_input}\""
     done
 }
 function looptimes()

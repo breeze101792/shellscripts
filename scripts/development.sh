@@ -15,6 +15,8 @@ alias gstatus='git status -uno '
 alias gdiff='git diff --check --no-ext-diff'
 alias glog="git log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold cyan)%aD%C(reset) %C(bold green)(%ar)%C(reset)%C(bold yellow)%d%C(reset)%n''          %C(white)%s%C(reset) %C(dim white)- %an%C(reset)' --all"
 #alias lg="git $lg1"
+alias proot="froot .repo"
+alias nlfsgit="GIT_LFS_SKIP_SMUDGE=1 git "
 
 ########################################################
 #####    VIM                                      #####
@@ -443,7 +445,6 @@ function fcd()
     local depth=3
     local target_folder=""
 
-
     while [[ "$#" != 0 ]]
     do
         case $1 in
@@ -507,6 +508,26 @@ function fcd()
         if ls */*/*/* | grep "^${target_folder}$"
         then
             test -d */*/*/*/${target_folder} && cd */*/*/*/${target_folder} && return 0
+            return 1
+        fi
+    fi
+    ####
+
+    if [[ ${depth} > 5 ]]
+    then
+        echo "Finding in Layer 5"
+        if ls */*/*/*/* | grep "^${target_folder}$"
+        then
+            test -d */*/*/*/*/${target_folder} && cd */*/*/*/*/${target_folder} && return 0
+            return 1
+        fi
+    fi
+    if [[ ${depth} > 6 ]]
+    then
+        echo "Finding in Layer 6"
+        if ls */*/*/*/*/* | grep "^${target_folder}$"
+        then
+            test -d */*/*/*/*/*/${target_folder} && cd */*/*/*/*/*/${target_folder} && return 0
             return 1
         fi
     fi
@@ -659,13 +680,19 @@ function ginfo()
     echo "CMD: git log --pretty='format:%p->%h %cn(%an) %s' -n 1"
 
 }
-function rforall()
+function gfiles()
 {
-    if [ "$#" = "0" ]
+    local commit=""
+    if [[ $# = 0 ]]
     then
-        echo "git -h"
+        commit="HEAD"
+    elif [[ $# = 1 ]]
+    then
+        commit="$1"
+    else
+        echo "Please Enter commit hash"
     fi
-    repo forall -j ${HS_ENV_CPU_NUMBER} -vc "pwd && git $@"
+    git diff ${commit} ${commit}~ --name-only
 }
 function rreset()
 {
