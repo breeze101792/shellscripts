@@ -20,7 +20,7 @@ function setup_tmux()
 }
 function setup()
 {
-    while true
+    while [ "$#" != "0" ]
     do
         case $1 in
             -t|--tmux)

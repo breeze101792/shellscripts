@@ -41,6 +41,9 @@ function clipboard()
                 if [ -z "${@}" ]
                 then
                     hs_config -s "${HS_VAR_CLIPBOARD}" "$(pwd)"
+                elif [[ ${#} = 1 ]] && [ -e ${1} ]
+                then
+                    hs_config -s "${HS_VAR_CLIPBOARD}" "$(realpath ${1})"
                 else
                     hs_config -s "${HS_VAR_CLIPBOARD}" "${@}"
                 fi
