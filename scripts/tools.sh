@@ -37,8 +37,14 @@ function clipboard()
         fi
         case $1 in
             -s|--set-clipboard)
-                hs_config -s "${HS_VAR_CLIPBOARD}" "${2}"
                 shift 1
+                if [ -z "${@}" ]
+                then
+                    hs_config -s "${HS_VAR_CLIPBOARD}" "$(pwd)"
+                else
+                    hs_config -s "${HS_VAR_CLIPBOARD}" "${@}"
+                fi
+                break
                 ;;
             -g|--get-clipboard)
                 hs_config -g "${HS_VAR_CLIPBOARD}"
@@ -49,14 +55,14 @@ function clipboard()
                 ;;
             -h|--help)
                 echo "Clibboard Usage"
-                printlc -cp false -d "->" "-s|--set-clipboard" "Set Clipbboard"
-                printlc -cp false -d "->" "-g|--get-clipboard" "Get Clipbboard"
-                printlc -cp false -d "->" "-d|--get-current-dir" "Get current dir vars"
+                printlc -cp false -d "->" "-s|--set-clipboard" "Set Clipbboard, default use pwd for setting var"
+                printlc -cp false -d "->" "-g|--get-clipboard" "Get Clipbboard, default use getting action"
+                printlc -cp false -d "->" "-d|--get-current-dir" "Get current dir vars, get current stored dir"
                 return 0
                 ;;
             *)
-                echo "Unknown Options"
-                return 1
+                hs_config -s "${HS_VAR_CLIPBOARD}" "${@}"
+                break
                 ;;
         esac
         shift 1
