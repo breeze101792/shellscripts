@@ -50,12 +50,12 @@ shopt -s autocd
 
 # change bash auto-complete
 # If there are multiple matches for completion, Tab should cycle through them
-bind 'TAB':menu-complete
+bind 'TAB':menu-complete 2> /dev/null
 # Display a list of the matching files
-bind "set show-all-if-ambiguous on"
+bind "set show-all-if-ambiguous on" 2> /dev/null
 # Perform partial completion on the first Tab press,
 # only start cycling full results on the second Tab press
-bind "set menu-complete-display-prefix on"
+bind "set menu-complete-display-prefix on" 2> /dev/null
 
 # If a tab-completed file is a symlink to a directory,
 # treat it like a directory not a file

@@ -200,12 +200,15 @@ logfile()
         local fulllogname=${logdir}/${logname}
     fi
     local start_date=$(date)
+    local var_ret=0
 
     echo "Logfile Command:\"$@\""
     echo "Command:\"$@\"" > $fulllogname
     echo "Start Date: ${start_date}" >> $fulllogname
     echo "================================================" >> $fulllogname
     eval "$@" 2>&1 | tee -a $fulllogname
+    # echo ${PIPESTATUS[0]} # bash
+    # echo ${pipestatus[1]} # zsh
     echo "================================================" >> $fulllogname
     echo "Command Finished:\"$@\"" >> $fulllogname
     echo "Start Date: ${start_date}" >> $fulllogname
@@ -280,7 +283,13 @@ function erun()
 {
     # enhanced run
     local excute_cmd=""
-    local history_file="${HS_PATH_LOG}/erun_history.log"
+    local current_date=$(date +%Y%m%d)
+
+    local log_path=${HS_PATH_LOG}/${current_date}
+
+    local history_file="${log_path}/erun_history.log"
+    local log_file="${log_path}/logfile_$(tstamp).log"
+
     local flag_log_enable="y"
     local flag_color_enable="n"
     local flag_send_mail="n"
@@ -321,14 +330,13 @@ function erun()
     # mark_build "${excute_cmd}"
     if [ -n "${HS_PATH_LOG}" ] && [ "${flag_log_enable}" = "y" ]
     then
-        if [ ! -d "${HS_PATH_LOG}" ]
+        if [ ! -d "${log_path}" ]
         then
-            mkdir ${HS_PATH_LOG}
+            mkdir ${log_path}
         fi
-        local logfile="${HS_PATH_LOG}/logfile_$(tstamp).log"
-        printf "Cmd:%s\nLogfile:%s\n----------------------------\n" "${excute_cmd}" "${logfile}" >> ${history_file}
+        printf "Cmd:%s\nLogfile:%s\n----------------------------\n" "${excute_cmd}" "${log_file}" >> ${history_file}
 
-        logfile -f "${logfile}" "${excute_cmd}"
+        logfile -f "${log_file}" "${excute_cmd}"
     else
         # echo "Log file path not define.HS_PATH_LOG=${HS_PATH_LOG}"
         eval "${excute_cmd}"
@@ -341,7 +349,7 @@ function erun()
 
     if [ "${flag_send_mail}" = "y" ]
     then
-        printf "Command finished: %s\nCommand Log: %s\n" ${excute_cmd} ${logfile} | mail -s "[Notify][ERUN] Command finished" ${HS_ENV_MAIL}
+        printf 'Command finished: %s\nCommand Log: %s\n' "${excute_cmd}" "${log_file}" | mail -s "[Notify][ERUN] Command finished" ${HS_ENV_MAIL}
     fi
 }
 function ecd()
@@ -380,6 +388,9 @@ function ecd()
             -b|--build|build)
                 target_path=${HS_PATH_BUILD}
                 ;;
+            ${HS_VAR_ECD_NAME_0})
+                target_path=${HS_PATH_ECD_0}
+                ;;
             ${HS_VAR_ECD_NAME_1})
                 target_path=${HS_PATH_ECD_1}
                 ;;
@@ -388,6 +399,24 @@ function ecd()
                 ;;
             ${HS_VAR_ECD_NAME_3})
                 target_path=${HS_PATH_ECD_3}
+                ;;
+            ${HS_VAR_ECD_NAME_4})
+                target_path=${HS_PATH_ECD_4}
+                ;;
+            ${HS_VAR_ECD_NAME_5})
+                target_path=${HS_PATH_ECD_5}
+                ;;
+            ${HS_VAR_ECD_NAME_6})
+                target_path=${HS_PATH_ECD_6}
+                ;;
+            ${HS_VAR_ECD_NAME_7})
+                target_path=${HS_PATH_ECD_7}
+                ;;
+            ${HS_VAR_ECD_NAME_8})
+                target_path=${HS_PATH_ECD_8}
+                ;;
+            ${HS_VAR_ECD_NAME_9})
+                target_path=${HS_PATH_ECD_9}
                 ;;
             -p|--proj|proj|project|projects)
                 local tmp_path=$(echo ${HS_PATH_PROJ})
@@ -409,9 +438,16 @@ function ecd()
                 printlc -cp false -d "->" "-d|--download|download)" "cd to ${HS_PATH_DOWNLOAD}"
                 printlc -cp false -d "->" "-c|--document|document)" "cd to ${HS_PATH_DOCUMENT}"
 
-                printlc -cp false -d "->" "${HS_VAR_ECD_NAME_1}" "cd to ${HS_PATH_ECD_1}"
-                printlc -cp false -d "->" "${HS_VAR_ECD_NAME_2}" "cd to ${HS_PATH_ECD_2}"
-                printlc -cp false -d "->" "${HS_VAR_ECD_NAME_3}" "cd to ${HS_PATH_ECD_3}"
+               [ ! -z ${HS_VAR_ECD_NAME_0} ] && printlc -cp false -d "->" "${HS_VAR_ECD_NAME_0}" "cd to ${HS_PATH_ECD_0}"
+               [ ! -z ${HS_VAR_ECD_NAME_1} ] && printlc -cp false -d "->" "${HS_VAR_ECD_NAME_1}" "cd to ${HS_PATH_ECD_1}"
+               [ ! -z ${HS_VAR_ECD_NAME_2} ] && printlc -cp false -d "->" "${HS_VAR_ECD_NAME_2}" "cd to ${HS_PATH_ECD_2}"
+               [ ! -z ${HS_VAR_ECD_NAME_3} ] && printlc -cp false -d "->" "${HS_VAR_ECD_NAME_3}" "cd to ${HS_PATH_ECD_3}"
+               [ ! -z ${HS_VAR_ECD_NAME_4} ] && printlc -cp false -d "->" "${HS_VAR_ECD_NAME_4}" "cd to ${HS_PATH_ECD_4}"
+               [ ! -z ${HS_VAR_ECD_NAME_5} ] && printlc -cp false -d "->" "${HS_VAR_ECD_NAME_5}" "cd to ${HS_PATH_ECD_5}"
+               [ ! -z ${HS_VAR_ECD_NAME_6} ] && printlc -cp false -d "->" "${HS_VAR_ECD_NAME_6}" "cd to ${HS_PATH_ECD_6}"
+               [ ! -z ${HS_VAR_ECD_NAME_7} ] && printlc -cp false -d "->" "${HS_VAR_ECD_NAME_7}" "cd to ${HS_PATH_ECD_7}"
+               [ ! -z ${HS_VAR_ECD_NAME_8} ] && printlc -cp false -d "->" "${HS_VAR_ECD_NAME_8}" "cd to ${HS_PATH_ECD_8}"
+               [ ! -z ${HS_VAR_ECD_NAME_9} ] && printlc -cp false -d "->" "${HS_VAR_ECD_NAME_9}" "cd to ${HS_PATH_ECD_9}"
                 echo "Note if you have any issue with case, please do shopt -s extglob"
                 return 0
                 ;;
@@ -442,7 +478,7 @@ function fcd()
 {
 
     local cpath=$(pwd)
-    local depth=3
+    local depth=99
     local target_folder=""
 
     while [[ "$#" != 0 ]]
@@ -452,9 +488,13 @@ function fcd()
                 depth=$2
                 shift 1
                 ;;
+            -m|--max|m)
+                depth=99
+                ;;
             -h|--help)
                 echo "fast cd|fcd"
                 printlc -cp false -d "->" "-d|--depth" "Depth: default is 3"
+                printlc -cp false -d "->" "-m|--max|m" "Depth: Do max search, depth is 6"
                 return 0
                 ;;
 
@@ -635,8 +675,8 @@ function gpush()
     fi
     if [ "${remote}" = "" ]
     then
-        local remote=$(git branch -r | grep "/$cbranch$" | grep -ve "HEAD" |rev |cut -d'/' -f2 | rev | tr -d "[:blank:]")
-        # git show remote
+        # local remote=$(git branch -r | grep "/$cbranch$" | grep -ve "HEAD" |rev |cut -d'/' -f2 | rev | tr -d "[:blank:]")
+        local remote=$(git remote show)
         echo "Auto set remote to |${remote}|"
     fi
     if [ "${branch}" = "" ]
@@ -677,7 +717,7 @@ function ginfo()
     echo "---- track Online Branch ----"
     echo "Fetch cmd: git branch --set-upstream-to=$(git remote)/${branch_name} ${current_branch} "
     echo "---- Others ----"
-    echo "CMD: git log --pretty='format:%p->%h %cn(%an) %s' -n 1"
+    echo "Get Info for First 1 Commit: git log --pretty='format:%p->%h %cn(%an) %s' -n 1"
 
 }
 function gfiles()

@@ -99,6 +99,8 @@ function droot()
     local target_path=${cpath}
     local target=".git"
     local flag_ignore_case="y"
+    local flag_full_match="n"
+    local flag_verbose="n"
     local grep_args=("")
 
     while [[ "$#" != 0 ]]
@@ -107,14 +109,22 @@ function droot()
             -c|--case)
                 flag_ignore_case="n"
                 ;;
+            -m|--full-match)
+                flag_full_match="y"
+                ;;
+            -v|--verbose)
+                flag_verbose="y"
+                ;;
             -h|--help)
-                echo "droot"
-                printlc -cp false -d "->" "-s|--Source-HS" "Source HS config"
+                echo "froot"
+                printlc -cp false -d "->" "-c|--case" "Ignore case"
+                printlc -cp false -d "->" "-m|--full-match" "full pattern match"
+                printlc -cp false -d "->" "-v|--verbose" "Echo Verbose"
                 return 0
                 ;;
 
             *)
-                target=$1
+                target=$@
                 break
                 ;;
         esac
@@ -126,26 +136,33 @@ function droot()
         grep_args+="-i"
     fi
 
-    local path_array=(`echo $cpath | sed 's/\//\n/g'`)
+    local path_array=(`echo ${cpath} | sed 's/\//\n/g'`)
     # wallk through files
-    while ! echo ${tmp_path} | rev |  cut -d'/' -f 1 | rev   |  grep ${grep_args} $target;
+    while ! echo ${tmp_path} | rev |  cut -d'/' -f 1 | rev   |  grep ${grep_args} ${target} > /dev/null;
     do
-        tmp_path=$tmp_path"/.."
-        pushd "$tmp_path" > /dev/null
+
+        tmp_path=${tmp_path}"/.."
+        pushd "${tmp_path}" > /dev/null
         tmp_path=`pwd`
-        # echo "Searching in $tmp_path"
-        if [ $(pwd) = '/' ];
+        [ "${flag_verbose}" = "y" ] && echo "Searching in ${tmp_path}"
+        if [ "$(pwd)" = "/" ];
         then
-            echo 'Hit the root'
+            [ "${flag_verbose}" = "y" ] && echo 'Hit the root'
             popd > /dev/null
             return 1
-            # exit 1
         fi
         popd > /dev/null
-        target_path=$tmp_path
+        target_path=${tmp_path}
     done
-    echo "goto $target_path"
-    cd $target_path
+
+    if [ "${flag_full_match}" = "y" ] && [ "${target}" != "$(echo ${tmp_path} | rev |  cut -d'/' -f 1 | rev)" ]
+    then
+        return 1
+    fi
+
+    [ "${flag_verbose}" = "y" ] && echo "goto ${target_path}"
+    cd "${target_path}"
+    return 0
 }
 function froot()
 {
@@ -154,6 +171,8 @@ function froot()
     local target_path=${cpath}
     local target=".git"
     local flag_ignore_case="y"
+    local flag_full_match="n"
+    local flag_verbose="n"
     local grep_args=("")
 
     while [[ "$#" != 0 ]]
@@ -162,14 +181,22 @@ function froot()
             -c|--case)
                 flag_ignore_case="n"
                 ;;
+            -m|--full-match)
+                flag_full_match="y"
+                ;;
+            -v|--verbose)
+                flag_verbose="y"
+                ;;
             -h|--help)
                 echo "froot"
-                printlc -cp false -d "->" "-s|--Source-HS" "Source HS config"
+                printlc -cp false -d "->" "-c|--case" "Ignore case"
+                printlc -cp false -d "->" "-m|--full-match" "full pattern match"
+                printlc -cp false -d "->" "-v|--verbose" "Echo Verbose"
                 return 0
                 ;;
 
             *)
-                target=$1
+                target=$@
                 break
                 ;;
         esac
@@ -182,28 +209,33 @@ function froot()
     fi
 
     # wallk through files
-    while ! ls -a $tmp_path | grep ${grep_args} $target;
+    while ! ls -a "${tmp_path}" | grep ${grep_args} $target > /dev/null;
     do
-        tmp_path=$tmp_path"/.."
-        pushd "$tmp_path" > /dev/null
-        tmp_path=`pwd`
-        echo "Searching in $tmp_path"
-        if [ $(pwd) = '/' ];
+        tmp_path="${tmp_path}/.."
+        pushd "${tmp_path}" > /dev/null
+        tmp_path="$(pwd)"
+        [ "${flag_verbose}" = "y" ] && echo "Searching in ${tmp_path}"
+        if [ "$(pwd)" = "/" ];
         then
-            echo 'Hit the root'
+            [ "${flag_verbose}" = "y" ] && echo 'Hit the root'
             popd > /dev/null
-            # exit 1
             return 1
         fi
         popd > /dev/null
-        target_path=$tmp_path
+        target_path=${tmp_path}
     done
-    echo "goto $target_path"
-    cd $target_path
+
+    if [ "${flag_full_match}" = "y" ] && [ ! -e ${target_path}/${target} ]
+    then
+        return 1
+    fi
+
+    [ "${flag_verbose}" = "y" ] && echo "goto $target_path"
+    cd "${target_path}"
 }
 function groot()
 {
-    local pattern=$1
+    local pattern=$@
     droot ${pattern} || froot ${pattern}
 }
 ########################################################
@@ -212,6 +244,10 @@ function groot()
 function echoerr()
 {
     >&2 echo $@
+}
+function escape()
+{
+    printf "%q\n" "${*}"
 }
 function printt
 {

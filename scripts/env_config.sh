@@ -57,12 +57,10 @@ export HS_PATH_LOG="${HOME}/log"
 
 export HS_PATH_PYTHEN_ENV="${HOME}/env/pyenv"
 # ECD
-export HS_VAR_ECD_NAME_1="1"
+export HS_VAR_ECD_NAME_0="tmp"
+export HS_PATH_ECD_0="/tmp"
+export HS_VAR_ECD_NAME_1="@(h|home)"
 export HS_PATH_ECD_1="${HOME}"
-export HS_VAR_ECD_NAME_2="2"
-export HS_PATH_ECD_2="${HOME}"
-export HS_VAR_ECD_NAME_3="@(3|4)"
-export HS_PATH_ECD_3="${HOME}"
 
 ########################################################
 ########################################################

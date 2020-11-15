@@ -56,11 +56,19 @@ function clipboard()
                 # get current dir
                 hs_config -g "${HS_VAR_CURRENT_DIR}"
                 ;;
+            -x|--excute)
+                shift 1
+                local excute_cmd=$(echo "$@" | sed "s/%p/\$\(clipboard -g\)/g" )
+                eval ${excute_cmd}
+
+                break
+                ;;
             -h|--help)
                 echo "Clibboard Usage"
                 printlc -cp false -d "->" "-s|--set-clipboard" "Set Clipbboard, default use pwd for setting var"
                 printlc -cp false -d "->" "-g|--get-clipboard" "Get Clipbboard, default use getting action"
                 printlc -cp false -d "->" "-d|--get-current-dir" "Get current dir vars, get current stored dir"
+                printlc -cp false -d "->" "-x|--excute" "Excute command, replace %p with clipboard buffer"
                 return 0
                 ;;
             *)
@@ -94,15 +102,15 @@ function bisync()
 }
 function renter()
 {
-    local cpath=$(realpath ${PWD})
+    local cpath=$(realpath "${PWD}")
     local idx=$((1))
     while true
     do
-        local tmp_path=$(pwd | rev | cut -d '/' -f ${idx}- |rev)
-        if [ -d ${tmp_path} ]
+        local tmp_path="$(pwd | rev | cut -d '/' -f ${idx}- |rev)"
+        if [ -d "${tmp_path}" ]
         then
             echo "Goto ${tmp_path}"
-            cd $(realpath ${tmp_path})
+            cd "$(realpath ${tmp_path})"
             break
         elif [ "${tmp_path}" = "/" ]
         then
