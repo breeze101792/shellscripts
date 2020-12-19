@@ -241,6 +241,78 @@ function groot()
 ########################################################
 #####    Output                                    #####
 ########################################################
+function andrun()
+{
+    local var_cmd_1=()
+    local var_cmd_2=()
+    local var_delimiter=";"
+
+    # if [[ "$#" = 2 ]]
+    # then
+    #     var_cmd_1="${1}"
+    #     var_cmd_2="${2}"
+    # fi
+
+    while [[ "$#" != 0 ]]
+    do
+        # echo "Args:$@"
+        case $1 in
+            # -a)
+            #     shift 1
+            #     while [[ "$#" != 0 ]] && [ "${1}" != "-b" ]
+            #     do
+            #         var_cmd_1+=("$1")
+            #         shift 1
+            #     done
+            #     ;;
+            # -b)
+            #     shift 1
+            #     while [[ "$#" != 0 ]] && [ "${1}" != "-a" ]
+            #     do
+            #         var_cmd_2+=("$1")
+            #         shift 1
+            #     done
+            #     ;;
+            -d)
+                var_delimiter=${2}
+                shift 2
+                ;;
+            -h|--help)
+                echo "froot"
+                printlc -cp false -d "->" "-a" "command a"
+                printlc -cp false -d "->" "-b" "command b"
+                printlc -cp false -d "->" "-h|--help" "Echo help"
+                return 0
+                ;;
+
+            *)
+                tmp_hit_flag=n
+                while [[ "$#" != 0 ]]
+                do
+                    echo "Args:$@"
+                    if [ "${tmp_hit_flag}" = "n" ] && [ "${1}" = "${var_delimiter}" ]
+                    then
+                        tmp_hit_flag="y"
+                        # shift 1
+                        # continue
+                    elif [ "${tmp_hit_flag}" = "n" ]
+                    then
+                        var_cmd_1+=("$1")
+                    elif [ "${tmp_hit_flag}" = "y" ]
+                    then
+                        var_cmd_2+=("$1")
+                    fi
+                    shift 1
+                done
+                ;;
+        esac
+    done
+
+
+    echo "andrun: \"${var_cmd_1[@]}\" and \"${var_cmd_2[@]}\""
+    # $(${var_cmd_1}) && $(${var_cmd_2})
+    eval "${var_cmd_1[@]}" && eval "${var_cmd_2[@]}"
+}
 function echoerr()
 {
     >&2 echo $@

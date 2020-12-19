@@ -10,7 +10,7 @@
 # Don't Set this flags
 # Vars
 export HS_ENV_SHELL=""
-export HS_ENV_VER=0.2.5
+export HS_ENV_VER=0.2.6
 export HS_ENV_TITLE="DO IT NOW"
 export HS_ENV_SILENCE=n
 # enable HS System
@@ -91,6 +91,7 @@ export HS_VAR_CLIPBOARD="CLIPBOARD"
 
 # Terminal configs
 export TERM="xterm-256color"
+export LANG="en_US.utf8"
 
 ## home user bin to PATH ##
 # export PATH=$PATH:$HOME/bin/

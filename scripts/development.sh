@@ -158,10 +158,58 @@ alias mdebug="sdebug --device /dev/ttyUSB1"
 ########################################################
 #####    Others Function                           #####
 ########################################################
-logfile()
+function scheduler()
+{
+    echo "Enter taskwarrior"
+    local var_promot="task> "
+    local var_hist_list=()
+    task
+    # push current history to new stack , and switch to new list
+    # fc -p -a /tmp/.zfhistory 10 10
+    while true
+    do
+        local task_cmd=""
+        if command -v vared > /dev/null
+        then
+            vared -p ${var_promot} task_cmd
+        else
+            read -p ${var_promot} -e task_cmd
+        fi
+        # echo ${task_cmd}
+        case ${task_cmd} in
+            task)
+                ;;
+            hist|history)
+                for each_idx in $(seq 1 ${#var_hist_list[@]})
+                do
+                    printf "[%d] %s\n" "${each_idx}" "${var_hist_list[${each_idx}]}"
+                done
+                continue
+                ;;
+            clear)
+                clear
+                continue
+                ;;
+        esac
+
+        echo "-------------------------------------------------"
+        eval task ${task_cmd}
+        echo ""
+        var_hist_list+=${task_cmd}
+        if [[ ${#var_hist_list} = 21 ]]
+        then
+            var_hist_list=${var_hist_list:2:20}
+        fi
+    done
+}
+function logfile()
 {
     local logdir=""
-    local logname="logfile_`tstamp`.log"
+    local var_ret=0
+    local var_tstamp=`tstamp`
+    local var_logname="logfile_${var_tstamp}.log"
+    local var_error_logname="logfile_${var_tstamp}_error.log"
+    local flag_error_file="n"
 
     while [[ "$#" != 0 ]]
     do
@@ -176,14 +224,19 @@ logfile()
                 local logdir="$(realpath $2)"
                 shift 1
                 ;;
+            -e|--error)
+                flag_error_file="y"
+                ;;
             -f|--file-name)
-                local logname="${2}"
+                local var_logname="${2}"
+                local var_error_logname=$(echo ${2} | sed 's/\.log/_error\.log/g')
                 shift 1
                 ;;
             -h|--help)
                 echo "logfile"
                 printlc -cp false -d "->" "-p|--path" "path name"
                 printlc -cp false -d "->" "-f|--file-name" "file name"
+                printlc -cp false -d "->" "-e|--error" "enable error file"
                 return 0
                 ;;
 
@@ -195,26 +248,45 @@ logfile()
     done
     if [ -z "${logdir}" ]
     then
-        local fulllogname=${logname}
+        local fulllogname=${var_logname}
+        local full_error_logname=${var_error_logname}
     else
-        local fulllogname=${logdir}/${logname}
+        local fulllogname=${logdir}/${var_logname}
+        local full_error_logname=${logdir}/${var_error_logname}
     fi
     local start_date=$(date)
-    local var_ret=0
+    local var_cmd="$(echo -e $@)"
 
-    echo "Logfile Command:\"$@\""
-    echo "Command:\"$@\"" > $fulllogname
+    echo "Logfile Command:\"${var_cmd}\""
+    echo "Command:\"${var_cmd}\"" > $fulllogname
     echo "Start Date: ${start_date}" >> $fulllogname
     echo "================================================" >> $fulllogname
-    eval "$@" 2>&1 | tee -a $fulllogname
-    # echo ${PIPESTATUS[0]} # bash
-    # echo ${pipestatus[1]} # zsh
+    if [ "${flag_error_file}" = "y" ]
+    then
+        # eval "${var_cmd}" 2> >(tee ${var_error_logname}) > >(tee ${var_error_logname}) | tee -a ${fulllogname}
+        eval "${var_cmd}" 2> >(tee ${var_error_logname}) | tee -a ${fulllogname}
+    else
+        eval "${var_cmd}" 2>&1 | tee -a ${fulllogname}
+    fi
+    var_ret=$?
+
     echo "================================================" >> $fulllogname
-    echo "Command Finished:\"$@\"" >> $fulllogname
+    echo "Command Finished:\"${var_cmd}\"" >> $fulllogname
     echo "Start Date: ${start_date}" >> $fulllogname
     echo "End   Date: $(date)" >> $fulllogname
+    echo "================================================"
+    echo "Log file has been stored in ${fulllogname}" | mark -s green "${fulllogname}"
 
-    echo "Log file has been stored in ${fulllogname}" | mark -s green ${fulllogname}
+    if [ "${flag_error_file}" = "y" ] && [ -n "${full_error_logname}" ]
+    then
+        if [ -s "${full_error_logname}" ]
+        then
+            echo "Error Log file has been stored in ${full_error_logname}" | mark -s red "${full_error_logname}"
+        else
+            rm "${full_error_logname}"
+        fi
+    fi
+    return ${var_ret}
 }
 function slink()
 {
@@ -282,6 +354,7 @@ function session
 function erun()
 {
     # enhanced run
+    local var_ret=0
     local excute_cmd=""
     local current_date=$(date +%Y%m%d)
 
@@ -316,7 +389,7 @@ function erun()
                 ;;
 
             *)
-                local excute_cmd="${excute_cmd} $@"
+                local excute_cmd="${excute_cmd} $*"
                 break
                 ;;
         esac
@@ -336,11 +409,12 @@ function erun()
         fi
         printf "Cmd:%s\nLogfile:%s\n----------------------------\n" "${excute_cmd}" "${log_file}" >> ${history_file}
 
-        logfile -f "${log_file}" "${excute_cmd}"
+        logfile -e -f "${log_file}" "${excute_cmd}"
     else
         # echo "Log file path not define.HS_PATH_LOG=${HS_PATH_LOG}"
         eval "${excute_cmd}"
     fi
+    var_ret=$?
     # local end_time=$(date "+%Y-%m-%d_%H:%M:%S")
     local end_time=$(date)
     # echo $(elapse "${start_time}" "${end_time}")
@@ -351,6 +425,7 @@ function erun()
     then
         printf 'Command finished: %s\nCommand Log: %s\n' "${excute_cmd}" "${log_file}" | mail -s "[Notify][ERUN] Command finished" ${HS_ENV_MAIL}
     fi
+    return ${var_ret}
 }
 function ecd()
 {
@@ -358,6 +433,7 @@ function ecd()
 
     local cpath=$(pwd)
     local target_path="${HOME}"
+    local sub_folder=""
 
 
     while [[ "$#" != 0 ]]
@@ -365,6 +441,9 @@ function ecd()
         case $1 in
             -s|--hs-script|hs)
                 target_path=${HS_PATH_LIB}
+                ;;
+            -w|--work-script|work)
+                target_path=${HS_PATH_WORK}
                 ;;
             --slink|slink)
                 target_path=${HS_PATH_SLINK}
@@ -384,6 +463,10 @@ function ecd()
                 then
                     mkdir ${target_path}
                 fi
+                ;;
+            -x|--sub-folder)
+                sub_folder=$2
+                shift 1
                 ;;
             -b|--build|build)
                 target_path=${HS_PATH_BUILD}
@@ -626,6 +709,9 @@ function gpush()
     local commit="HEAD"
     local push_word="for"
     local excute_flag="y"
+
+    local var_topic=""
+
     while true
     do
         if [ "$#" = 0 ]
@@ -645,6 +731,10 @@ function gpush()
                 commit=$2
                 shift 1
                 ;;
+            -t|--topic)
+                var_topic="${2}"
+                shift
+                ;;
             -d|--draft)
                 push_word="drafts"
                 ;;
@@ -656,6 +746,7 @@ function gpush()
                 printlc -cp false -d "->" "-r|--remote" "Set remote"
                 printlc -cp false -d "->" "-b|--branch" "Set branch"
                 printlc -cp false -d "->" "-c|--commit" "Set commit"
+                printlc -cp false -d "->" "-t|--topic" "Set topic"
                 printlc -cp false -d "->" "-d|--draft" "Set draft"
                 printlc -cp false -d "->" "-f|--fake" "Set fake"
                 return 0
@@ -686,9 +777,14 @@ function gpush()
     fi
 
 
-    printt "Auto Push ${commit} to ${remote}/${branch}" | mark -s green "#"
     local cmd="git push ${remote} ${commit}:refs/${push_word}/${branch}"
-    # echo "Push ${commit} to ${remote}/${branch}"
+
+    if [ "${var_topic}" != "" ]
+    then
+        cmd="${cmd} -o topic=${var_topic}"
+    fi
+
+    printt "Auto Push ${commit} to ${remote}/${branch}" | mark -s green "#"
     echo "Eval Command: ${cmd}"
     if [ "${excute_flag}" = "y" ]
     then
@@ -736,9 +832,10 @@ function gfiles()
 }
 function rreset()
 {
-    repo forall -vc "git reset --hard HEAD"
-    repo forall -vc "git clean -fd"
-    repo sync -j 64
+    local var_jobs="64"
+    repo forall -j ${var_jobs} -vc "git reset --hard HEAD"
+    repo forall -j ${var_jobs} -vc "git clean -fd"
+    repo sync  -j ${var_jobs}
 }
 function rdate()
 {
