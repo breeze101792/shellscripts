@@ -186,6 +186,14 @@ function scheduler()
                 done
                 continue
                 ;;
+            projs)
+                task projects rc.list.all.projects=1
+                continue
+                ;;
+            weekly)
+                task end.after:sunday-2weeks completed
+                continue
+                ;;
             clear)
                 clear
                 continue
@@ -275,13 +283,14 @@ function logfile()
     echo "Start Date: ${start_date}" >> $fulllogname
     echo "End   Date: $(date)" >> $fulllogname
     echo "================================================"
-    echo "Log file has been stored in ${fulllogname}" | mark -s green "${fulllogname}"
+    echo "Log file has been stored in the following path." | mark -s green "${fulllogname}"
+    echo "Full Log: ${fulllogname}" | mark -s green "${fulllogname}"
 
     if [ "${flag_error_file}" = "y" ] && [ -n "${full_error_logname}" ]
     then
         if [ -s "${full_error_logname}" ]
         then
-            echo "Error Log file has been stored in ${full_error_logname}" | mark -s red "${full_error_logname}"
+            echo "Err Log: ${full_error_logname}" | mark -s red "${full_error_logname}"
         else
             rm "${full_error_logname}"
         fi

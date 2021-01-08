@@ -19,11 +19,13 @@ function waitsync()
     do
         echo "Wait for ${target}"
         sleep ${interval}
+        renter
     done
     echo "Found ${target}"
 }
 function clipboard()
 {
+    local flag_fake_run=false
     if [ "$#" = 0 ]
     then
         eval "clipboard -g"
@@ -38,9 +40,14 @@ function clipboard()
         case $1 in
             -s|--set-clipboard)
                 shift 1
-                if [ -z "${@}" ]
+                if [[ $# = 0 ]] && [ ! -t 0 ]
                 then
-                    hs_config -s "${HS_VAR_CLIPBOARD}" "$(pwd)"
+                    local var_from_pipe="$(xargs echo)"
+                    # echo "FD 0 has opened."
+                    hs_config -s "${HS_VAR_CLIPBOARD}" "${var_from_pipe}"
+                elif [[ ${#} = 0 ]]
+                then
+                    hs_config -s "${HS_VAR_CLIPBOARD}" "$(realpath .)"
                 elif [[ ${#} = 1 ]] && [ -e ${1} ]
                 then
                     hs_config -s "${HS_VAR_CLIPBOARD}" "$(realpath ${1})"
@@ -49,6 +56,11 @@ function clipboard()
                 fi
                 break
                 ;;
+            -p|--set-from-pipe)
+                local var_from_pipe="$(xargs echo)"
+                # echo "FD 0 has opened."
+                hs_config -s "${HS_VAR_CLIPBOARD}" "${var_from_pipe}"
+                ;;
             -g|--get-clipboard)
                 hs_config -g "${HS_VAR_CLIPBOARD}"
                 ;;
@@ -56,19 +68,30 @@ function clipboard()
                 # get current dir
                 hs_config -g "${HS_VAR_CURRENT_DIR}"
                 ;;
+            -f|--fake-run)
+                flag_fake_run=true
+                ;;
             -x|--excute)
                 shift 1
                 local excute_cmd=$(echo "$@" | sed "s/%p/\$\(clipboard -g\)/g" )
-                eval ${excute_cmd}
+                if flag_fake_run
+                then
+                    echo ${excute_cmd}
+                else
+                    eval ${excute_cmd}
+                fi
 
                 break
                 ;;
             -h|--help)
                 echo "Clibboard Usage"
                 printlc -cp false -d "->" "-s|--set-clipboard" "Set Clipbboard, default use pwd for setting var"
+                printlc -cp false -d "->" "-p|--set-from-pipe" "Set Clipbboard, default use pwd for setting var"
                 printlc -cp false -d "->" "-g|--get-clipboard" "Get Clipbboard, default use getting action"
                 printlc -cp false -d "->" "-d|--get-current-dir" "Get current dir vars, get current stored dir"
+                printlc -cp false -d "->" "-f|--fake-run" "Do fake run on -x"
                 printlc -cp false -d "->" "-x|--excute" "Excute command, replace %p with clipboard buffer"
+
                 return 0
                 ;;
             *)
