@@ -62,6 +62,22 @@ function hs_main
             --change-shell-path=*)
                 flag_env_change_shell_path=${1#*=}
                 ;;
+            -p|--lib-path)
+                flag_env_lib_path=${2}
+                shift 1
+                ;;
+            -s|--shell-type)
+                flag_env_shell=${2}
+                shift 1
+                ;;
+            -S|--silence)
+                flag_env_silence=${2}
+                shift 1
+                ;;
+            --change-shell-path)
+                flag_env_change_shell_path=${2}
+                shift 1
+                ;;
             --refresh)
                 flag_var_refresh="y"
                 ;;
@@ -80,7 +96,10 @@ function hs_main
     ##########################################
     # Auto detect configs
     ##########################################
-    [ -z "${flag_env_shell}" ] && flag_env_shell="$(echo ${SHELL} | rev |  cut -d '/' -f 1 | rev)"
+    if [ -z "${flag_env_shell}" ]
+    then
+        flag_env_shell="$(echo ${SHELL} | rev |  cut -d '/' -f 1 | rev)"
+    fi
     if [ -z "${flag_env_lib_path}" ]
     then
         if [ "${flag_env_shell}" = "bash" ]
