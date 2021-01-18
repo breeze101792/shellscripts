@@ -77,6 +77,20 @@ function hs_main
         esac
         shift 1
     done
+    ##########################################
+    # Auto detect configs
+    ##########################################
+    [ -z "${flag_env_shell}" ] && flag_env_shell="$(echo ${SHELL} | rev |  cut -d '/' -f 1 | rev)"
+    if [ -z "${flag_env_lib_path}" ]
+    then
+        if [ "${flag_env_shell}" = "bash" ]
+        then
+            flag_env_lib_path="$(dirname \"${BASH_SOURCE[0]}\")"
+        else
+            flag_env_lib_path="$(realpath .)"
+        fi
+    fi
+
     # source shell scripts
     ##########################################
     # setup configs
@@ -87,7 +101,7 @@ function hs_main
     else
         export HS_PATH_LIB=${flag_env_lib_path}
     fi
-    source $HS_PATH_LIB/scripts/env_config.sh
+    source $HS_PATH_LIB/shell/env_config.sh
     if [ -f $HOME/.hsconfig.sh ]
     then
         source $HOME/.hsconfig.sh
@@ -99,7 +113,7 @@ function hs_main
     ##########################################
     # setup custom configs
     ##########################################
-    source ${HS_PATH_LIB}/scripts/shell_common.sh
+    source ${HS_PATH_LIB}/shell/shell_common.sh
     if [ "${flag_env_shell}" = "" ]
     then
         export HS_ENV_SHELL=bash
@@ -131,26 +145,27 @@ function hs_main
     if [ "$HS_ENV_SHELL" = "bash" ]
     then
         export HS_ENV_SHELL="bash"
-        source $HS_PATH_LIB/scripts/base_bash.sh
+        source $HS_PATH_LIB/shell/base_bash.sh
     else
         export HS_ENV_SHELL="zsh"
-        source $HS_PATH_LIB/scripts/base_zsh.sh
+        source $HS_PATH_LIB/shell/base_zsh.sh
     fi
-    source $HS_PATH_LIB/scripts/env_platform.sh
-    source $HS_PATH_LIB/scripts/lib.sh
     hs_print "Version: $HS_ENV_VER"
-    source $HS_PATH_LIB/scripts/tools.sh
-    source $HS_PATH_LIB/scripts/development.sh
-    source $HS_PATH_LIB/scripts/others.sh
+    source $HS_PATH_LIB/shell/env_platform.sh
+    source $HS_PATH_LIB/shell/lib.sh
+    source $HS_PATH_LIB/shell/tools.sh
+    source $HS_PATH_LIB/shell/development.sh
+    source $HS_PATH_LIB/shell/others.sh
+    source $HS_PATH_LIB/projects/project.sh
     ##########################################
     # shell post init
     ##########################################
     if [ "${HS_ENV_SHELL}" = "bash" ] && [ "${HS_CONFIG_FUNCTION_EXPORT}" = "y" ]
     then
-        export_sh_func ${HS_PATH_LIB}/scripts/shell_common.sh
-        export_sh_func ${HS_PATH_LIB}/scripts/lib.sh
-        export_sh_func ${HS_PATH_LIB}/scripts/tools.sh
-        export_sh_func ${HS_PATH_LIB}/scripts/development.sh
+        export_sh_func ${HS_PATH_LIB}/shell/shell_common.sh
+        export_sh_func ${HS_PATH_LIB}/shell/lib.sh
+        export_sh_func ${HS_PATH_LIB}/shell/tools.sh
+        export_sh_func ${HS_PATH_LIB}/shell/development.sh
     fi
     if [ "${flag_var_refresh}" = "n" ] && [ ${HS_ENV_SILENCE} = "n" ]
     then
@@ -161,9 +176,9 @@ function hs_main
     # Source Other settings
     ##########################################
 
-    if [ -f $HS_PATH_LIB/scripts/lab.sh ]
+    if [ -f $HS_PATH_LIB/shell/lab.sh ]
     then
-        source $HS_PATH_LIB/scripts/lab.sh
+        source $HS_PATH_LIB/shell/lab.sh
     fi
     # End of shell
     if [ -f ${HS_PATH_WORK}/work.sh ]

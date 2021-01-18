@@ -8,7 +8,9 @@
 
 if [ "${HS_PLATFORM_WSL}" = "y" ]
 then
-    if [ "$(umask)" = "0000" ]; then
+    hs_print "Enable WSL Platform"
+    if [ "$(umask)" = "0000" ] || [ "$(umask)" = "000" ]
+    then
         umask 022
     fi
     export DISPLAY=:0

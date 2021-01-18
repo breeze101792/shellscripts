@@ -23,12 +23,12 @@ function waitsync()
     done
     echo "Found ${target}"
 }
-function clipboard()
+function clip()
 {
     local flag_fake_run=false
     if [ "$#" = 0 ]
     then
-        eval "clipboard -g"
+        eval "clip -g"
         return 0
     fi
     while true
@@ -38,7 +38,7 @@ function clipboard()
             break
         fi
         case $1 in
-            -s|--set-clipboard)
+            -s|--set-clip)
                 shift 1
                 if [[ $# = 0 ]] && [ ! -t 0 ]
                 then
@@ -61,7 +61,7 @@ function clipboard()
                 # echo "FD 0 has opened."
                 hs_config -s "${HS_VAR_CLIPBOARD}" "${var_from_pipe}"
                 ;;
-            -g|--get-clipboard)
+            -g|--get-clip)
                 hs_config -g "${HS_VAR_CLIPBOARD}"
                 ;;
             -d|--get-current-dir)
@@ -73,24 +73,25 @@ function clipboard()
                 ;;
             -x|--excute)
                 shift 1
-                local excute_cmd=$(echo "$@" | sed "s/%p/\$\(clipboard -g\)/g" )
-                if flag_fake_run
+                local excute_cmd=$(printf "$(echo $@ | sed 's/%p/%s/g' )" "$(clip -g)")
+                echo ${excute_cmd} |mark -s yellow ${excute_cmd}
+                if ! ${flag_fake_run}
                 then
-                    echo ${excute_cmd}
-                else
-                    eval ${excute_cmd}
+                    printf "Excute Commands?(Y/n)"
+                    read tmp_ans
+                    test "${tmp_ans}" != "n" && eval ${excute_cmd}
                 fi
 
                 break
                 ;;
             -h|--help)
                 echo "Clibboard Usage"
-                printlc -cp false -d "->" "-s|--set-clipboard" "Set Clipbboard, default use pwd for setting var"
+                printlc -cp false -d "->" "-s|--set-clip" "Set Clipbboard, default use pwd for setting var"
                 printlc -cp false -d "->" "-p|--set-from-pipe" "Set Clipbboard, default use pwd for setting var"
-                printlc -cp false -d "->" "-g|--get-clipboard" "Get Clipbboard, default use getting action"
+                printlc -cp false -d "->" "-g|--get-clip" "Get Clipbboard, default use getting action"
                 printlc -cp false -d "->" "-d|--get-current-dir" "Get current dir vars, get current stored dir"
                 printlc -cp false -d "->" "-f|--fake-run" "Do fake run on -x"
-                printlc -cp false -d "->" "-x|--excute" "Excute command, replace %p with clipboard buffer"
+                printlc -cp false -d "->" "-x|--excute" "Excute command, replace %p with clip buffer"
 
                 return 0
                 ;;

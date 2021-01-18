@@ -365,9 +365,7 @@ function erun()
     # enhanced run
     local var_ret=0
     local excute_cmd=""
-    local current_date=$(date +%Y%m%d)
-
-    local log_path=${HS_PATH_LOG}/${current_date}
+    local log_path=${HS_PATH_LOG}/$(date +%Y%m)/$(date +%d)
 
     local history_file="${log_path}/erun_history.log"
     local log_file="${log_path}/logfile_$(tstamp).log"
@@ -414,7 +412,7 @@ function erun()
     then
         if [ ! -d "${log_path}" ]
         then
-            mkdir ${log_path}
+            mkdir -p ${log_path}
         fi
         printf "Cmd:%s\nLogfile:%s\n----------------------------\n" "${excute_cmd}" "${log_file}" >> ${history_file}
 
