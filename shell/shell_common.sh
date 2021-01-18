@@ -52,6 +52,10 @@ function item_promote()
 }
 function hs_config()
 {
+    if [ ! -d $(dirname "${HS_FILE_CONFIG}") ]
+    then
+        mkdir -p $(dirname "${HS_FILE_CONFIG}")
+    fi
     # get and set hs_config
     # if [ "$#" = "3" ] && [ "$1" = "-s" ]
     if [ "$1" = "-s" ]
