@@ -204,3 +204,84 @@ function fakeshell()
         eval "${precmd} ${cmd} ${postcmd}"
     done
 }
+function read_key()
+{
+    # /usr/include/linux/input-event-codes.h
+    read -n 1 var_input
+    # printf ${var_input} | xxd | cut -d " " -f 2-7
+    printf "\nvar: \$\'\\\x%s\'\n" $(printf ${var_input} | xxd | cut -d " " -f 2-7) 
+}
+function xkey()
+{
+    local var_skey="sudo ydotool key "
+
+    uparrow=$'\x1b[A'
+    downarrow=$'\x1b[B'
+    leftarrow=$'\x1b[D'
+    rightarrow=$'\x1b[C'
+
+    local var_promote=">"
+    local var_previous_input=""
+    local var_input=""
+
+    local var_read_buf=""
+    # only bash work
+    while IFS= read -s -r -n 1 var_input
+    do
+        case ${var_input} in
+            '')
+                echo "Enter dected"
+                ${var_skey} "ENTER"
+                continue
+                ;;
+            ${uparrow})
+                echo "up dected"
+                continue
+                ;;
+            # $'\x2c')
+            #     echo "Ctrl + < dected"
+            #     ${var_skey} "ctrl+PATGEUP"
+            #     continue
+            #     ;;
+            # $'\x2e')
+            #     echo "Ctrl + > dected"
+            #     ${var_skey} "ctrl+PATGEDOWN"
+            #     continue
+            #     ;;
+            $'\x14')
+                echo "Ctrl + t dected"
+                ${var_skey} "ctrl+t"
+                continue
+                ;;
+            $'\x17')
+                echo "Ctrl + w dected"
+                ${var_skey} "ctrl+w"
+                continue
+                ;;
+            $'\x0c')
+                echo "Ctrl + l dected"
+                ${var_skey} "ctrl+l"
+                continue
+                ;;
+            $'\x7f')
+                echo "backspace dected"
+                ${var_skey} "backspace"
+                continue
+                ;;
+            ' ')
+                echo "Space dected"
+                # ${var_skey} "SPACE"
+                ${var_skey} " "
+                continue
+                ;;
+        esac
+
+        # var_read_buf="${var_read_buf}${var_input}"
+        # printf "\r%s" ${var_read_buf}
+        echo "${var_input}"
+        ${var_skey} "${var_input}"
+
+        # var_previous_input=${var_input}
+    done
+
+}
