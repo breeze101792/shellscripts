@@ -15,3 +15,11 @@ then
     fi
     export DISPLAY=:0
 fi
+
+if [ "${HS_PLATFORM_TTY_START}" = "y" ]
+then
+    # If running from tty1 start WM
+    if [ "$(tty)" = "/dev/tty1" ]; then
+        exec ${HS_VAR_TTY_START_CMD}
+    fi
+fi

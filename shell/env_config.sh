@@ -36,6 +36,7 @@ export HS_CONFIG_FUNCTION_EXPORT=n
 ########################################################
 ########################################################
 export HS_PLATFORM_WSL=n
+export HS_PLATFORM_TTY_START=n
 export HS_PLATFORM_VM=n
 
 ########################################################
@@ -80,6 +81,7 @@ export HS_FILE_CONFIG="${HOME}/.cache/hs_config"
 ########################################################
 export HS_VAR_CURRENT_DIR="CURRENT_DIR"
 export HS_VAR_CLIPBOARD="CLIPBOARD"
+export HS_VAR_TTY_START_CMD="echo start WM"
 
 ########################################################
 ########################################################
