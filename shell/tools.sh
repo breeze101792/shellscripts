@@ -213,25 +213,18 @@ function read_key()
 }
 function xkey()
 {
-    local var_skey="sudo ydotool key "
+    local var_skey_prefix="sudo ydotool key "
+    local var_skey_postfix=" > /dev/null"
 
-    uparrow=$'\x1b[A'
-    downarrow=$'\x1b[B'
-    leftarrow=$'\x1b[D'
-    rightarrow=$'\x1b[C'
-
-    local var_promote=">"
-    local var_previous_input=""
     local var_input=""
 
-    local var_read_buf=""
     # only bash work
     while IFS= read -s -r -n 1 var_input
     do
         case ${var_input} in
             '')
                 echo "Enter dected"
-                ${var_skey} "ENTER"
+                ${var_skey_prefix} "ENTER" ${}
                 continue
                 ;;
             ${uparrow})
@@ -240,48 +233,51 @@ function xkey()
                 ;;
             # $'\x2c')
             #     echo "Ctrl + < dected"
-            #     ${var_skey} "ctrl+PATGEUP"
+            #     ${var_skey_prefix} "ctrl+PATGEUP"
             #     continue
             #     ;;
             # $'\x2e')
             #     echo "Ctrl + > dected"
-            #     ${var_skey} "ctrl+PATGEDOWN"
+            #     ${var_skey_prefix} "ctrl+PATGEDOWN"
             #     continue
             #     ;;
+            $'\x1b')
+                echo "esc dected"
+                ${var_skey_prefix} "esc" 
+                continue
+                ;;
             $'\x14')
                 echo "Ctrl + t dected"
-                ${var_skey} "ctrl+t"
+                ${var_skey_prefix} "ctrl+t"
                 continue
                 ;;
             $'\x17')
                 echo "Ctrl + w dected"
-                ${var_skey} "ctrl+w"
+                ${var_skey_prefix} "ctrl+w"
                 continue
                 ;;
             $'\x0c')
                 echo "Ctrl + l dected"
-                ${var_skey} "ctrl+l"
+                ${var_skey_prefix} "ctrl+l"
                 continue
                 ;;
             $'\x7f')
                 echo "backspace dected"
-                ${var_skey} "backspace"
+                ${var_skey_prefix} "backspace"
                 continue
                 ;;
             ' ')
                 echo "Space dected"
-                # ${var_skey} "SPACE"
-                ${var_skey} " "
+                # ${var_skey_prefix} "SPACE"
+                ${var_skey_prefix} " "
                 continue
                 ;;
         esac
 
-        # var_read_buf="${var_read_buf}${var_input}"
         # printf "\r%s" ${var_read_buf}
         echo "${var_input}"
-        ${var_skey} "${var_input}"
+        ${var_skey_prefix} "${var_input}"
 
-        # var_previous_input=${var_input}
     done
 
 }
