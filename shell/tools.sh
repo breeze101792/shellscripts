@@ -224,7 +224,7 @@ function xkey()
         case ${var_input} in
             '')
                 echo "Enter dected"
-                ${var_skey_prefix} "ENTER" ${}
+                ${var_skey_prefix} "ENTER"
                 continue
                 ;;
             ${uparrow})
@@ -243,7 +243,7 @@ function xkey()
             #     ;;
             $'\x1b')
                 echo "esc dected"
-                ${var_skey_prefix} "esc" 
+                ${var_skey_prefix} "esc"
                 continue
                 ;;
             $'\x14')
