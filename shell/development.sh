@@ -81,7 +81,7 @@ function pvinit()
             continue
         else
             echo -e "Searching folder: $tmp_path"
-            find_cmd="find ${tmp_path} \( -type f -name '*.h' -o -name '*.c' -o -name '*.cpp' -o -name '*.java' ${file_ext[@]} \) -a \( -not -path '*/auto_gen*' -o -not -path '*/build' ${file_exclude[@]} \) | xargs realpath >> proj.files"
+            find_cmd="find ${tmp_path} \( -type f -name '*.h' -o -name '*.c' -o -name '*.cpp' -o -name '*.java' ${file_ext[@]} \) -a \( -not -path '*/auto_gen*' -o -not -path '*/build*' ${file_exclude[@]} \) | xargs realpath >> proj.files"
             # echo ${find_cmd}
             eval "${find_cmd}"
         fi
@@ -471,10 +471,6 @@ function ecd()
                     mkdir ${target_path}
                 fi
                 ;;
-            -x|--sub-folder)
-                sub_folder=$2
-                shift 1
-                ;;
             -b|--build|build)
                 target_path=${HS_PATH_BUILD}
                 ;;
@@ -543,10 +539,14 @@ function ecd()
                 ;;
 
             *)
-                echo "Target not found"
-                cd ${cpath}
-                return 1
+                sub_folder=$@
+                break
                 ;;
+            # *)
+            #     echo "Target not found"
+            #     cd ${cpath}
+            #     return 1
+            #     ;;
         esac
         shift 1
     done
@@ -555,6 +555,11 @@ function ecd()
     then
         echo goto ${target_path} | mark -s green ${target_path}
         eval "cd ${target_path}"
+        if [ -d "${sub_folder}" ]
+        then
+            echo goto ${sub_folder} | mark -s green ${sub_folder}
+            eval "cd ${sub_folder}"
+        fi
         ls
         return 0
     else
@@ -693,8 +698,8 @@ function gclone()
     shift 3
 
     echo "Clone ${git_project}:${git_branch} from ${git_host}"
-    echo "git clone http://${git_host}/${git_project} -b ${git_branch} $@"
-    git clone http://${git_host}/${git_project} -b ${git_branch} $@
+    echo "git clone https://${git_host}/${git_project} -b ${git_branch} $@"
+    git clone https://${git_host}/${git_project} -b ${git_branch} $@
 }
 function gcheckoutByDate()
 {

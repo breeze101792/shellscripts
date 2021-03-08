@@ -45,10 +45,27 @@ function looptimes()
         sleep 3
     done
 }
+function runtime()
+{
+    local source_file=$@
+    local start_time=$(date +%s%N)
+    eval ${source_file}
+    local end_time=$(date +%s%N)
+
+    # echo "$start_time, $end_time"
+    local diff_time=$(( (${end_time} - ${start_time})/1000000 ))
+    hs_print "[${diff_time}] source ${source_file}\n"
+}
 
 ########################################################
 #####    Others Function                           #####
 ########################################################
+function xsettings()
+{
+    # .256 sec delay, 1 char/hz
+    # xset r rate 256 64
+    xset r rate 200 40
+}
 function audio_default()
 {
     local audio_dev=$(pactl list sinks | grep Name |grep hdmi | cut -d ':' -f 2)

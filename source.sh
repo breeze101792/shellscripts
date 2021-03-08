@@ -20,6 +20,23 @@ function refresh
     source $HS_PATH_LIB/source.sh -p=${HS_PATH_LIB} -s=${HS_ENV_SHELL} -S=${HS_ENV_SILENCE} --refresh
     cd ${cpath}
 }
+function hs_source()
+{
+    local source_file=$1
+
+    if false
+    then
+        local start_time=$(date +%s%N)
+        source $(realpath ${source_file})
+        local end_time=$(date +%s%N)
+
+        # echo "$start_time, $end_time"
+        local diff_time=$(( (${end_time} - ${start_time})/1000000 ))
+        hs_print "[${diff_time}] source ${source_file}\n"
+    else
+        source $(realpath ${source_file})
+    fi
+}
 
 function hs_main
 {
@@ -132,7 +149,7 @@ function hs_main
     ##########################################
     # setup custom configs
     ##########################################
-    source ${HS_PATH_LIB}/shell/shell_common.sh
+    hs_source ${HS_PATH_LIB}/shell/shell_common.sh
     if [ "${flag_env_shell}" = "" ]
     then
         export HS_ENV_SHELL=bash
@@ -164,18 +181,18 @@ function hs_main
     if [ "$HS_ENV_SHELL" = "bash" ]
     then
         export HS_ENV_SHELL="bash"
-        source $HS_PATH_LIB/shell/base_bash.sh
+        hs_source $HS_PATH_LIB/shell/base_bash.sh
     else
         export HS_ENV_SHELL="zsh"
-        source $HS_PATH_LIB/shell/base_zsh.sh
+        hs_source $HS_PATH_LIB/shell/base_zsh.sh
     fi
     hs_print "Version: $HS_ENV_VER"
-    source $HS_PATH_LIB/shell/env_platform.sh
-    source $HS_PATH_LIB/shell/lib.sh
-    source $HS_PATH_LIB/shell/tools.sh
-    source $HS_PATH_LIB/shell/development.sh
-    source $HS_PATH_LIB/shell/others.sh
-    source $HS_PATH_LIB/projects/project.sh
+    hs_source $HS_PATH_LIB/shell/env_platform.sh
+    hs_source $HS_PATH_LIB/shell/lib.sh
+    hs_source $HS_PATH_LIB/shell/tools.sh
+    hs_source $HS_PATH_LIB/shell/development.sh
+    hs_source $HS_PATH_LIB/shell/others.sh
+    hs_source $HS_PATH_LIB/projects/project.sh
     ##########################################
     # shell post init
     ##########################################
@@ -197,12 +214,12 @@ function hs_main
 
     if [ -f $HS_PATH_LIB/shell/lab.sh ]
     then
-        source $HS_PATH_LIB/shell/lab.sh
+        hs_source $HS_PATH_LIB/shell/lab.sh
     fi
     # End of shell
     if [ -f ${HS_PATH_WORK}/work.sh ]
     then
-        source ${HS_PATH_WORK}/work.sh
+        hs_source ${HS_PATH_WORK}/work.sh
     fi
 
     ##########################################

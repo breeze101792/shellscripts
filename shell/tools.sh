@@ -121,8 +121,15 @@ function bisync()
 {
     local local_path=$1
     local remote_path=$2
-    rsync -rtuv $local_path/* $remote_path
-    rsync -rtuv $remote_path/* $local_path
+    rsync -rtuvh --no-compress --progress $local_path/* $remote_path
+    rsync -rtuvh --no-compress --progress $remote_path/* $local_path
+}
+function fsync()
+{
+    local local_path=$1
+    local remote_path=$2
+    # rsync -avhW --no-compress --progress ${*}
+    rsync -avhW --no-compress --progress ${1}/* ${2}
 }
 function renter()
 {
@@ -279,5 +286,13 @@ function xkey()
         ${var_skey_prefix} "${var_input}"
 
     done
+}
 
+function silence()
+{
+    local precmd=""
+    local postcmd="> /dev/null"
+    local cmd="$@"
+
+    eval "${precmd} ${cmd} ${postcmd}"
 }

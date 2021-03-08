@@ -10,7 +10,7 @@
 # Don't Set this flags
 # Vars
 export HS_ENV_SHELL=""
-export HS_ENV_VER=0.2.6
+export HS_ENV_VER=0.2.7
 export HS_ENV_TITLE="DO IT NOW"
 export HS_ENV_SILENCE=n
 # enable HS System
