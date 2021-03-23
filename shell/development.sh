@@ -68,6 +68,7 @@ function pvinit()
     echo Searching Path:${src_path[@]}
     echo file_ext: $file_ext
     [ -f cscope.db ] && rm cscope.db 2> /dev/null
+    [ -f cctree.db ] && rm cctree.db 2> /dev/null
     [ -f proj.files ] && rm proj.files 2> /dev/null
     [ -f tags ] && rm tags 2> /dev/null
 
@@ -86,9 +87,15 @@ function pvinit()
             eval "${find_cmd}"
         fi
     done
-    cscope -b -i proj.files
+    # Add c(uncompress) for fast read
     ctags -L proj.files
+    cscope -c -b -i proj.files
     mv cscope.out cscope.db
+
+    if command -v ccglue
+    then
+        ccglue -S cscope.db -o cctree.db
+    fi
 }
 
 function pvim()
@@ -673,13 +680,35 @@ function fcd()
 ########################################################
 function gforall()
 {
+    local var_target_cmd=""
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -l|--log)
+                var_target_cmd="git log --pretty='format:%cd %p->%h %cn(%an) %s' -n 1"
+                break
+                ;;
+            -h|--help)
+                echo "gforall [Options] [Command]"
+                printlc -cp false -d "->" "-l|--log" "Print first commit"
+                return 0
+                ;;
+
+            *)
+                var_target_cmd="$@"
+                break
+                ;;
+        esac
+        shift 1
+    done
+
     find . -name ".git" | while read dir;
     do
         cd `dirname ${dir}`
-        echo "Project Dir: ${dir}"
-        # bash -c "$@" || { echo "checkout optee os file"; popd; exit 1; }
-        eval "$@" || { echo "checkout optee os file"; popd; exit 1; }
-        cd -
+        echo "Project Dir: ${dir}" | mark "${dir}"
+        eval "${var_target_cmd}"
+        cd - > /dev/null
+        echo ""
     done
 }
 function gclone()
@@ -826,6 +855,9 @@ function ginfo()
     echo "Fetch cmd: git branch --set-upstream-to=$(git remote)/${branch_name} ${current_branch} "
     echo "---- Others ----"
     echo "Get Info for First 1 Commit: git log --pretty='format:%p->%h %cn(%an) %s' -n 1"
+    echo "Get Info for First 1 Commit: git log --pretty='format:%cd %p->%h %cn(%an) %s' -n 1"
+    echo "Generate Patch: git format-patch -n <num_of_patchs> <commit>"
+    echo "Apply Patch: git am <path_to_your_patch>"
 
 }
 function gfiles()
