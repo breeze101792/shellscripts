@@ -26,10 +26,18 @@ function pvupdate()
     local cpath=${PWD}
     froot proj.files
 
-    cscope -b -i proj.files
-    ctags -L proj.files
+    ########################################
+    # Add c(uncompress) for fast read
+    # ctags -L proj.files
+    ctags -R --c++-kinds=+p --C-kinds=+p --fields=+iaS --extra=+q -L proj.files &
+    # ctags -R  --C-kinds=+p --fields=+aS --extra=+q
+    # ctags -R -f ~/.vim/tags/c  --C-kinds=+p --fields=+aS --extra=+q
+    cscope -c -b -i proj.files &
+    wait
     mv cscope.out cscope.db
-    echo "Update linking files"
+    echo "Tag generate successfully."
+    ########################################
+
     cd ${cpath}
 }
 function pvinit()
@@ -68,17 +76,16 @@ function pvinit()
     echo Searching Path:${src_path[@]}
     echo file_ext: $file_ext
     [ -f cscope.db ] && rm cscope.db 2> /dev/null
-    [ -f cctree.db ] && rm cctree.db 2> /dev/null
     [ -f proj.files ] && rm proj.files 2> /dev/null
     [ -f tags ] && rm tags 2> /dev/null
 
     for each_path in ${src_path[@]}
     do
         local tmp_path=$(realpath ${each_path})
-        echo "Searching path: ${tmp_path}"
+        # echo "Searching path: ${tmp_path}"
         if [ "$tmp_path" = "" ]
         then
-            echo "Continue"
+            # echo "Continue"
             continue
         else
             echo -e "Searching folder: $tmp_path"
@@ -87,15 +94,7 @@ function pvinit()
             eval "${find_cmd}"
         fi
     done
-    # Add c(uncompress) for fast read
-    ctags -L proj.files
-    cscope -c -b -i proj.files
-    mv cscope.out cscope.db
-
-    if command -v ccglue
-    then
-        ccglue -S cscope.db -o cctree.db
-    fi
+    pvupdate
 }
 
 function pvim()
@@ -106,14 +105,19 @@ function pvim()
     # fi
     local vim_args=$@
     local cpath=`pwd`
-    groot "cscope.db"
-    # export CSCOPE_DB=`pwd`/cscope.db
-    export CSCOPE_DB=`pwd`/cscope.db
-    echo $CSCOPE_DB
-    cd $cpath
-    vim ${vim_args}
-    # unset var
-    unset CSCOPE_DB
+    if groot "cscope.db"
+    then
+        # export CSCOPE_DB=`pwd`/cscope.db
+        export CSCOPE_DB=`pwd`/cscope.db
+        echo $CSCOPE_DB
+        cd $cpath
+        vim ${vim_args}
+        # unset var
+        unset CSCOPE_DB
+    else
+        echo "Project tag not found."
+        vim ${vim_args}
+    fi
 }
 ########################################################
 #####    Debug                                     #####
@@ -339,33 +343,81 @@ function mark_build()
 ########################################################
 function session
 {
-    local session_name=""
-    if [ "$#" = "1" ]
+    local var_taget_session=""
+    local var_action=""
+    local var_remove_list=()
+
+    if [[ "$#" = "0" ]]
     then
-        local tmp_name=$(tmux ls |grep ${1}| cut -d ':' -f 1)
-        if [ "${tmp_name}" != "" ] &&  tmux ls
-        then
-            session_name=${tmp_name}
-        else
-            session_name=${1}
-        fi
-    else
-        # session_name="Tmp Session"
+        # var_taget_session="Tmp Session"
         tmux ls
         return
     fi
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -rm|--remove|rm)
+                var_action="remove"
+                shift 1
+                var_remove_list+=${@}
+                break
+                ;;
+            -a|--attach|a)
+                var_taget_session=${2}
+                var_action="attach"
+                break
+                ;;
+            -c|--create|c)
+                var_taget_session=${2}
+                var_action="create"
+                break
+                ;;
+            -h|--help)
+                echo "session"
+                printlc -cp false -d "->" "-r|--remove" "remove session with session list"
+                printlc -cp false -d "->" "-a|--attach" "attach session with session name"
+                printlc -cp false -d "->" "-c|--create" "create session with session name"
+                return 0
+                ;;
+            *)
+                local tmp_name=$(tmux ls |grep ${1}| cut -d ':' -f 1)
+                if [ "${tmp_name}" != "" ] &&  tmux ls
+                then
+                    var_action="attach"
+                    var_taget_session=${tmp_name}
+                else
+                    var_action="create"
+                    var_taget_session=${1}
+                fi
+                break
+                ;;
+        esac
+        shift 1
+    done
 
-    if tmux ls | grep ${session_name}
+    if [ "${var_action}" = "attach" ]
     then
-        echo "Start session: ${session_name}"
-        retitle ${session_name}
-        tmux a -dt ${session_name}
-    else
-        echo "Create session: ${session_name}"
-        retitle ${session_name}
-        pureshell "export TERM='xterm-256color' && tmux -u -2 new -s ${session_name}"
+        echo "Start session: ${var_taget_session}"
+        retitle ${var_taget_session}
+        tmux a -dt ${var_taget_session}
+    elif [ "${var_action}" = "create" ]
+    then
+        echo "Create session: ${var_taget_session}"
+        retitle ${var_taget_session}
+        pureshell "export TERM='xterm-256color' && tmux -u -2 new -s ${var_taget_session}"
+    elif [ "${var_action}" = "remove" ]
+    then
+        echo "Remove session: ${var_remove_list}"
+        for each_session in $(echo "${var_remove_list}")
+        do
+            if [ "${each_session}" != "" ]
+            then
+                echo "Remove ${each_session}"
+                tmux kill-session -t "${each_session}"
+            fi
+        done
     fi
-    # tmux a -t ${session_name} || tmux new -s ${session_name}
+    # tmux a -t ${var_taget_session} || tmux new -s ${var_taget_session}
 }
 function erun()
 {
@@ -459,6 +511,9 @@ function ecd()
             -w|--work-script|work)
                 target_path=${HS_PATH_WORK}
                 ;;
+            -i|--vim-ide|ide)
+                target_path=${HS_PATH_IDE}
+                ;;
             --slink|slink)
                 target_path=${HS_PATH_SLINK}
                 ;;
@@ -524,6 +579,8 @@ function ecd()
             -h|--help)
                 echo "enhanced cd|ecd"
                 printlc -cp false -d "->" "-s|--hs-script|hs" "cd to ${HS_PATH_LIB}"
+                printlc -cp false -d "->" "-w|--work-script|work" "cd to ${HS_PATH_WORK}"
+                printlc -cp false -d "->" "-i|--vim-ide|ide" "cd to ${HS_PATH_IDE}"
                 printlc -cp false -d "->" "--slink|slink" "cd to ${HS_PATH_SLINK}"
                 printlc -cp false -d "->" "-l|--lab|lab" "cd to ${HS_PATH_LAB}"
                 printlc -cp false -d "->" "-b|--build|build" "cd to ${HS_PATH_BUILD}"

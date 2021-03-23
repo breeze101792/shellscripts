@@ -53,6 +53,7 @@ export HS_PATH_LAB="${HOME}/lab"
 export HS_PATH_BUILD="${HOME}/build"
 export HS_PATH_PROJ="${HOME}/projects"
 export HS_PATH_WORK="${HS_PATH_LIB}/../work"
+export HS_PATH_IDE="${HS_PATH_LIB}/../vim-ide"
 export HS_PATH_SLINK="${HOME}/slink"
 export HS_PATH_LOG="${HOME}/log"
 

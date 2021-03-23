@@ -4,29 +4,36 @@ export HS_WORK_ENV_ANDROID_DEVICE_IP=192.168.7.19
 alias acd="an_cd "
 function an_setip()
 {
+    local target_ip=""
+    local ip_domain="192.168.7"
     if [ "$#" = 0 ]
     then
+        echo "No input IP found."
         echo "Device IP is: ${HS_WORK_ENV_ANDROID_DEVICE_IP}"
         return 0
     fi
     case $1 in
-        -p|--set-from-pipe)
-            local var_from_pipe="$(xargs echo)"
-            # echo "FD 0 has opened."
-            hs_config -s "${HS_VAR_CLIPBOARD}" "${var_from_pipe}"
+        -72)
+            target_ip=${ip_domain}.72
+            ;;
+        -19)
+            target_ip=${ip_domain}.19
+            ;;
+        -20)
+            target_ip=${ip_domain}.20
             ;;
         -h|--help)
             echo "setip Usage"
-            printlc -cp false -d "->" "-x|--excute" "Excute command, replace %p with clip buffer"
-
+            printlc -cp false -d "->" "-19" "set ip to ${ip_domain}.19"
+            printlc -cp false -d "->" "-20" "set ip to ${ip_domain}.20"
+            printlc -cp false -d "->" "-72" "set ip to ${ip_domain}.72"
             return 0
             ;;
         *)
-            hs_config -s "${HS_VAR_CLIPBOARD}" "${@}"
-            break
+            target_ip=${ip_domain}.19
             ;;
     esac
-    export HS_WORK_ENV_ANDROID_DEVICE_IP=$@
+    export HS_WORK_ENV_ANDROID_DEVICE_IP=${target_ip}
     echo "Device IP is: ${HS_WORK_ENV_ANDROID_DEVICE_IP}"
 
 }
