@@ -1,5 +1,6 @@
 export HS_PROJ_ANDROID=y
 export HS_PROJ_LINUX=y
+export HS_PROJ_FPGA=y
 
 if [ "${HS_PROJ_ANDROID}" = "y" ]
 then
@@ -9,4 +10,9 @@ fi
 if [ "${HS_PROJ_LINUX}" = "y" ]
 then
     source ${HS_PATH_LIB}/projects/linux/linux.sh
+fi
+
+if [ "${HS_PROJ_FPGA}" = "y" ]
+then
+    source ${HS_PATH_LIB}/projects/fpga/fpga.sh
 fi
