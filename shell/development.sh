@@ -135,6 +135,8 @@ function sdebug()
     local target_dev=/dev/ttyUSB0
     local baud_rate=115200
     local session_name="Debug"
+    local serial_log_path="${HS_PATH_LOG}/serial"
+
     while true
     do
         if [ "$#" = 0 ]
@@ -169,7 +171,8 @@ function sdebug()
         shift 1
     done
     retitle ${session_name}
-    screen -S ${session_name} -L -Logfile debug_$(tstamp).log ${target_dev} ${baud_rate}
+    [ ! -d ${serial_log_path} ] && mkdir -p ${serial_log_path} && echo "Create ${serial_log_path}"
+    screen -S ${session_name} -L -Logfile ${serial_log_path}/debug_$(tstamp).log ${target_dev} ${baud_rate}
 }
 alias mdebug="sdebug --device /dev/ttyUSB1"
 
