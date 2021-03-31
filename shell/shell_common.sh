@@ -7,6 +7,7 @@
 ########################################################
 function epath()
 {
+    local flag_verbose=n
     #echo "Export Path $1";
     # if grep -q $1 <<<$PATH;
     local target_path=$(realpath $1)
@@ -16,7 +17,7 @@ function epath()
         # exit 1
         return 1
     else
-        echo -E "export PATH=${target_path}:"'$PATH;'
+        [ "${flag_verbose}" = "y" ] && echo -E "export PATH=${target_path}:"'$PATH;'
         export PATH=${target_path}:$PATH;
     fi;
 

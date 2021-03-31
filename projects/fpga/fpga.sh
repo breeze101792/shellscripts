@@ -2,7 +2,18 @@ function fpga_flash()
 {
     local target_dev=/dev/$(lsblk -S |grep MBED |cut -d " " -f 1)
     local target_mount_path=/mnt/usb
-    local target_file=$1
+    local target_file=""
+    local var_tmp_file=$(ls | grep bin)
+    if [ "$#" = 0 ] && [ -f ${var_tmp_file} ]
+    then
+        target_file=${var_tmp_file}
+    elif [ "$#" = 1 ] && [ -f ${1} ]
+    then
+        target_file=${1}
+    else
+        echo "Target file not found."
+        return 1
+    fi
 
     echo "Flash ${target_file} to ${target_dev}"
     sudo umount ${target_mount_path}
