@@ -24,7 +24,14 @@ alias nlfsgit="GIT_LFS_SKIP_SMUDGE=1 git "
 function pvupdate()
 {
     local cpath=${PWD}
-    froot proj.files
+    local target_file="proj.files"
+    if froot ${target_file}
+    then
+        echo "Found ${target_file} in $(pwd)"
+    else
+        echo "${target_file} not found."
+        return 1
+    fi
 
     ########################################
     # Add c(uncompress) for fast read
