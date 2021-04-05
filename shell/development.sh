@@ -505,7 +505,7 @@ function erun()
 }
 function ecd()
 {
-    echo "Lab Enhanced cd"
+    echo "Enhanced cd"
 
     local cpath=$(pwd)
     local target_path="${HOME}"
