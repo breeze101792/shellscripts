@@ -924,22 +924,114 @@ function ginfo()
     echo "Get Info for First 1 Commit: git log --pretty='format:%p->%h %cn(%an) %s' -n 1"
     echo "Get Info for First 1 Commit: git log --pretty='format:%cd %p->%h %cn(%an) %s' -n 1"
     echo "Generate Patch: git format-patch -n <num_of_patchs> <commit>"
-    echo "Apply Patch: git am <path_to_your_patch>"
+    echo "Apply Patch: git am --directory=<path_to_your_patch_root> <path_to_your_patch>"
 
 }
 function gfiles()
 {
-    local commit=""
-    if [[ $# = 0 ]]
+    # Use xargs tar cvf <your_tar_file.tar> could save the patch with tar
+    local var_commit="HEAD"
+    local var_commit_start=""
+    local var_commit_end=""
+    local var_num="1"
+    local var_commit_name=""
+    local flag_compress="n"
+
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -c|--commit)
+                var_commit=$2
+                shift 1
+                ;;
+            -n|--number)
+                var_num="$2"
+                shift 1
+                ;;
+            -t|--tar)
+                flag_compress="y"
+                ;;
+            -h|--help)
+                echo "gfiles"
+                printlc -cp false -d "->" "-c|--commit" "Specify commit hash"
+                printlc -cp false -d "->" "-n|--number" "get commit before n commit"
+                printlc -cp false -d "->" "-t|--tar" "get commit list with tar"
+                printlc -cp false -d "->" "-h|--help" "Print help function "
+                return 0
+                ;;
+            *)
+                var_commit="$1"
+                break
+                ;;
+        esac
+        shift 1
+    done
+
+    var_commit_start=$(git log --pretty='format:%h' -1 ${var_commit})
+    var_commit_end=$(git log --pretty='format:%h' -1 ${var_commit}~${var_num})
+
+    var_commit_name=${var_commit_start}_${var_commit_end}_$(git log --pretty='format:%s' -n 1 ${var_commit_start}| sed "s/://g" | sed "s/\]\[//g" | sed "s/\]//g" | sed "s/\[//g" | sed "s/\ /_/g")
+    if [ "${flag_compress}" = "y" ]
     then
-        commit="HEAD"
-    elif [[ $# = 1 ]]
-    then
-        commit="$1"
+        git diff ${var_commit_start} ${var_commit_end} --name-only | xargs tar -cvjf "${var_commit_name}.tbz2"
     else
-        echo "Please Enter commit hash"
+        git diff ${var_commit_start} ${var_commit_end} --name-only
     fi
-    git diff ${commit} ${commit}~ --name-only
+}
+function gpatch()
+{
+    local var_patch_url="$*"
+    local var_patch_root="$(pwd)"
+    local flag_file_mismatch="n"
+
+    local tmp_patch_file="test_$(tstamp).patch"
+
+    eval "${var_patch_url}" > "${tmp_patch_file}"
+    local var_patch_subject=$(cat ${tmp_patch_file} | grep "Subject" | cut -d ":" -f 2  | sed "s/\]//g" | sed "s/\[//g" | sed "s/\ /_/g" | sed "s/\///g" | sed "s/_PATCH_//g")
+    local var_patch_file="${var_patch_subject}_$(tstamp).patch"
+
+
+    for each_cl_file in $(cat ${tmp_patch_file} | grep "\-\-\- a" | cut -d "/" -f 2- )
+    do
+        if [ ! -f ${each_cl_file} ]
+        then
+            echo "${each_cl_file} not found in your code tree."
+            flag_file_mismatch=y
+        fi
+    done
+    if [ ${flag_file_mismatch} = "y" ]
+    then
+        echo "File misssing found. Do you want to proceed git am?(y/N)"
+        read tmp_ans
+        # echo Ans:${tmp_ans}
+        if [ "${tmp_ans}" != "y" ] || [ "${tmp_ans}" != "Y" ]
+        then
+            return 0
+        fi
+    fi
+    # echo "git am --directory ${var_patch_root} ${tmp_patch_file}"
+    # git am --directory ${var_patch_root} ${tmp_patch_file}
+    echo "patch -p1 -b -i ${tmp_patch_file}"
+    patch -p1 -b -i ${tmp_patch_file} | mark "FAILED"
+
+    for each_cl_file in $(cat ${tmp_patch_file} | grep "\-\-\- a" | cut -d "/" -f 2- )
+    do
+        if [ -f "${each_cl_file}.rej" ]
+        then
+            printc -c red "Found reject file: ${each_cl_file}.rej\n"
+        elif [ -f ${each_cl_file} ]
+        then
+            git add ${each_cl_file}
+        fi
+    done
+
+    echo "mv ${tmp_patch_file} ${var_patch_file}"
+    mv "${tmp_patch_file}" "${var_patch_file}"
+}
+function greset()
+{
+    git reset --hard HEAD
+    git clean -fxd
 }
 function rreset()
 {
