@@ -64,7 +64,7 @@ function xsettings()
 {
     # .256 sec delay, 1 char/hz
     # xset r rate 200 40
-    xset r rate 150 64
+    xset r rate 192 64
 }
 function audio_default()
 {
