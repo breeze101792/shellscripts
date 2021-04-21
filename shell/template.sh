@@ -23,7 +23,7 @@ function tmp1()
                 shift 1
                 ;;
             -h|--help)
-                echo "tmplate"
+                echo "tmplate [Options]"
                 printlc -cp false -d "->" "-a|--append" "append file extension on search"
                 printlc -cp false -d "->" "-h|--help" "Print help function "
                 return 0

@@ -189,6 +189,7 @@ function hs_main
     hs_print "Version: $HS_ENV_VER"
     hs_source $HS_PATH_LIB/shell/env_platform.sh
     hs_source $HS_PATH_LIB/shell/lib.sh
+    hs_source $HS_PATH_LIB/shell/cli.sh
     hs_source $HS_PATH_LIB/shell/tools.sh
     hs_source $HS_PATH_LIB/shell/development.sh
     hs_source $HS_PATH_LIB/shell/others.sh

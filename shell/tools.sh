@@ -74,6 +74,12 @@ function clip()
                 # get current dir
                 hs_config -g "${HS_VAR_CURRENT_DIR}"
                 ;;
+            -c|--copy-file)
+                clip -x cp %p .
+                ;;
+            -cd|--copy-directory)
+                clip -x cp %p/* .
+                ;;
             -f|--fake-run)
                 flag_fake_run=true
                 ;;
@@ -96,6 +102,8 @@ function clip()
                 printlc -cp false -d "->" "-p|--set-from-pipe" "Set Clipbboard, default use pwd for setting var"
                 printlc -cp false -d "->" "-g|--get-clip" "Get Clipbboard, default use getting action"
                 printlc -cp false -d "->" "-d|--get-current-dir" "Get current dir vars, get current stored dir"
+                printlc -cp false -d "->" "-c|--copy-file" "cp file to current folder"
+                printlc -cp false -d "->" "-cd|--copy-directory" "cp all file to current folder"
                 printlc -cp false -d "->" "-f|--fake-run" "Do fake run on -x"
                 printlc -cp false -d "->" "-x|--excute" "Excute command, replace %p with clip buffer"
 

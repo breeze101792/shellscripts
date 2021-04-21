@@ -41,6 +41,7 @@ function pvupdate()
     # ctags -R -f ~/.vim/tags/c  --C-kinds=+p --fields=+aS --extra=+q
     cscope -c -b -i proj.files &
     wait
+    command -V ccglue && ccglue -S cscope.out -o cctree.db
     mv cscope.out cscope.db
     echo "Tag generate successfully."
     ########################################
@@ -112,19 +113,47 @@ function pvim()
     # fi
     local vim_args=$@
     local cpath=`pwd`
-    if groot "cscope.db"
+    local flag_cctree=n
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -m|--map)
+                flag_cctree=y
+                ;;
+            -h|--help)
+                echo "tmplate [Options]"
+                printlc -cp false -d "->" "-m|--map" "Load cctree in vim"
+                printlc -cp false -d "->" "-h|--help" "Print help function "
+                return 0
+                ;;
+            *)
+                break
+                ;;
+        esac
+        shift 1
+    done
+    # unset var
+    unset CSCOPE_DB
+    unset CCTREE_DB
+
+    if froot "cscope.db"
     then
-        # export CSCOPE_DB=`pwd`/cscope.db
         export CSCOPE_DB=`pwd`/cscope.db
-        echo $CSCOPE_DB
-        cd $cpath
-        vim ${vim_args}
-        # unset var
-        unset CSCOPE_DB
+        echo "CSCOPE: ${CSCOPE_DB}"
     else
-        echo "Project tag not found."
-        vim ${vim_args}
+        echo "Project ccscop tag not found."
     fi
+    if froot "cctree.db" && [ "${flag_cctree}" = "y" ]
+    then
+        export CCTREE_DB=`pwd`/cctree.db
+        echo "CCTREE: ${CCTREE_DB}"
+    fi
+
+    cd $cpath
+    vim ${vim_args}
+    # unset var
+    unset CSCOPE_DB
+    unset CCTREE_DB
 }
 ########################################################
 #####    Debug                                     #####
@@ -1009,6 +1038,7 @@ function gpatch()
             return 0
         fi
     fi
+
     # echo "git am --directory ${var_patch_root} ${tmp_patch_file}"
     # git am --directory ${var_patch_root} ${tmp_patch_file}
     echo "patch -p1 -b -i ${tmp_patch_file}"
@@ -1042,12 +1072,32 @@ function rreset()
 }
 function rdate()
 {
-    if [ "$#" != "1" ]
+    local checkout_date=$1
+    if [[ "$#" = "0" ]]
     then
         echo "Date not found."
         echo "ex. rdate \"2020-07-22 02:00\""
+        return 0
     fi
-    local checkout_date=$1
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -d|--date|date)
+                checkout_date=$1
+                shift 1
+                ;;
+            -h|--help)
+                echo "rdate [Options]"
+                printlc -cp false -d "->" "-d|--date|date" "append file extension on search"
+                printlc -cp false -d "->" "-h|--help" "Print help function "
+                return 0
+                ;;
+            *)
+                break
+                ;;
+        esac
+        shift 1
+    done
     repo forall -j ${HS_ENV_CPU_NUMBER}  -c "pwd && git reset --hard \$(git rev-list -n 1 --first-parent --before=\"${checkout_date}\" \$(git rev-parse --abbrev-ref HEAD))"
 }
 ########################################################
