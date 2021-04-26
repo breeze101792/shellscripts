@@ -1,5 +1,8 @@
-hs_print "Source Linux project"
-function lide()
+hs_print "Source Linux(lx) project"
+function lx_ide()
 {
-    pvinit drivers fs  include init ipc kernel mm net security virt usr
+    local arch=arm64
+    local target_dirs=("block" "certs" "crypto" "fs" "include" "init" "ipc" "kernel" "lib" "mm" "net" "security" "virt")
+    target_dirs+=("arch/${arch}/")
+    pvinit ${target_dirs}
 }

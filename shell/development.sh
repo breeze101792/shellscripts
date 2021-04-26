@@ -33,6 +33,10 @@ function pvupdate()
         return 1
     fi
 
+    [ -f cscope.db ] && rm cscope.db 2> /dev/null
+    [ -f cctree.db ] && rm cctree.db 2> /dev/null
+    [ -f tags ] && rm tags 2> /dev/null
+
     ########################################
     # Add c(uncompress) for fast read
     # ctags -L proj.files
@@ -50,13 +54,20 @@ function pvupdate()
 }
 function pvinit()
 {
+    local var_cpath=$(pwd)
     local file_ext=()
     local file_exclude=()
     local find_cmd=""
+    local target_file="proj.files"
+    local flag_append=n
+
     while [[ "$#" != 0 ]]
     do
         case $1 in
             -a|--append)
+                flag_append="y"
+                ;;
+            -e|--extension)
                 file_ext+="-o -name \"*.${2}\""
                 shift 1
                 ;;
@@ -66,7 +77,9 @@ function pvinit()
                 ;;
             -h|--help)
                 echo "pvinit"
-                printlc -cp false -d "->" "-a|--append" "append file extension on search"
+                printlc -cp false -d "->" "-a|--append" "append more fire in file list"
+                printlc -cp false -d "->" "-e|--extension" "add file extension on search"
+                printlc -cp false -d "->" "-x|--exclude" "exclude file on search"
                 return 0
                 ;;
             *)
@@ -80,12 +93,20 @@ function pvinit()
         echo "Please enter folder name"
         return -1
     fi
+
     local src_path=($@)
-    echo Searching Path:${src_path[@]}
-    echo file_ext: $file_ext
-    [ -f cscope.db ] && rm cscope.db 2> /dev/null
-    [ -f proj.files ] && rm proj.files 2> /dev/null
-    [ -f tags ] && rm tags 2> /dev/null
+
+    if [ "${flag_append}" = "n" ] && [ -f "${target_file}" ]
+    then
+        rm "${target_file}" 2> /dev/null
+    elif [ "${flag_append}" = "y" ] && froot ${target_file}
+    then
+        target_file="$(realpath ${target_file})"
+        cd ${var_cpath}
+    fi
+    echo "Searching Path:${src_path[@]}"
+    echo "file_ext: $file_ext"
+    echo "Project List File: ${target_file}"
 
     for each_path in ${src_path[@]}
     do
@@ -97,11 +118,15 @@ function pvinit()
             continue
         else
             echo -e "Searching folder: $tmp_path"
-            find_cmd="find ${tmp_path} \( -type f -name '*.h' -o -name '*.c' -o -name '*.cpp' -o -name '*.java' ${file_ext[@]} \) -a \( -not -path '*/auto_gen*' -o -not -path '*/build*' ${file_exclude[@]} \) | xargs realpath >> proj.files"
+            find_cmd="find ${tmp_path} \( -type f -name '*.h' -o -name '*.c' -o -name '*.cpp' -o -name '*.java' ${file_ext[@]} \) -a \( -not -path '*/auto_gen*' -o -not -path '*/build*' ${file_exclude[@]} \) | xargs realpath >> \"${target_file}\""
             # echo ${find_cmd}
             eval "${find_cmd}"
         fi
     done
+
+    local tmp_file="tmp.files"
+    cat "${target_file}" | sort | uniq > "${tmp_file}"
+    mv "${tmp_file}" "${target_file}"
     pvupdate
 }
 
@@ -120,7 +145,6 @@ function pvim()
         case $1 in
             -m|--map)
                 flag_cctree=y
-                shift 1
                 ;;
             -p|--pure-mode)
                 cmd_args+=("-u NONE")

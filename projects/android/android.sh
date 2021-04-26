@@ -1,5 +1,5 @@
 #!/bin/bash
-hs_print "Source Android project"
+hs_print "Source Android(an) project"
 export HS_WORK_ENV_ANDROID_DEVICE_IP=192.168.7.19
 alias acd="an_cd "
 function an_setip()
