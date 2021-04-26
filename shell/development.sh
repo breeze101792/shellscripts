@@ -111,18 +111,24 @@ function pvim()
     # then
     #     echo "Please enter a file name"
     # fi
-    local vim_args=$@
+    local vim_args=""
     local cpath=`pwd`
+    local cmd_args=()
     local flag_cctree=n
     while [[ "$#" != 0 ]]
     do
         case $1 in
             -m|--map)
                 flag_cctree=y
+                shift 1
+                ;;
+            -p|--pure-mode)
+                cmd_args+=("-u NONE")
                 ;;
             -h|--help)
                 echo "tmplate [Options]"
                 printlc -cp false -d "->" "-m|--map" "Load cctree in vim"
+                printlc -cp false -d "->" "-p|--pure-mode" "Load withouth projfile"
                 printlc -cp false -d "->" "-h|--help" "Print help function "
                 return 0
                 ;;
@@ -132,6 +138,9 @@ function pvim()
         esac
         shift 1
     done
+
+    vim_args=$@
+
     # unset var
     unset CSCOPE_DB
     unset CCTREE_DB
@@ -150,7 +159,7 @@ function pvim()
     fi
 
     cd $cpath
-    vim ${vim_args}
+    eval ${HS_VAR_VIM} ${cmd_args} ${vim_args}
     # unset var
     unset CSCOPE_DB
     unset CCTREE_DB

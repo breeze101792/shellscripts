@@ -83,6 +83,7 @@ export HS_FILE_CONFIG="${HOME}/.cache/hs_config"
 export HS_VAR_CURRENT_DIR="CURRENT_DIR"
 export HS_VAR_CLIPBOARD="CLIPBOARD"
 export HS_VAR_TTY_START_CMD="echo start WM"
+export HS_VAR_VIM="vim"
 
 ########################################################
 ########################################################
