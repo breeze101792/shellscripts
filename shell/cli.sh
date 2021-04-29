@@ -6,6 +6,65 @@
 ########################################################
 ########################################################
 
+########################################################
+####    CLI Function
+########################################################
+function cli_helper()
+{
+    local var_title=""
+    local var_option=""
+    local var_description=""
+    local var_prefix="      "
+
+    while true
+    do
+        case $1 in
+            -o|--option)
+                var_option="${2}"
+                shift 2
+                ;;
+            -d|--description)
+                var_description="${2}"
+                shift 2
+                ;;
+            -t|--title)
+                var_title="${2}"
+                shift 2
+                ;;
+            -h|--help)
+                cli_helper -t "cli_helper"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "cli_helper [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-o|--option" -d "append file extension on search"
+                cli_helper -o "-d|--description" -d "append file extension on search"
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                break
+                ;;
+        esac
+    done
+    if [ "${var_title}" != "" ]
+    then
+        printf "${var_title}"
+    elif [ "${var_option}" != "" ] && [ "${var_description}" != "" ]
+    then
+        # printlc -cp false -d "->" "${var_prefix}${var_option}\n" "${var_prefix}${var_prefix}${var_description}"
+        printf "${var_prefix}${var_option}\n"
+        printf "${var_prefix}${var_prefix}${var_description}\n"
+    elif [ "${var_description}" != "" ]
+    then
+        printf "${var_prefix}${var_description}\n"
+    fi
+    printf "\n"
+}
+
+
+########################################################
+####    Others
+########################################################
 function printt
 {
     local width=$((80))

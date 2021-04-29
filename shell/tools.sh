@@ -119,8 +119,63 @@ function clip()
 }
 bkfile()
 {
-   echo -e "Backup $1\n"
-   mv $1 $1_$(tstamp).backup
+    local flag_auto_idx="y"
+    local var_bk_file=""
+    local var_bk_name=""
+    local var_description=""
+    local var_idx="00"
+    local var_date="$(tstamp)"
+    if [[ "$#" = "0" ]]
+    then
+        echo "Default action"
+    fi
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -n|--name)
+                var_description="$(echo $2 | sed 's/\ /_/g')"
+                shift 1
+                ;;
+            -f|--backup-file)
+                var_bk_file="$(echo $2 | sed 's/\ /_/g')"
+                shift 1
+                ;;
+            -h|--help)
+                echo "bkfile [Options] [file name]"
+                printlc -cp false -d "->" "-n|--name" "append description on the file name"
+                printlc -cp false -d "->" "-f|--backup-file" "specify file name"
+                printlc -cp false -d "->" "-h|--help" "Print help function "
+                return 0
+                ;;
+            *)
+                if [ "${var_bk_file}" != "" ]
+                then
+                    echo "Backup file already definied"
+                    return 1
+                fi
+                var_bk_file="$(echo $1 | sed 's/\ /_/g')"
+                ;;
+        esac
+        shift 1
+    done
+
+    if [ ! -f "${var_bk_file}" ]
+    then
+        echo "File(${var_bk_file}) not found!"
+        return 1
+    fi
+
+    var_idx=$(find . -name "${var_bk_file}*" | sed "s/_/\n/g" | grep "I[0-9]\{2\}" | sed "s/I//g" | sort | tail -n 1)
+    var_idx=$(printf 'I%02d' "$(( ${var_idx} + 1 ))")
+
+    var_bk_name="${var_bk_file}_${var_idx}_${var_date}"
+    if [ "${var_description}" != "" ]
+    then
+        var_bk_name="${var_bk_name}_${var_description}"
+    fi
+
+    echo -e "Backup ${var_bk_file} to ${var_bk_name}\n"
+    mv "${var_bk_file}" "${var_bk_name}"
 }
 function rln()
 {
@@ -253,15 +308,15 @@ function xkey()
                 continue
                 ;;
             # $'\x2c')
-            #     echo "Ctrl + < dected"
-            #     ${var_skey_prefix} "ctrl+PATGEUP"
-            #     continue
-            #     ;;
+                #     echo "Ctrl + < dected"
+                #     ${var_skey_prefix} "ctrl+PATGEUP"
+                #     continue
+                #     ;;
             # $'\x2e')
-            #     echo "Ctrl + > dected"
-            #     ${var_skey_prefix} "ctrl+PATGEDOWN"
-            #     continue
-            #     ;;
+                #     echo "Ctrl + > dected"
+                #     ${var_skey_prefix} "ctrl+PATGEDOWN"
+                #     continue
+                #     ;;
             $'\x1b')
                 echo "esc dected"
                 ${var_skey_prefix} "esc"

@@ -23,9 +23,12 @@ function tmp1()
                 shift 1
                 ;;
             -h|--help)
-                echo "tmplate [Options]"
-                printlc -cp false -d "->" "-a|--append" "append file extension on search"
-                printlc -cp false -d "->" "-h|--help" "Print help function "
+                cli_helper -t "tmplate"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "tmplate [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-a|--append" -d "append file extension on search"
+                cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;
             *)

@@ -410,6 +410,45 @@ function mark_build()
         $@ 2>&1 | mark -s yellow "undefined" |  mark -s red "fatal" | mark -s red "error" | mark -s red "fail" | mark -s yellow "warning"
     fi
 }
+function lanalyser
+{
+    local var_logfile=""
+    if [[ "$#" = "0" ]]
+    then
+        echo "Default action"
+    fi
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -f|--log-file)
+                var_logfile="${2}"
+                shift 1
+                ;;
+            -h|--help)
+                echo "logger [Options]"
+                printlc -cp false -d "->" "-f|--log-file" "Specify log file"
+                printlc -cp false -d "->" "-h|--help" "Print help function "
+                return 0
+                ;;
+            *)
+                var_logfile="$@"
+                break
+                ;;
+        esac
+        shift 1
+    done
+    echo "---- Android log analysis"
+    # local total_line=$(wc -l ${var_logfile} | cut -d " " -f1 )
+    # cat ${var_logfile} | grep -B ${total_line} "error.*generated" | tac | grep -B ${total_line} "generated.$" | tac | mark_build
+    cat -n ${var_logfile} | grep -B 5 -A 5 "error.*generated" | mark_build
+
+    echo "---- Make log analysis"
+    cat -n ${var_logfile} | grep "make.*Error" | mark_build
+
+    echo "---- Compiler log analysis"
+    cat -n ${var_logfile} | grep "error:" | mark_build
+
+}
 ########################################################
 #####    Exc Enhance                               #####
 ########################################################
