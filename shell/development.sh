@@ -76,10 +76,14 @@ function pvinit()
                 shift 1
                 ;;
             -h|--help)
-                echo "pvinit"
-                printlc -cp false -d "->" "-a|--append" "append more fire in file list"
-                printlc -cp false -d "->" "-e|--extension" "add file extension on search"
-                printlc -cp false -d "->" "-x|--exclude" "exclude file on search"
+                cli_helper -c "pvinit"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "pvinit [Options] [Dirs]"
+                cli_helper -t "Options"
+                cli_helper -o "-a|--append" -d "append more fire in file list"
+                cli_helper -o "-e|--extension" -d "add file extension on search"
+                cli_helper -o "-x|--exclude" -d "exclude file on search"
+                cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;
             *)
@@ -150,10 +154,13 @@ function pvim()
                 cmd_args+=("-u NONE")
                 ;;
             -h|--help)
-                echo "tmplate [Options]"
-                printlc -cp false -d "->" "-m|--map" "Load cctree in vim"
-                printlc -cp false -d "->" "-p|--pure-mode" "Load withouth projfile"
-                printlc -cp false -d "->" "-h|--help" "Print help function "
+                cli_helper -c "pvim"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "pvim [Options] [File]"
+                cli_helper -t "Options"
+                cli_helper -o "-m|--map" -d "Load cctree in vim"
+                cli_helper -o "-p|--pure-mode" -d "Load withouth ide file"
+                cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;
             *)
@@ -219,10 +226,14 @@ function sdebug()
                 shift 1
                 ;;
             -h|--help)
-                echo "sdebug Usage"
-                printlc -cp false -d "->" "-d|--device" "Set device"
-                printlc -cp false -d "->" "-b|--baud-rate" "Set Baud Rate"
-                printlc -cp false -d "->" "-s|--session-name" "Set Session Name"
+                cli_helper -c "sdebug"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "sdebug [Options] [Device]"
+                cli_helper -t "Options"
+                cli_helper -o "-d|--device" -d "Set device"
+                cli_helper -o "-b|--baud-rate" -d "Set Baud Rate"
+                cli_helper -o "-s|--session-name" -d "Set Session Name"
+                cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;
             *)
@@ -560,8 +571,16 @@ function erun()
                 flag_send_mail="y"
                 ;;
             -h|--help)
-                echo "erun"
-                printlc -cp false -d "->" "-s|--Source-HS" "Source HS config"
+                cli_helper -c "erun"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "erun [Options] [Command]"
+                cli_helper -t "Options"
+                cli_helper -o "-s|--Source-HS" -d "Source HS config"
+                cli_helper -o "-L|--no-log" -d "Run with record log"
+                cli_helper -o "-c|--color" -d "Enable Color"
+                cli_helper -o "-m|--mail" -d "Send mail after command is finished"
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
                 return 0
                 ;;
 

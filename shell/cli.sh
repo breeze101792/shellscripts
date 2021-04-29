@@ -11,6 +11,8 @@
 ########################################################
 function cli_helper()
 {
+    local var_cmd_name=""
+    local var_cmd_description=""
     local var_title=""
     local var_option=""
     local var_description=""
@@ -19,6 +21,14 @@ function cli_helper()
     while true
     do
         case $1 in
+            -c|--command-name)
+                var_cmd_name="${2}"
+                shift 2
+                ;;
+            -cd|--command-description)
+                var_cmd_description="${2}"
+                shift 2
+                ;;
             -o|--option)
                 var_option="${2}"
                 shift 2
@@ -28,16 +38,20 @@ function cli_helper()
                 shift 2
                 ;;
             -t|--title)
+                echo test
                 var_title="${2}"
                 shift 2
                 ;;
             -h|--help)
-                cli_helper -t "cli_helper"
+                cli_helper -c "cli_helper" -cd "cli helper function for printing"
                 cli_helper -t "SYNOPSIS"
                 cli_helper -d "cli_helper [Options] [Value]"
                 cli_helper -t "Options"
-                cli_helper -o "-o|--option" -d "append file extension on search"
-                cli_helper -o "-d|--description" -d "append file extension on search"
+                cli_helper -o "-c|--command-name" -d "Program command name"
+                cli_helper -o "-cd|--command-description" -d "Program command description"
+                cli_helper -o "-o|--option" -d "Options name"
+                cli_helper -o "-t|--title" -d "Title of Secction"
+                cli_helper -o "-d|--description" -d "Description of each section"
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;
@@ -46,12 +60,19 @@ function cli_helper()
                 ;;
         esac
     done
-    if [ "${var_title}" != "" ]
+    if [ "${var_cmd_name}" != "" ]
+    then
+        printf "${var_cmd_name}"
+        if [ "${var_cmd_description}" != "" ]
+        then
+            printf " - ${var_cmd_description}"
+        fi
+        printf "\n"
+    elif [ "${var_title}" != "" ]
     then
         printf "${var_title}"
     elif [ "${var_option}" != "" ] && [ "${var_description}" != "" ]
     then
-        # printlc -cp false -d "->" "${var_prefix}${var_option}\n" "${var_prefix}${var_prefix}${var_description}"
         printf "${var_prefix}${var_option}\n"
         printf "${var_prefix}${var_prefix}${var_description}\n"
     elif [ "${var_description}" != "" ]

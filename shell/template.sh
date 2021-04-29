@@ -23,7 +23,7 @@ function tmp1()
                 shift 1
                 ;;
             -h|--help)
-                cli_helper -t "tmplate"
+                cli_helper -c "tmplate" -cd "template function"
                 cli_helper -t "SYNOPSIS"
                 cli_helper -d "tmplate [Options] [Value]"
                 cli_helper -t "Options"
