@@ -15,7 +15,7 @@ alias gstatus='git status -uno '
 alias gdiff='git diff --check --no-ext-diff'
 alias glog="git log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold cyan)%aD%C(reset) %C(bold green)(%ar)%C(reset)%C(bold yellow)%d%C(reset)%n''          %C(white)%s%C(reset) %C(dim white)- %an%C(reset)' --all"
 #alias lg="git $lg1"
-alias proot="froot .repo"
+alias proot="froot -m .repo || froot -m .git"
 alias nlfsgit="GIT_LFS_SKIP_SMUDGE=1 git "
 
 ########################################################
@@ -43,10 +43,11 @@ function pvupdate()
     ctags -R --c++-kinds=+p --C-kinds=+p --fields=+iaS --extra=+q -L proj.files &
     # ctags -R  --C-kinds=+p --fields=+aS --extra=+q
     # ctags -R -f ~/.vim/tags/c  --C-kinds=+p --fields=+aS --extra=+q
-    cscope -c -b -i proj.files &
+    cscope -c -b -i proj.files -f cscope.db&
     wait
-    command -V ccglue && ccglue -S cscope.out -o cctree.db
-    mv cscope.out cscope.db
+    # command -V ccglue && ccglue -S cscope.out -o cctree.db
+    command -V ccglue && ccglue -S cscope.db -o cctree.db
+    # mv cscope.out cscope.db
     echo "Tag generate successfully."
     ########################################
 

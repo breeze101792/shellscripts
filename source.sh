@@ -204,7 +204,8 @@ function hs_main
         export_sh_func ${HS_PATH_LIB}/shell/tools.sh
         export_sh_func ${HS_PATH_LIB}/shell/development.sh
     fi
-    if [ "${flag_var_refresh}" = "n" ] && [ ${HS_ENV_SILENCE} = "n" ]
+    # if [ "${flag_var_refresh}" = "n" ] && [ ${HS_ENV_SILENCE} = "n" ]
+    if [ "${flag_var_refresh}" = "n" ]
     then
         retitle "${HS_ENV_TITLE}"
     fi
