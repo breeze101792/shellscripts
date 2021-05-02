@@ -1022,30 +1022,76 @@ function gpush()
 }
 function ginfo()
 {
-    local fetch_url="$(git remote show $(git remote show) | grep Fetch |cut -d':' -f 2- | tr -d '[:blank:]')"
-    local branch_name="$(git remote show $(git remote show) | grep 'HEAD branch' |cut -d':' -f 2- | tr -d '[:blank:]')"
-    local rel_branch_name="$(git branch -a | grep '\->' | cut -d'/' -f 4)"
-    local current_branch=$(git branch| sed -e '/^[^*]/d' -e 's/* //g' | tr -d "[:blank:]")
-    git remote show $(git remote show) | head -n 4
+    local var_cpath=$(pwd)
+    local var_remote=""
+    local var_branch=""
+    local var_url=""
+
+    local flag_verbose="n"
+
+    local branch_name=""
+    local rel_branch_name=""
+    local current_branch=""
+
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -v|--verbose)
+                flag_verbose="y"
+                shift 1
+                ;;
+            -h|--help)
+                cli_helper -c "ginfo" -cd "git information"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "ginfo [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-v|--verbose" -d "Verbose print "
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                break
+                ;;
+        esac
+        shift 1
+    done
+    
+    if froot -m .git
+    then
+        var_remote="$(cat .git/config|grep '\[*\]' | grep remote | cut -d '"' -f2)"
+        var_branch="$(cat .git/config|grep '\[*\]' | grep branch | cut -d '"' -f2)"
+        var_url="$(cat .git/config|grep 'url' | cut -d '=' -f2)"
+        cd ${var_cpath}
+    fi
+
+    # fetch_url="$(git remote show $(git remote show) | grep Fetch |cut -d':' -f 2- | tr -d '[:blank:]')"
+    # branch_name="$(git remote show $(git remote show) | grep 'HEAD branch' |cut -d':' -f 2- | tr -d '[:blank:]')"
+    rel_branch_name="$(git branch -a | grep '\->' | cut -d'/' -f 4)"
+    current_branch=$(git branch| sed -e '/^[^*]/d' -e 's/* //g' | tr -d "[:blank:]")
+    # git remote show $(git remote show) | head -n 4
+    echo "Remote: ${var_remote}"
+    echo "Branch: ${var_branch}"
+    echo "URL   : ${var_url}"
     echo "---- Clone ----"
-    echo "Fetch cmd: git clone ${fetch_url} -b ${branch_name}"
-    echo "Fetch cmd: git clone ${fetch_url} -b ${rel_branch_name}"
-    echo "Fetch cmd: git clone ${fetch_url} -b ${current_branch}"
+    echo "> git clone ${var_url} -b ${var_branch}"
+    [ "${flag_verbose}" = "y" ] && echo "> git clone ${var_url} -b ${rel_branch_name}"
+    [ "${flag_verbose}" = "y" ] && echo "> git clone ${var_url} -b ${current_branch}"
     echo "---- Reset Online ----"
-    echo "Fetch cmd: git reset --hard $(git remote)/${branch_name}"
-    echo "Fetch cmd: git reset --hard $(git remote)/${rel_branch_name}"
-    echo "Fetch cmd: git reset --hard $(git remote)/${current_branch}"
+    echo "> git reset --hard ${var_remote}/${var_branch}"
+    [ "${flag_verbose}" = "y" ] && echo "> git reset --hard ${var_remote}/${rel_branch_name}"
+    [ "${flag_verbose}" = "y" ] && echo "> git reset --hard ${var_remote}/${current_branch}"
     echo "---- Pull Online Branch----"
-    echo "Fetch cmd: git pull $(git remote) ${branch_name}"
-    echo "Fetch cmd: git pull $(git remote) ${rel_branch_name}"
-    echo "Fetch cmd: git pull $(git remote) ${current_branch}"
+    echo "> git pull ${var_remote} ${var_branch}"
+    [ "${flag_verbose}" = "y" ] && echo "> git pull ${var_remote} ${rel_branch_name}"
+    [ "${flag_verbose}" = "y" ] && echo "> git pull ${var_remote} ${current_branch}"
     echo "---- track Online Branch ----"
-    echo "Fetch cmd: git branch --set-upstream-to=$(git remote)/${branch_name} ${current_branch} "
+    echo "> git branch --set-upstream-to=${var_remote}/${branch_name} ${current_branch} "
+    echo "---- Patches ----"
+    echo "Generate Patch: git format-patch -n <num_of_patchs> <commit>"
+    echo "Apply Patch   : git am --directory=<path_to_your_patch_root> <path_to_your_patch>"
     echo "---- Others ----"
     echo "Get Info for First 1 Commit: git log --pretty='format:%p->%h %cn(%an) %s' -n 1"
     echo "Get Info for First 1 Commit: git log --pretty='format:%cd %p->%h %cn(%an) %s' -n 1"
-    echo "Generate Patch: git format-patch -n <num_of_patchs> <commit>"
-    echo "Apply Patch: git am --directory=<path_to_your_patch_root> <path_to_your_patch>"
 
 }
 function gfiles()
