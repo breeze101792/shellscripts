@@ -1097,7 +1097,7 @@ function ginfo()
         var_branch="master"
     fi
 
-    var_branch="$(echo ${var_branch} | sed 's/\ +//g')"
+    var_branch="$(echo ${var_branch} | sed 's/\ \+//g')"
 
     echo "Remote: \"${var_remote}\""
     echo "Branch: \"${var_branch}\""
