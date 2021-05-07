@@ -294,7 +294,34 @@ function xkey()
 
     local var_input=""
 
-    # only bash work
+    if [[ "$#" = "0" ]]
+    then
+        echo "Default action"
+    fi
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -h|--help)
+                cli_helper -c "xkey" -cd "remote keyboard emulation"
+                cli_helper -d "Please Launch ydotoold & launch in bash."
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "xkey [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                break
+                ;;
+        esac
+        shift 1
+    done
+
+    # only bash work & please do ydotoold first
+    if [ "${HS_ENV_SHELL}" != "bash" ]
+    then
+        echo "Only Support in Bash. Currently use ${HS_ENV_SHELL}"
+    fi
     while IFS= read -s -r -n 1 var_input
     do
         case ${var_input} in
