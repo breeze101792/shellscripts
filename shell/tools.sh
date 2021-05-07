@@ -292,12 +292,6 @@ function xkey()
     local var_skey_prefix="sudo ydotool key "
     local var_skey_postfix=" > /dev/null"
 
-    local var_input=""
-
-    if [[ "$#" = "0" ]]
-    then
-        echo "Default action"
-    fi
     while [[ "$#" != 0 ]]
     do
         case $1 in
@@ -321,9 +315,18 @@ function xkey()
     if [ "${HS_ENV_SHELL}" != "bash" ]
     then
         echo "Only Support in Bash. Currently use ${HS_ENV_SHELL}"
+        return 1
     fi
+    local var_input=""
+    local var_previous=""
+
+    local var_start=0
+    local var_end=0
+    local var_time=0
+
     while IFS= read -s -r -n 1 var_input
     do
+        var_end=$(date +%s%N)
         case ${var_input} in
             '')
                 echo "Enter dected"
@@ -337,16 +340,31 @@ function xkey()
             # $'\x2c')
                 #     echo "Ctrl + < dected"
                 #     ${var_skey_prefix} "ctrl+PATGEUP"
-                #     continue
+                # continue
                 #     ;;
             # $'\x2e')
                 #     echo "Ctrl + > dected"
                 #     ${var_skey_prefix} "ctrl+PATGEDOWN"
-                #     continue
+                # continue
                 #     ;;
-            $'\x1b')
-                echo "esc dected"
-                ${var_skey_prefix} "esc"
+            # $'\x1b')
+            #     echo "esc dected"
+            #     ${var_skey_prefix} "esc"
+            #     continue
+            #     ;;
+            $'\x16')
+                echo "Ctrl + v dected"
+                ${var_skey_prefix} "ctrl+v"
+                continue
+                ;;
+            $'\x18')
+                echo "Ctrl + x dected"
+                ${var_skey_prefix} "ctrl+x"
+                continue
+                ;;
+            $'\x01')
+                echo "Ctrl + a dected"
+                ${var_skey_prefix} "ctrl+a"
                 continue
                 ;;
             $'\x14')
@@ -377,9 +395,51 @@ function xkey()
                 ;;
         esac
 
+        # local var_time=$(expr ${var_end} - ${var_start})
+        # echo "Time Space:${var_end} - ${var_start} = ${var_time}"
+        # echo $(test ${var_time} -le 20000000 )
+        if [ ${var_time} -le 20000000 ]
+        then
+            # echo "Enter double key press"
+            case ${var_previous}${var_input} in
+                '[A')
+                    echo "Enter Arror Up"
+                    ${var_skey_prefix} "KEY_UP"
+                    continue
+                    ;;
+                '[B')
+                    echo "Enter Arror Down"
+                    ${var_skey_prefix} "KEY_DOWN"
+                    continue
+                    ;;
+                '[C')
+                    echo "Enter Arror Right"
+                    ${var_skey_prefix} "KEY_RIGHT"
+                    continue
+                    ;;
+                '[D')
+                    echo "Enter Arror Left"
+                    ${var_skey_prefix} "KEY_LEFT"
+                    continue
+                    ;;
+                $'\x1b'$'\x1b')
+                    echo "esc dected"
+                    ${var_skey_prefix} "esc"
+                    continue
+                    ;;
+            esac
+        fi
+
         # printf "\r%s" ${var_read_buf}
-        echo "${var_input}"
-        ${var_skey_prefix} "${var_input}"
+        if [ "${var_input}" != "[" ] && [ "${var_previous}"  != $'\x1b' ]
+        then
+            echo "${var_input}"
+            ${var_skey_prefix} "${var_input}" 2> /dev/null
+        fi
+
+        # Update time
+        var_previous=${var_input}
+        var_start=${var_end}
 
     done
 }
