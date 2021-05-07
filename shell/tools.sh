@@ -78,6 +78,9 @@ function clip()
                 clip -x cp %p .
                 ;;
             -cd|--copy-directory)
+                clip -x cp %p .
+                ;;
+            -ca|--copy-directory)
                 clip -x cp %p/* .
                 ;;
             -f|--fake-run)
@@ -158,8 +161,8 @@ bkfile()
         esac
         shift 1
     done
-
-    if [ ! -f "${var_bk_file}" ]
+    var_bk_file="$(echo ${var_bk_file} | sed 's/\/$//g')"
+    if [ ! -f "${var_bk_file}" ] && [ ! -d "${var_bk_file}" ]
     then
         echo "File(${var_bk_file}) not found!"
         return 1
