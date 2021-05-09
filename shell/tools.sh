@@ -292,8 +292,9 @@ function read_key()
 }
 function xkey()
 {
-    local var_skey_prefix="sudo ydotool key "
-    local var_skey_postfix=" > /dev/null"
+    local var_skey_prefix="sudo ydotool "
+    local var_skey_args=""
+    local var_cmd=""
 
     while [[ "$#" != 0 ]]
     do
@@ -320,81 +321,60 @@ function xkey()
         echo "Only Support in Bash. Currently use ${HS_ENV_SHELL}"
         return 1
     fi
+    local var_promote="Key>"
     local var_input=""
     local var_previous=""
+    local var_target_key=""
 
     local var_start=0
     local var_end=0
     local var_time=0
 
+    printf "Please Type Any Key.\n"
     while IFS= read -s -r -n 1 var_input
     do
+        # echo "->\"${var_input}\""
         var_end=$(date +%s%N)
+        var_target_key=""
         case ${var_input} in
             '')
-                echo "Enter dected"
-                ${var_skey_prefix} "ENTER"
-                continue
+                # echo "Enter dected"
+                var_target_key="ENTER"
                 ;;
             ${uparrow})
-                echo "up dected"
-                continue
+                # echo "up dected"
                 ;;
-            # $'\x2c')
-                #     echo "Ctrl + < dected"
-                #     ${var_skey_prefix} "ctrl+PATGEUP"
-                # continue
-                #     ;;
-            # $'\x2e')
-                #     echo "Ctrl + > dected"
-                #     ${var_skey_prefix} "ctrl+PATGEDOWN"
-                # continue
-                #     ;;
-            # $'\x1b')
-            #     echo "esc dected"
-            #     ${var_skey_prefix} "esc"
-            #     continue
-            #     ;;
             $'\x16')
-                echo "Ctrl + v dected"
-                ${var_skey_prefix} "ctrl+v"
-                continue
+                # echo "Ctrl + v dected"
+                var_target_key="ctrl+v"
                 ;;
             $'\x18')
-                echo "Ctrl + x dected"
-                ${var_skey_prefix} "ctrl+x"
-                continue
+                # echo "Ctrl + x dected"
+                var_target_key="ctrl+x"
                 ;;
             $'\x01')
-                echo "Ctrl + a dected"
-                ${var_skey_prefix} "ctrl+a"
-                continue
+                # echo "Ctrl + a dected"
+                var_target_key="ctrl+a"
                 ;;
             $'\x14')
-                echo "Ctrl + t dected"
-                ${var_skey_prefix} "ctrl+t"
-                continue
+                # echo "Ctrl + t dected"
+                var_target_key="ctrl+t"
                 ;;
             $'\x17')
-                echo "Ctrl + w dected"
-                ${var_skey_prefix} "ctrl+w"
-                continue
+                # echo "Ctrl + w dected"
+                var_target_key="ctrl+w"
                 ;;
             $'\x0c')
-                echo "Ctrl + l dected"
-                ${var_skey_prefix} "ctrl+l"
-                continue
+                # echo "Ctrl + l dected"
+                var_target_key="ctrl+l"
                 ;;
             $'\x7f')
-                echo "backspace dected"
-                ${var_skey_prefix} "backspace"
-                continue
+                # echo "backspace dected"
+                var_target_key="backspace"
                 ;;
             ' ')
-                echo "Space dected"
-                # ${var_skey_prefix} "SPACE"
-                ${var_skey_prefix} " "
-                continue
+                # echo "Space dected"
+                var_target_key=" "
                 ;;
         esac
 
@@ -406,45 +386,51 @@ function xkey()
             # echo "Enter double key press"
             case ${var_previous}${var_input} in
                 '[A')
-                    echo "Enter Arror Up"
-                    ${var_skey_prefix} "KEY_UP"
-                    continue
+                    # echo "Enter Arror Up"
+                    var_target_key="KEY_UP"
                     ;;
                 '[B')
-                    echo "Enter Arror Down"
-                    ${var_skey_prefix} "KEY_DOWN"
-                    continue
+                    # echo "Enter Arror Down"
+                    var_target_key="KEY_DOWN"
                     ;;
                 '[C')
-                    echo "Enter Arror Right"
-                    ${var_skey_prefix} "KEY_RIGHT"
-                    continue
+                    # echo "Enter Arror Right"
+                    var_target_key="KEY_RIGHT"
                     ;;
                 '[D')
-                    echo "Enter Arror Left"
-                    ${var_skey_prefix} "KEY_LEFT"
-                    continue
+                    # echo "Enter Arror Left"
+                    var_target_key="KEY_LEFT"
                     ;;
                 $'\x1b'$'\x1b')
-                    echo "esc dected"
-                    ${var_skey_prefix} "esc"
-                    continue
+                    # echo "esc dected"
+                    var_target_key="esc"
                     ;;
             esac
         fi
 
-        # printf "\r%s" ${var_read_buf}
-        if [ "${var_input}" != "[" ] && [ "${var_previous}"  != $'\x1b' ]
+        # printf "\r%s" ${var_input}
+        if [ "${var_target_key}" = "" ] && ([ "${var_input}" = "[" ] || [ "${var_input}"  = $'\x1b' ])
         then
-            echo "${var_input}"
-            ${var_skey_prefix} "${var_input}" 2> /dev/null
+            var_previous=${var_input}
+            var_start=${var_end}
+            continue
         fi
 
-        # Update time
-        var_previous=${var_input}
-        var_start=${var_end}
-
+        # printf "%s %s\n" ${var_promote} ${var_target_key}
+        if [ "${var_target_key}" = "" ]
+        then
+            printf "%s %s\n" "${var_promote}" "${var_input}"
+            var_skey_args="type"
+            var_cmd="${var_skey_prefix} ${var_skey_args} \"${var_input}\""
+        else
+            printf "%s %s\n" "${var_promote}" "${var_target_key}"
+            var_skey_args="key"
+            var_cmd="${var_skey_prefix} ${var_skey_args} \"${var_target_key}\""
+        fi
+        # echo ${var_cmd}
+        eval "${var_cmd}" 2> /dev/null
     done
+    printf "\n"
 }
 
 function silence()
