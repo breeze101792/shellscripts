@@ -81,6 +81,161 @@ function cli_helper()
     fi
     printf "\n"
 }
+function cli_shell()
+{
+    local var_prog="sh -c"
+    local var_cmd=""
+    local var_history=()
+    local var_hist_idx=0
+    local var_promote="shell $"
+
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -s|--shell)
+                var_prog="${2}"
+                shift 1
+                ;;
+            -h|--help)
+                cli_helper -c "xkey" -cd "remote keyboard emulation"
+                cli_helper -d "Please Launch ydotoold & launch in bash."
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "xkey [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-s|--shell" -d "Shell program "
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                break
+                ;;
+        esac
+        shift 1
+    done
+
+    # only bash work & please do ydotoold first
+    if [ "${HS_ENV_SHELL}" != "bash" ]
+    then
+        echo "Only Support in Bash. Currently use ${HS_ENV_SHELL}"
+        return 1
+    fi
+    local var_input=""
+    local var_previous=""
+    local var_buffer=""
+    local var_prev_buffer=""
+
+    local var_line_edit_idx=0
+
+    local var_start=0
+    local var_end=0
+    local var_time=0
+
+    # printf "Please Type Any Key.\n"
+    printf "\r%s %s" "${var_promote}" "${var_buffer}"
+    while IFS= read -s -r -n 1 var_input
+    do
+        # echo "->\"${var_input}\""
+        var_end=$(date +%s%N)
+        case ${var_input} in
+            '')
+                # echo "Enter dected"
+                if [ "${var_buffer}" = "exit" ]
+                then
+                    break
+                elif [ "${var_buffer}" = "hist" ]
+                then
+                    printf "\n"
+                    printf "History:\n"
+
+                    printf "%s\n" ${var_history[@]}
+                else
+                    var_cmd="${var_prog} ${var_buffer}"
+                    printf "\n"
+                    printf "%s\n" "${var_cmd}"
+                    eval ${var_cmd}
+                    var_history+=("${var_buffer}")
+                fi
+
+                var_buffer=""
+                var_hist_idx=0
+                printf "\r%s %s" "${var_promote}" "${var_buffer}"
+                continue
+                ;;
+            $'\x7f')
+                # echo "backspace dected"
+                if [[ ${#var_buffer} > 0 ]]
+                then
+                    # clea line
+                    printf "\r%s % ${#var_buffer}s" "${var_promote}" " "
+                    var_buffer="${var_buffer:0:${#var_buffer}-1}"
+                    printf "\r%s %s" "${var_promote}" "${var_buffer}"
+                fi
+                continue
+                ;;
+        esac
+
+        if [ ${var_time} -le 20000000 ]
+        then
+            # echo "Enter double key press"
+            case ${var_previous}${var_input} in
+                '[A')
+                    # echo "Enter Arror Up"
+                    printf "\r%s % ${#var_buffer}s" "${var_promote}" " "
+                    # echo "Len:${#var_history[@]}, ${var_hist_idx}"
+                    if [ ${var_hist_idx} -eq 0 ]
+                    then
+                        var_prev_buffer=${var_buffer}
+                    fi
+                    if [ ${var_hist_idx} -lt ${#var_history[@]} ]
+                    then
+                        var_hist_idx=$((${var_hist_idx} + 1 ))
+                    fi
+                    var_buffer="${var_history[${#var_history[@]} - ${var_hist_idx}]}"
+                    printf "\r%s %s" "${var_promote}" "${var_buffer}"
+                    continue
+                    ;;
+                '[B')
+                    # echo "Enter Arror Down"
+                    printf "\r%s % ${#var_buffer}s" "${var_promote}" " "
+                    # echo "Len:${#var_history[@]}, ${var_hist_idx}"
+                    if [ ${var_hist_idx} -gt 1 ]
+                    then
+                        var_hist_idx=$((${var_hist_idx} - 1 ))
+                        var_buffer="${var_history[${#var_history[@]} - ${var_hist_idx}]}"
+                    elif [ ${var_hist_idx} -eq 1 ]
+                    then
+                        # echo prev_buffer: ${var_prev_buffer}
+                        var_buffer=${var_prev_buffer}
+                    fi
+                    printf "\r%s %s" "${var_promote}" "${var_buffer}"
+                    continue
+                    ;;
+                $'\x1b'$'\x1b')
+                    echo "esc dected"
+                    ;;
+                '[C')
+                    ;;
+                '[D')
+                    ;;
+            esac
+        fi
+
+        # printf "\r%s" ${var_input}
+        if [ "${var_input}" = "[" ] || [ "${var_input}"  = $'\x1b' ]
+        then
+            # echo "Prefix Detect"
+            var_previous=${var_input}
+            var_start=${var_end}
+            continue
+        fi
+
+        var_buffer="${var_buffer}${var_input}"
+        printf "\r%s % ${#var_buffer}s" "${var_promote}" " "
+        printf "\r%s %s" "${var_promote}" "${var_buffer}"
+    done
+    printf "\n"
+    printf "Bye\n"
+}
 
 ########################################################
 ####    Others
