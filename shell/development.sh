@@ -206,6 +206,7 @@ function sdebug()
     local baud_rate=115200
     local session_name="Debug"
     local serial_log_path="${HS_PATH_LOG}/serial"
+    local var_prefix=""
 
     while true
     do
@@ -226,6 +227,10 @@ function sdebug()
                 session_name=$2
                 shift 1
                 ;;
+            -p|--prefix)
+                var_prefix=$2
+                shift 1
+                ;;
             -h|--help)
                 cli_helper -c "sdebug"
                 cli_helper -t "SYNOPSIS"
@@ -234,6 +239,7 @@ function sdebug()
                 cli_helper -o "-d|--device" -d "Set device"
                 cli_helper -o "-b|--baud-rate" -d "Set Baud Rate"
                 cli_helper -o "-s|--session-name" -d "Set Session Name"
+                cli_helper -o "-p|--prefix" -d "Add prefix before program, usually use sudo"
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;
@@ -246,7 +252,9 @@ function sdebug()
     done
     retitle ${session_name}
     [ ! -d ${serial_log_path} ] && mkdir -p ${serial_log_path} && echo "Create ${serial_log_path}"
-    screen -S ${session_name} -L -Logfile ${serial_log_path}/debug_$(tstamp).log ${target_dev} ${baud_rate}
+    var_cmd="${var_prefix} screen -S ${session_name} -L -Logfile ${serial_log_path}/debug_$(tstamp).log ${target_dev} ${baud_rate}"
+    echo "${var_cmd}"
+    eval "${var_cmd}"
 }
 alias mdebug="sdebug --device /dev/ttyUSB1"
 
