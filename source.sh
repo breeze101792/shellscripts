@@ -23,8 +23,9 @@ function refresh
 function hs_source()
 {
     local source_file=$1
+    local flag_debug="n"
 
-    if false
+    if [ ${flag_debug} = "y" ]
     then
         local start_time=$(date +%s%N)
         source $(realpath ${source_file})
@@ -32,7 +33,7 @@ function hs_source()
 
         # echo "$start_time, $end_time"
         local diff_time=$(( (${end_time} - ${start_time})/1000000 ))
-        hs_print "[${diff_time}] source ${source_file}\n"
+        printf "[${diff_time}] source ${source_file}\n"
     else
         source $(realpath ${source_file})
     fi
@@ -146,6 +147,11 @@ function hs_main
     then
         source $HOME/.hsconfig
     fi
+    # silence mode in subshell
+    if [[ "${SHLVL}" > "1" ]]
+    then
+        HS_ENV_SILENCE="y"
+    fi
     ##########################################
     # setup custom configs
     ##########################################
@@ -205,10 +211,9 @@ function hs_main
         export_sh_func ${HS_PATH_LIB}/shell/development.sh
     fi
     # if [ "${flag_var_refresh}" = "n" ] && [ ${HS_ENV_SILENCE} = "n" ]
-    if [ "${flag_var_refresh}" = "n" ]
-    then
-        retitle "${HS_ENV_TITLE}"
-    fi
+    # then
+    #     retitle "${HS_ENV_TITLE}"
+    # fi
 
     ##########################################
     # Source Other settings

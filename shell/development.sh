@@ -410,9 +410,15 @@ function slink()
         target_path=$(realpath ${PWD})
     fi
 
-    rm ${HS_PATH_SLINK}
-    ln -sf  ${target_path} ${HS_PATH_SLINK}
-    ls -al ${HS_PATH_SLINK}
+    if [ -d "${target_path}" ]
+    then
+        rm ${HS_PATH_SLINK}
+        ln -sf  ${target_path} ${HS_PATH_SLINK}
+        ls -al ${HS_PATH_SLINK}
+    else
+        echo "Forder not found.(${target_path})"
+    fi
+
 }
 ########################################################
 #####    Build                                     #####
@@ -612,7 +618,7 @@ function erun()
         then
             mkdir -p ${log_path}
         fi
-        printf "Cmd:%s\nLogfile:%s\n----------------------------\n" "${excute_cmd}" "${log_file}" >> ${history_file}
+        printf "Cmd: %s\nLogfile: %s\n----------------------------\n" "${excute_cmd}" "${log_file}" >> ${history_file}
 
         logfile -e -f "${log_file}" "${excute_cmd}"
     else
@@ -939,15 +945,18 @@ function gcheckoutByDate()
 }
 function gpush()
 {
+
+    local var_cpath="$(pwd)"
     # gerrit push
-    local cbranch=""
-    local remote=""
-    local branch=""
-    local commit="HEAD"
-    local push_word="for"
-    local excute_flag="y"
+    local var_commit="HEAD"
+    local var_push_word="for"
+    local var_excute_flag="y"
 
     local var_topic=""
+    local flag_user_check="n"
+
+    local var_remote="$(git remote show)"
+    local var_branch="$(git branch | grep '^\*' | sed 's/^\*//g')"
 
     while true
     do
@@ -957,15 +966,15 @@ function gpush()
         fi
         case $1 in
             -r|--remote)
-                remote=$2
+                var_remote=$2
                 shift 1
                 ;;
             -b|--branch)
-                branch=$2
+                var_branch=$2
                 shift 1
                 ;;
             -c|--commit)
-                commit=$2
+                var_commit=$2
                 shift 1
                 ;;
             -t|--topic)
@@ -973,10 +982,10 @@ function gpush()
                 shift
                 ;;
             -d|--draft)
-                push_word="drafts"
+                var_push_word="drafts"
                 ;;
             -f|--fake)
-                excute_flag="n"
+                var_excute_flag="n"
                 ;;
             -h|--help)
                 echo "gpush Usage"
@@ -995,35 +1004,43 @@ function gpush()
         esac
         shift 1
     done
+    tracking_branch_name="$(git branch -a | grep '\->' | cut -d'/' -f 4)"
+    current_branch=$(git branch| sed -e '/^[^*]/d' -e 's/* //g' | tr -d "[:blank:]")
 
-    if [ "${cbranch}" = "" ]
+    if [ "${var_branch}" = "" ] && $(echo ${tracking_branch_name} | grep detached)
     then
-        local cbranch=$(git branch| sed -e '/^[^*]/d' -e 's/* //g' | tr -d "[:blank:]")
-        echo "Auto set current branch to |${cbranch}|"
+        var_branch=${tracking_branch_name}
+    elif [ "${var_branch}" = "" ] && $(echo ${current_branch} | grep detached)
+    then
+        var_branch=${current_branch}
     fi
-    if [ "${remote}" = "" ]
+    if [ "${var_branch}" = "" ] || $(echo ${var_branch} | grep detached)
     then
-        # local remote=$(git branch -r | grep "/$cbranch$" | grep -ve "HEAD" |rev |cut -d'/' -f2 | rev | tr -d "[:blank:]")
-        local remote=$(git remote show)
-        echo "Auto set remote to |${remote}|"
-    fi
-    if [ "${branch}" = "" ]
-    then
-        local branch=$(git branch -r | grep "/$cbranch$" | grep -ve "HEAD" |rev |cut -d'/' -f1 | rev | tr -d "[:blank:]")
-        echo "Auto set branch to |${branch}|"
+        echo "Branch Not found."
+        var_branch="master"
+        flag_user_check="y"
     fi
 
+    var_branch="$(echo ${var_branch} | sed 's/\ +//g')"
 
-    local cmd="git push ${remote} ${commit}:refs/${push_word}/${branch}"
+    local cmd="git push ${var_remote} ${var_commit}:refs/${var_push_word}/${var_branch}"
 
     if [ "${var_topic}" != "" ]
     then
         cmd="${cmd} -o topic=${var_topic}"
     fi
 
-    printt "Auto Push ${commit} to ${remote}/${branch}" | mark -s green "#"
+    printt "Auto Push ${var_commit} to ${var_remote}/${var_branch}" | mark -s green "#"
     echo "Eval Command: ${cmd}"
-    if [ "${excute_flag}" = "y" ]
+    if [ "${var_excute_flag}" = "y" ] && [ "${flag_user_check}" = "y" ]
+    then
+        printf "Would you like to excute command?(Y/n)"
+        read var_ans
+        if [ "${var_ans}" != "n" ] || [ "${var_ans}" != "N" ]
+        then
+            eval ${cmd}
+        fi
+    elif [ "${var_excute_flag}" = "y" ]
     then
         eval ${cmd}
     fi
@@ -1035,25 +1052,18 @@ function ginfo()
     local var_branch=""
     local var_url=""
 
-    local flag_verbose="n"
-
     local branch_name=""
-    local rel_branch_name=""
+    local tracking_branch_name=""
     local current_branch=""
 
     while [[ "$#" != 0 ]]
     do
         case $1 in
-            -v|--verbose)
-                flag_verbose="y"
-                shift 1
-                ;;
             -h|--help)
                 cli_helper -c "ginfo" -cd "git information"
                 cli_helper -t "SYNOPSIS"
                 cli_helper -d "ginfo [Options] [Value]"
                 cli_helper -t "Options"
-                cli_helper -o "-v|--verbose" -d "Verbose print "
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;
@@ -1063,41 +1073,56 @@ function ginfo()
         esac
         shift 1
     done
-    
-    if froot -m .git
-    then
-        var_remote="$(cat .git/config|grep '\[*\]' | grep remote | cut -d '"' -f2)"
-        var_branch="$(cat .git/config|grep '\[*\]' | grep branch | cut -d '"' -f2)"
-        var_url="$(cat .git/config|grep 'url' | cut -d '=' -f2)"
-        cd ${var_cpath}
-    fi
 
+    # if froot -m .git
+    # then
+    #     # var_remote="$(cat .git/config|grep '\[*\]' | grep remote | cut -d '"' -f2)"
+    #     # var_branch="$(cat .git/config|grep '\[*\]' | grep branch | cut -d '"' -f2)"
+    #     var_url="$(cat .git/config|grep 'url' | cut -d '=' -f2)"
+    #     cd ${var_cpath}
+    # fi
+
+    var_remote="$(git remote show)"
+    var_url="$(git remote get-url ${var_remote})"
+    var_branch="$(git branch | grep '^\*' | sed 's/^\*//g')"
     # fetch_url="$(git remote show $(git remote show) | grep Fetch |cut -d':' -f 2- | tr -d '[:blank:]')"
     # branch_name="$(git remote show $(git remote show) | grep 'HEAD branch' |cut -d':' -f 2- | tr -d '[:blank:]')"
-    rel_branch_name="$(git branch -a | grep '\->' | cut -d'/' -f 4)"
+
+    tracking_branch_name="$(git branch -a | grep '\->' | cut -d'/' -f 4)"
     current_branch=$(git branch| sed -e '/^[^*]/d' -e 's/* //g' | tr -d "[:blank:]")
-    # git remote show $(git remote show) | head -n 4
-    echo "Remote: ${var_remote}"
-    echo "Branch: ${var_branch}"
-    echo "URL   : ${var_url}"
+
+    if [ "${var_branch}" = "" ] && $(echo ${tracking_branch_name} | grep detached)
+    then
+        var_branch=${tracking_branch_name}
+    elif [ "${var_branch}" = "" ] && $(echo ${current_branch} | grep detached)
+    then
+        var_branch=${current_branch}
+    fi
+
+    if [ "${var_branch}" = "" ] || $(echo ${var_branch} | grep detached)
+    then
+        echo "Branch Not found."
+        var_branch="master"
+    fi
+
+    var_branch="$(echo ${var_branch} | sed 's/\ \+//g')"
+
+    echo "Remote: \"${var_remote}\""
+    echo "Branch: \"${var_branch}\""
+    echo "URL   : \"${var_url}\""
     echo "---- Clone ----"
     echo "> git clone ${var_url} -b ${var_branch}"
-    [ "${flag_verbose}" = "y" ] && echo "> git clone ${var_url} -b ${rel_branch_name}"
-    [ "${flag_verbose}" = "y" ] && echo "> git clone ${var_url} -b ${current_branch}"
     echo "---- Reset Online ----"
     echo "> git reset --hard ${var_remote}/${var_branch}"
-    [ "${flag_verbose}" = "y" ] && echo "> git reset --hard ${var_remote}/${rel_branch_name}"
-    [ "${flag_verbose}" = "y" ] && echo "> git reset --hard ${var_remote}/${current_branch}"
     echo "---- Pull Online Branch----"
     echo "> git pull ${var_remote} ${var_branch}"
-    [ "${flag_verbose}" = "y" ] && echo "> git pull ${var_remote} ${rel_branch_name}"
-    [ "${flag_verbose}" = "y" ] && echo "> git pull ${var_remote} ${current_branch}"
     echo "---- track Online Branch ----"
-    echo "> git branch --set-upstream-to=${var_remote}/${branch_name} ${current_branch} "
+    echo "> git branch --set-upstream-to=${var_remote}/${var_branch} ${current_branch} "
     echo "---- Patches ----"
     echo "Generate Patch: git format-patch -n <num_of_patchs> <commit>"
     echo "Apply Patch   : git am --directory=<path_to_your_patch_root> <path_to_your_patch>"
     echo "---- Others ----"
+    echo "Fetch online commit: git fetch --all"
     echo "Get Info for First 1 Commit: git log --pretty='format:%p->%h %cn(%an) %s' -n 1"
     echo "Get Info for First 1 Commit: git log --pretty='format:%cd %p->%h %cn(%an) %s' -n 1"
 
