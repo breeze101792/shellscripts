@@ -7,12 +7,12 @@ function setup_shell()
     local shell_name=$(echo $SHELL | rev | cut -d '/' -f 1 | rev)
     if [ "$shell_name" = "bash" ]
     then
-        echo source $SCRIPT_PATH/source.sh -s=$shell_name -p=${SCRIPT_PATH}
-        echo source $SCRIPT_PATH/source.sh -s=$shell_name -p=${SCRIPT_PATH} >> ~/.bashrc
+        echo source $SCRIPT_PATH/source.sh -s=$shell_name
+        echo source $SCRIPT_PATH/source.sh -s=$shell_name >> ~/.bashrc
     elif [ "$shell_name" = "zsh" ]
     then
-        echo source $SCRIPT_PATH/source.sh -s=$shell_name -p=${SCRIPT_PATH}
-        echo source $SCRIPT_PATH/source.sh -s=$shell_name -p=${SCRIPT_PATH} >> ~/.zshrc
+        echo source $SCRIPT_PATH/source.sh -s=$shell_name
+        echo source $SCRIPT_PATH/source.sh -s=$shell_name >> ~/.zshrc
     fi
 }
 function setup_tmux()

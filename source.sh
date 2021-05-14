@@ -126,7 +126,6 @@ function hs_main
             flag_env_lib_path="$(realpath .)"
         fi
     fi
-    echo Shell:${flag_env_shell}
 
     # source shell scripts
     ##########################################
