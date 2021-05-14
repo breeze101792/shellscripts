@@ -39,24 +39,94 @@ function an_setip()
 }
 function an_adb()
 {
-    if [ "${HS_WORK_ENV_ANDROID_DEVICE_IP}" = "" ]
+    local var_timeout=3
+    local var_serial
+    local flag_timeout=n
+    local flag_connect=y
+
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -s|--serial)
+                an_setip ${2}
+                shift 1
+                ;;
+            -t|--timeout)
+                flag_timeout="y"
+                var_timeout=${2}
+                shift 1
+                ;;
+            -nc|--no-connect)
+                flag_connect="n"
+                ;;
+            -h|--help)
+                cli_helper -c "adb" -cd "adb function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "adb [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-s|--serial" -d "Set serial"
+                cli_helper -o "-t|--timeout" -d "set command timeout "
+                cli_helper -o "-nc|--no-connect" -d "no check connect on adb"
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                break
+                ;;
+        esac
+        shift 1
+    done
+
+    if [ "${flag_connect}" = "y" ] && [ "$(adb -s ${HS_WORK_ENV_ANDROID_DEVICE_IP} shell echo connected)" != "connected" ]
     then
-        # timeout 3 adb $@
-        adb $@
+        an_connect
+    fi
+
+    if [ "${flag_timeout}" = "y" ]
+    then
+        timeout ${var_timeout} adb -s ${HS_WORK_ENV_ANDROID_DEVICE_IP} $@
     else
-        # timeout 3 adb -s ${HS_WORK_ENV_ANDROID_DEVICE_IP} $@
         adb -s ${HS_WORK_ENV_ANDROID_DEVICE_IP} $@
     fi
 }
 function an_shell()
 {
-    # if ! an_adb connect ${HS_WORK_ENV_ANDROID_DEVICE_IP}
-    # then
-    #     an_connect
-    # fi
-    if [[ $# != 1 ]] && [[ "$1" == "-t" ]]
+    local var_timeout=3
+    local flag_timeout=n
+    local var_serial
+
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -s|--serial)
+                an_setip ${2}
+                shift 1
+                ;;
+            -t|--timeout)
+                flag_timeout="y"
+                var_timeout=${2}
+                shift 1
+                ;;
+            -h|--help)
+                cli_helper -c "adb shell" -cd "adb shell function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "an_shell [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-s|--serial" -d "Set serial"
+                cli_helper -o "-t|--timeout" -d "set command timeout "
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                break
+                ;;
+        esac
+        shift 1
+    done
+
+    if [ "${flag_timeout}" = "y" ]
     then
-        timeout 10 an_adb shell $@
+        an_adb -t ${var_timeout} shell $@
     else
         an_adb shell $@
     fi
@@ -65,6 +135,7 @@ function an_connect()
 {
     # local dev_ip="192.168.7.19"
     # local dev_ip="10.248.198.13"
+    local var_timeout=3
     if [[ $# != 1 ]]
     then
         echo "No device ip found"
@@ -79,27 +150,27 @@ function an_connect()
         export HS_WORK_ENV_ANDROID_DEVICE_IP=$dev_ip:$dev_port
     fi
     echo "Connect ${HS_WORK_ENV_ANDROID_DEVICE_IP}"
-    an_adb disconnect ${HS_WORK_ENV_ANDROID_DEVICE_IP}
-    # an_adb connect ${HS_WORK_ENV_ANDROID_DEVICE_IP}
-    # while ! an_adb devices -l |grep product
-    while ! an_adb -s ${HS_WORK_ENV_ANDROID_DEVICE_IP} shell whoami |grep root
+    # an_adb -nc disconnect ${HS_WORK_ENV_ANDROID_DEVICE_IP}
+    # an_adb -nc connect ${HS_WORK_ENV_ANDROID_DEVICE_IP}
+    # while ! an_adb -nc devices -l |grep product
+    while ! an_adb -nc -t ${var_timeout} -s ${HS_WORK_ENV_ANDROID_DEVICE_IP} shell whoami |grep root
     do
         echo "Wait for reconnect."
-        # an_adb connect ${HS_WORK_ENV_ANDROID_DEVICE_IP}
-        if ! an_adb connect ${HS_WORK_ENV_ANDROID_DEVICE_IP}
+        # an_adb -nc connect ${HS_WORK_ENV_ANDROID_DEVICE_IP}
+        if ! an_adb -nc -t ${var_timeout} connect ${HS_WORK_ENV_ANDROID_DEVICE_IP}
         then
             echo "Status: Not Connected"
-            an_adb disconnect ${HS_WORK_ENV_ANDROID_DEVICE_IP}
+            an_adb -nc -t ${var_timeout} disconnect ${HS_WORK_ENV_ANDROID_DEVICE_IP}
             continue
         else
             echo "Status: Connected\n"
         fi
         sleep 1
 
-        if ! an_adb -s ${HS_WORK_ENV_ANDROID_DEVICE_IP} root
+        if ! an_adb -nc -t ${var_timeout} -s ${HS_WORK_ENV_ANDROID_DEVICE_IP} root
         then
             echo "Root: Not Connected"
-            an_adb disconnect ${HS_WORK_ENV_ANDROID_DEVICE_IP}
+            an_adb -nc -t ${var_timeout} disconnect ${HS_WORK_ENV_ANDROID_DEVICE_IP}
             continue
         # else
         #     echo "Root: Connected\n"

@@ -75,13 +75,13 @@ function clip()
                 hs_config -g "${HS_VAR_CURRENT_DIR}"
                 ;;
             -c|--copy-file)
-                clip -x cp %p .
+                clip -x cp -r %p .
                 ;;
             -cd|--copy-directory)
-                clip -x cp %p .
+                clip -x cp -r %p .
                 ;;
             -ca|--copy-directory)
-                clip -x cp %p/* .
+                clip -x cp -r %p/* .
                 ;;
             -f|--fake-run)
                 flag_fake_run=true
@@ -100,15 +100,20 @@ function clip()
                 break
                 ;;
             -h|--help)
-                echo "Clibboard Usage"
-                printlc -cp false -d "->" "-s|--set-clip" "Set Clipbboard, default use pwd for setting var"
-                printlc -cp false -d "->" "-p|--set-from-pipe" "Set Clipbboard, default use pwd for setting var"
-                printlc -cp false -d "->" "-g|--get-clip" "Get Clipbboard, default use getting action"
-                printlc -cp false -d "->" "-d|--get-current-dir" "Get current dir vars, get current stored dir"
-                printlc -cp false -d "->" "-c|--copy-file" "cp file to current folder"
-                printlc -cp false -d "->" "-cd|--copy-directory" "cp all file to current folder"
-                printlc -cp false -d "->" "-f|--fake-run" "Do fake run on -x"
-                printlc -cp false -d "->" "-x|--excute" "Excute command, replace %p with clip buffer"
+                cli_helper -c "clip" -cd "clip function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "clip [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-s|--set-clip" -d "Set Clipbboard, default use pwd for setting var"
+                cli_helper -o "-p|--set-from-pipe" -d "Set Clipbboard, default use pwd for setting var"
+                cli_helper -o "-g|--get-clip" -d "Get Clipbboard, default use getting action"
+                cli_helper -o "-d|--get-current-dir" -d "Get current dir vars, get current stored dir"
+                cli_helper -o "-c|--copy-file" -d "cp file to current folder"
+                cli_helper -o "-cd|--copy-directory" -d "cp dir to current folder"
+                cli_helper -o "-ca|--copy-all" -d "cp all file too current folder"
+                cli_helper -o "-f|--fake-run" -d "Do fake run on -x"
+                cli_helper -o "-x|--excute" -d "Excute command, replace %p with clip buffer"
+                cli_helper -o "-h|--help" -d "Print help function "
 
                 return 0
                 ;;

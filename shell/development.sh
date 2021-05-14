@@ -59,8 +59,10 @@ function pvinit()
     local file_ext=()
     local file_exclude=()
     local find_cmd=""
-    local target_file="proj.files"
+    local target_list_name="proj.files"
+    local target_proj_name="proj.vim"
     local flag_append=n
+    local flag_header=n
 
     while [[ "$#" != 0 ]]
     do
@@ -76,6 +78,9 @@ function pvinit()
                 file_exclude+="-o -name \"*.${2}\""
                 shift 1
                 ;;
+            -h|--header)
+                flag_header=y
+                ;;
             -h|--help)
                 cli_helper -c "pvinit"
                 cli_helper -t "SYNOPSIS"
@@ -84,6 +89,7 @@ function pvinit()
                 cli_helper -o "-a|--append" -d "append more fire in file list"
                 cli_helper -o "-e|--extension" -d "add file extension on search"
                 cli_helper -o "-x|--exclude" -d "exclude file on search"
+                cli_helper -o "-h|--header" -d "Add header vim code"
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;
@@ -101,17 +107,17 @@ function pvinit()
 
     local src_path=($@)
 
-    if [ "${flag_append}" = "n" ] && [ -f "${target_file}" ]
+    if [ "${flag_append}" = "n" ] && [ -f "${target_list_name}" ]
     then
-        rm "${target_file}" 2> /dev/null
-    elif [ "${flag_append}" = "y" ] && froot ${target_file}
+        rm "${target_list_name}" 2> /dev/null
+    elif [ "${flag_append}" = "y" ] && froot ${target_list_name}
     then
-        target_file="$(realpath ${target_file})"
+        target_list_name="$(realpath ${target_list_name})"
         cd ${var_cpath}
     fi
     echo "Searching Path:${src_path[@]}"
     echo "file_ext: $file_ext"
-    echo "Project List File: ${target_file}"
+    echo "Project List File: ${target_list_name}"
 
     for each_path in ${src_path[@]}
     do
@@ -123,15 +129,20 @@ function pvinit()
             continue
         else
             echo -e "Searching folder: $tmp_path"
-            find_cmd="find ${tmp_path} \( -type f -name '*.h' -o -name '*.c' -o -name '*.cpp' -o -name '*.java' ${file_ext[@]} \) -a \( -not -path '*/auto_gen*' -o -not -path '*/build*' ${file_exclude[@]} \) | xargs realpath >> \"${target_file}\""
+            find_cmd="find ${tmp_path} \( -type f -name '*.h' -o -name '*.c' -o -name '*.cpp' -o -name '*.java' ${file_ext[@]} \) -a \( -not -path '*/auto_gen*' -o -not -path '*/build*' ${file_exclude[@]} \) | xargs realpath >> \"${target_list_name}\""
             # echo ${find_cmd}
             eval "${find_cmd}"
         fi
     done
 
+    if [ "${flag_header}" = "y" ] && froot ${target_list_name}
+    then
+        cat ${target_list_name} | grep "h$\|hpp$\|hxx$" | xargs dirname | sort |uniq |sed "s/^/set path+=/g" > ${target_proj_name}
+    fi
+
     local tmp_file="tmp.files"
-    cat "${target_file}" | sort | uniq > "${tmp_file}"
-    mv "${tmp_file}" "${target_file}"
+    cat "${target_list_name}" | sort | uniq > "${tmp_file}"
+    mv "${tmp_file}" "${target_list_name}"
     pvupdate
 }
 
@@ -145,6 +156,8 @@ function pvim()
     local cpath=`pwd`
     local cmd_args=()
     local flag_cctree=n
+    local flag_proj_vim=y
+
     while [[ "$#" != 0 ]]
     do
         case $1 in
@@ -156,12 +169,15 @@ function pvim()
                 ;;
             -h|--help)
                 cli_helper -c "pvim"
+                cli_helper -d "pvim [Options] [File]"
                 cli_helper -t "SYNOPSIS"
                 cli_helper -d "pvim [Options] [File]"
                 cli_helper -t "Options"
                 cli_helper -o "-m|--map" -d "Load cctree in vim"
                 cli_helper -o "-p|--pure-mode" -d "Load withouth ide file"
                 cli_helper -o "-h|--help" -d "Print help function "
+                cli_helper -t "vim-Options"
+                cli_helper -o "-R" -d "vim read only mode"
                 return 0
                 ;;
             *)
@@ -183,6 +199,11 @@ function pvim()
         echo "CSCOPE: ${CSCOPE_DB}"
     else
         echo "Project ccscop tag not found."
+    fi
+    if froot "proj.vim" && [ "${flag_proj_vim}" = "y" ]
+    then
+        export PROJ_VIM=`pwd`/proj.vim
+        echo "Proj VIM: ${PROJ_VIM}"
     fi
     if froot "cctree.db" && [ "${flag_cctree}" = "y" ]
     then
@@ -206,6 +227,7 @@ function sdebug()
     local baud_rate=115200
     local session_name="Debug"
     local serial_log_path="${HS_PATH_LOG}/serial"
+    local var_prefix=""
 
     while true
     do
@@ -226,6 +248,10 @@ function sdebug()
                 session_name=$2
                 shift 1
                 ;;
+            -p|--prefix)
+                var_prefix=$2
+                shift 1
+                ;;
             -h|--help)
                 cli_helper -c "sdebug"
                 cli_helper -t "SYNOPSIS"
@@ -234,6 +260,7 @@ function sdebug()
                 cli_helper -o "-d|--device" -d "Set device"
                 cli_helper -o "-b|--baud-rate" -d "Set Baud Rate"
                 cli_helper -o "-s|--session-name" -d "Set Session Name"
+                cli_helper -o "-p|--prefix" -d "Add prefix before program, usually use sudo"
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;
@@ -246,7 +273,9 @@ function sdebug()
     done
     retitle ${session_name}
     [ ! -d ${serial_log_path} ] && mkdir -p ${serial_log_path} && echo "Create ${serial_log_path}"
-    screen -S ${session_name} -L -Logfile ${serial_log_path}/debug_$(tstamp).log ${target_dev} ${baud_rate}
+    var_cmd="${var_prefix} screen -S ${session_name} -L -Logfile ${serial_log_path}/debug_$(tstamp).log ${target_dev} ${baud_rate}"
+    echo "${var_cmd}"
+    eval "${var_cmd}"
 }
 alias mdebug="sdebug --device /dev/ttyUSB1"
 
@@ -415,17 +444,60 @@ function slink()
 ########################################################
 #####    Build                                     #####
 ########################################################
-function mark_build()
+alias mark_build="mbuild "
+function mbuild()
 {
-    # local ccred=$(echo -e "\033[0;31m")
-    # local ccyellow=$(echo -e "\033[0;33m")
-    # local ccend=$(echo -e "\033[0m")
-    # $@ 2>&1 | sed -E -e "s%undefined%$ccred&$ccend%ig" -e "s%fatal%$ccred&$ccend%ig" -e "s%error%$ccred&$ccend%ig" -e "s%fail%$ccred&$ccend%ig" -e "s%warning%$ccyellow&$ccend%ig"
+    local var_cmd=""
+    local var_mark_cmd=""
+    local tmp_color=""
+    # red
+    tmp_color="red"
+    var_mark_cmd="mark -s ${tmp_color} 'fatal' | mark -s ${tmp_color} 'error' | mark -s ${tmp_color} 'fail'"
+    var_mark_cmd="${var_mark_cmd} | mark -s ${tmp_color} '^make.* \*\*\*'"
+    # yellow
+    tmp_color="yellow"
+    var_mark_cmd="${var_mark_cmd} | mark -s ${tmp_color} 'undefined' | mark -s ${tmp_color} 'redefined' | mark -s ${tmp_color} 'warning'"
+    # green
+    tmp_color="green"
+    var_mark_cmd="${var_mark_cmd} | mark -s ${tmp_color} 'compile ' | mark -s ${tmp_color} '^make'"
+    # cyan
+    tmp_color="cyan"
+    var_mark_cmd="${var_mark_cmd} | mark -s ${tmp_color} ' note'"
+
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            # -a|--append)
+            #     cmd_args+="${2}"
+            #     shift 1
+            #     ;;
+            -c|--cat)
+                var_cmd="cat ${var_cmd}"
+                ;;
+            -h|--help)
+                cli_helper -c "mbuild" -cd "mark build function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "mbuild [Options] [command]"
+                cli_helper -t "Options"
+                cli_helper -o "-c|--cat" -d "cat file with mark"
+                # cli_helper -o "-v|--verbose" -d "Verbose print "
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                var_cmd="${var_cmd} $@"
+                break
+                ;;
+        esac
+        shift 1
+    done
     if [[ $# == 0 ]]
     then
-        mark -s yellow "undefined" |  mark -s red "fatal" | mark -s red "error" | mark -s red "fail" | mark -s yellow "warning"
+        # mark -s green 'compile' | mark -s yellow 'undefined' | mark -s yellow 'redefined' |    mark -s red 'fatal' | mark -s red 'error' | mark -s red 'fail' | mark -s yellow 'warning'
+        eval "${var_mark_cmd}"
     else
-        $@ 2>&1 | mark -s yellow "undefined" |  mark -s red "fatal" | mark -s red "error" | mark -s red "fail" | mark -s yellow "warning"
+        # eval ${var_cmd} 2>&1 | mark -s green "compile" | mark -s yellow "undefined" | mark -s yellow "redefined" |    mark -s red "fatal" | mark -s red "error" | mark -s red "fail" | mark -s yellow "warning"
+        eval "${var_cmd}" 2>&1 | eval "${var_mark_cmd}"
     fi
 }
 function lanalyser
@@ -630,7 +702,8 @@ function erun()
     fi
     return ${var_ret}
 }
-function ecd()
+alias ecd="ecd"
+function xcd()
 {
     echo "Enhanced cd"
 
@@ -714,28 +787,35 @@ function ecd()
                 fi
                 ;;
             -h|--help)
-                echo "enhanced cd|ecd"
-                printlc -cp false -d "->" "-s|--hs-script|hs" "cd to ${HS_PATH_LIB}"
-                printlc -cp false -d "->" "-w|--work-script|work" "cd to ${HS_PATH_WORK}"
-                printlc -cp false -d "->" "-i|--vim-ide|ide" "cd to ${HS_PATH_IDE}"
-                printlc -cp false -d "->" "--slink|slink" "cd to ${HS_PATH_SLINK}"
-                printlc -cp false -d "->" "-l|--lab|lab" "cd to ${HS_PATH_LAB}"
-                printlc -cp false -d "->" "-b|--build|build" "cd to ${HS_PATH_BUILD}"
-                printlc -cp false -d "->" "-p|--proj|proj|" "cd to ${HS_PATH_PROJ}"
-                printlc -cp false -d "->" "-d|--download|download)" "cd to ${HS_PATH_DOWNLOAD}"
-                printlc -cp false -d "->" "-c|--document|document)" "cd to ${HS_PATH_DOCUMENT}"
+                cli_helper -c "xcd" -cd "Enchanced cd function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "xcd [Options] [Value]"
+                cli_helper -d "Note. if you have any issue with case, please do shopt -s extglob"
 
-               [ ! -z ${HS_VAR_ECD_NAME_0} ] && printlc -cp false -d "->" "${HS_VAR_ECD_NAME_0}" "cd to ${HS_PATH_ECD_0}"
-               [ ! -z ${HS_VAR_ECD_NAME_1} ] && printlc -cp false -d "->" "${HS_VAR_ECD_NAME_1}" "cd to ${HS_PATH_ECD_1}"
-               [ ! -z ${HS_VAR_ECD_NAME_2} ] && printlc -cp false -d "->" "${HS_VAR_ECD_NAME_2}" "cd to ${HS_PATH_ECD_2}"
-               [ ! -z ${HS_VAR_ECD_NAME_3} ] && printlc -cp false -d "->" "${HS_VAR_ECD_NAME_3}" "cd to ${HS_PATH_ECD_3}"
-               [ ! -z ${HS_VAR_ECD_NAME_4} ] && printlc -cp false -d "->" "${HS_VAR_ECD_NAME_4}" "cd to ${HS_PATH_ECD_4}"
-               [ ! -z ${HS_VAR_ECD_NAME_5} ] && printlc -cp false -d "->" "${HS_VAR_ECD_NAME_5}" "cd to ${HS_PATH_ECD_5}"
-               [ ! -z ${HS_VAR_ECD_NAME_6} ] && printlc -cp false -d "->" "${HS_VAR_ECD_NAME_6}" "cd to ${HS_PATH_ECD_6}"
-               [ ! -z ${HS_VAR_ECD_NAME_7} ] && printlc -cp false -d "->" "${HS_VAR_ECD_NAME_7}" "cd to ${HS_PATH_ECD_7}"
-               [ ! -z ${HS_VAR_ECD_NAME_8} ] && printlc -cp false -d "->" "${HS_VAR_ECD_NAME_8}" "cd to ${HS_PATH_ECD_8}"
-               [ ! -z ${HS_VAR_ECD_NAME_9} ] && printlc -cp false -d "->" "${HS_VAR_ECD_NAME_9}" "cd to ${HS_PATH_ECD_9}"
-                echo "Note if you have any issue with case, please do shopt -s extglob"
+                cli_helper -t "Options"
+                cli_helper -o "-s|--hs-script|hs" -d "cd to ${HS_PATH_LIB}"
+                cli_helper -o "-w|--work-script|work" -d "cd to ${HS_PATH_WORK}"
+                cli_helper -o "-i|--vim-ide|ide" -d "cd to ${HS_PATH_IDE}"
+                cli_helper -o "--slink|slink" -d "cd to ${HS_PATH_SLINK}"
+                cli_helper -o "-l|--lab|lab" -d "cd to ${HS_PATH_LAB}"
+                cli_helper -o "-b|--build|build" -d "cd to ${HS_PATH_BUILD}"
+                cli_helper -o "-p|--proj|proj|" -d "cd to ${HS_PATH_PROJ}"
+                cli_helper -o "-d|--download|download)" -d "cd to ${HS_PATH_DOWNLOAD}"
+                cli_helper -o "-c|--document|document)" -d "cd to ${HS_PATH_DOCUMENT}"
+                cli_helper -o "-h|--help" -d "Print help function "
+
+                cli_helper -t "Customization Options"
+                [ ! -z ${HS_VAR_ECD_NAME_0} ] && cli_helper -o  "$(echo ${HS_VAR_ECD_NAME_0} | sed 's/[()@]//g')" -d "cd to ${HS_PATH_ECD_0}"
+                [ ! -z ${HS_VAR_ECD_NAME_1} ] && cli_helper -o  "$(echo ${HS_VAR_ECD_NAME_1} | sed 's/[()@]//g')" -d "cd to ${HS_PATH_ECD_1}"
+                [ ! -z ${HS_VAR_ECD_NAME_2} ] && cli_helper -o  "$(echo ${HS_VAR_ECD_NAME_2} | sed 's/[()@]//g')" -d "cd to ${HS_PATH_ECD_2}"
+                [ ! -z ${HS_VAR_ECD_NAME_3} ] && cli_helper -o  "$(echo ${HS_VAR_ECD_NAME_3} | sed 's/[()@]//g')" -d "cd to ${HS_PATH_ECD_3}"
+                [ ! -z ${HS_VAR_ECD_NAME_4} ] && cli_helper -o  "$(echo ${HS_VAR_ECD_NAME_4} | sed 's/[()@]//g')" -d "cd to ${HS_PATH_ECD_4}"
+                [ ! -z ${HS_VAR_ECD_NAME_5} ] && cli_helper -o  "$(echo ${HS_VAR_ECD_NAME_5} | sed 's/[()@]//g')" -d "cd to ${HS_PATH_ECD_5}"
+                [ ! -z ${HS_VAR_ECD_NAME_6} ] && cli_helper -o  "$(echo ${HS_VAR_ECD_NAME_6} | sed 's/[()@]//g')" -d "cd to ${HS_PATH_ECD_6}"
+                [ ! -z ${HS_VAR_ECD_NAME_7} ] && cli_helper -o  "$(echo ${HS_VAR_ECD_NAME_7} | sed 's/[()@]//g')" -d "cd to ${HS_PATH_ECD_7}"
+                [ ! -z ${HS_VAR_ECD_NAME_8} ] && cli_helper -o  "$(echo ${HS_VAR_ECD_NAME_8} | sed 's/[()@]//g')" -d "cd to ${HS_PATH_ECD_8}"
+                [ ! -z ${HS_VAR_ECD_NAME_9} ] && cli_helper -o  "$(echo ${HS_VAR_ECD_NAME_9} | sed 's/[()@]//g')" -d "cd to ${HS_PATH_ECD_9}"
+
                 return 0
                 ;;
 
@@ -1272,7 +1352,87 @@ wdiff()
 }
 hex2bin()
 {
-    cat $1 | sed s/,//g | sed s/0x//g | xxd -r -p - $2
+    local tmp_input_file="hex2bin.${tstamp}.in"
+
+    local var_output_file=""
+    local tmp_output_file="hex2bin.${tstamp}.out"
+    local var_fmt=""
+
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -i|--input-str)
+                if [ -f "${tmp_input_file}" ]
+                then
+                    echo "Input file exist!!"
+                    return 1
+                else
+                    tmp_input_file=$(echo "${2}" > "${tmp_input_file}")
+                fi
+                shift 1
+                ;;
+            -f|--input-file)
+                if [ -f "${2}" ]
+                then
+                    cp ${2} ${tmp_input_file}
+                else
+                    echo "Input file not exist!!"
+                    return 1
+                fi
+                shift 1
+                ;;
+            -o|--output)
+                var_output_file="${2}"
+                shift 1
+                ;;
+            -c|--c-header)
+                var_fmt="c-header"
+                ;;
+            -s|--std-out)
+                var_fmt="stdout"
+                ;;
+            -h|--help)
+                cli_helper -c "hex2bin" -cd "hex2bin function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "hex2bin [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-i|--input" -d "Input file"
+                cli_helper -o "-o|--output" -d "Output File"
+                cli_helper -o "-h|--help" -d "Print help function "
+                cli_helper -t "Output Formate"
+                cli_helper -o "-c|--c-header" -d "Output to c header fmt"
+                cli_helper -o "-s|--std-out" -d "Output to std out"
+                return 0
+                ;;
+            *)
+                ;;
+        esac
+        shift 1
+    done
+
+    # if [ "${var_output_file}" = "" ]
+    # then
+    #     var_output_file="$(echo ${tmp_input_file} | sed 's/\..*//g')"
+    # fi
+    # echo "Converting ${var_output_file}"
+
+    cat ${tmp_input_file} | sed s/,//g | sed s/0x//g | xxd -r -p - ${tmp_output_file}
+
+    if [ "${var_fmt}" = "c-header" ]
+    then
+        xxd -i ${tmp_output_file} > ${tmp_output_file}
+        rm ${tmp_output_file}
+    fi
+
+    if [ "${var_output_file}" = "" ]
+    then
+        cat ${tmp_output_file}
+    else
+        mv ${tmp_output_file} ${var_output_file}
+    fi
+    rm ${tmp_input_file}
+    [ -f "${tmp_output_file}" ] && rm ${tmp_output_file}
+
 }
 ########################################################
 #####    Pythen                                    #####

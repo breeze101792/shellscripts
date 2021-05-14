@@ -1,4 +1,3 @@
-#!/bin/bash
 ########################################################
 ########################################################
 #####                                              #####
@@ -64,7 +63,6 @@ function hs_main
     ##########################################
     local excute_command=""
 
-
     while [[ "$#" != 0 ]]
     do
         case $1 in
@@ -122,7 +120,8 @@ function hs_main
     then
         if [ "${flag_env_shell}" = "bash" ]
         then
-            flag_env_lib_path="$(dirname \"${BASH_SOURCE[0]}\")"
+            # don't use \", dirname has bug
+            flag_env_lib_path="$(dirname ${BASH_SOURCE[0]})"
         else
             flag_env_lib_path="$(realpath .)"
         fi
