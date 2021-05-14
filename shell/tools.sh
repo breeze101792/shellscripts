@@ -407,11 +407,11 @@ function xkey()
                     ;;
             esac
         fi
+        var_previous=${var_input}
 
         # printf "\r%s" ${var_input}
         if [ "${var_target_key}" = "" ] && ([ "${var_input}" = "[" ] || [ "${var_input}"  = $'\x1b' ])
         then
-            var_previous=${var_input}
             var_start=${var_end}
             continue
         fi
