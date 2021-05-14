@@ -10,7 +10,7 @@
 # Don't Set this flags
 # Vars
 export HS_ENV_SHELL=""
-export HS_ENV_VER=0.2.7
+export HS_ENV_VER=0.2.8
 export HS_ENV_TITLE="DO IT NOW"
 export HS_ENV_SILENCE=n
 # enable HS System
@@ -25,6 +25,7 @@ export HS_ENV_CPU_NUMBER="8"
 #####                                              #####
 ########################################################
 ########################################################
+export HS_CONFIG_ADVANCED_PROMOTE=y
 export HS_CONFIG_CHANGE_DIR=y
 # Only work on bash
 export HS_CONFIG_FUNCTION_EXPORT=n

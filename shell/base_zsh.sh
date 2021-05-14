@@ -165,7 +165,37 @@ setprompt() {
   PS2=$'%_>'
   RPROMPT=$'${vcs_info_msg_0_}'
 }
-setprompt
+setprompt_lite() {
+  setopt prompt_subst
+
+  if [[ -n "$SSH_CLIENT"  ||  -n "$SSH2_CLIENT" ]]; then 
+    p_host='%F{yellow}%M%f'
+  else
+    p_host='%F{green}%M%f'
+  fi
+
+  PS1=${(j::Q)${(Z:Cn:):-$'
+    %F{white}[%f
+    %(!.%F{red}%n%f.%F{white}%n%f)
+    %F{white}@%f
+    ${p_host}
+    %F{white}][%f
+    %F{white}%T-%w%f
+    %F{white}]%f
+    %F{white}[%f
+    %F{cyan}%~%f
+    %F{white}]%f
+  '}}$'\n%(!.%F{red}%#%f.%F{white}%#%f) '
+
+  PS2=$'%_>'
+  RPROMPT=$'${vcs_info_msg_0_}'
+}
+if [ "${HS_CONFIG_ADVANCED_PROMOTE}" = "y" ]
+then
+    setprompt
+else
+    setprompt_lite
+fi
 
 # firefox download path
 #if [ ! -d "/tmp/downloads_tmp" ];

@@ -38,7 +38,6 @@ function cli_helper()
                 shift 2
                 ;;
             -t|--title)
-                echo test
                 var_title="${2}"
                 shift 2
                 ;;
@@ -65,19 +64,19 @@ function cli_helper()
         printf "${var_cmd_name}"
         if [ "${var_cmd_description}" != "" ]
         then
-            printf " - ${var_cmd_description}"
+            printf " - %s" "${var_cmd_description}"
         fi
         printf "\n"
     elif [ "${var_title}" != "" ]
     then
-        printf "${var_title}"
+        printf "[%s]" "${var_title}"
     elif [ "${var_option}" != "" ] && [ "${var_description}" != "" ]
     then
-        printf "${var_prefix}${var_option}\n"
-        printf "${var_prefix}${var_prefix}${var_description}\n"
+        printf "%s%s\n" "${var_prefix}" "${var_option}"
+        printf "%s%s%s\n" "${var_prefix}" "${var_prefix}" "${var_description}"
     elif [ "${var_description}" != "" ]
     then
-        printf "${var_prefix}${var_description}\n"
+        printf "%s%s\n" "${var_prefix}" "${var_description}"
     fi
     printf "\n"
 }
@@ -96,12 +95,16 @@ function cli_shell()
                 var_prog="${2}"
                 shift 1
                 ;;
+            -p|--promote)
+                var_promote="${2}"
+                shift 1
+                ;;
             -h|--help)
-                cli_helper -c "xkey" -cd "remote keyboard emulation"
-                cli_helper -d "Please Launch ydotoold & launch in bash."
+                cli_helper -c "cli_shell" -cd "Emulate shell action"
                 cli_helper -t "SYNOPSIS"
-                cli_helper -d "xkey [Options] [Value]"
+                cli_helper -d "cli_shell [Options] [Value]"
                 cli_helper -t "Options"
+                cli_helper -o "-p|--promote" -d "Shell Promote "
                 cli_helper -o "-s|--shell" -d "Shell program "
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
@@ -117,6 +120,7 @@ function cli_shell()
     if [ "${HS_ENV_SHELL}" != "bash" ]
     then
         echo "Only Support in Bash. Currently use ${HS_ENV_SHELL}"
+        # bash -C cli_shell -s "${var_prog}" -p "${var_promote}"
         return 1
     fi
     local var_input=""
@@ -149,7 +153,7 @@ function cli_shell()
 
                     printf "%s\n" ${var_history[@]}
                 else
-                    var_cmd="${var_prog} ${var_buffer}"
+                    var_cmd="${var_prog} \"${var_buffer}\""
                     printf "\n"
                     printf "%s\n" "${var_cmd}"
                     eval ${var_cmd}

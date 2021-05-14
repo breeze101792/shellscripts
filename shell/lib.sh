@@ -390,6 +390,15 @@ function mark()
             blue)
                 ccstart=$(tput setaf 4)
                 ;;
+            magenta)
+                ccstart=$(tput setaf 5)
+                ;;
+            cyan)
+                ccstart=$(tput setaf 6)
+                ;;
+            gray)
+                ccstart=$(tput setaf 7)
+                ;;
         esac
     else
         hi_word=$*

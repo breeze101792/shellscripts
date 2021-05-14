@@ -1,4 +1,5 @@
-SCRIPT_PATH=$(realpath .)
+#/bin/env shell
+SCRIPT_PATH="$(realpath $(dirname ${0}))"
 
 function setup_shell()
 {
@@ -18,6 +19,12 @@ function setup_tmux()
 {
     ln -sf $SCRIPT_PATH/configs/others/tmux.conf ${HOME}/.tmux.conf
 }
+function excute()
+{
+    echo "Script Path:${SCRIPT_PATH}"
+    echo ${SCRIPT_PATH}/source.sh --silence=n -x $@
+    ${SCRIPT_PATH}/source.sh --silence=n -x $@
+}
 function setup()
 {
     while [ "$#" != "0" ]
@@ -28,6 +35,11 @@ function setup()
                 ;;
             -s|--shell)
                 setup_shell
+                ;;
+            -x|--excute)
+                shift 1
+                excute $@
+                return 0
                 ;;
             -h|--help)
                 echo "Setup Usage"
