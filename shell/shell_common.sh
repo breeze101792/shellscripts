@@ -13,12 +13,12 @@ function epath()
     local target_path=$(realpath $1)
     if echo ${PATH} | grep -q ${target_path}
     then
-        echo "${target_path} has alread in your PATH";
-        # exit 1
+        [ "${flag_verbose}" = "y" ] && echo "${target_path} has alread in your PATH";
         return 1
     else
         [ "${flag_verbose}" = "y" ] && echo -E "export PATH=${target_path}:"'$PATH;'
         export PATH=${target_path}:$PATH;
+        return 0
     fi;
 
 }
