@@ -53,23 +53,25 @@ function hs_autostart()
     local var_autostart_name="AUTOSTART_$(hostname)"
     local var_stored_uptime="$(hs_config -g ${var_autostart_name})"
     local var_current_uptime=$(($(date +%s -d "$(uptime -s)") / 10))
+    local var_user_autostart="${HOME}/.hsautostart.sh"
 
     if [ "${var_stored_uptime}" = "" ] || [ "${var_stored_uptime}" != "${var_current_uptime}" ]
     then
         ##########################################
         # Auto Start
         ##########################################
-        hs_source ${var_targetfile}
+        if [ -f "${var_user_autostart}" ]
+        then
+            hs_source ${var_targetfile}
+        fi
         hs_motd
         ##########################################
         # Other
         ##########################################
-        echo "Store:${var_stored_uptime}, Current:${var_current_uptime}"
+        # echo "Store:${var_stored_uptime}, Current:${var_current_uptime}"
         hs_config -s "${var_autostart_name}" "${var_current_uptime}"
         hs_config -g "${var_autostart_name}"
     fi
-        hs_motd
-
 }
 
 #####    Globa Function
@@ -104,7 +106,6 @@ function hs_main
     ##########################################
     local flag_var_refresh="n"
     local var_user_config="${HOME}/.hsconfig.sh"
-    local var_user_autostart="${HOME}/.hsautostart.sh"
 
     ##########################################
     # configs
@@ -287,10 +288,10 @@ function hs_main
         hs_source ${HS_PATH_WORK}/work.sh
     fi
 
-    if [ -f "${var_user_autostart}" ]
-    then
-        hs_autostart "${var_user_autostart}"
-    fi
+    ##########################################
+    # Post Settings
+    ##########################################
+    hs_autostart
 
     ##########################################
     # Excute Command
