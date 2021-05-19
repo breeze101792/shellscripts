@@ -63,8 +63,25 @@ function runtime()
 function xsettings()
 {
     # .256 sec delay, 1 char/hz
-    # xset r rate 256 64
-    xset r rate 200 50
+    local var_mode=3
+    if [[ ${#} = 1 ]]
+    then
+        var_mode=${1}
+    fi
+
+    if [[ ${var_mode} = 0 ]]
+    then
+        xset r rate 256 64
+    elif [[ ${var_mode} = 1 ]]
+    then
+        xset r rate 200 50
+    elif [[ ${var_mode} = 2 ]]
+    then
+        xset r rate 192 64
+    elif [[ ${var_mode} = 3 ]]
+    then
+        xset r rate 160 64
+    fi
 }
 function audio_default()
 {

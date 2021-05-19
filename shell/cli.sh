@@ -240,6 +240,68 @@ function cli_shell()
     printf "\n"
     printf "Bye\n"
 }
+function cli_readkey()
+{
+    local def_arrow_up=KEY_UP
+    local def_arrow_down=KEY_DOWN
+    local def_arrow_left=KEY_LEFT
+    local def_arrow_right=KEY_RIGHT
+    local def_enter=KEY_ENTER
+    local def_esc=KEY_ESC
+
+    local var_esc=$(echo -en "\e")
+    local var_csi=$(echo -en "\e[")
+
+    local var_char=""
+    local var_input_buffer=""
+    local var_idx=0
+
+    if [ "${HS_ENV_SHELL}" != "bash" ]
+    then
+        echo "Only Support in Bash. Currently use ${HS_ENV_SHELL}"
+        # bash -C cli_shell -s "${var_prog}" -p "${var_promote}"
+        return 1
+    fi
+
+    read -s -n 1 var_input_buffer 2>/dev/null >&2
+
+    while [[ ${var_idx} < 3 ]]
+    do
+        read -t 0.005 -s -n 1 var_char 2>/dev/null >&2
+        if [ ${var_char} != "" ]
+        then
+            var_input_buffer="${var_input_buffer}${var_char}"
+        else
+            break
+        fi
+        var_idx=$((${var_idx} + 1))
+    done
+
+    case ${var_input_buffer} in
+        "${var_csi}A")
+            printf "${def_arrow_up}";
+            ;;
+        "${var_csi}B")
+            printf "${def_arrow_down}";
+            ;;
+        "${var_csi}C")
+            printf "${def_arrow_right}";
+            ;;
+        "${var_csi}D")
+            printf "${def_arrow_left}";
+            ;;
+        "${var_esc}")
+            printf "${def_esc}";
+            ;;
+        "")
+            printf "${def_enter}";
+            ;;
+        *)
+            # printf "Unsupported Key(idx=%d):'%s'" "%{var_idx}" "${var_input_buffer}";
+            echo -en "${var_input_buffer}";
+            ;;
+    esac
+}
 
 ########################################################
 ####    Others

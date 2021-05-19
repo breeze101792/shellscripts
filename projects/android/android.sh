@@ -22,11 +22,16 @@ function an_setip()
         -20)
             target_ip=${ip_domain}.20
             ;;
+        -s|--set)
+            target_ip=${2}
+            shift
+            ;;
         -h|--help)
             echo "setip Usage"
             printlc -cp false -d "->" "-19" "set ip to ${ip_domain}.19"
             printlc -cp false -d "->" "-20" "set ip to ${ip_domain}.20"
             printlc -cp false -d "->" "-72" "set ip to ${ip_domain}.72"
+            printlc -cp false -d "->" "-s|--set" "set ip"
             return 0
             ;;
         *)
@@ -48,7 +53,7 @@ function an_adb()
     do
         case $1 in
             -s|--serial)
-                an_setip ${2}
+                an_setip -s ${2}
                 shift 1
                 ;;
             -t|--timeout)
@@ -99,7 +104,7 @@ function an_shell()
     do
         case $1 in
             -s|--serial)
-                an_setip ${2}
+                an_setip -s ${2}
                 shift 1
                 ;;
             -t|--timeout)

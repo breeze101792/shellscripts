@@ -5,20 +5,10 @@
 #####                                              #####
 ########################################################
 ########################################################
-function hs_print()
-{
-    # echo ${HS_ENV_SILENCE}
-    if [ "${HS_ENV_SILENCE}" = "n" ]
-    then
-        echo -E "hs> $@"
-    fi
-}
-function refresh
-{
-    local cpath=$(realpath .)
-    source $HS_PATH_LIB/source.sh -p=${HS_PATH_LIB} -s=${HS_ENV_SHELL} -S=${HS_ENV_SILENCE} --refresh
-    cd ${cpath}
-}
+
+#####    Private Function
+########################################################
+# In this area please unset it after use
 function hs_source()
 {
     local source_file=$1
@@ -37,6 +27,70 @@ function hs_source()
         source $(realpath ${source_file})
     fi
 }
+function hs_motd()
+{
+    local var_motd=""
+
+    local cpu_num=$(nproc)
+    local memory=$(free -h  | grep -i mem | tr -s ' ' | cut -d ' ' -f2)
+    local ln="\n"
+
+
+    # var_motd="${var_motd}${ln}$(printlc -d ' ' 'MOTD' ' ')"
+    var_motd="*** Message Of The Day ***"
+    var_motd="${var_motd}${ln}"
+
+    var_motd="${var_motd}${ln}$(printlc 'Hostname' $(hostname))"
+    var_motd="${var_motd}${ln}$(printlc 'CPU(s)' ${cpu_num})"
+    var_motd="${var_motd}${ln}$(printlc 'Memory' ${memory})"
+    var_motd="${var_motd}${ln}"
+
+    printt -fw 2 "${var_motd}"
+}
+function hs_autostart()
+{
+    local var_targetfile=$1
+    local var_autostart_name="AUTOSTART_$(hostname)"
+    local var_stored_uptime="$(hs_config -g ${var_autostart_name})"
+    local var_current_uptime=$(($(date +%s -d "$(uptime -s)") / 10))
+
+    if [ "${var_stored_uptime}" = "" ] || [ "${var_stored_uptime}" != "${var_current_uptime}" ]
+    then
+        ##########################################
+        # Auto Start
+        ##########################################
+        hs_source ${var_targetfile}
+        hs_motd
+        ##########################################
+        # Other
+        ##########################################
+        echo "Store:${var_stored_uptime}, Current:${var_current_uptime}"
+        hs_config -s "${var_autostart_name}" "${var_current_uptime}"
+        hs_config -g "${var_autostart_name}"
+    fi
+        hs_motd
+
+}
+
+#####    Globa Function
+########################################################
+function pass(){}
+function hs_print()
+{
+    # FIXME remove this function due to motd added.
+    pass
+    # # echo ${HS_ENV_SILENCE}
+    # if [ "${HS_ENV_SILENCE}" = "n" ]
+    # then
+    #     echo -E "hs> $@"
+    # fi
+}
+function refresh
+{
+    local cpath=$(realpath .)
+    source $HS_PATH_LIB/source.sh -p=${HS_PATH_LIB} -s=${HS_ENV_SHELL} -S=${HS_ENV_SILENCE} --refresh
+    cd ${cpath}
+}
 
 function hs_main
 {
@@ -49,6 +103,8 @@ function hs_main
     # Vars
     ##########################################
     local flag_var_refresh="n"
+    local var_user_config="${HOME}/.hsconfig.sh"
+    local var_user_autostart="${HOME}/.hsautostart.sh"
 
     ##########################################
     # configs
@@ -138,14 +194,17 @@ function hs_main
         export HS_PATH_LIB=${flag_env_lib_path}
     fi
     source $HS_PATH_LIB/shell/env_config.sh
-    if [ -f $HOME/.hsconfig.sh ]
+    if [ -f ${var_user_config} ]
     then
-        source $HOME/.hsconfig.sh
+        source ${var_user_config}
     fi
+    # TODO to be delete
     if [ -f $HOME/.hsconfig ]
     then
+        echo "[Warning] need to use .hsconfig"
         source $HOME/.hsconfig
     fi
+
     # silence mode in subshell
     if [[ "${SHLVL}" > "1" ]]
     then
@@ -228,6 +287,11 @@ function hs_main
         hs_source ${HS_PATH_WORK}/work.sh
     fi
 
+    if [ -f "${var_user_autostart}" ]
+    then
+        hs_autostart "${var_user_autostart}"
+    fi
+
     ##########################################
     # Excute Command
     ##########################################
@@ -239,6 +303,9 @@ function hs_main
 
 hs_main $@
 unset -f hs_main
+unset -f hs_source
+unset -f hs_autostart
+unset -f hs_motd
 ##########################################
 # Post Setting
 ##########################################

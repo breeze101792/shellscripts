@@ -167,6 +167,9 @@ function pvim()
             -p|--pure-mode)
                 cmd_args+=("-u NONE")
                 ;;
+            -t|--time)
+                cmd_args+=("-X --startuptime startup_$(tstamp).log")
+                ;;
             -h|--help)
                 cli_helper -c "pvim"
                 cli_helper -d "pvim [Options] [File]"
@@ -175,6 +178,7 @@ function pvim()
                 cli_helper -t "Options"
                 cli_helper -o "-m|--map" -d "Load cctree in vim"
                 cli_helper -o "-p|--pure-mode" -d "Load withouth ide file"
+                cli_helper -o "-t|--time" -d "Enable startup debug mode"
                 cli_helper -o "-h|--help" -d "Print help function "
                 cli_helper -t "vim-Options"
                 cli_helper -o "-R" -d "vim read only mode"
@@ -200,12 +204,13 @@ function pvim()
     else
         echo "Project ccscop tag not found."
     fi
-    if froot "proj.vim" && [ "${flag_proj_vim}" = "y" ]
+    if [ "${flag_proj_vim}" = "y" ] && test -f "proj.vim"
     then
         export PROJ_VIM=`pwd`/proj.vim
         echo "Proj VIM: ${PROJ_VIM}"
     fi
-    if froot "cctree.db" && [ "${flag_cctree}" = "y" ]
+
+    if [ "${flag_cctree}" = "y" ] && test -f "cctree.db"
     then
         export CCTREE_DB=`pwd`/cctree.db
         echo "CCTREE: ${CCTREE_DB}"
@@ -573,11 +578,16 @@ function session
                 var_action="create"
                 break
                 ;;
+            -d|--deattach-all|d)
+                var_action="deatach-all"
+                break
+                ;;
             -h|--help)
                 echo "session"
                 printlc -cp false -d "->" "-r|--remove" "remove session with session list"
                 printlc -cp false -d "->" "-a|--attach" "attach session with session name"
                 printlc -cp false -d "->" "-c|--create" "create session with session name"
+                printlc -cp false -d "->" "-d|--deatach-all" "deatach all session"
                 return 0
                 ;;
             *)
@@ -617,7 +627,20 @@ function session
                 tmux kill-session -t "${each_session}"
             fi
         done
+    elif [ "${var_action}" = "deatach-all" ]
+    then
+        echo "Deatach all session"
+
+        for each_session in $(tmux ls | cut -d ":" -f 1)
+        do
+            if [ "${each_session}" != "" ]
+            then
+                echo "Detach ${each_session}"
+                tmux detach-client -s "${each_session}"
+            fi
+        done
     fi
+
     # tmux a -t ${var_taget_session} || tmux new -s ${var_taget_session}
 }
 function erun()
@@ -674,7 +697,7 @@ function erun()
     # local start_time=$(date "+%Y-%m-%d_%H:%M:%S")
     local start_time=$(date)
     echo "Start cmd: $(printc -c yellow ${excute_cmd})"
-    printt "$(printlc -lw 32 -cw 0 -d " " "Start Jobs at ${start_time}" "")" | mark -s green "#"
+    print "$(printlc -lw 32 -cw 0 -d " " "Start Jobs at ${start_time}" "")" | mark -s green "#"
     # mark_build "${excute_cmd}"
     if [ -n "${HS_PATH_LOG}" ] && [ "${flag_log_enable}" = "y" ]
     then
