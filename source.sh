@@ -29,44 +29,128 @@ function hs_source()
 }
 function hs_motd()
 {
-    local var_motd=""
+    # ps -Aeo pid,cmd | grep "^${PPID}"
+    local var_msg=()
+    local var_distro=$(cat /etc/os-release | grep "^ID=" | cut -d "=" -f 2 )
+    local var_logo
 
-    local cpu_num=$(nproc)
-    local memory=$(free -h  | grep -i mem | tr -s ' ' | cut -d ' ' -f2)
-    local ln="\n"
+    local var_ubuntu=()
+    local var_raspberry=()
+    local var_arch=()
+    local var_other=()
+    var_arch+='              +                '
+    var_arch+='              #                '
+    var_arch+='             ###               '
+    var_arch+='            #####              '
+    var_arch+='            ######             '
+    var_arch+='           ; #####;            '
+    var_arch+='          +##.#####            '
+    var_arch+='         +##########           '
+    var_arch+='        #############;         '
+    var_arch+='       ###############+        '
+    var_arch+='      #######   #######        '
+    var_arch+='    .######;     ;###;`".      '
+    var_arch+='   .#######;     ;#####.       '
+    var_arch+='   #########.   .########`     '
+    var_arch+='  ######             ######    '
+    var_arch+=' ;####                 ####;   '
+    var_arch+=' ##                       ##   '
+    var_arch+='#                          `#  '
 
+    var_raspberry+="    .~~.   .~~.    "
+    var_raspberry+="   '. \ ' ' / .'   "
+    var_raspberry+="    .~ .~~~..~.    "
+    var_raspberry+="   : .~.'~'.~. :   "
+    var_raspberry+="  ~ (   ) (   ) ~  "
+    var_raspberry+=" ( : '~'.~.'~' : ) "
+    var_raspberry+="  ~ .~ (   ) ~. ~  "
+    var_raspberry+="   (  : '~' :  )   "
+    var_raspberry+="    '~ .~~~. ~'    "
+    var_raspberry+="        '~'        "
+    var_raspberry+="                   "
 
-    # var_motd="${var_motd}${ln}$(printlc -d ' ' 'MOTD' ' ')"
-    var_motd="*** Message Of The Day ***"
-    var_motd="${var_motd}${ln}"
+    var_ubuntu+=''
+    var_ubuntu+=''
+    var_ubuntu+=''
+    var_ubuntu+=''
+    var_ubuntu+=''
+    var_ubuntu+=''
+    var_ubuntu+=''
+    var_ubuntu+=''
+    var_ubuntu+=''
+    var_ubuntu+=''
+    var_ubuntu+=''
+    var_ubuntu+=''
+    var_ubuntu+=''
+    var_ubuntu+=''
+    var_ubuntu+=''
+    var_ubuntu+=''
+    var_ubuntu+=''
+    var_ubuntu+=''
 
-    var_motd="${var_motd}${ln}$(printlc 'Hostname' $(hostname))"
-    var_motd="${var_motd}${ln}$(printlc 'CPU(s)' ${cpu_num})"
-    var_motd="${var_motd}${ln}$(printlc 'Memory' ${memory})"
-    var_motd="${var_motd}${ln}"
+    var_other+=''
+    var_other+=''
+    var_other+=''
+    var_other+=''
+    var_other+=''
+    var_other+=''
+    var_other+=''
+    var_other+=''
+    var_other+=''
+    var_other+=''
+    var_other+=''
+    var_other+=''
+    var_other+=''
+    var_other+=''
+    var_other+=''
+    var_other+=''
+    var_other+=''
+    var_other+=''
 
-    printt -fw 2 "${var_motd}"
+    var_msg+=$(printf "%- 16s: %s" "OS" "$(cat /etc/os-release | grep "^NAME=" | cut -d "\"" -f 2 )")
+    var_msg+=$(printf "%- 16s: %s" "Hostname" "$(hostname)")
+    var_msg+=$(printf "%- 16s: %s" "Kernel Version" "$(uname -r)")
+    var_msg+=$(printf "%- 16s: %s" "Processor Type" "$(cat /proc/cpuinfo | grep 'model name' | head -n 1 | cut -d ':' -f 2 | sed 's/^\s//g')")
+    var_msg+=$(printf "%- 16s: %s" "RAM Free" "$(free -h | grep Mem | sed 's/\s\+/ /g' | cut -d ' ' -f 4) / $(free -h | grep Mem | sed 's/\s\+/ /g' | cut -d ' ' -f 2)")
+    var_msg+=$(printf "%- 16s: %s" "Uptime" "$(uptime | sed 's/\s\+/ /g' |cut -d " " -f 4 | sed 's/,//g')")
+    var_msg+=$(printf "%- 16s: %s" "Root" "$(df -h / |tail -n 1 | sed 's/\s\+/ /g' | cut -d ' ' -f 3) / $(df -h / | tail -n 1 | sed 's/\s\+/ /g' | cut -d ' ' -f 2) ($(df -h / | tail -n 1 | sed 's/\s\+/ /g' | cut -d ' ' -f 5))")
+    var_msg+=$(printf "%- 16s: %s" "EDITOR" "${EDITOR}")
+    # var_msg+=$(printf "%- 16s: %s" "WM" "None")
+    # var_msg+=$(printf "%- 16s: %s" "DE" "GNOME")
+    command -v pacman > /dev/null && var_msg+=$(printf "%- 16s: %s" "Packages" "$(pacman -Q | wc -l)")
+
+    if [ "${var_distro}" = "arch" ]
+    then
+        var_logo=(${var_arch[@]})
+    elif [ "${var_distro}" = "arch" ]
+    then
+        var_logo=(${var_ubuntu[@]})
+    elif [ "${var_distro}" = "raspbian" ]
+    then
+        var_logo=(${var_raspberry[@]})
+    else
+        var_logo=(${var_other[@]})
+    fi
+
+    for each_idx in $(seq 1 ${#var_logo})
+    do
+        printf "%s %s\n" "${var_logo[${each_idx}]}" "${var_msg[${each_idx}]}"
+    done
 }
 function hs_autostart()
 {
+    local var_target=${1}
     local var_autostart_name="AUTOSTART_$(hostname)"
     local var_stored_uptime="$(hs_config -g ${var_autostart_name})"
     local var_current_uptime=$(($(date +%s -d "$(uptime -s)") / 10))
-    local var_user_autostart="${HOME}/.hsautostart.sh"
 
     if [ "${var_stored_uptime}" = "" ] || [ "${var_stored_uptime}" != "${var_current_uptime}" ]
     then
         ##########################################
         # Auto Start
         ##########################################
-        if [ -f "${var_user_autostart}" ]
-        then
-            hs_source ${var_user_autostart}
-        fi
-        hs_motd
-        ##########################################
-        # Other
-        ##########################################
+        hs_source ${var_target}
+
         hs_config -s "${var_autostart_name}" "${var_current_uptime}"
     fi
 }
@@ -109,6 +193,7 @@ function hs_main
     ##########################################
     local flag_var_refresh="n"
     local var_user_config="${HOME}/.hsconfig.sh"
+    local var_user_autostart="${HOME}/.hsautostart.sh"
 
     ##########################################
     # configs
@@ -294,7 +379,15 @@ function hs_main
     ##########################################
     # Post Settings
     ##########################################
-    hs_autostart
+    if [ -f "${var_user_autostart}" ]
+    then
+        hs_autostart ${var_user_autostart}
+    fi
+
+    if [ "${flag_var_refresh}" = "n" ] && [ ${HS_ENV_SILENCE} = "n" ] && [[ "${SHLVL}" = "1" ]]
+    then
+        hs_motd
+    fi
 
     ##########################################
     # Excute Command
