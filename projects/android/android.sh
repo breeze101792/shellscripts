@@ -1,6 +1,9 @@
 #!/bin/bash
 hs_print "Source Android(an) project"
-export HS_WORK_ENV_ANDROID_DEVICE_IP=192.168.7.19
+if [ -z "${HS_WORK_ENV_ANDROID_DEVICE_IP}" ]
+then
+    export HS_WORK_ENV_ANDROID_DEVICE_IP=192.168.7.19
+fi
 alias acd="an_cd "
 function an_setip()
 {
@@ -48,6 +51,7 @@ function an_adb()
     local var_serial
     local flag_timeout=n
     local flag_connect=y
+    local var_ip=""
 
     while [[ "$#" != 0 ]]
     do

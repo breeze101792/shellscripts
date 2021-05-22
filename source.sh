@@ -49,7 +49,6 @@ function hs_motd()
 }
 function hs_autostart()
 {
-    local var_targetfile=$1
     local var_autostart_name="AUTOSTART_$(hostname)"
     local var_stored_uptime="$(hs_config -g ${var_autostart_name})"
     local var_current_uptime=$(($(date +%s -d "$(uptime -s)") / 10))
@@ -62,21 +61,25 @@ function hs_autostart()
         ##########################################
         if [ -f "${var_user_autostart}" ]
         then
-            hs_source ${var_targetfile}
+            hs_source ${var_user_autostart}
         fi
         hs_motd
         ##########################################
         # Other
         ##########################################
-        # echo "Store:${var_stored_uptime}, Current:${var_current_uptime}"
         hs_config -s "${var_autostart_name}" "${var_current_uptime}"
-        hs_config -g "${var_autostart_name}"
     fi
 }
 
 #####    Globa Function
 ########################################################
-function pass(){}
+function pass()
+{
+    if false
+    then
+        echo -e -n ""
+    fi
+}
 function hs_print()
 {
     # FIXME remove this function due to motd added.
