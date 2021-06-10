@@ -384,7 +384,8 @@ function hs_main
         hs_autostart ${var_user_autostart}
     fi
 
-    if [ "${flag_var_refresh}" = "n" ] && [ ${HS_ENV_SILENCE} = "n" ] && [[ "${SHLVL}" = "1" ]]
+    local tmp_pname="$(ps -Ao pid,cmd |grep "${PPID}" |grep -v "grep" | sed 's/[[:space:]]\+/ /g' | cut -d ' ' -f 3- | cut -d ':' -f1)"
+    if [ "${flag_var_refresh}" = "n" ] && [ ${HS_ENV_SILENCE} = "n" ] && [[ "${SHLVL}" = "1" ]] && ( [ "${tmp_pname}" = "login" ] || [ "${tmp_pname}" = "sshd" ] )
     then
         hs_motd
     fi
