@@ -217,7 +217,8 @@ function pvim()
     fi
 
     cd $cpath
-    eval ${HS_VAR_VIM} ${cmd_args} ${vim_args}
+    echo "Launching: ${HS_VAR_VIM} ${cmd_args[@]} ${vim_args[@]}"
+    eval ${HS_VAR_VIM} ${cmd_args[@]} ${vim_args[@]}
     # unset var
     unset CSCOPE_DB
     unset CCTREE_DB
