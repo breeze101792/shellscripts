@@ -57,8 +57,8 @@ function hs_motd()
     # var_arch+=' ##                       ##   '
     # var_arch+='#                          `#  '
 
-    local var_color="\033[38;2;23;147;209m"
-    local var_clr_reset="\e[0m"
+    local var_color=$(echo -e "\033[38;2;23;147;209m")
+    local var_clr_reset=$(echo -e "\e[0m")
     var_arch+=${var_color}'                   ▄                    '${var_clr_reset}
     var_arch+=${var_color}'                  ▟█▙                   '${var_clr_reset}
     var_arch+=${var_color}'                 ▟███▙                  '${var_clr_reset}
@@ -128,6 +128,7 @@ function hs_motd()
     var_other+=''
     var_other+=''
     var_other+=''
+    local tmp_pname="$(ps -Ao pid,fname |grep "${PPID}" |grep -v "grep" | sed 's/[[:space:]]\+/ /g' | cut -d ' ' -f 3)"
 
     var_msg+=$(printf "%- 16s: %s" "OS" "$(cat /etc/os-release | grep "^NAME=" | cut -d "\"" -f 2 )")
     var_msg+=$(printf "%- 16s: %s" "Hostname" "$(hostname)")
@@ -136,6 +137,7 @@ function hs_motd()
     var_msg+=$(printf "%- 16s: %s" "RAM Free" "$(free -h | grep Mem | sed 's/\s\+/ /g' | cut -d ' ' -f 4) / $(free -h | grep Mem | sed 's/\s\+/ /g' | cut -d ' ' -f 2)")
     var_msg+=$(printf "%- 16s: %s" "Uptime" "$(uptime | sed 's/\s\+/ /g' |cut -d " " -f 4 | sed 's/,//g')")
     var_msg+=$(printf "%- 16s: %s" "Root" "$(df -h / |tail -n 1 | sed 's/\s\+/ /g' | cut -d ' ' -f 3) / $(df -h / | tail -n 1 | sed 's/\s\+/ /g' | cut -d ' ' -f 2) ($(df -h / | tail -n 1 | sed 's/\s\+/ /g' | cut -d ' ' -f 5))")
+    var_msg+=$(printf "%- 16s: %s" "Parent Proccess" "$(ps -Ao pid,fname |grep "${PPID}" |grep -v "grep" | sed 's/[[:space:]]\+/ /g' | cut -d ' ' -f 3) (${PPID})")
     var_msg+=$(printf "%- 16s: %s" "EDITOR" "${EDITOR}")
     # var_msg+=$(printf "%- 16s: %s" "WM" "None")
     # var_msg+=$(printf "%- 16s: %s" "DE" "GNOME")
@@ -406,7 +408,7 @@ function hs_main
         hs_autostart ${var_user_autostart}
     fi
 
-    local tmp_pname="$(ps -Ao pid,cmd |grep "${PPID}" |grep -v "grep" | sed 's/[[:space:]]\+/ /g' | cut -d ' ' -f 3- | cut -d ':' -f1)"
+    local tmp_pname="$(ps -Ao pid,fname |grep "${PPID}" |grep -v "grep" | sed 's/[[:space:]]\+/ /g' | cut -d ' ' -f 3)"
     if [ "${flag_var_refresh}" = "n" ] && [ ${HS_ENV_SILENCE} = "n" ] && [[ "${SHLVL}" = "1" ]] && ( [ "${tmp_pname}" = "login" ] || [ "${tmp_pname}" = "sshd" ] )
     then
         hs_motd
