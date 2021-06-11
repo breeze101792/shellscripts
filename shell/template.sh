@@ -28,9 +28,9 @@ function tmp1()
                 shift 1
                 ;;
             -h|--help)
-                cli_helper -c "tmplate" -cd "template function"
+                cli_helper -c "template" -cd "template function"
                 cli_helper -t "SYNOPSIS"
-                cli_helper -d "tmplate [Options] [Value]"
+                cli_helper -d "template [Options] [Value]"
                 cli_helper -t "Options"
                 cli_helper -o "-a|--append" -d "append file extension on search"
                 cli_helper -o "-v|--verbose" -d "Verbose print "

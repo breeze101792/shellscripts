@@ -229,6 +229,79 @@ function renter()
     # cd ${HOME}
     # cd ${cpath}
 }
+function compressor()
+{
+    local cmd_prog="tar"
+    local cmd_args=""
+    cmd_args+=(-v)
+
+    if [[ "$#" = "0" ]]
+    then
+        echo "Default action"
+    fi
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -f|--file)
+                cmd_args+=(-f $2)
+                shift 1
+                ;;
+            -j|--bzip)
+                if command -v pbzip2
+                then
+                    cmd_args+=(--use-compress-program=pbzip2)
+                else
+                    cmd_args+=(-j)
+                fi
+                ;;
+            -z|--xzip)
+                if command -v pigz
+                then
+                    cmd_args+=(--use-compress-program=pigz)
+                else
+                    cmd_args+=(-z)
+                fi
+                ;;
+            -x|--extract)
+                cmd_args+=(-x)
+                ;;
+            -c|--compress)
+                cmd_args+=(-c)
+                ;;
+
+            # -a|--append)
+            #     cmd_args+="${2}"
+            #     shift 1
+            #     ;;
+            # -v|--verbose)
+            #     flag_verbose="y"
+            #     shift 1
+            #     ;;
+            -h|--help)
+                cli_helper -c "template" -cd "template function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "template [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-f|--file" -d "file name for process"
+                cli_helper -o "-b|--bzip2" -d "use bzip2 alg"
+                cli_helper -o "-z|--xz" -d "use xz alg"
+                cli_helper -o "-x|--extract" -d "extract file"
+                cli_helper -o "-c|--compress" -d "compress file"
+                # cli_helper -o "-a|--append" -d "append file extension on search"
+                # cli_helper -o "-v|--verbose" -d "Verbose print "
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                cmd_args+=($@)
+                break
+                ;;
+        esac
+        shift 1
+    done
+    echo ${cmd_prog} ${cmd_args[@]}
+    eval ${cmd_prog} ${cmd_args[@]}
+}
 function extract()
 {
     if [ -f $1 ] ; then

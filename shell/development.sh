@@ -316,7 +316,8 @@ function scheduler()
                 continue
                 ;;
             projs)
-                task projects rc.list.all.projects=1
+                # task projects rc.list.all.projects=1
+                task rc.list.all.projects=1 _projects
                 continue
                 ;;
             weekly)
@@ -1220,6 +1221,8 @@ function ginfo()
     echo "Fetch online commit: git fetch --all"
     echo "Get Info for First 1 Commit: git log --pretty='format:%p->%h %cn(%an) %s' -n 1"
     echo "Get Info for First 1 Commit: git log --pretty='format:%cd %p->%h %cn(%an) %s' -n 1"
+    echo "Show all file status: git status --ignored all"
+    echo "Add all file with ignored file: git add -Avf"
 
 }
 function gfiles()
