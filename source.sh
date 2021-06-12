@@ -79,6 +79,7 @@ function hs_motd()
 
     local var_color=$(echo -e "\033[38;2;23;147;209m")
     local var_clr_reset=$(echo -e "\e[0m")
+    var_arch+=${var_color}'                                        '${var_clr_reset}
     var_arch+=${var_color}'                   ▄                    '${var_clr_reset}
     var_arch+=${var_color}'                  ▟█▙                   '${var_clr_reset}
     var_arch+=${var_color}'                 ▟███▙                  '${var_clr_reset}
@@ -98,7 +99,9 @@ function hs_motd()
     var_arch+=${var_color}'   ▟██████▀▀▀              ▀▀██████▙    '${var_clr_reset}
     var_arch+=${var_color}'  ▟███▀▘                       ▝▀███▙   '${var_clr_reset}
     var_arch+=${var_color}' ▟▛▀                               ▀▜▙  '${var_clr_reset}
+    var_arch+=${var_color}'                                        '${var_clr_reset}
 
+    var_raspberry+="                   "
     var_raspberry+="    .~~.   .~~.    "
     var_raspberry+="   '. \ ' ' / .'   "
     var_raspberry+="    .~ .~~~..~.    "
@@ -111,6 +114,7 @@ function hs_motd()
     var_raspberry+="        '~'        "
     var_raspberry+="                   "
 
+    var_ubuntu+=$(echo -e '                      ')
     var_ubuntu+=$(echo -e '              .-.     ')
     var_ubuntu+=$(echo -e "        .-'\`\`(|||)    ")
     var_ubuntu+=$(echo -e '     ,`\ \    `-`.    ')
@@ -143,7 +147,7 @@ function hs_motd()
     var_msg+=$(printf "%- 16s: %s" "Hostname" "$(hostname)")
     var_msg+=$(printf "%- 16s: %s" "Kernel Version" "$(uname -r)")
     var_msg+=$(printf "%- 16s: %s" "CPU" "$(cat /proc/cpuinfo | grep 'model name' | head -n 1 | cut -d ':' -f 2 | sed 's/^\s//g')")
-    var_msg+=$(printf "%- 16s: %s" "GPU" "$(lspci|grep VGA | cut -d ':' -f 3 | sed 's/^\s//g'))")
+    var_msg+=$(printf "%- 16s: %s" "GPU" "$(lspci|grep VGA | cut -d ':' -f 3 | sed 's/^\s//g')")
     var_msg+=$(printf "%- 16s: %s" "RAM Free" "$(free -h | grep Mem | sed 's/\s\+/ /g' | cut -d ' ' -f 4) / $(free -h | grep Mem | sed 's/\s\+/ /g' | cut -d ' ' -f 2)")
     var_msg+=$(printf "%- 16s: %s" "Uptime" "$(uptime | sed 's/\s\+/ /g' |cut -d " " -f 4 | sed 's/,//g')")
     var_msg+=$(printf "%- 16s: %s" "Root" "$(df -h / |tail -n 1 | sed 's/\s\+/ /g' | cut -d ' ' -f 3) / $(df -h / | tail -n 1 | sed 's/\s\+/ /g' | cut -d ' ' -f 2) ($(df -h / | tail -n 1 | sed 's/\s\+/ /g' | cut -d ' ' -f 5))")
