@@ -9,6 +9,24 @@
 #####    Private Function
 ########################################################
 # In this area please unset it after use
+function hs_eval()
+{
+    local var_cmd=$@
+    local flag_debug="n"
+
+    if [ ${flag_debug} = "y" ]
+    then
+        local start_time=$(date +%s%N)
+        eval "${var_cmd}"
+        local end_time=$(date +%s%N)
+
+        # echo "$start_time, $end_time"
+        local diff_time=$(( (${end_time} - ${start_time})/1000000 ))
+        printf "[${diff_time}] eval ${var_cmd}\n"
+    else
+        eval "${var_cmd}"
+    fi
+}
 function hs_source()
 {
     local source_file=$1
@@ -421,10 +439,10 @@ function hs_main
         eval "${excute_command}"
     fi
 }
-
-hs_main $@
+hs_eval hs_main $@
 unset -f hs_main
 unset -f hs_source
+unset -f hs_eval
 unset -f hs_autostart
 unset -f hs_motd
 ##########################################
