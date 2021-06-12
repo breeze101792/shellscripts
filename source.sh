@@ -5,6 +5,7 @@
 #####                                              #####
 ########################################################
 ########################################################
+HS_SCRIPT_PATH="$(realpath $(dirname ${0}))"
 
 #####    Private Function
 ########################################################
@@ -303,13 +304,7 @@ function hs_main
     fi
     if [ -z "${flag_env_lib_path}" ]
     then
-        if [ "${flag_env_shell}" = "bash" ]
-        then
-            # don't use \", dirname has bug
-            flag_env_lib_path="$(dirname ${BASH_SOURCE[0]})"
-        else
-            flag_env_lib_path="$(realpath .)"
-        fi
+        flag_env_lib_path="$(realpath ${HS_SCRIPT_PATH})"
     fi
 
     # source shell scripts
