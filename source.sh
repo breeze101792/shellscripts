@@ -160,7 +160,7 @@ function hs_motd()
     if [ "${var_distro}" = "arch" ]
     then
         var_logo=(${var_arch[@]})
-    elif [ "${var_distro}" = "arch" ]
+    elif [ "${var_distro}" = "ubuntu" ]
     then
         var_logo=(${var_ubuntu[@]})
     elif [ "${var_distro}" = "raspbian" ]
@@ -425,7 +425,8 @@ function hs_main
 
     local tmp_pname="$(ps -Ao pid,fname |grep "${PPID}" |grep -v "grep" | sed 's/[[:space:]]\+/ /g' | cut -d ' ' -f 3)"
     # currently bash not soupport this function
-    if [ "${HS_ENV_SHELL}" = "zsh" ] && [ "${flag_var_refresh}" = "n" ] && [ ${HS_ENV_SILENCE} = "n" ] && [[ "${SHLVL}" = "1" ]] && ( [ "${tmp_pname}" = "login" ] || [ "${tmp_pname}" = "sshd" ] )
+    if [ "${HS_ENV_SHELL}" = "zsh" ] && [ "${flag_var_refresh}" = "n" ] && [ ${HS_ENV_SILENCE} = "n" ] && [[ "${SHLVL}" = "1" ]] && \
+        ( [ "${tmp_pname}" = "login" ] || [ "${tmp_pname}" = "sshd" ] || [ "${tmp_pname}" = "init" ] )
     then
         hs_motd
     fi
