@@ -32,7 +32,8 @@ function hs_motd()
     # ps -Aeo pid,cmd | grep "^${PPID}"
     local var_msg=()
     local var_distro=$(cat /etc/os-release | grep "^ID=" | cut -d "=" -f 2 )
-    local var_logo
+    local var_logo=""
+    local var_info_len=0
 
     local var_ubuntu=()
     local var_raspberry=()
@@ -91,49 +92,39 @@ function hs_motd()
     var_raspberry+="        '~'        "
     var_raspberry+="                   "
 
-    var_ubuntu+=''
-    var_ubuntu+=''
-    var_ubuntu+=''
-    var_ubuntu+=''
-    var_ubuntu+=''
-    var_ubuntu+=''
-    var_ubuntu+=''
-    var_ubuntu+=''
-    var_ubuntu+=''
-    var_ubuntu+=''
-    var_ubuntu+=''
-    var_ubuntu+=''
-    var_ubuntu+=''
-    var_ubuntu+=''
-    var_ubuntu+=''
-    var_ubuntu+=''
-    var_ubuntu+=''
-    var_ubuntu+=''
+    var_ubuntu+=$(echo -e '              .-.     ')
+    var_ubuntu+=$(echo -e "        .-'\`\`(|||)    ")
+    var_ubuntu+=$(echo -e '     ,`\ \    `-`.    ')
+    var_ubuntu+=$(echo -e "    /   \ '\`\`-.   \`   ")
+    var_ubuntu+=$(echo -e '  .-.  ,       `___:  ')
+    var_ubuntu+=$(echo -e ' (:::) :        ___   ')
+    var_ubuntu+=$(echo -e '  `-`  `       ,   :  ')
+    var_ubuntu+=$(echo -e '    \   / ,..-`   ,   ')
+    var_ubuntu+=$(echo -e '     `./ /    .-.`    ')
+    var_ubuntu+=$(echo -e '        `-..-(   )    ')
+    var_ubuntu+=$(echo -e '              `-`     ')
+    var_ubuntu+=$(echo -e '                      ')
 
-    var_other+=''
-    var_other+=''
-    var_other+=''
-    var_other+=''
-    var_other+=''
-    var_other+=''
-    var_other+=''
-    var_other+=''
-    var_other+=''
-    var_other+=''
-    var_other+=''
-    var_other+=''
-    var_other+=''
-    var_other+=''
-    var_other+=''
-    var_other+=''
-    var_other+=''
-    var_other+=''
+    var_other+=$(echo -e "                        ")
+    var_other+=$(echo -e "                        ")
+    var_other+=$(echo -e "          .--.          ")
+    var_other+=$(echo -e "         |o_o |         ")
+    var_other+=$(echo -e "         |:_/ |         ")
+    var_other+=$(echo -e "        //   \ \        ")
+    var_other+=$(echo -e "       (|     | )       ")
+    var_other+=$(echo -e "      /'\_   _/\`\       ")
+    var_other+=$(echo -e "      \___)=(___/       ")
+    var_other+=$(echo -e "                        ")
+    var_other+=$(echo -e "                        ")
+    var_other+=$(echo -e "                        ")
+
     local tmp_pname="$(ps -Ao pid,fname |grep "${PPID}" |grep -v "grep" | sed 's/[[:space:]]\+/ /g' | cut -d ' ' -f 3)"
 
     var_msg+=$(printf "%- 16s: %s" "OS" "$(cat /etc/os-release | grep "^NAME=" | cut -d "\"" -f 2 )")
     var_msg+=$(printf "%- 16s: %s" "Hostname" "$(hostname)")
     var_msg+=$(printf "%- 16s: %s" "Kernel Version" "$(uname -r)")
-    var_msg+=$(printf "%- 16s: %s" "Processor Type" "$(cat /proc/cpuinfo | grep 'model name' | head -n 1 | cut -d ':' -f 2 | sed 's/^\s//g')")
+    var_msg+=$(printf "%- 16s: %s" "CPU" "$(cat /proc/cpuinfo | grep 'model name' | head -n 1 | cut -d ':' -f 2 | sed 's/^\s//g')")
+    var_msg+=$(printf "%- 16s: %s" "GPU" "$(lspci|grep VGA | cut -d ':' -f 3 | sed 's/^\s//g'))")
     var_msg+=$(printf "%- 16s: %s" "RAM Free" "$(free -h | grep Mem | sed 's/\s\+/ /g' | cut -d ' ' -f 4) / $(free -h | grep Mem | sed 's/\s\+/ /g' | cut -d ' ' -f 2)")
     var_msg+=$(printf "%- 16s: %s" "Uptime" "$(uptime | sed 's/\s\+/ /g' |cut -d " " -f 4 | sed 's/,//g')")
     var_msg+=$(printf "%- 16s: %s" "Root" "$(df -h / |tail -n 1 | sed 's/\s\+/ /g' | cut -d ' ' -f 3) / $(df -h / | tail -n 1 | sed 's/\s\+/ /g' | cut -d ' ' -f 2) ($(df -h / | tail -n 1 | sed 's/\s\+/ /g' | cut -d ' ' -f 5))")
@@ -156,7 +147,14 @@ function hs_motd()
         var_logo=(${var_other[@]})
     fi
 
-    for each_idx in $(seq 1 ${#var_logo})
+    if [[ ${#var_msg} > ${#var_logo} ]] 
+    then
+        var_info_len=${#var_msg}
+    else
+        var_info_len=${#var_logo}
+    fi
+
+    for each_idx in $(seq 1 ${var_info_len})
     do
         printf "%s %s\n" "${var_logo[${each_idx}]}" "${var_msg[${each_idx}]}"
     done
@@ -409,7 +407,8 @@ function hs_main
     fi
 
     local tmp_pname="$(ps -Ao pid,fname |grep "${PPID}" |grep -v "grep" | sed 's/[[:space:]]\+/ /g' | cut -d ' ' -f 3)"
-    if [ "${flag_var_refresh}" = "n" ] && [ ${HS_ENV_SILENCE} = "n" ] && [[ "${SHLVL}" = "1" ]] && ( [ "${tmp_pname}" = "login" ] || [ "${tmp_pname}" = "sshd" ] )
+    # currently bash not soupport this function
+    if [ "${HS_ENV_SHELL}" = "zsh" ] && [ "${flag_var_refresh}" = "n" ] && [ ${HS_ENV_SILENCE} = "n" ] && [[ "${SHLVL}" = "1" ]] && ( [ "${tmp_pname}" = "login" ] || [ "${tmp_pname}" = "sshd" ] )
     then
         hs_motd
     fi
