@@ -144,7 +144,7 @@ function hs_motd()
     local tmp_pname="$(ps -Ao pid,fname |grep "${PPID}" |grep -v "grep" | sed 's/[[:space:]]\+/ /g' | cut -d ' ' -f 3)"
 
     var_msg+=$(printf "%- 16s: %s" "OS" "$(cat /etc/os-release | grep "^NAME=" | cut -d "\"" -f 2 )")
-    var_msg+=$(printf "%- 16s: %s" "Hostname" "$(hostname)")
+    var_msg+=$(printf "%- 16s: %s" "Hostname" "$(cat /etc/hostname)")
     var_msg+=$(printf "%- 16s: %s" "Kernel Version" "$(uname -r)")
     var_msg+=$(printf "%- 16s: %s" "CPU" "$(cat /proc/cpuinfo | grep 'model name' | head -n 1 | cut -d ':' -f 2 | sed 's/^\s//g')")
     var_msg+=$(printf "%- 16s: %s" "GPU" "$(lspci|grep VGA | cut -d ':' -f 3 | sed 's/^\s//g')")
