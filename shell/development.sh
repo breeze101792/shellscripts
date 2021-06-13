@@ -584,12 +584,30 @@ function session
                 var_action="deatach-all"
                 break
                 ;;
+            --host|host|hostname|h)
+                local var_hostname="$(cat /etc/hostname)"
+                local tmp_name=$(tmux ls |grep ${var_hostname}| cut -d ':' -f 1)
+                if [ "${tmp_name}" != "" ] &&  tmux ls
+                then
+                    var_action="attach"
+                    var_taget_session=${tmp_name}
+                else
+                    var_action="create"
+                    var_taget_session=${var_hostname}
+                fi
+                break
+                ;;
             -h|--help)
-                echo "session"
-                printlc -cp false -d "->" "-r|--remove" "remove session with session list"
-                printlc -cp false -d "->" "-a|--attach" "attach session with session name"
-                printlc -cp false -d "->" "-c|--create" "create session with session name"
-                printlc -cp false -d "->" "-d|--deatach-all" "deatach all session"
+                cli_helper -c "session" -cd "session function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "session [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-r|--remove" -d "remove session with session list"
+                cli_helper -o "-a|--attach" -d "attach session with session name"
+                cli_helper -o "-c|--create" -d "create session with session name"
+                cli_helper -o "-d|--deatach-all" -d "deatach all session"
+                cli_helper -o "--host|host|hostname|h" -d "deatach all session"
+                cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;
             *)
