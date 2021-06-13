@@ -423,7 +423,7 @@ function hs_main
         hs_autostart ${var_user_autostart}
     fi
 
-    local tmp_pname="$(ps -Ao pid,fname |grep "${PPID}" |grep -v "grep" | sed 's/[[:space:]]\+/ /g' | cut -d ' ' -f 3)"
+    local tmp_pname="$(ps -Ao pid,fname |grep "${PPID}" |grep -v "grep" | sed 's/[[:space:]]\+/ /g' | sed 's/^\s//g' | cut -d ' ' -f 2)"
     # currently bash not soupport this function
     if [ "${HS_ENV_SHELL}" = "zsh" ] && [ "${flag_var_refresh}" = "n" ] && [ ${HS_ENV_SILENCE} = "n" ] && [[ "${SHLVL}" = "1" ]] && \
         ( [ "${tmp_pname}" = "login" ] || [ "${tmp_pname}" = "sshd" ] || [ "${tmp_pname}" = "init" ] )
