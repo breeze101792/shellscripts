@@ -1482,18 +1482,68 @@ hex2bin()
 ########################################################
 #####    Pythen                                    #####
 ########################################################
-function pyenv_create()
-{
-    if [[ $# == 0 ]]
-    then
-        return 1
-    fi
-    local target_path=$(realpath ${1})
-    virtualenv --system-site-packages -p python3 ${target_path}
-}
 function pyenv()
 {
-    source ${HS_PATH_PYTHEN_ENV}/bin/activate
-    $@
+    local var_target_path="${HS_PATH_PYTHEN_ENV}"
+    local var_action=""
+    if [[ "$#" = "0" ]]
+    then
+        var_action="active"
+    fi
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -c|--create|c)
+                var_action="create"
+                ;;
+            -a|--active|a)
+                var_action="active"
+                ;;
+            -d|--deactive|d)
+                var_action="deactive"
+                deactive
+                ;;
+            -p|--path)
+                var_target_path="$(realpath ${2})"
+                shift 1
+                ;;
+            -h|--help)
+                cli_helper -c "pyenv" -cd "pyenv function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "pyenv [Options] [Value]"
+                cli_helper -d "default path will set to HS_PATH_PYTHEN_ENV"
+                cli_helper -t "Options"
+                cli_helper -o "-c|--create|c" -d "create Pyenv"
+                cli_helper -o "-a|--active|a" -d "active Pyenv"
+                cli_helper -o "-d|--deactive|d" -d "deactive Pyenv"
+                cli_helper -o "-p|--path" -d "setting pyen path"
+                cli_helper -o "-h|--help" -d "Print help function "
+
+                return 0
+                ;;
+            *)
+                break
+                ;;
+        esac
+        shift 1
+    done
+
+    if [ "${var_action}" = "active" ]
+    then
+        source ${var_target_path}/bin/activate
+        # $@
+    elif [ "${var_action}" = "create" ]
+    then
+        if [ -d ${var_target_path} ]
+        then
+            echo ${var_target_path} exist.
+            return 1
+        else
+            # local target_path=$(realpath ${1})
+            # virtualenv --system-site-packages -p python3 ${target_path}
+            # echo virtualenv --system-site-packages -p python ${var_target_path}
+            virtualenv --system-site-packages -p python ${var_target_path}
+        fi
+    fi
     # deactivate
 }
