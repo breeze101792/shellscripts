@@ -78,7 +78,7 @@ function pvinit()
                 file_exclude+="-o -name \"*.${2}\""
                 shift 1
                 ;;
-            -h|--header)
+            --header)
                 flag_header=y
                 ;;
             -h|--help)
@@ -89,7 +89,7 @@ function pvinit()
                 cli_helper -o "-a|--append" -d "append more fire in file list"
                 cli_helper -o "-e|--extension" -d "add file extension on search"
                 cli_helper -o "-x|--exclude" -d "exclude file on search"
-                cli_helper -o "-h|--header" -d "Add header vim code"
+                cli_helper -o "--header" -d "Add header vim code"
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;
@@ -121,13 +121,13 @@ function pvinit()
 
     for each_path in ${src_path[@]}
     do
-        local tmp_path=$(realpath ${each_path})
         # echo "Searching path: ${tmp_path}"
-        if [ "$tmp_path" = "" ]
+        if [ ! -e ${each_path} ]
         then
             # echo "Continue"
             continue
         else
+            local tmp_path=$(realpath ${each_path})
             echo -e "Searching folder: $tmp_path"
             find_cmd="find ${tmp_path} \( -type f -name '*.h' -o -name '*.c' -o -name '*.cpp' -o -name '*.java' ${file_ext[@]} \) -a \( -not -path '*/auto_gen*' -o -not -path '*/build*' ${file_exclude[@]} \) | xargs realpath >> \"${target_list_name}\""
             # echo ${find_cmd}
