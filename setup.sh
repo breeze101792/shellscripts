@@ -22,8 +22,8 @@ function setup_tmux()
 function excute()
 {
     echo "Script Path:${SCRIPT_PATH}"
-    echo ${SCRIPT_PATH}/source.sh --silence=n -x $@
-    ${SCRIPT_PATH}/source.sh --silence=n -x $@
+    echo ${SCRIPT_PATH}/source.sh --silence=n -x -p ${SCRIPT_PATH} $@
+    ${SCRIPT_PATH}/source.sh --silence=n -x -p ${SCRIPT_PATH} $@
 }
 function setup()
 {

@@ -74,6 +74,9 @@ function clip()
                 # get current dir
                 hs_config -g "${HS_VAR_CURRENT_DIR}"
                 ;;
+            -l|--link)
+                clip -x 'ln -s $(realpath %p) ./'
+                ;;
             -c|--copy-file)
                 clip -x cp -r %p .
                 ;;
@@ -182,7 +185,7 @@ bkfile()
         var_bk_name="${var_bk_name}_${var_description}"
     fi
 
-    echo -e "Backup ${var_bk_file} to ${var_bk_name}\n"
+    echo -e "Backup ${var_bk_file} to ${var_bk_name}"
     mv "${var_bk_file}" "${var_bk_name}"
 }
 function rln()
@@ -233,7 +236,7 @@ function compressor()
 {
     local cmd_prog="tar"
     local cmd_args=""
-    cmd_args+=(-v)
+    cmd_args+=()
 
     if [[ "$#" = "0" ]]
     then
@@ -268,15 +271,22 @@ function compressor()
             -c|--compress)
                 cmd_args+=(-c)
                 ;;
+            -a|--auto|a)
+                shift 1
+                # local tmp_folder_name="$(dirname $(realpath ${1}) | sed 's|/.*/||g')"
+                local tmp_arch_name="$(echo ${1} |sed 's/\..*//g' |sed 's|/||g')_$(tstamp).tbz2"
+                compressor -j -c -f ${tmp_arch_name} $@
+                echo "Compressed file: ${tmp_arch_name}"
+                return 0
+                ;;
 
             # -a|--append)
             #     cmd_args+="${2}"
             #     shift 1
             #     ;;
-            # -v|--verbose)
-            #     flag_verbose="y"
-            #     shift 1
-            #     ;;
+            -v|--verbose)
+                cmd_args+=(-v)
+                ;;
             -h|--help)
                 cli_helper -c "template" -cd "template function"
                 cli_helper -t "SYNOPSIS"
@@ -287,8 +297,8 @@ function compressor()
                 cli_helper -o "-z|--xz" -d "use xz alg"
                 cli_helper -o "-x|--extract" -d "extract file"
                 cli_helper -o "-c|--compress" -d "compress file"
-                # cli_helper -o "-a|--append" -d "append file extension on search"
-                # cli_helper -o "-v|--verbose" -d "Verbose print "
+                cli_helper -o "-a|--auto" -d "auto compress file"
+                cli_helper -o "-v|--verbose" -d "Verbose print "
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;

@@ -23,13 +23,57 @@ function sed_replace()
 }
 function doloop()
 {
-    local gen_list_cmd=$1
-    local do_cmd=$2
-    for each_input in $(eval ${gen_list_cmd})
+    local var_list_cmd=""
+    local var_cmd=""
+
+    while [[ "$#" != 0 ]]
     do
-        echo ${do_cmd} $each_input
-        # bash -c "${do_cmd} ${each_input}"
-        eval "${do_cmd} \"${each_input}\""
+        case $1 in
+            -c|--cmd)
+                var_cmd="${2}"
+                shift 1
+                ;;
+            -l|--list)
+                var_list_cmd="${2}"
+                shift 1
+                ;;
+            # -v|--verbose)
+            #     flag_verbose="y"
+            #     shift 1
+            #     ;;
+            -h|--help)
+                cli_helper -c "doloop" -cd "doloop function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "doloop [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-c|--cmd" -d "do command with %p do replace by list item"
+                cli_helper -o "-l|--list" -d "generate list command"
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                if [ -z "${var_cmd}" ]
+                then
+                    var_cmd="${2}"
+                fi
+                break
+                ;;
+        esac
+        shift 1
+    done
+    if [ -z "${var_cmd}" ] && [ -z "${var_list_cmd}" ]  
+    then
+        echo "Not command found. cmd:${var_cmd}, list:${var_list_cmd}"
+        return 1
+    fi
+
+    for each_input in $(eval ${var_list_cmd})
+    do
+        echo ${each_input}
+        local tmp_cmd=$(printf "$(echo ${var_cmd} | sed 's/%p/%s/g' )" "${each_input}")
+        # bash -c "${var_cmd} ${each_input}"
+        echo "> ${tmp_cmd}"
+        eval "${tmp_cmd}"
     done
 }
 function looptimes()
