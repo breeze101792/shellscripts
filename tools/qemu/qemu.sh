@@ -1,32 +1,38 @@
 #!/bin/bash
+##  Config
+###################################################
+VAR_ROOT_PATH=$(pwd)
+
+##  Config
+###################################################
 ## Profile config
 if [ -z "${CONFIG_HOST_NAME}" ]
 then
-    export CONFIG_HOST_NAME="Linux"
+    CONFIG_HOST_NAME="Linux"
 fi
 if [ -z "${CONFIG_BIOS_MODE}" ]
 then
-    export CONFIG_BIOS_MODE="bios"
+    CONFIG_BIOS_MODE="uefi"
 fi
 if [ -z "${CONFIG_GRAPHIC_GPU}" ]
 then
-    export CONFIG_GRAPHIC_GPU="qxl"
+    CONFIG_GRAPHIC_GPU="qxl"
 fi
 if [ -z "${CONFIG_CPU_NUM}" ]
 then
-    export CONFIG_CPU_NUM=4
+    CONFIG_CPU_NUM=4
 fi
 if [ -z "${CONFIG_MEM_SIZE}" ]
 then
-    export CONFIG_MEM_SIZE=4G
+    CONFIG_MEM_SIZE=4G
 fi
 if [ -z "${CONFIG_NET_SSH}" ]
 then
-    export CONFIG_NET_SSH=4000
+    CONFIG_NET_SSH=4000
 fi
 if [ -z "${CONFIG_AUDIO}" ]
 then
-    export CONFIG_AUDIO="none"
+    CONFIG_AUDIO="none"
 fi
 ## Qemu Configs
 QEMU_EXC="qemu-system-x86_64"
@@ -45,24 +51,31 @@ QEMU_OTHER=("")
 G_MONITOR_TYPE="spice"
 G_MONITOR_SPICE_PORT=5900
 G_CONFIG_FILE="./config.sh"
+
 G_USB_COUNT=0
-G_DRIVE_COUNT=2
-## Functions
+G_DRIVE_COUNT=1
+# G_DRIVE_COUNT=1
+## Others
+###################################################
 function fHelp()
 {
     printf "qemu help\n"
+    printf "[Running Options]\n"
     printf "    %s %s\n" "-b|--bios" "Options: bios, uefi"
     printf "    %s %s\n" "-q|--graphic" "Options: qxl, std, circus, virtio, vmware, spice, curses, none"
     printf "    %s %s\n" "-a|--audio" "Options: all, hda, none"
     printf "    %s %s\n" "-u|--usb" "Options: vendorID:productID ex.1d6b:0003"
     printf "    %s %s\n" "-c|--cdrom" "Options: /path/to/your/file"
     printf "    %s %s\n" "-d|--disk" "Options: /path/to/your/file"
-    printf "    %s %s\n" "--create-disk" "Options: --create-disk disk_name disk_size(M,G)"
     printf "    %s %s\n" "-pd|--physical-disk" "Options: /path/to/your/file"
     printf "    %s %s\n" "-o|--other" "Options: Other options"
-    printf "    %s %s\n" "-s|--setting" "Options: "
-    printf "    %s\n" "Settings config:
-    CONFIG_HOST_NAME='Linux'
+    printf "[Other Options]\n"
+    printf "    %s %s\n" "-dc|--default-config" "Options: Copy default settings"
+    printf "    %s %s\n" "--create-disk" "Options: --create-disk disk_name disk_size(M,G)"
+    printf "    %s %s\n" "--win-virtio" "attach windows virtio driver iso"
+    printf "[Setting configs]\n"
+    printf "    %s %s\n" "-s|--setting" "Options: Settings path, default will use ./config.sh"
+    printf "    %s" "CONFIG_HOST_NAME='Linux'
     CONFIG_BIOS_MODE='bios'
     CONFIG_GRAPHIC_GPU='spice'
     CONFIG_CPU_NUM=12
@@ -71,17 +84,36 @@ function fHelp()
     CONFIG_AUDIO=none"
     printf "    %s %s\n" "-h|--help" "Options: "
 }
+## Tools
+###################################################
+function fDefaultConfig()
+{
+    echo "CONFIG_HOST_NAME=QemuVM
+CONFIG_BIOS_MODE=uefi
+CONFIG_GRAPHIC_GPU=vmware
+CONFIG_CPU_NUM=4
+CONFIG_MEM_SIZE=8G
+CONFIG_NET_SSH=4000
+CONFIG_AUDIO=none
+" > config.sh
+}
+function fWindows()
+{
+    local var_driver="./virtio-win.iso"
+    if [ ! -f "${var_driver}" ]
+    then
+        # get latest driver in https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/latest-virtio/virtio-win.iso
+        curl "https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/virtio-win-0.1.190-1/virtio-win-0.1.190.iso" -o ${var_driver}
+    fi
+    # don't use virtio
+    QEMU_DRIVE+=("-drive file=${var_driver},index=${G_DRIVE_COUNT},media=cdrom")
+    G_DRIVE_COUNT=$(($G_DRIVE_COUNT + 1))
+}
 function fEnvInit()
 {
     QEMU_CPU+=("-smp cores=${CONFIG_CPU_NUM}")
     # QEMU_MEMORY=("-m 1G,slots=4,maxmem=${CONFIG_MEM_SIZE}")
     QEMU_MEMORY=("-m ${CONFIG_MEM_SIZE}")
-}
-function fAddUSB()
-{
-    local vendor_id=`echo $1 | cut -d':' -f1`
-    local product_id=`echo $1 | cut -d':' -f2`
-    QEMU_USB+=("-device usb-host,vendorid=0x${vendor_id},productid=0x${product_id},id=hostdev0,bus=xhci.$G_USB_COUNT")
 }
 function fCreateDisk()
 {
@@ -91,7 +123,17 @@ function fCreateDisk()
     # qemu-img create -f qcow2 linux.img 8G
     qemu-img create -f qcow2 ${disk_name} ${disk_size}
 }
+## Add Device
+###################################################
+function fAddUSB()
+{
+    local vendor_id=`echo $1 | cut -d':' -f1`
+    local product_id=`echo $1 | cut -d':' -f2`
+    QEMU_USB+=("-device usb-host,vendorid=0x${vendor_id},productid=0x${product_id},id=hostdev0,bus=xhci.$G_USB_COUNT")
+}
+
 ## Config
+###################################################
 function fConfigBIOS()
 {
     if [ "${CONFIG_BIOS_MODE}" == "uefi" ]
@@ -101,7 +143,7 @@ function fConfigBIOS()
             cp /usr/share/ovmf/x64/OVMF_VARS.fd .
         fi
         QEMU_BIOS+=("-drive if=pflash,format=raw,file=./OVMF_VARS.fd")
-        QEMU_BIOS=("-drive if=pflash,format=raw,readonly,file=/usr/share/ovmf/x64/OVMF_CODE.fd")
+        QEMU_BIOS=("-drive if=pflash,format=raw,readonly=on,file=/usr/share/ovmf/x64/OVMF_CODE.fd")
     elif [ "${CONFIG_BIOS_MODE}" == "bios" ]
     then
         echo "Use Bios"
@@ -223,11 +265,6 @@ function main()
     while [[ $# != 0 ]]
     do
         case $1 in
-            --create-disk)
-                fCreateDisk $2 $3
-                shift 2
-                return 0
-                ;;
             -u|--usb)
                 fAddUSB $2
                 shift 1
@@ -237,7 +274,8 @@ function main()
                 shift 1
                 ;;
             -c|--cdrom)
-                QEMU_DRIVE+=("-drive file=${2},index=1,media=cdrom,if=virtio")
+                QEMU_DRIVE+=("-drive file=${2},index=${G_DRIVE_COUNT},media=cdrom")
+                G_DRIVE_COUNT=$(($G_DRIVE_COUNT + 1))
                 shift 1
                 ;;
             -d|--disk)
@@ -259,14 +297,26 @@ function main()
                 CONFIG_AUDIO=$2
                 shift 1
                 ;;
-            -s|--setting)
-                echo -e "config file should be in the first paramater"
-                exit 2
+            --win-virtio)
+                fWindows
                 ;;
             -o|--other)
                 shift 1
                 QEMU_OTHER+=($@)
                 break
+                ;;
+            # Settings
+            -s|--setting)
+                echo -e "config file should be in the first paramater"
+                return 0
+                ;;
+            -dc|--default-config)
+                fDefaultConfig
+                return 0
+                ;;
+            --create-disk)
+                fCreateDisk $2 $3
+                return 0
                 ;;
             -h|--help)
                 fHelp
@@ -286,7 +336,7 @@ function main()
     fConfigNet
     fConfigAudio
     fEnvInit
-    fRun $@
+    fRun
 }
 main $@
 exit
