@@ -3,6 +3,30 @@
 ###################################################
 VAR_ROOT_PATH=$(pwd)
 
+## Qemu Configs
+###################################################
+QEMU_EXC="qemu-system-x86_64"
+QEMU_BIOS=("")
+QEMU_GRAPHIC=("")
+QEMU_CPU=("-enable-kvm" "-cpu host")
+QEMU_MEMORY=("")
+QEMU_AUDIO=("")
+QEMU_DRIVE=("")
+QEMU_USB=("-device nec-usb-xhci,id=xhci")
+QEMU_USB+=("-device usb-tablet")
+QEMU_NET=("")
+# QEMU_NET+=("-netdev tap,id=mynet0")
+QEMU_OTHER=("")
+
+## Golbal Var
+###################################################
+G_MONITOR_TYPE="spice"
+G_MONITOR_SPICE_PORT=5900
+G_CONFIG_FILE="./config.sh"
+
+G_USB_COUNT=0
+G_DRIVE_COUNT=1
+
 ##  Config
 ###################################################
 ## Profile config
@@ -34,28 +58,11 @@ if [ -z "${CONFIG_AUDIO}" ]
 then
     CONFIG_AUDIO="none"
 fi
-## Qemu Configs
-QEMU_EXC="qemu-system-x86_64"
-QEMU_BIOS=("")
-QEMU_GRAPHIC=("")
-QEMU_CPU=("-enable-kvm" "-cpu host")
-QEMU_MEMORY=("")
-QEMU_AUDIO=("")
-QEMU_DRIVE=("")
-QEMU_USB=("-device nec-usb-xhci,id=xhci")
-QEMU_USB+=("-device usb-tablet")
-QEMU_NET=("")
-# QEMU_NET+=("-netdev tap,id=mynet0")
-QEMU_OTHER=("")
-## Golbal Var
-G_MONITOR_TYPE="spice"
-G_MONITOR_SPICE_PORT=5900
-G_CONFIG_FILE="./config.sh"
-
-G_USB_COUNT=0
-G_DRIVE_COUNT=1
-# G_DRIVE_COUNT=1
-## Others
+if [ -z "${CONFIG_IMG}" ]
+then
+    CONFIG_IMG=""
+fi
+## Basic Function
 ###################################################
 function fHelp()
 {
@@ -64,11 +71,13 @@ function fHelp()
     printf "    %s %s\n" "-b|--bios" "Options: bios, uefi"
     printf "    %s %s\n" "-q|--graphic" "Options: qxl, std, circus, virtio, vmware, spice, curses, none"
     printf "    %s %s\n" "-a|--audio" "Options: all, hda, none"
+    printf "    %s %s\n" "-o|--other" "Options: Other options"
+    printf "[Peripheral Options]\n"
     printf "    %s %s\n" "-u|--usb" "Options: vendorID:productID ex.1d6b:0003"
     printf "    %s %s\n" "-c|--cdrom" "Options: /path/to/your/file"
     printf "    %s %s\n" "-d|--disk" "Options: /path/to/your/file"
     printf "    %s %s\n" "-pd|--physical-disk" "Options: /path/to/your/file"
-    printf "    %s %s\n" "-o|--other" "Options: Other options"
+    printf "    %s %s\n" "-vf|--vritual-fs" "Options: /path/to/your/folder"
     printf "[Other Options]\n"
     printf "    %s %s\n" "-dc|--default-config" "Options: Copy default settings"
     printf "    %s %s\n" "--create-disk" "Options: --create-disk disk_name disk_size(M,G)"
@@ -84,6 +93,21 @@ function fHelp()
     CONFIG_AUDIO=none"
     printf "    %s %s\n" "-h|--help" "Options: "
 }
+function fInfo()
+{
+    printf "###################################################\n"
+    printf "## Info\n"
+    printf "###################################################\n"
+    printf "## %- 20s: %s\n" "CONFIG_HOST_NAME"   "${CONFIG_HOST_NAME}"
+    printf "## %- 20s: %s\n" "CONFIG_BIOS_MODE"   "${CONFIG_BIOS_MODE}"
+    printf "## %- 20s: %s\n" "CONFIG_GRAPHIC_GPU" "${CONFIG_GRAPHIC_GPU}"
+    printf "## %- 20s: %s\n" "CONFIG_CPU_NUM"     "${CONFIG_CPU_NUM}"
+    printf "## %- 20s: %s\n" "CONFIG_MEM_SIZE"    "${CONFIG_MEM_SIZE}"
+    printf "## %- 20s: %s\n" "CONFIG_NET_SSH"     "${CONFIG_NET_SSH}"
+    printf "## %- 20s: %s\n" "CONFIG_AUDIO"       "${CONFIG_AUDIO}"
+    printf "## %- 20s: %s\n" "CONFIG_IMG"         "${CONFIG_IMG}"
+    printf "###################################################\n"
+}
 ## Tools
 ###################################################
 function fDefaultConfig()
@@ -95,6 +119,7 @@ CONFIG_CPU_NUM=4
 CONFIG_MEM_SIZE=8G
 CONFIG_NET_SSH=4000
 CONFIG_AUDIO=none
+CONFIG_IMG=''
 " > config.sh
 }
 function fWindows()
@@ -129,7 +154,28 @@ function fAddUSB()
 {
     local vendor_id=`echo $1 | cut -d':' -f1`
     local product_id=`echo $1 | cut -d':' -f2`
-    QEMU_USB+=("-device usb-host,vendorid=0x${vendor_id},productid=0x${product_id},id=hostdev0,bus=xhci.$G_USB_COUNT")
+    QEMU_USB+=("-device usb-host,vendorid=0x${vendor_id},productid=0x${product_id},id=hostdev0,bus=xhci.${G_USB_COUNT}")
+}
+function fAddCD()
+{
+    local var_disk=${1}
+    # -c|--cdrom)
+    QEMU_DRIVE+=("-drive file=${var_disk},index=${G_DRIVE_COUNT},media=cdrom")
+    G_DRIVE_COUNT=$(($G_DRIVE_COUNT + 1))
+}
+function fAddPHDrive()
+{
+    local var_disk=${1}
+    # -pd|--physical-disk)
+    QEMU_DRIVE+=("-drive file=${var_disk},index=${G_DRIVE_COUNT},media=disk,cache=writeback,if=virtio,format=raw")
+    G_DRIVE_COUNT=$(($G_DRIVE_COUNT + 1))
+}
+function fAddVDrive()
+{
+    local var_disk=${1}
+    # -d|--disk)
+    QEMU_DRIVE+=("-drive file=${var_disk},index=${G_DRIVE_COUNT},media=disk,cache=writeback,if=virtio,format=qcow2")
+    G_DRIVE_COUNT=$(($G_DRIVE_COUNT + 1))
 }
 
 ## Config
@@ -144,11 +190,10 @@ function fConfigBIOS()
         fi
         QEMU_BIOS+=("-drive if=pflash,format=raw,file=./OVMF_VARS.fd")
         QEMU_BIOS=("-drive if=pflash,format=raw,readonly=on,file=/usr/share/ovmf/x64/OVMF_CODE.fd")
-    elif [ "${CONFIG_BIOS_MODE}" == "bios" ]
-    then
-        echo "Use Bios"
+    # elif [ "${CONFIG_BIOS_MODE}" == "bios" ]
+    # then
+    #     echo "Use Bios"
     fi
-    # echo -e "Leave it empty to legacy bios"
 }
 function fConfigGraphic()
 {
@@ -207,11 +252,17 @@ function fConfigGraphic()
 function fConfigAudio()
 {
     case ${CONFIG_AUDIO} in
-        all)
-            QEMU_AUDIO+=("-soundhw all")
+        ac97)
+            # QEMU_AUDIO+=("-soundhw all")
+            QEMU_AUDIO+=("-device AC97")
             ;;
         hda)
-            QEMU_AUDIO+=("-soundhw hda")
+            # QEMU_AUDIO+=("-soundhw hda")
+            QEMU_AUDIO+=("-device intel-hda")
+            ;;
+        usb-audio)
+            # QEMU_AUDIO+=("-soundhw hda")
+            QEMU_AUDIO+=("-device usb-audio")
             ;;
         none)
             # None audio will be added
@@ -243,7 +294,7 @@ function fRunSpice()
 function fRun()
 {
     local exec_str="$QEMU_EXC ${QEMU_BIOS[@]} ${QEMU_GRAPHIC[@]} ${QEMU_CPU[@]} ${QEMU_MEMORY[@]} ${QEMU_AUDIO[@]} ${QEMU_NET[@]} ${QEMU_DRIVE[@]} ${QEMU_USB[@]} ${QEMU_OTHER[@]} $@"
-    echo -e "\"${exec_str}\"\n"
+    echo -e "Running Command: \"${exec_str}\""
     fRunSpice &
     exec ${exec_str}
 }
@@ -261,32 +312,18 @@ function main()
     then
         source $G_CONFIG_FILE
     fi
+    ##  Pre-settings
+    ###################################################
+    if [ -f "${CONFIG_IMG}" ]
+    then
+        fAddVDrive ${CONFIG_IMG}
+    fi
 
     while [[ $# != 0 ]]
     do
         case $1 in
-            -u|--usb)
-                fAddUSB $2
-                shift 1
-                ;;
             -b|--bios)
                 CONFIG_BIOS_MODE=$2
-                shift 1
-                ;;
-            -c|--cdrom)
-                QEMU_DRIVE+=("-drive file=${2},index=${G_DRIVE_COUNT},media=cdrom")
-                G_DRIVE_COUNT=$(($G_DRIVE_COUNT + 1))
-                shift 1
-                ;;
-            -d|--disk)
-                # QEMU_DRIVE+=("-drive file=${2},index=${G_DRIVE_COUNT},media=disk,cache=none,if=virtio,format=qcow2")
-                QEMU_DRIVE+=("-drive file=${2},index=${G_DRIVE_COUNT},media=disk,cache=writeback,if=virtio,format=qcow2")
-                G_DRIVE_COUNT=$(($G_DRIVE_COUNT + 1))
-                shift 1
-                ;;
-            -pd|--physical-disk)
-                QEMU_DRIVE+=("-drive file=${2},index=${G_DRIVE_COUNT},media=disk,cache=writeback,if=virtio,format=raw")
-                G_DRIVE_COUNT=$(($G_DRIVE_COUNT + 1))
                 shift 1
                 ;;
             -q|--graphic)
@@ -297,13 +334,37 @@ function main()
                 CONFIG_AUDIO=$2
                 shift 1
                 ;;
-            --win-virtio)
-                fWindows
-                ;;
             -o|--other)
                 shift 1
                 QEMU_OTHER+=($@)
                 break
+                ;;
+            # peripheral
+            -c|--cdrom)
+                fAddCD ${2}
+                # QEMU_DRIVE+=("-drive file=${2},index=${G_DRIVE_COUNT},media=cdrom")
+                # G_DRIVE_COUNT=$(($G_DRIVE_COUNT + 1))
+                shift 1
+                ;;
+            -d|--disk)
+                fAddVDrive ${2}
+                # QEMU_DRIVE+=("-drive file=${2},index=${G_DRIVE_COUNT},media=disk,cache=writeback,if=virtio,format=qcow2")
+                # G_DRIVE_COUNT=$(($G_DRIVE_COUNT + 1))
+                shift 1
+                ;;
+            -pd|--physical-disk)
+                fAddPHDrive ${2}
+                # QEMU_DRIVE+=("-drive file=${2},index=${G_DRIVE_COUNT},media=disk,cache=writeback,if=virtio,format=raw")
+                # G_DRIVE_COUNT=$(($G_DRIVE_COUNT + 1))
+                shift 1
+                ;;
+            -vf|--vritual-fs)
+                QEMU_DRIVE+=("-virtfs local,path=${2},mount_tag=host0,security_model=passthrough,id=host0")
+                shift 1
+                ;;
+            -u|--usb)
+                fAddUSB $2
+                shift 1
                 ;;
             # Settings
             -s|--setting)
@@ -318,6 +379,11 @@ function main()
                 fCreateDisk $2 $3
                 return 0
                 ;;
+            # Patch
+            --win-virtio)
+                fWindows
+                ;;
+            # others
             -h|--help)
                 fHelp
                 return 0
@@ -330,7 +396,8 @@ function main()
         shift 1
     done
 
-    echo Starting $CONFIG_HOST_NAME
+    # echo Starting $CONFIG_HOST_NAME
+    fInfo
     fConfigBIOS
     fConfigGraphic
     fConfigNet
