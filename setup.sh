@@ -1,5 +1,14 @@
 #/bin/env shell
-SCRIPT_PATH="$(realpath $(dirname ${0}))"
+HS_SCRIPT_PATH=""
+if [ -d "$(dirname ${0})" ]
+then
+    # zsh
+    HS_SCRIPT_PATH="$(dirname ${0})"
+elif [ -n "${BASH_SOURCE}" ]
+then
+    # bash
+    HS_SCRIPT_PATH="$(dirname ${BASH_SOURCE[0]})"
+fi
 
 function setup_shell()
 {
@@ -7,23 +16,23 @@ function setup_shell()
     local shell_name=$(echo $SHELL | rev | cut -d '/' -f 1 | rev)
     if [ "$shell_name" = "bash" ]
     then
-        echo source $SCRIPT_PATH/source.sh -s=$shell_name
-        echo source $SCRIPT_PATH/source.sh -s=$shell_name >> ~/.bashrc
+        echo source $HS_SCRIPT_PATH/source.sh -s=$shell_name
+        echo source $HS_SCRIPT_PATH/source.sh -s=$shell_name >> ~/.bashrc
     elif [ "$shell_name" = "zsh" ]
     then
-        echo source $SCRIPT_PATH/source.sh -s=$shell_name
-        echo source $SCRIPT_PATH/source.sh -s=$shell_name >> ~/.zshrc
+        echo source $HS_SCRIPT_PATH/source.sh -s=$shell_name
+        echo source $HS_SCRIPT_PATH/source.sh -s=$shell_name >> ~/.zshrc
     fi
 }
 function setup_tmux()
 {
-    ln -sf $SCRIPT_PATH/configs/others/tmux.conf ${HOME}/.tmux.conf
+    ln -sf $HS_SCRIPT_PATH/configs/others/tmux.conf ${HOME}/.tmux.conf
 }
 function excute()
 {
-    echo "Script Path:${SCRIPT_PATH}"
-    echo ${SCRIPT_PATH}/source.sh --silence=n -x -p ${SCRIPT_PATH} $@
-    ${SCRIPT_PATH}/source.sh --silence=n -x -p ${SCRIPT_PATH} $@
+    echo "Script Path:${HS_SCRIPT_PATH}"
+    echo ${HS_SCRIPT_PATH}/source.sh --silence=n -x -p ${HS_SCRIPT_PATH} $@
+    ${HS_SCRIPT_PATH}/source.sh --silence=n -x -p ${HS_SCRIPT_PATH} $@
 }
 function setup()
 {

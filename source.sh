@@ -5,6 +5,17 @@
 #####                                              #####
 ########################################################
 ########################################################
+# Get Script Path
+HS_SCRIPT_PATH=""
+if [ -d "$(dirname ${0})" ]
+then
+    # zsh
+    HS_SCRIPT_PATH="$(dirname ${0})"
+elif [ -n "${BASH_SOURCE}" ]
+then
+    # bash
+    HS_SCRIPT_PATH="$(dirname ${BASH_SOURCE[0]})"
+fi
 
 #####    Private Function
 ########################################################
@@ -305,24 +316,11 @@ function hs_main
     then
         flag_env_shell="$(echo ${SHELL} | rev |  cut -d '/' -f 1 | rev)"
     fi
+
     # HS_SCRIPT_PATH="$(realpath $(dirname ${0}))"
-    # if [ -z "${flag_env_lib_path}" ]
-    # then
-    #     flag_env_lib_path="$(realpath ${HS_SCRIPT_PATH})"
-    # fi
-    if [ -z "${flag_env_lib_path}" ]
+    if [ -z "${flag_env_lib_path}" ] && [ -n "${HS_SCRIPT_PATH}" ] 
     then
-        if [ "${flag_env_shell}" = "bash" ]
-        then
-            # auto path only support by bash
-            # don't use \", dirname has bug
-            flag_env_lib_path="$(dirname ${BASH_SOURCE[0]})"
-        elif [ "${flag_env_shell}" = "zsh" ]
-        then
-            flag_env_lib_path="$(dirname ${0:a})"
-        else
-            flag_env_lib_path="$(realpath .)"
-        fi
+        flag_env_lib_path="$(realpath ${HS_SCRIPT_PATH})"
     fi
 
     # source shell scripts
