@@ -3,11 +3,11 @@ HS_SCRIPT_PATH=""
 if [ -d "$(dirname ${0})" ]
 then
     # zsh
-    HS_SCRIPT_PATH="$(dirname ${0})"
+    HS_SCRIPT_PATH="$(realpath $(dirname ${0}))"
 elif [ -n "${BASH_SOURCE}" ]
 then
     # bash
-    HS_SCRIPT_PATH="$(dirname ${BASH_SOURCE[0]})"
+    HS_SCRIPT_PATH="$(realpath $(dirname ${BASH_SOURCE[0]}))"
 fi
 
 function setup_shell()
