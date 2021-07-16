@@ -9,30 +9,31 @@ then
     # bash
     HS_SCRIPT_PATH="$(realpath $(dirname ${BASH_SOURCE[0]}))"
 fi
+echo ${HS_SCRIPT_PATH}
 
 function setup_shell()
 {
-    echo $SHELL
-    local shell_name=$(echo $SHELL | rev | cut -d '/' -f 1 | rev)
-    if [ "$shell_name" = "bash" ]
+    echo ${SHELL}
+    local shell_name=$(echo ${SHELL} | rev | cut -d '/' -f 1 | rev)
+    if [ "${shell_name}" = "bash" ]
     then
-        echo source $HS_SCRIPT_PATH/source.sh -s=$shell_name
-        echo source $HS_SCRIPT_PATH/source.sh -s=$shell_name >> ~/.bashrc
-    elif [ "$shell_name" = "zsh" ]
+        echo source ${HS_SCRIPT_PATH}/source.sh -s=${shell_name}
+        echo source ${HS_SCRIPT_PATH}/source.sh -s=${shell_name} >> ~/.bashrc
+    elif [ "${shell_name}" = "zsh" ]
     then
-        echo source $HS_SCRIPT_PATH/source.sh -s=$shell_name
-        echo source $HS_SCRIPT_PATH/source.sh -s=$shell_name >> ~/.zshrc
+        echo source ${HS_SCRIPT_PATH}/source.sh -s=${shell_name}
+        echo source ${HS_SCRIPT_PATH}/source.sh -s=${shell_name} >> ~/.zshrc
     fi
 }
 function setup_tmux()
 {
-    ln -sf $HS_SCRIPT_PATH/configs/others/tmux.conf ${HOME}/.tmux.conf
+    ln -sf ${HS_SCRIPT_PATH}/configs/others/tmux.conf ${HOME}/.tmux.conf
 }
 function setup_git()
 {
-    cp -sf $SCRIPT_PATH/configs/git/gitconfig   ${HOME}/.gitconfig
-    ln -sf $SCRIPT_PATH/configs/git/gitignore   ${HOME}/.gitignore
-    ln -sf $SCRIPT_PATH/configs/git/gitmessage  ${HOME}/.gitmessage
+    cp -sf ${HS_SCRIPT_PATH}/configs/git/gitconfig   ${HOME}/.gitconfig
+    ln -sf ${HS_SCRIPT_PATH}/configs/git/gitignore   ${HOME}/.gitignore
+    ln -sf ${HS_SCRIPT_PATH}/configs/git/gitmessage  ${HOME}/.gitmessage
 }
 function excute()
 {
