@@ -545,6 +545,9 @@ function lanalyser
     echo "---- Compiler log analysis"
     cat -n ${var_logfile} | grep "error:" | mark_build
 
+    echo "---- Others log analysis"
+    cat -n ${var_logfile} | grep "command not found" | mark "command not found"
+
 }
 ########################################################
 #####    Exc Enhance                               #####
@@ -1246,6 +1249,7 @@ function ginfo()
 }
 function gfiles()
 {
+    local var_cpath=$(pwd)
     # Use xargs tar cvf <your_tar_file.tar> could save the patch with tar
     local var_commit="HEAD"
     local var_commit_start=""
@@ -1269,11 +1273,14 @@ function gfiles()
                 flag_compress="y"
                 ;;
             -h|--help)
-                echo "gfiles"
-                printlc -cp false -d "->" "-c|--commit" "Specify commit hash"
-                printlc -cp false -d "->" "-n|--number" "get commit before n commit"
-                printlc -cp false -d "->" "-t|--tar" "get commit list with tar"
-                printlc -cp false -d "->" "-h|--help" "Print help function "
+                cli_helper -c "gfiles" -cd "gfiles function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "gfiles [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-c|--commit" -d "Specify commit hash"
+                cli_helper -o "-n|--number" -d "get commit before n commit"
+                cli_helper -o "-t|--tar" -d "compress file with tar command"
+                cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;
             *)
@@ -1283,6 +1290,7 @@ function gfiles()
         esac
         shift 1
     done
+    froot .git
 
     var_commit_start=$(git log --pretty='format:%h' -1 ${var_commit})
     var_commit_end=$(git log --pretty='format:%h' -1 ${var_commit}~${var_num})
@@ -1290,10 +1298,13 @@ function gfiles()
     var_commit_name=${var_commit_start}_${var_commit_end}_$(git log --pretty='format:%s' -n 1 ${var_commit_start}| sed "s/://g" | sed "s/\]\[//g" | sed "s/\]//g" | sed "s/\[//g" | sed "s/\ /_/g")
     if [ "${flag_compress}" = "y" ]
     then
-        git diff ${var_commit_start} ${var_commit_end} --name-only | xargs tar -cvjf "${var_commit_name}.tbz2"
+        tmp_file="${var_commit_name}.tbz2"
+        git diff ${var_commit_start} ${var_commit_end} --name-only | xargs tar -cvjf "${tmp_file}"
+        echo "Get Compressed file in :$(realpath ${tmp_file})"
     else
         git diff ${var_commit_start} ${var_commit_end} --name-only
     fi
+    cd ${var_cpath}
 }
 function gpatch()
 {

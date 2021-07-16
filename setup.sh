@@ -1,4 +1,4 @@
-#/bin/env shell
+#!/bin/bash
 HS_SCRIPT_PATH=""
 if [ -d "$(dirname ${0})" ]
 then
@@ -28,6 +28,12 @@ function setup_tmux()
 {
     ln -sf $HS_SCRIPT_PATH/configs/others/tmux.conf ${HOME}/.tmux.conf
 }
+function setup_git()
+{
+    cp -sf $SCRIPT_PATH/configs/git/gitconfig   ${HOME}/.gitconfig
+    ln -sf $SCRIPT_PATH/configs/git/gitignore   ${HOME}/.gitignore
+    ln -sf $SCRIPT_PATH/configs/git/gitmessage  ${HOME}/.gitmessage
+}
 function excute()
 {
     echo "Script Path:${HS_SCRIPT_PATH}"
@@ -42,6 +48,9 @@ function setup()
             -t|--tmux)
                 setup_tmux
                 ;;
+            -g|--git)
+                setup_git
+                ;;
             -s|--shell)
                 setup_shell
                 ;;
@@ -53,6 +62,7 @@ function setup()
             -h|--help)
                 echo "Setup Usage"
                 printf "%s%s%s\n" "-t|--tmux" "->" "Set tmux"
+                printf "%s%s%s\n" "-g|--git" "->" "Set git"
                 printf "%s%s%s\n" "-s|--shell" "->" "Set shell"
                 return 0
                 ;;

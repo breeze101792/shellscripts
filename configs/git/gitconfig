@@ -1,8 +1,9 @@
 [user]
-    email = [Email]
-    name = [Name]
+    email = test@example.com
+    name = Shaun.Tseng
 [core]
     fileMode = false
+	excludesFile = ~/.gitignore
 [color]
     ui = auto
 [commit]
