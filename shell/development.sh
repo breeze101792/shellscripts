@@ -1510,9 +1510,12 @@ function pyenv()
             -a|--active|a)
                 var_action="active"
                 ;;
-            -d|--deactive|d)
-                var_action="deactive"
-                deactive
+            -d|--deactivate|d)
+                var_action="deactivate"
+                deactivate
+                ;;
+            -u|--update|u)
+                var_action="update"
                 ;;
             -p|--path)
                 var_target_path="$(realpath ${2})"
@@ -1526,7 +1529,8 @@ function pyenv()
                 cli_helper -t "Options"
                 cli_helper -o "-c|--create|c" -d "create Pyenv"
                 cli_helper -o "-a|--active|a" -d "active Pyenv"
-                cli_helper -o "-d|--deactive|d" -d "deactive Pyenv"
+                cli_helper -o "-d|--deactivate|d" -d "deactivate Pyenv"
+                cli_helper -o "-u|--update|u" -d "update pip"
                 cli_helper -o "-p|--path" -d "setting pyen path"
                 cli_helper -o "-h|--help" -d "Print help function "
 
@@ -1543,6 +1547,9 @@ function pyenv()
     then
         source ${var_target_path}/bin/activate
         # $@
+    elif [ "${var_action}" = "update" ]
+    then
+        python -m pip install --upgrade pip
     elif [ "${var_action}" = "create" ]
     then
         if [ -d ${var_target_path} ]
