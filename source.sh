@@ -7,7 +7,7 @@
 ########################################################
 # Get Script Path
 HS_SCRIPT_PATH=""
-if [ -d "${0}" ]
+if [ -d "$(dirname ${0})" ]
 then
     # zsh
     HS_SCRIPT_PATH="$(dirname ${0})"
@@ -204,7 +204,6 @@ function hs_autostart()
         ##########################################
         # Auto Start
         ##########################################
-        printf "%s %s %s" ${var_stored_uptime} ${var_stored_uptime} ${var_current_uptime}
         hs_source ${var_target}
 
         hs_config -s "${var_autostart_name}" "${var_current_uptime}"
