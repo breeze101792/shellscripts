@@ -1,6 +1,3 @@
-[user]
-    email = test@example.com
-    name = Shaun.Tseng
 [core]
     fileMode = false
 	excludesFile = ~/.gitignore

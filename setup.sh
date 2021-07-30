@@ -9,7 +9,6 @@ then
     # bash
     HS_SCRIPT_PATH="$(realpath $(dirname ${BASH_SOURCE[0]}))"
 fi
-echo ${HS_SCRIPT_PATH}
 
 function setup_shell()
 {
@@ -31,9 +30,23 @@ function setup_tmux()
 }
 function setup_git()
 {
-    cp -sf ${HS_SCRIPT_PATH}/configs/git/gitconfig   ${HOME}/.gitconfig
+    if [ -f "${HOME}/.gitconfig" ]
+    then
+        echo "${HOME}/.gitconfig exist."
+        echo "Please remove before using this script"
+        return
+    fi
     ln -sf ${HS_SCRIPT_PATH}/configs/git/gitignore   ${HOME}/.gitignore
     ln -sf ${HS_SCRIPT_PATH}/configs/git/gitmessage  ${HOME}/.gitmessage
+
+    echo "Enter User Name:"
+    read var_user_name
+    echo "Enter User Mail:"
+    read var_user_mail
+    echo "[user]" >> ${HOME}/.gitconfig
+    echo "    email = ${var_user_mail}" >> ${HOME}/.gitconfig
+    echo "    name = ${var_user_name}" >> ${HOME}/.gitconfig
+    cat ${HS_SCRIPT_PATH}/configs/git/gitconfig >> ${HOME}/.gitconfig
 }
 function excute()
 {

@@ -1,0 +1,8 @@
+Host example
+    HostName example.com
+    User user_name
+    Port 22
+    Compression yes
+    ForwardAgent yes
+    ForwardX11 yes
+
