@@ -9,6 +9,15 @@
 ########################################################
 #####    Usefull Function                          #####
 ########################################################
+function tokenizer()
+{
+    if [ "$#" = "0" ]
+    then
+        xargs echo | sed "s/\s\+/\n/g"
+    else
+        echo $@ | sed "s/\s\+/\n/g"
+    fi
+}
 function sed_replace()
 {
     # replace $1 with $2 under this folder

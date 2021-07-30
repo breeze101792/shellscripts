@@ -96,7 +96,8 @@ function an_adb()
         timeout ${var_timeout} adb -s ${HS_WORK_ENV_ANDROID_DEVICE_IP} $@
     else
         # echo adb -s ${HS_WORK_ENV_ANDROID_DEVICE_IP} $@
-        eval ANDROID_ADB_SERVER_PORT=12345 adb -s "${HS_WORK_ENV_ANDROID_DEVICE_IP}" $(echo -e $@)
+        # eval ANDROID_ADB_SERVER_PORT=12345 adb -s "${HS_WORK_ENV_ANDROID_DEVICE_IP}" $(echo -e $@)
+        eval adb -s "${HS_WORK_ENV_ANDROID_DEVICE_IP}" $(echo -e $@)
     fi
 }
 function an_shell()

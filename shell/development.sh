@@ -1308,11 +1308,50 @@ function gfiles()
 }
 function gpatch()
 {
-    local var_patch_url="$*"
+    local var_patch_url=""
+    local var_patch_file=""
+    local var_manifest_file=""
     local var_patch_root="$(pwd)"
     local flag_file_mismatch="n"
 
     local tmp_patch_file="test_$(tstamp).patch"
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -u|--url)
+                var_patch_url=$2
+                shift 1
+                ;;
+            -f|--file)
+                var_patch_file=$2
+                shift 1
+                ;;
+            -p|--apply-path)
+                var_patch_root="2"
+                shift 1
+                ;;
+            # -m|--manifest)
+            #     var_manifest_file="2"
+            #     shift 1
+            #     ;;
+            -h|--help)
+                cli_helper -c "gpatch" -cd "gpatch function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "gpatch [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-u|--url" -d "Specify formate patch url"
+                cli_helper -o "-f|--file" -d "Specify formate patch file"
+                cli_helper -o "-p|--apply-path" -d "Specify formate patch apply path"
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                var_patch_url=$2
+                break
+                ;;
+        esac
+        shift 1
+    done
 
     eval "${var_patch_url}" > "${tmp_patch_file}"
     local var_patch_subject=$(cat ${tmp_patch_file} | grep "Subject" | cut -d ":" -f 2  | sed "s/\]//g" | sed "s/\[//g" | sed "s/\ /_/g" | sed "s/\///g" | sed "s/_PATCH_//g")
@@ -1361,6 +1400,70 @@ function greset()
 {
     git reset --hard HEAD
     git clean -fxd
+}
+function rpath()
+{
+    # get git project path in manifest
+    var_url_patch="$(pwd)"
+    var_manifest_path=""
+
+    var_git_proj_name=""
+
+    if [[ "$#" = "0" ]]
+    then
+        echo "Default action"
+    fi
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -u|--url)
+                var_url_patch="${2}"
+                shift 1
+                ;;
+            -m|--manifest)
+                var_manifest_path="${2}"
+                shift 1
+                ;;
+            -h|--help)
+                cli_helper -c "rpath" -cd "get git project path in manifest"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "rpath [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-u|--url" -d "Add git url for getting project path"
+                cli_helper -o "-m|--manifest" -d "Specify manifest path, suport both file and folder"
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                break
+                ;;
+        esac
+        shift 1
+    done
+    # echo "[shaun] Modify"
+
+    for each_line in $(tokenizer ${var_url_patch})
+    do
+        # echo each_line: ${each_line}", " $(${each_line} | grep http)
+        # echo "echo ${each_line} | grep http"
+        if echo ${each_line} | grep http > /dev/null
+        then
+            var_git_proj_name="$(echo ${each_line} | cut -d '/' -f 4-)"
+            # echo "Hit var_git_proj_name: ${var_git_proj_name}"
+        fi
+    done
+
+    # echo " Find ${var_git_proj_name} in ${var_manifest_path}"
+
+    if [ -d "${var_manifest_path}" ]
+    then
+        echo $(cat ${var_manifest_path}/* |grep "${var_git_proj_name}\"" | tokenizer | grep path | cut -d '=' -f 2)
+    elif [ -f "${var_manifest_path}" ]
+    then
+        echo $(cat ${var_manifest_path} | grep "${var_git_proj_name}\"" | tokenizer | grep path | cut -d '=' -f 2)
+    else
+        echo "Please specify mainfest file path"
+    fi
 }
 function rreset()
 {
@@ -1564,4 +1667,60 @@ function pyenv()
         fi
     fi
     # deactivate
+}
+########################################################
+#####    GTK                                       #####
+########################################################
+function gtkbw()
+{
+    local var_def_port=5
+    local var_run_cmd=""
+
+    local flag_action=""
+
+    if [[ "$#" = "0" ]]
+    then
+        echo "Default action"
+    fi
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -d|--daemon)
+                flag_action="daemon"
+                ;;
+            -r|--run)
+                flag_action="run"
+                shift 1
+                var_run_cmd=${@}
+                break
+                ;;
+            -h|--help)
+                cli_helper -c "bwgtk" -cd "Run GTK Application by using broadway"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "bwgtk [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-d|--daemon" -d "Start broadway daemon"
+                cli_helper -o "-r|--run" -d "Run GTK Application, will take the reset of args as cmd"
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                flag_action="run"
+                var_run_cmd=${@}
+                break
+                ;;
+        esac
+        shift 1
+    done
+    if [ "${flag_action}" = "run" ]
+    then
+        echo GDK_BACKEND=broadway BROADWAY_DISPLAY=:${var_def_port} ${var_run_cmd}
+        GDK_BACKEND=broadway BROADWAY_DISPLAY=:${var_def_port} ${var_run_cmd}
+    elif [ "${flag_action}" = "daemon" ]
+    then
+        echo Enter Broadway with: http://localhost:808${var_def_port}/
+        broadwayd :${var_def_port}
+
+    fi
+
 }
