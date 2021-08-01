@@ -7,13 +7,15 @@
 ########################################################
 # Get Script Path
 HS_SCRIPT_PATH=""
-if [ -d "$(dirname ${0})" ]
+if [ -f "$(dirname ${0})/source.sh" ]
 then
     # zsh
+    # echo ZSH
     HS_SCRIPT_PATH="$(dirname ${0})"
-elif [ -n "${BASH_SOURCE}" ]
+elif [ -n "${BASH_SOURCE}" ] && [ -f "$(dirname ${BASH_SOURCE[0]})/source.sh" ] 
 then
     # bash
+    # echo BASH
     HS_SCRIPT_PATH="$(dirname ${BASH_SOURCE[0]})"
 fi
 
