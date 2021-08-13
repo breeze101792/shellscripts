@@ -30,6 +30,7 @@ function setup_tmux()
 }
 function setup_git()
 {
+    local backup_path=${HS_SCRIPT_PATH}/backup/git_bak_`tstamp`
     if [ -f "${HOME}/.gitconfig" ]
     then
         echo "${HOME}/.gitconfig exist."
@@ -47,6 +48,11 @@ function setup_git()
     echo "    email = ${var_user_mail}" >> ${HOME}/.gitconfig
     echo "    name = ${var_user_name}" >> ${HOME}/.gitconfig
     cat ${HS_SCRIPT_PATH}/configs/git/gitconfig >> ${HOME}/.gitconfig
+
+    ## Others
+    ##################################################################
+    # git config --global http.sslVerify false
+
 }
 function excute()
 {

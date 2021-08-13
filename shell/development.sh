@@ -998,9 +998,68 @@ function fcd()
 ########################################################
 #####    Git Function                              #####
 ########################################################
+function gconfig()
+{
+    local var_config_mode=""
+    if [[ "$#" = "0" ]]
+    then
+        echo "Default action"
+    fi
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -g|--global)
+                var_config_mode="--global"
+                ;;
+            --ssl-verify)
+                tmp_enable=${2}
+                if [ "${tmp_enable}" = "y" ]
+                then
+                    git config ${var_config_mode} http.sslVerify true
+                else
+                    git config ${var_config_mode} http.sslVerify false
+                fi
+
+                shift 1
+                ;;
+            --file-mode)
+                tmp_enable=${2}
+                if [ "${tmp_enable}" = "y" ]
+                then
+                    git config ${var_config_mode} core.fileMode true
+                else
+                    git config ${var_config_mode} core.fileMode false
+                fi
+
+                shift 1
+                ;;
+            -h|--help)
+                cli_helper -c "gconfig" -cd "gconfig function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "gconfig [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-g|--global" -d "global mode mode"
+                cli_helper -o "--file-mode" -d "Swtich file mode"
+                cli_helper -o "--ssl-verify" -d "Switch ssl verify"
+                cli_helper -o "-v|--verbose" -d "Verbose print "
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                break
+                ;;
+        esac
+        shift 1
+    done
+
+}
 function gforall()
 {
     local var_target_cmd=""
+    if [[ "$#" = "0" ]]
+    then
+        echo "Default action"
+    fi
     while [[ "$#" != 0 ]]
     do
         case $1 in
@@ -1009,11 +1068,14 @@ function gforall()
                 break
                 ;;
             -h|--help)
-                echo "gforall [Options] [Command]"
-                printlc -cp false -d "->" "-l|--log" "Print first commit"
+                cli_helper -c "gforall" -cd "gforall function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "gforall [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-l|--log" -d "Print first commit"
+                cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;
-
             *)
                 var_target_cmd="$@"
                 break
@@ -1313,6 +1375,7 @@ function gpatch()
     local var_manifest_file=""
     local var_patch_root="$(pwd)"
     local flag_file_mismatch="n"
+    local var_action="apply"
 
     local tmp_patch_file="test_$(tstamp).patch"
     while [[ "$#" != 0 ]]
@@ -1330,6 +1393,9 @@ function gpatch()
                 var_patch_root="2"
                 shift 1
                 ;;
+            -r|--revert-patch)
+                var_action='revert'
+                ;;
             # -m|--manifest)
             #     var_manifest_file="2"
             #     shift 1
@@ -1342,6 +1408,7 @@ function gpatch()
                 cli_helper -o "-u|--url" -d "Specify formate patch url"
                 cli_helper -o "-f|--file" -d "Specify formate patch file"
                 cli_helper -o "-p|--apply-path" -d "Specify formate patch apply path"
+                cli_helper -o "-r|--revert-patch" -d "Action: Revert patch with formate patch"
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;
@@ -1379,8 +1446,15 @@ function gpatch()
 
     # echo "git am --directory ${var_patch_root} ${tmp_patch_file}"
     # git am --directory ${var_patch_root} ${tmp_patch_file}
-    echo "patch -p1 -b -i ${tmp_patch_file}"
-    patch -p1 -b -i ${tmp_patch_file} | mark "FAILED"
+    if [ "${var_action}" = "apply" ]
+    then
+        echo "patch -p1 -b -i ${tmp_patch_file}"
+        patch -p1 -b -i ${tmp_patch_file} | mark "FAILED"
+    elif [ "${var_action}" = "revert" ]
+    then
+        echo "patch -R -p1 -b -i ${tmp_patch_file}"
+        patch -R -p1 -b -i ${tmp_patch_file} | mark "FAILED"
+    fi
 
     for each_cl_file in $(cat ${tmp_patch_file} | grep "\-\-\- a" | cut -d "/" -f 2- )
     do
@@ -1600,6 +1674,7 @@ function pyenv()
 {
     local var_target_path="${HS_PATH_PYTHEN_ENV}"
     local var_action=""
+    local var_pip_cmd=""
     if [[ "$#" = "0" ]]
     then
         var_action="active"
@@ -1624,6 +1699,11 @@ function pyenv()
                 var_target_path="$(realpath ${2})"
                 shift 1
                 ;;
+            --pip|pip)
+                var_action="pip"
+                var_pip_cmd="${@}"
+                shift 1
+                ;;
             -h|--help)
                 cli_helper -c "pyenv" -cd "pyenv function"
                 cli_helper -t "SYNOPSIS"
@@ -1635,6 +1715,7 @@ function pyenv()
                 cli_helper -o "-d|--deactivate|d" -d "deactivate Pyenv"
                 cli_helper -o "-u|--update|u" -d "update pip"
                 cli_helper -o "-p|--path" -d "setting pyen path"
+                cli_helper -o "--pip|pip" -d "Do pip install with trust host"
                 cli_helper -o "-h|--help" -d "Print help function "
 
                 return 0
@@ -1665,6 +1746,9 @@ function pyenv()
             # echo virtualenv --system-site-packages -p python ${var_target_path}
             virtualenv --system-site-packages -p python ${var_target_path}
         fi
+    elif [ "${var_action}" = "pip" ]
+    then
+        pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org $@
     fi
     # deactivate
 }

@@ -1,7 +1,58 @@
 [core]
     fileMode = false
+    ignorecase = true
+    autocrlf = false
+    safecrlf = false
+    quotepath
+
+    editor = vim
 	excludesFile = ~/.gitignore
 [color]
     ui = auto
 [commit]
     template = ~/.gitmessage
+[alias]
+    cl = clone
+    br = branch
+    st = status
+    sf = status -uno
+    # Commit
+    cm = commit
+    amend = commit --amend -C HEAD
+    # Pull
+    pl = pull
+    plom = pull origin master
+    pom = push origin master
+
+    # Add
+    a = add
+    aa = add -A
+
+    # Diff
+    df = diff
+    dh = diff HEAD
+    dc = diff --cached
+
+    # Checkout
+    cp = cherry-pick
+    co = checkout
+    cb = checkout -b
+
+    # Others
+    rs = reset
+    rb = rebase
+    sa = stash
+    sub = submodule
+
+    # Cmd
+    cc = !git reset --hard HEAD && git clean -fxd
+    lo = log --oneline
+    fp = format-patch --stdout
+
+    ignore = update-index --assume-unchanged
+    unignore = update-index --no-assume-unchanged
+    ignored = !git ls-files -v | grep '^h'
+
+    who = shortlog -sne
+    graph = log --graph --abbrev-commit --decorate --date=relative --format=format:'%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) %C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(bold yellow)%d%C(reset)' --all
+

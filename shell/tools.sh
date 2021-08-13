@@ -176,7 +176,7 @@ bkfile()
         return 1
     fi
 
-    var_idx=$(find . -name "${var_bk_file}*" | sed "s/_/\n/g" | grep "I[0-9]\{2\}" | sed "s/I//g" | sort | tail -n 1)
+    var_idx=$(find . -name "${var_bk_file}*" | sed "s/_/\n/g" | grep "I[0-9]\{2\}" | sed "s/I//g" | sort | tail -n 1 | sed "s/^0\+//g")
     var_idx=$(printf 'I%02d' "$(( ${var_idx} + 1 ))")
 
     var_bk_name="${var_bk_file}_${var_idx}_${var_date}"
@@ -293,7 +293,7 @@ function compressor()
                 cli_helper -d "template [Options] [Value]"
                 cli_helper -t "Options"
                 cli_helper -o "-f|--file" -d "file name for process"
-                cli_helper -o "-b|--bzip2" -d "use bzip2 alg"
+                cli_helper -o "-j|--bzip2" -d "use bzip2 alg"
                 cli_helper -o "-z|--xz" -d "use xz alg"
                 cli_helper -o "-x|--extract" -d "extract file"
                 cli_helper -o "-c|--compress" -d "compress file"

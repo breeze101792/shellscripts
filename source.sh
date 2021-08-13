@@ -7,7 +7,7 @@
 ########################################################
 # Get Script Path
 HS_SCRIPT_PATH=""
-if [ -f "$(dirname ${0})/source.sh" ]
+if [ -d "${0}" ] && [ -f "$(dirname ${0})/source.sh" ]
 then
     # zsh
     # echo ZSH
