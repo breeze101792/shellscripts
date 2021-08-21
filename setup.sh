@@ -30,24 +30,37 @@ function setup_tmux()
 }
 function setup_git()
 {
-    local backup_path=${HS_SCRIPT_PATH}/backup/git_bak_`tstamp`
-    if [ -f "${HOME}/.gitconfig" ]
-    then
-        echo "${HOME}/.gitconfig exist."
-        echo "Please remove before using this script"
-        return
-    fi
-    ln -sf ${HS_SCRIPT_PATH}/configs/git/gitignore   ${HOME}/.gitignore
-    ln -sf ${HS_SCRIPT_PATH}/configs/git/gitmessage  ${HOME}/.gitmessage
+    local var_config_path=${HOME}/.config/git
+    local var_def_cfg=${HOME}/.gitconfig
+    # local backup_path=${HS_SCRIPT_PATH}/backup/git_bak_`tstamp`
 
-    echo "Enter User Name:"
-    read var_user_name
-    echo "Enter User Mail:"
-    read var_user_mail
-    echo "[user]" >> ${HOME}/.gitconfig
-    echo "    email = ${var_user_mail}" >> ${HOME}/.gitconfig
-    echo "    name = ${var_user_name}" >> ${HOME}/.gitconfig
-    cat ${HS_SCRIPT_PATH}/configs/git/gitconfig >> ${HOME}/.gitconfig
+    if [ ! -f "${HOME}/.gitconfig" ] || ! cat "${HOME}/.gitconfig" | grep 'config/git/config.cfg'
+    then
+        # echo "${HOME}/.gitconfig exist."
+        # echo "Please remove before using this script"
+        # return
+        touch ${var_def_cfg}
+        if ! cat "${HOME}/.gitconfig" | grep '[include]'
+        then
+            echo [include] >> ${var_def_cfg}
+        fi
+        sed -i "/\[include\]/a \ \ \ \ path = ${HOME}/.config/git/config.cfg" ${var_def_cfg}
+    fi
+
+    ln -sf ${HS_SCRIPT_PATH}/configs/git/*   ${var_config_path}/
+    touch ${var_config_path}/work.cfg
+
+    if [ ! -f "${var_config_path}/user.cfg" ]
+    then
+        echo "Enter User Name:"
+        read var_user_name
+        echo "Enter User Mail:"
+        read var_user_mail
+        echo "[user]" >> ${var_def_cfg}
+        echo "    email = ${var_user_mail}" >> ${var_config_path}/user.cfg
+        echo "    name = ${var_user_name}" >> ${var_config_path}/user.cfg
+    fi
+    cat ${var_def_cfg}
 
     ## Others
     ##################################################################

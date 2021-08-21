@@ -157,6 +157,8 @@ function pvim()
     local cmd_args=()
     local flag_cctree=n
     local flag_proj_vim=y
+    local flag_time=n
+    local var_timestamp="$(tstamp)"
 
     while [[ "$#" != 0 ]]
     do
@@ -168,7 +170,8 @@ function pvim()
                 cmd_args+=("-u NONE")
                 ;;
             -t|--time)
-                cmd_args+=("-X --startuptime startup_$(tstamp).log")
+                flag_time=y
+                cmd_args+=("-X --startuptime startup_${var_timestamp}.log")
                 ;;
             -h|--help)
                 cli_helper -c "pvim"
@@ -217,11 +220,16 @@ function pvim()
     fi
 
     cd $cpath
-    echo "Launching: ${HS_VAR_VIM} ${cmd_args[@]} ${vim_args[@]}"
     eval ${HS_VAR_VIM} ${cmd_args[@]} ${vim_args[@]}
+    echo "Launching: ${HS_VAR_VIM} ${cmd_args[@]} ${vim_args[@]}"
     # unset var
     unset CSCOPE_DB
     unset CCTREE_DB
+
+    if [ "${flag_time}" = "y" ]
+    then
+        tail -n 1 startup_${var_timestamp}.log
+    fi
 }
 ########################################################
 #####    Debug                                     #####
