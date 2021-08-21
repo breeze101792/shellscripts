@@ -34,19 +34,25 @@ function setup_git()
     local var_def_cfg=${HOME}/.gitconfig
     # local backup_path=${HS_SCRIPT_PATH}/backup/git_bak_`tstamp`
 
-    if [ ! -f "${HOME}/.gitconfig" ] || ! cat "${HOME}/.gitconfig" | grep 'config/git/config.cfg'
+    if [ ! -f "${HOME}/.gitconfig" ] || ! cat "${HOME}/.gitconfig" | grep 'config/git/config.cfg' > /dev/null
     then
         # echo "${HOME}/.gitconfig exist."
         # echo "Please remove before using this script"
         # return
         touch ${var_def_cfg}
-        if ! cat "${HOME}/.gitconfig" | grep '[include]'
+        if ! cat "${HOME}/.gitconfig" | grep '\[include\]' > /dev/null
         then
             echo [include] >> ${var_def_cfg}
         fi
         sed -i "/\[include\]/a \ \ \ \ path = ${HOME}/.config/git/config.cfg" ${var_def_cfg}
+    else
+        echo "${var_def_cfg} exist"
     fi
 
+    if [ ! -d "${var_config_path}" ]
+    then
+        mkdir -p ${var_config_path}
+    fi
     ln -sf ${HS_SCRIPT_PATH}/configs/git/*   ${var_config_path}/
     touch ${var_config_path}/work.cfg
 
@@ -56,7 +62,7 @@ function setup_git()
         read var_user_name
         echo "Enter User Mail:"
         read var_user_mail
-        echo "[user]" >> ${var_def_cfg}
+        echo "[user]" >> ${var_config_path}/user.cfg
         echo "    email = ${var_user_mail}" >> ${var_config_path}/user.cfg
         echo "    name = ${var_user_name}" >> ${var_config_path}/user.cfg
     fi
