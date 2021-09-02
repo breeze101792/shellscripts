@@ -430,3 +430,149 @@ function an_cd()
         return 1
     fi
 }
+function an_remote()
+{
+    local var_skey_prefix="an_shell input"
+    local var_skey_args=" "
+    local var_cmd=""
+
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -h|--help)
+                cli_helper -c "an_remote" -cd "remote keyboard emulation"
+                cli_helper -d "Please Launch ydotoold & launch in bash."
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "an_remote [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                break
+                ;;
+        esac
+        shift 1
+    done
+
+    # only bash work & please do ydotoold first
+    if [ "${HS_ENV_SHELL}" != "bash" ]
+    then
+        echo "Only Support in Bash. Currently use ${HS_ENV_SHELL}"
+        return 1
+    fi
+    local var_promote="Key>"
+    local var_input=""
+    local var_previous=""
+    local var_target_key=""
+
+    local var_start=0
+    local var_end=0
+    local var_time=0
+
+    printf "Please Type Any Key.\n"
+    while IFS= read -s -r -n 1 var_input
+    do
+        echo "->\"${var_input}\""
+        var_end=$(date +%s%N)
+        var_target_key=""
+        case ${var_input} in
+            '')
+                # echo "Enter dected"
+                var_target_key="ENTER"
+                ;;
+            ${uparrow})
+                # echo "up dected"
+                ;;
+            $'\x16')
+                # echo "Ctrl + v dected"
+                var_target_key="ctrl+v"
+                ;;
+            $'\x18')
+                # echo "Ctrl + x dected"
+                var_target_key="ctrl+x"
+                ;;
+            $'\x01')
+                # echo "Ctrl + a dected"
+                var_target_key="ctrl+a"
+                ;;
+            $'\x14')
+                # echo "Ctrl + t dected"
+                var_target_key="ctrl+t"
+                ;;
+            $'\x17')
+                # echo "Ctrl + w dected"
+                var_target_key="ctrl+w"
+                ;;
+            $'\x0c')
+                # echo "Ctrl + l dected"
+                var_target_key="ctrl+l"
+                ;;
+            $'\x7f')
+                # echo "backspace dected"
+                var_target_key="BACK"
+                ;;
+            ' ')
+                # echo "Space dected"
+                var_target_key=" "
+                ;;
+        esac
+
+        # local var_time=$(expr ${var_end} - ${var_start})
+        # echo "Time Space:${var_end} - ${var_start} = ${var_time}"
+        # echo $(test ${var_time} -le 20000000 )
+        if [ ${var_time} -le 20000000 ]
+        then
+            # echo "Enter double key press"
+            case ${var_previous}${var_input} in
+                '[A')
+                    # echo "Enter Arror Up"
+                    var_target_key="DPAD_UP"
+                    ;;
+                '[B')
+                    # echo "Enter Arror Down"
+                    var_target_key="DPAD_DOWN"
+                    ;;
+                '[C')
+                    # echo "Enter Arror Right"
+                    var_target_key="DPAD_RIGHT"
+                    ;;
+                '[D')
+                    # echo "Enter Arror Left"
+                    var_target_key="DPAD_LEFT"
+                    ;;
+                '[1')
+                    # echo "HOME dected"
+                    var_target_key="HOME"
+                    ;;
+                $'\x1b'$'\x1b')
+                    # echo "esc dected"
+                    var_target_key="esc"
+                    ;;
+            esac
+        fi
+        var_previous=${var_input}
+
+        # printf "\r%s" ${var_input}
+        if [ "${var_target_key}" = "" ] && ([ "${var_input}" = "[" ] || [ "${var_input}"  = $'\x1b' ])
+        then
+            var_start=${var_end}
+            continue
+        fi
+
+        # printf "%s %s\n" ${var_promote} ${var_target_key}
+        if [ "${var_target_key}" = "" ]
+        then
+            printf "%s %s\n" "${var_promote}" "${var_input}"
+            var_skey_args="text"
+            var_cmd="${var_skey_prefix} ${var_skey_args} \"${var_input}\""
+        else
+            printf "%s %s\n" "${var_promote}" "${var_target_key}"
+            var_skey_args="keyevent"
+            var_cmd="${var_skey_prefix} ${var_skey_args} \"${var_target_key}\""
+        fi
+        # echo ${var_cmd}
+        eval "${var_cmd}" 2> /dev/null
+    done
+    printf "\n"
+}

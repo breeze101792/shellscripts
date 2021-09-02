@@ -418,7 +418,7 @@ function error_check()
     then
         local function_name=$1
         local line_info=$2
-        echo "Trace: ${function_name} +${line_info}"
+        # echo "Trace: ${function_name} +${line_info}"
     fi
     if [ $result != 0 ]
     then
