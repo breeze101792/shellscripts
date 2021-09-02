@@ -765,7 +765,6 @@ function xcd()
     local target_path="${HOME}"
     local sub_folder=""
 
-
     while [[ "$#" != 0 ]]
     do
         case $1 in
@@ -784,7 +783,7 @@ function xcd()
             -c|--document|doc|document)
                 target_path=${HS_PATH_DOCUMENT}
                 ;;
-            -d|--download|dl|download)
+            -d|--download|dl|download|down)
                 target_path=${HS_PATH_DOWNLOAD}
                 ;;
             --log|log)
@@ -854,8 +853,8 @@ function xcd()
                 cli_helper -o "-l|--lab|lab" -d "cd to ${HS_PATH_LAB}"
                 cli_helper -o "-b|--build|build" -d "cd to ${HS_PATH_BUILD}"
                 cli_helper -o "-p|--proj|proj|" -d "cd to ${HS_PATH_PROJ}"
-                cli_helper -o "-d|--download|download)" -d "cd to ${HS_PATH_DOWNLOAD}"
-                cli_helper -o "-c|--document|document)" -d "cd to ${HS_PATH_DOCUMENT}"
+                cli_helper -o "-d|--download|dl|download|down)" -d "cd to ${HS_PATH_DOWNLOAD}"
+                cli_helper -o "-c|--document|doc|document)" -d "cd to ${HS_PATH_DOCUMENT}"
                 cli_helper -o "-h|--help" -d "Print help function "
 
                 cli_helper -t "Customization Options"

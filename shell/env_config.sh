@@ -37,6 +37,7 @@ export HS_CONFIG_FUNCTION_EXPORT=n
 ########################################################
 ########################################################
 export HS_PLATFORM_WSL=n
+export HS_PLATFORM_LOCAL_USR=y
 export HS_PLATFORM_TTY_START=n
 export HS_PLATFORM_VM=n
 

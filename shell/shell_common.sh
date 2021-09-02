@@ -24,7 +24,6 @@ function epath()
 }
 function shell_setup()
 {
-    epath ${HOME}/.bin > /dev/null
     if [ "${HS_CONFIG_CHANGE_DIR}" = "y" ]
     then
         set_working_path -g

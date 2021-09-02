@@ -99,6 +99,15 @@ function setup_git()
     # git config --global http.sslVerify false
 
 }
+function setup_usr()
+{
+    echo "Setup Local usr"
+    local local_usr_path=${HOME}/.usr
+    mkdir ${local_usr_path}
+    mkdir ${local_usr_path}/bin
+    mkdir ${local_usr_path}/lib
+
+}
 function excute()
 {
     echo "Script Path:${HS_SCRIPT_PATH}"
@@ -120,6 +129,9 @@ function setup()
             -s|--shell)
                 setup_shell
                 ;;
+            -u|--usr)
+                setup_usr
+                ;;
             -x|--excute)
                 shift 1
                 excute $@
@@ -127,9 +139,12 @@ function setup()
                 ;;
             -h|--help)
                 echo "Setup Usage"
-                printf "%s%s%s\n" "-t|--tmux" "->" "Set tmux"
-                printf "%s%s%s\n" "-g|--git" "->" "Set git"
-                printf "%s%s%s\n" "-s|--shell" "->" "Set shell"
+                printf "    %s%s%s\n" "-t|--tmux" "->" "Setup tmux"
+                printf "    %s%s%s\n" "-g|--git" "->" "Setup git"
+                printf "    %s%s%s\n" "-s|--shell" "->" "Setup shell"
+                printf "    %s%s%s\n" "-u|--usr" "->" "setup local usr"
+                printf "    %s%s%s\n" "-x|--excute" "->" "Excute with hs env"
+                printf "    %s%s%s\n" "-h|--help" "->" "Help me"
                 return 0
                 ;;
             *)
