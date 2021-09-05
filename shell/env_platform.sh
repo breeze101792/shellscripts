@@ -16,6 +16,20 @@ then
     export DISPLAY=:0
 fi
 
+if [ "${HS_PLATFORM_LOCAL_USR}" = "y" ]
+then
+    hs_print "Enable Local Usr"
+    if [ -d "${HOME}/.usr/bin" ]
+    then
+        epath ${HOME}/.usr/bin
+    fi
+
+    if [ -d "${HOME}/.usr/lib" ]
+    then
+        LD_LIBRARY_PATH=${HOME}/.usr/lib:${LD_LIBRARY_PATH}
+    fi
+fi
+
 if [ "${HS_PLATFORM_TTY_START}" = "y" ]
 then
     # If running from tty1 start WM

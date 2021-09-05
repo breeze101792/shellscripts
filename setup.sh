@@ -1,27 +1,39 @@
 #!/bin/bash
+# Get Script Path
 HS_SCRIPT_PATH=""
-if [ -d "$(dirname ${0})" ]
+HS_ENV_SHELL=""
+if [ "$(echo $0 | sed 's/^-//g')" = "zsh" ] || [ "$(echo $SHELL | sed 's|/.*/||g')" = "zsh" ]
 then
-    # zsh
-    HS_SCRIPT_PATH="$(realpath $(dirname ${0}))"
-elif [ -n "${BASH_SOURCE}" ]
+    HS_ENV_SHELL="zsh"
+    if [ -f "$(dirname ${0})/source.sh" ]
+    then
+        # zsh
+        HS_SCRIPT_PATH="$(dirname ${0})"
+    fi
+elif [ "$(echo $0 | sed 's/^-//g')" = "bash" ] || [ "$(echo $SHELL | sed 's|/.*/||g')" = "bash" ]
 then
-    # bash
-    HS_SCRIPT_PATH="$(realpath $(dirname ${BASH_SOURCE[0]}))"
+    HS_ENV_SHELL="bash"
+    if [ -n "${BASH_SOURCE}" ] && [ -f "$(dirname ${BASH_SOURCE[0]})/source.sh" ] 
+    then
+        # bash
+        HS_SCRIPT_PATH="$(dirname ${BASH_SOURCE[0]})"
+    fi
+elif [ "$(echo $0 | sed 's/^-//g')" = "sh" ] || [ "$(echo $SHELL | sed 's|/.*/||g')" = "sh" ]
+then
+    HS_ENV_SHELL="sh"
 fi
+HS_SCRIPT_PATH=$(realpath ${HS_SCRIPT_PATH})
 
 function setup_shell()
 {
-    echo ${SHELL}
-    local shell_name=$(echo ${SHELL} | rev | cut -d '/' -f 1 | rev)
-    if [ "${shell_name}" = "bash" ]
+    if [ "${HS_ENV_SHELL}" = "bash" ]
     then
-        echo source ${HS_SCRIPT_PATH}/source.sh -s=${shell_name}
-        echo source ${HS_SCRIPT_PATH}/source.sh -s=${shell_name} >> ~/.bashrc
-    elif [ "${shell_name}" = "zsh" ]
+        echo source ${HS_SCRIPT_PATH}/source.sh -s=${HS_ENV_SHELL}
+        echo source ${HS_SCRIPT_PATH}/source.sh -s=${HS_ENV_SHELL} >> ~/.bashrc
+    elif [ "${HS_ENV_SHELL}" = "zsh" ]
     then
-        echo source ${HS_SCRIPT_PATH}/source.sh -s=${shell_name}
-        echo source ${HS_SCRIPT_PATH}/source.sh -s=${shell_name} >> ~/.zshrc
+        echo source ${HS_SCRIPT_PATH}/source.sh -s=${HS_ENV_SHELL}
+        echo source ${HS_SCRIPT_PATH}/source.sh -s=${HS_ENV_SHELL} >> ~/.zshrc
     fi
 }
 function setup_tmux()
@@ -54,6 +66,20 @@ function setup_git()
         mkdir -p ${var_config_path}
     fi
     ln -sf ${HS_SCRIPT_PATH}/configs/git/*   ${var_config_path}/
+    if [ ! -f "${var_config_path}/credential.cfg" ]
+    then
+        cp ${HS_SCRIPT_PATH}/configs/git/template/credential_template.cfg ${var_config_path}/credential.cfg
+    else
+        echo "${var_config_path}/credential.cfg exist"
+
+    fi
+    if [ ! -f "${var_config_path}/feature.cfg" ]
+    then
+        cp ${HS_SCRIPT_PATH}/configs/git/template/feature_template.cfg ${var_config_path}/feature.cfg
+    else
+        echo "${var_config_path}/feature.cfg exist"
+    fi
+
     touch ${var_config_path}/work.cfg
 
     if [ ! -f "${var_config_path}/user.cfg" ]
@@ -73,6 +99,15 @@ function setup_git()
     # git config --global http.sslVerify false
 
 }
+function setup_usr()
+{
+    echo "Setup Local usr"
+    local local_usr_path=${HOME}/.usr
+    mkdir ${local_usr_path}
+    mkdir ${local_usr_path}/bin
+    mkdir ${local_usr_path}/lib
+
+}
 function excute()
 {
     echo "Script Path:${HS_SCRIPT_PATH}"
@@ -81,6 +116,7 @@ function excute()
 }
 function setup()
 {
+    hs_envautodetect
     while [ "$#" != "0" ]
     do
         case $1 in
@@ -93,6 +129,9 @@ function setup()
             -s|--shell)
                 setup_shell
                 ;;
+            -u|--usr)
+                setup_usr
+                ;;
             -x|--excute)
                 shift 1
                 excute $@
@@ -100,9 +139,12 @@ function setup()
                 ;;
             -h|--help)
                 echo "Setup Usage"
-                printf "%s%s%s\n" "-t|--tmux" "->" "Set tmux"
-                printf "%s%s%s\n" "-g|--git" "->" "Set git"
-                printf "%s%s%s\n" "-s|--shell" "->" "Set shell"
+                printf "    %s%s%s\n" "-t|--tmux" "->" "Setup tmux"
+                printf "    %s%s%s\n" "-g|--git" "->" "Setup git"
+                printf "    %s%s%s\n" "-s|--shell" "->" "Setup shell"
+                printf "    %s%s%s\n" "-u|--usr" "->" "setup local usr"
+                printf "    %s%s%s\n" "-x|--excute" "->" "Excute with hs env"
+                printf "    %s%s%s\n" "-h|--help" "->" "Help me"
                 return 0
                 ;;
             *)

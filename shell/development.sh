@@ -545,7 +545,7 @@ function lanalyser
     echo "---- Android log analysis"
     # local total_line=$(wc -l ${var_logfile} | cut -d " " -f1 )
     # cat ${var_logfile} | grep -B ${total_line} "error.*generated" | tac | grep -B ${total_line} "generated.$" | tac | mark_build
-    cat -n ${var_logfile} | grep -B 5 -A 5 "error.*generated" | mark_build
+    cat -n ${var_logfile} | grep -B 5 -A 5 "error.*generated\|^FAILED:" | mark_build
 
     echo "---- Make log analysis"
     cat -n ${var_logfile} | grep "make.*Error" | mark_build
@@ -765,7 +765,6 @@ function xcd()
     local target_path="${HOME}"
     local sub_folder=""
 
-
     while [[ "$#" != 0 ]]
     do
         case $1 in
@@ -784,7 +783,7 @@ function xcd()
             -c|--document|doc|document)
                 target_path=${HS_PATH_DOCUMENT}
                 ;;
-            -d|--download|dl|download)
+            -d|--download|dl|download|down)
                 target_path=${HS_PATH_DOWNLOAD}
                 ;;
             --log|log)
@@ -854,8 +853,8 @@ function xcd()
                 cli_helper -o "-l|--lab|lab" -d "cd to ${HS_PATH_LAB}"
                 cli_helper -o "-b|--build|build" -d "cd to ${HS_PATH_BUILD}"
                 cli_helper -o "-p|--proj|proj|" -d "cd to ${HS_PATH_PROJ}"
-                cli_helper -o "-d|--download|download)" -d "cd to ${HS_PATH_DOWNLOAD}"
-                cli_helper -o "-c|--document|document)" -d "cd to ${HS_PATH_DOCUMENT}"
+                cli_helper -o "-d|--download|dl|download|down)" -d "cd to ${HS_PATH_DOWNLOAD}"
+                cli_helper -o "-c|--document|doc|document)" -d "cd to ${HS_PATH_DOCUMENT}"
                 cli_helper -o "-h|--help" -d "Print help function "
 
                 cli_helper -t "Customization Options"
@@ -1009,6 +1008,7 @@ function fcd()
 function gconfig()
 {
     local var_config_mode=""
+    local var_config_cmd=""
     if [[ "$#" = "0" ]]
     then
         echo "Default action"
@@ -1023,9 +1023,9 @@ function gconfig()
                 tmp_enable=${2}
                 if [ "${tmp_enable}" = "y" ]
                 then
-                    git config ${var_config_mode} http.sslVerify true
+                    var_config_cmd="http.sslVerify true"
                 else
-                    git config ${var_config_mode} http.sslVerify false
+                    var_config_cmd="http.sslVerify false"
                 fi
 
                 shift 1
@@ -1034,9 +1034,9 @@ function gconfig()
                 tmp_enable=${2}
                 if [ "${tmp_enable}" = "y" ]
                 then
-                    git config ${var_config_mode} core.fileMode true
+                    var_config_cmd="core.fileMode true"
                 else
-                    git config ${var_config_mode} core.fileMode false
+                    var_config_cmd="core.fileMode false"
                 fi
 
                 shift 1
@@ -1060,6 +1060,8 @@ function gconfig()
         shift 1
     done
 
+    echo git config ${var_config_mode} ${var_config_cmd}
+    eval git config ${var_config_mode} ${var_config_cmd}
 }
 function gforall()
 {
