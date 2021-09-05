@@ -6,6 +6,7 @@
 ########################################################
 ########################################################
 # Get Script Path
+HS_STARTUP_DEBUG=n
 HS_SCRIPT_PATH=""
 if [ -f "$(dirname ${0})/source.sh" ]
 then
@@ -24,38 +25,52 @@ fi
 # In this area please unset it after use
 function hs_eval()
 {
-    local var_cmd=$@
-    local flag_debug="n"
+    local exc_cmd="eval"
+    local exc_args="$@"
+    local flag_debug=${HS_STARTUP_DEBUG}
 
     if [ ${flag_debug} = "y" ]
     then
         local start_time=$(date +%s%N)
-        eval "${var_cmd}"
+        ${exc_cmd} "${exc_args}"
         local end_time=$(date +%s%N)
 
         # echo "$start_time, $end_time"
         local diff_time=$(( (${end_time} - ${start_time})/1000000 ))
-        printf "[${diff_time}] eval ${var_cmd}\n"
+
+        if (( ${diff_time} > 50 ))
+        then
+            printf "[Timeout][${diff_time}] ${exc_cmd} ${exc_args}\n"
+        else
+            printf "[${diff_time}] ${exc_cmd} ${exc_args}\n"
+        fi
     else
-        eval "${var_cmd}"
+        ${exc_cmd} "${exc_args}"
     fi
 }
 function hs_source()
 {
-    local source_file=$1
-    local flag_debug="n"
+    local exc_cmd="source"
+    local exc_args=$1
+    local flag_debug=${HS_STARTUP_DEBUG}
 
     if [ ${flag_debug} = "y" ]
     then
         local start_time=$(date +%s%N)
-        source $(realpath ${source_file})
+        ${exc_cmd} "${exc_args}"
         local end_time=$(date +%s%N)
 
         # echo "$start_time, $end_time"
         local diff_time=$(( (${end_time} - ${start_time})/1000000 ))
-        printf "[${diff_time}] source ${source_file}\n"
+
+        if (( ${diff_time} > 50 ))
+        then
+            printf "[Timeout][${diff_time}] ${exc_cmd} ${exc_args}\n"
+        else
+            printf "[${diff_time}] ${exc_cmd} ${exc_args}\n"
+        fi
     else
-        source $(realpath ${source_file})
+        ${exc_cmd} "${exc_args}"
     fi
 }
 function hs_motd()
@@ -70,88 +85,6 @@ function hs_motd()
     local var_raspberry=()
     local var_arch=()
     local var_other=()
-    # var_arch+='              +                '
-    # var_arch+='              #                '
-    # var_arch+='             ###               '
-    # var_arch+='            #####              '
-    # var_arch+='            ######             '
-    # var_arch+='           ; #####;            '
-    # var_arch+='          +##.#####            '
-    # var_arch+='         +##########           '
-    # var_arch+='        #############;         '
-    # var_arch+='       ###############+        '
-    # var_arch+='      #######   #######        '
-    # var_arch+='    .######;     ;###;`".      '
-    # var_arch+='   .#######;     ;#####.       '
-    # var_arch+='   #########.   .########`     '
-    # var_arch+='  ######             ######    '
-    # var_arch+=' ;####                 ####;   '
-    # var_arch+=' ##                       ##   '
-    # var_arch+='#                          `#  '
-
-    local var_color=$(echo -e "\033[38;2;23;147;209m")
-    local var_clr_reset=$(echo -e "\e[0m")
-    var_arch+=${var_color}'                                        '${var_clr_reset}
-    var_arch+=${var_color}'                   ▄                    '${var_clr_reset}
-    var_arch+=${var_color}'                  ▟█▙                   '${var_clr_reset}
-    var_arch+=${var_color}'                 ▟███▙                  '${var_clr_reset}
-    var_arch+=${var_color}'                ▟█████▙                 '${var_clr_reset}
-    var_arch+=${var_color}'               ▟███████▙                '${var_clr_reset}
-    var_arch+=${var_color}'              ▂▔▀▜██████▙               '${var_clr_reset}
-    var_arch+=${var_color}'             ▟██▅▂▝▜█████▙              '${var_clr_reset}
-    var_arch+=${var_color}'            ▟█████████████▙             '${var_clr_reset}
-    var_arch+=${var_color}'           ▟███████████████▙            '${var_clr_reset}
-    var_arch+=${var_color}'          ▟█████████████████▙           '${var_clr_reset}
-    var_arch+=${var_color}'         ▟███████████████████▙          '${var_clr_reset}
-    var_arch+=${var_color}'        ▟█████████▛▀▀▜████████▙         '${var_clr_reset}
-    var_arch+=${var_color}'       ▟████████▛      ▜███████▙        '${var_clr_reset}
-    var_arch+=${var_color}'      ▟█████████        ████████▙       '${var_clr_reset}
-    var_arch+=${var_color}'     ▟██████████        █████▆▅▄▃▂      '${var_clr_reset}
-    var_arch+=${var_color}'    ▟██████████▛        ▜█████████▙     '${var_clr_reset}
-    var_arch+=${var_color}'   ▟██████▀▀▀              ▀▀██████▙    '${var_clr_reset}
-    var_arch+=${var_color}'  ▟███▀▘                       ▝▀███▙   '${var_clr_reset}
-    var_arch+=${var_color}' ▟▛▀                               ▀▜▙  '${var_clr_reset}
-    var_arch+=${var_color}'                                        '${var_clr_reset}
-
-    var_raspberry+="                   "
-    var_raspberry+="    .~~.   .~~.    "
-    var_raspberry+="   '. \ ' ' / .'   "
-    var_raspberry+="    .~ .~~~..~.    "
-    var_raspberry+="   : .~.'~'.~. :   "
-    var_raspberry+="  ~ (   ) (   ) ~  "
-    var_raspberry+=" ( : '~'.~.'~' : ) "
-    var_raspberry+="  ~ .~ (   ) ~. ~  "
-    var_raspberry+="   (  : '~' :  )   "
-    var_raspberry+="    '~ .~~~. ~'    "
-    var_raspberry+="        '~'        "
-    var_raspberry+="                   "
-
-    var_ubuntu+=$(echo -e '                      ')
-    var_ubuntu+=$(echo -e '              .-.     ')
-    var_ubuntu+=$(echo -e "        .-'\`\`(|||)    ")
-    var_ubuntu+=$(echo -e '     ,`\ \    `-`.    ')
-    var_ubuntu+=$(echo -e "    /   \ '\`\`-.   \`   ")
-    var_ubuntu+=$(echo -e '  .-.  ,       `___:  ')
-    var_ubuntu+=$(echo -e ' (:::) :        ___   ')
-    var_ubuntu+=$(echo -e '  `-`  `       ,   :  ')
-    var_ubuntu+=$(echo -e '    \   / ,..-`   ,   ')
-    var_ubuntu+=$(echo -e '     `./ /    .-.`    ')
-    var_ubuntu+=$(echo -e '        `-..-(   )    ')
-    var_ubuntu+=$(echo -e '              `-`     ')
-    var_ubuntu+=$(echo -e '                      ')
-
-    var_other+=$(echo -e "                        ")
-    var_other+=$(echo -e "                        ")
-    var_other+=$(echo -e "          .--.          ")
-    var_other+=$(echo -e "         |o_o |         ")
-    var_other+=$(echo -e "         |:_/ |         ")
-    var_other+=$(echo -e "        //   \ \        ")
-    var_other+=$(echo -e "       (|     | )       ")
-    var_other+=$(echo -e "      /'\_   _/\`\       ")
-    var_other+=$(echo -e "      \___)=(___/       ")
-    var_other+=$(echo -e "                        ")
-    var_other+=$(echo -e "                        ")
-    var_other+=$(echo -e "                        ")
 
     local tmp_pname="$(ps -Ao pid,fname |grep "${PPID}" |grep -v "grep" | sed 's/[[:space:]]\+/ /g' | cut -d ' ' -f 3)"
 
@@ -171,14 +104,75 @@ function hs_motd()
 
     if [ "${var_distro}" = "arch" ]
     then
+        local var_color=$(echo -e "\033[38;2;23;147;209m")
+        local var_clr_reset=$(echo -e "\e[0m")
+        var_arch+=${var_color}'                                        '${var_clr_reset}
+        var_arch+=${var_color}'                   ▄                    '${var_clr_reset}
+        var_arch+=${var_color}'                  ▟█▙                   '${var_clr_reset}
+        var_arch+=${var_color}'                 ▟███▙                  '${var_clr_reset}
+        var_arch+=${var_color}'                ▟█████▙                 '${var_clr_reset}
+        var_arch+=${var_color}'               ▟███████▙                '${var_clr_reset}
+        var_arch+=${var_color}'              ▂▔▀▜██████▙               '${var_clr_reset}
+        var_arch+=${var_color}'             ▟██▅▂▝▜█████▙              '${var_clr_reset}
+        var_arch+=${var_color}'            ▟█████████████▙             '${var_clr_reset}
+        var_arch+=${var_color}'           ▟███████████████▙            '${var_clr_reset}
+        var_arch+=${var_color}'          ▟█████████████████▙           '${var_clr_reset}
+        var_arch+=${var_color}'         ▟███████████████████▙          '${var_clr_reset}
+        var_arch+=${var_color}'        ▟█████████▛▀▀▜████████▙         '${var_clr_reset}
+        var_arch+=${var_color}'       ▟████████▛      ▜███████▙        '${var_clr_reset}
+        var_arch+=${var_color}'      ▟█████████        ████████▙       '${var_clr_reset}
+        var_arch+=${var_color}'     ▟██████████        █████▆▅▄▃▂      '${var_clr_reset}
+        var_arch+=${var_color}'    ▟██████████▛        ▜█████████▙     '${var_clr_reset}
+        var_arch+=${var_color}'   ▟██████▀▀▀              ▀▀██████▙    '${var_clr_reset}
+        var_arch+=${var_color}'  ▟███▀▘                       ▝▀███▙   '${var_clr_reset}
+        var_arch+=${var_color}' ▟▛▀                               ▀▜▙  '${var_clr_reset}
+        var_arch+=${var_color}'                                        '${var_clr_reset}
         var_logo=(${var_arch[@]})
     elif [ "${var_distro}" = "ubuntu" ]
     then
+
+        var_ubuntu+=$(echo -e '                      ')
+        var_ubuntu+=$(echo -e '              .-.     ')
+        var_ubuntu+=$(echo -e "        .-'\`\`(|||)    ")
+        var_ubuntu+=$(echo -e '     ,`\ \    `-`.    ')
+        var_ubuntu+=$(echo -e "    /   \ '\`\`-.   \`   ")
+        var_ubuntu+=$(echo -e '  .-.  ,       `___:  ')
+        var_ubuntu+=$(echo -e ' (:::) :        ___   ')
+        var_ubuntu+=$(echo -e '  `-`  `       ,   :  ')
+        var_ubuntu+=$(echo -e '    \   / ,..-`   ,   ')
+        var_ubuntu+=$(echo -e '     `./ /    .-.`    ')
+        var_ubuntu+=$(echo -e '        `-..-(   )    ')
+        var_ubuntu+=$(echo -e '              `-`     ')
+        var_ubuntu+=$(echo -e '                      ')
         var_logo=(${var_ubuntu[@]})
     elif [ "${var_distro}" = "raspbian" ]
     then
+        var_raspberry+="                   "
+        var_raspberry+="    .~~.   .~~.    "
+        var_raspberry+="   '. \ ' ' / .'   "
+        var_raspberry+="    .~ .~~~..~.    "
+        var_raspberry+="   : .~.'~'.~. :   "
+        var_raspberry+="  ~ (   ) (   ) ~  "
+        var_raspberry+=" ( : '~'.~.'~' : ) "
+        var_raspberry+="  ~ .~ (   ) ~. ~  "
+        var_raspberry+="   (  : '~' :  )   "
+        var_raspberry+="    '~ .~~~. ~'    "
+        var_raspberry+="        '~'        "
+        var_raspberry+="                   "
         var_logo=(${var_raspberry[@]})
     else
+        var_other+=$(echo -e "                        ")
+        var_other+=$(echo -e "                        ")
+        var_other+=$(echo -e "          .--.          ")
+        var_other+=$(echo -e "         |o_o |         ")
+        var_other+=$(echo -e "         |:_/ |         ")
+        var_other+=$(echo -e "        //   \ \        ")
+        var_other+=$(echo -e "       (|     | )       ")
+        var_other+=$(echo -e "      /'\_   _/\`\       ")
+        var_other+=$(echo -e "      \___)=(___/       ")
+        var_other+=$(echo -e "                        ")
+        var_other+=$(echo -e "                        ")
+        var_other+=$(echo -e "                        ")
         var_logo=(${var_other[@]})
     fi
 
@@ -319,7 +313,6 @@ function hs_main
         flag_env_shell="$(echo ${SHELL} | rev |  cut -d '/' -f 1 | rev)"
     fi
 
-    # HS_SCRIPT_PATH="$(realpath $(dirname ${0}))"
     if [ -z "${flag_env_lib_path}" ] && [ -n "${HS_SCRIPT_PATH}" ] 
     then
         flag_env_lib_path="$(realpath ${HS_SCRIPT_PATH})"
