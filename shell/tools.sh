@@ -77,7 +77,7 @@ function clip()
             -l|--link)
                 clip -x 'ln -s $(realpath %p) ./'
                 ;;
-            -c|--copy-file)
+            -c|-cf|--copy-file)
                 clip -x cp -r %p .
                 ;;
             -cd|--copy-directory)
@@ -111,7 +111,7 @@ function clip()
                 cli_helper -o "-p|--set-from-pipe" -d "Set Clipbboard, default use pwd for setting var"
                 cli_helper -o "-g|--get-clip" -d "Get Clipbboard, default use getting action"
                 cli_helper -o "-d|--get-current-dir" -d "Get current dir vars, get current stored dir"
-                cli_helper -o "-c|--copy-file" -d "cp file to current folder"
+                cli_helper -o "-c|-cf|--copy-file" -d "cp file to current folder"
                 cli_helper -o "-cd|--copy-directory" -d "cp dir to current folder"
                 cli_helper -o "-ca|--copy-all" -d "cp all file too current folder"
                 cli_helper -o "-f|--fake-run" -d "Do fake run on -x"
