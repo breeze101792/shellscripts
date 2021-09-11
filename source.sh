@@ -9,7 +9,7 @@
 HS_STARTUP_DEBUG=n
 HS_SCRIPT_PATH=""
 HS_ENV_SHELL=""
-if [ "$(echo $0 | sed 's/^-//g')" = "zsh" ] || [ "$(echo $SHELL | sed 's|/.*/||g')" = "zsh" ]
+if [ "$(echo $0 | sed 's/^-//g')" = "zsh" ]
 then
     HS_ENV_SHELL="zsh"
     if [ -f "$(dirname ${0})/source.sh" ]
@@ -17,7 +17,7 @@ then
         # zsh
         HS_SCRIPT_PATH="$(dirname ${0})"
     fi
-elif [ "$(echo $0 | sed 's/^-//g')" = "bash" ] || [ "$(echo $SHELL | sed 's|/.*/||g')" = "bash" ]
+elif [ "$(echo $0 | sed 's/^-//g')" = "bash" ]
 then
     HS_ENV_SHELL="bash"
     if [ -n "${BASH_SOURCE}" ] && [ -f "$(dirname ${BASH_SOURCE[0]})/source.sh" ] 
@@ -25,9 +25,39 @@ then
         # bash
         HS_SCRIPT_PATH="$(dirname ${BASH_SOURCE[0]})"
     fi
-elif [ "$(echo $0 | sed 's/^-//g')" = "sh" ] || [ "$(echo $SHELL | sed 's|/.*/||g')" = "sh" ]
+elif [ "$(echo $0 | sed 's/^-//g')" = "sh" ]
 then
     HS_ENV_SHELL="sh"
+else
+    # fall back settings
+    if [ "$(echo $SHELL | sed 's|/.*/||g')" = "zsh" ]
+    then
+        HS_ENV_SHELL="zsh"
+        if [ -f "$(dirname ${0})/source.sh" ]
+        then
+            # zsh
+            HS_SCRIPT_PATH="$(dirname ${0})"
+        fi
+    elif [ "$(echo $SHELL | sed 's|/.*/||g')" = "bash" ]
+    then
+        HS_ENV_SHELL="bash"
+        if [ -n "${BASH_SOURCE}" ] && [ -f "$(dirname ${BASH_SOURCE[0]})/source.sh" ]
+        then
+            # bash
+            HS_SCRIPT_PATH="$(dirname ${BASH_SOURCE[0]})"
+        fi
+    elif [ "$(echo $SHELL | sed 's|/.*/||g')" = "sh" ]
+    then
+        HS_ENV_SHELL="sh"
+    else
+        # defaut use bash
+        HS_ENV_SHELL="bash"
+        if [ -n "${BASH_SOURCE}" ] && [ -f "$(dirname ${BASH_SOURCE[0]})/source.sh" ]
+        then
+            # bash
+            HS_SCRIPT_PATH="$(dirname ${BASH_SOURCE[0]})"
+        fi
+    fi
 fi
 HS_SCRIPT_PATH=$(realpath ${HS_SCRIPT_PATH})
 
@@ -40,6 +70,7 @@ function hs_eval()
     local exc_cmd="eval"
     local exc_args="$@"
     local flag_debug=${HS_STARTUP_DEBUG}
+    local max_timeout=500
 
     if [ ${flag_debug} = "y" ]
     then
@@ -50,7 +81,7 @@ function hs_eval()
         # echo "$start_time, $end_time"
         local diff_time=$(( (${end_time} - ${start_time})/1000000 ))
 
-        if (( ${diff_time} > 50 ))
+        if (( ${diff_time} > ${max_timeout} ))
         then
             printf "[Timeout][${diff_time}] ${exc_cmd} ${exc_args}\n"
         else
@@ -65,6 +96,7 @@ function hs_source()
     local exc_cmd="source"
     local exc_args=$1
     local flag_debug=${HS_STARTUP_DEBUG}
+    local max_timeout=100
 
     if [ ${flag_debug} = "y" ]
     then
@@ -75,7 +107,7 @@ function hs_source()
         # echo "$start_time, $end_time"
         local diff_time=$(( (${end_time} - ${start_time})/1000000 ))
 
-        if (( ${diff_time} > 50 ))
+        if (( ${diff_time} > ${max_timeout} ))
         then
             printf "[Timeout][${diff_time}] ${exc_cmd} ${exc_args}\n"
         else
@@ -444,8 +476,8 @@ function hs_main
     # currently bash not soupport this function
     if [ "${HS_ENV_SHELL}" = "zsh" ] && [ "${flag_var_refresh}" = "n" ] && [ ${HS_ENV_SILENCE} = "n" ] && [[ "${SHLVL}" = "1" ]] && \
         ( [ "${tmp_pname}" = "login" ] || [ "${tmp_pname}" = "sshd" ] || [ "${tmp_pname}" = "init" ] )
-    then
-        hs_motd
+        then
+            hs_motd
     fi
 
     ##########################################

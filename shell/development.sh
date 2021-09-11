@@ -407,7 +407,8 @@ function logfile()
     echo "Logfile Command:\"${var_cmd}\""
     echo "Command:\"${var_cmd}\"" > $fulllogname
     echo "Start Date: ${start_date}" >> $fulllogname
-    echo "================================================" >> $fulllogname
+    echo "===================================================================" >> $fulllogname
+    echo "==================================================================="
     if [ "${flag_error_file}" = "y" ]
     then
         # eval "${var_cmd}" 2> >(tee ${var_error_logname}) > >(tee ${var_error_logname}) | tee -a ${fulllogname}
@@ -417,11 +418,11 @@ function logfile()
     fi
     var_ret=$?
 
-    echo "================================================" >> $fulllogname
+    echo "===================================================================" >> $fulllogname
     echo "Command Finished:\"${var_cmd}\"" >> $fulllogname
     echo "Start Date: ${start_date}" >> $fulllogname
     echo "End   Date: $(date)" >> $fulllogname
-    echo "================================================"
+    echo "==================================================================="
     echo "Log file has been stored in the following path." | mark -s green "${fulllogname}"
     echo "Full Log: ${fulllogname}" | mark -s green "${fulllogname}"
 
@@ -728,7 +729,8 @@ function erun()
     # local start_time=$(date "+%Y-%m-%d_%H:%M:%S")
     local start_time=$(date)
     echo "Start cmd: $(printc -c yellow ${excute_cmd})"
-    print "$(printlc -lw 32 -cw 0 -d " " "Start Jobs at ${start_time}" "")" | mark -s green "#"
+    # print "$(printlc -lw 32 -cw 0 -d " " "Start Jobs at ${start_time}" "")" | mark -s green "#"
+    echo "$(printlc -lw 32 -cw 0 -d " " "Start Jobs at ${start_time}" "")" | mark -s green "#"
     # mark_build "${excute_cmd}"
     if [ -n "${HS_PATH_LOG}" ] && [ "${flag_log_enable}" = "y" ]
     then
