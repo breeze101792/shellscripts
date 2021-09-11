@@ -263,7 +263,7 @@ function an_cd()
     ############################################################
     ####    Path Finder
     ############################################################
-    if froot ".repo" > /dev/null || froot "framework" > /dev/null && froot "vendor" > /dev/null  && froot "device" > /dev/null
+    if froot -m ".repo" > /dev/null || froot -m "framework" > /dev/null && froot -m "vendor" > /dev/null  && froot -m "device" > /dev/null
     then
         an_root_path=$(pwd)
         echo "Locate android root: $an_root_path"
@@ -409,7 +409,12 @@ function an_cd()
                 ;;
 
             *)
-                target_path=${an_root_path}/${1}*
+                if [ -d "${an_root_path}/${1}" ]
+                then
+                    target_path=${an_root_path}/${1}
+                else
+                    target_path=${an_root_path}/${1}*
+                fi
                 ;;
         esac
         shift 1
