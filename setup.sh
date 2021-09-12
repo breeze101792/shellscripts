@@ -2,7 +2,7 @@
 # Get Script Path
 HS_SCRIPT_PATH=""
 HS_ENV_SHELL=""
-if [ "$(echo $0 | sed 's/^-//g')" = "zsh" ] || [ "$(echo $SHELL | sed 's|/.*/||g')" = "zsh" ]
+if [ "$(echo $0 | sed 's/^-//g')" = "zsh" ]
 then
     HS_ENV_SHELL="zsh"
     if [ -f "$(dirname ${0})/source.sh" ]
@@ -10,7 +10,7 @@ then
         # zsh
         HS_SCRIPT_PATH="$(dirname ${0})"
     fi
-elif [ "$(echo $0 | sed 's/^-//g')" = "bash" ] || [ "$(echo $SHELL | sed 's|/.*/||g')" = "bash" ]
+elif [ "$(echo $0 | sed 's/^-//g')" = "bash" ]
 then
     HS_ENV_SHELL="bash"
     if [ -n "${BASH_SOURCE}" ] && [ -f "$(dirname ${BASH_SOURCE[0]})/source.sh" ] 
@@ -18,9 +18,39 @@ then
         # bash
         HS_SCRIPT_PATH="$(dirname ${BASH_SOURCE[0]})"
     fi
-elif [ "$(echo $0 | sed 's/^-//g')" = "sh" ] || [ "$(echo $SHELL | sed 's|/.*/||g')" = "sh" ]
+elif [ "$(echo $0 | sed 's/^-//g')" = "sh" ]
 then
     HS_ENV_SHELL="sh"
+else
+    # fall back settings
+    if [ "$(echo $SHELL | sed 's|/.*/||g')" = "zsh" ]
+    then
+        HS_ENV_SHELL="zsh"
+        if [ -f "$(dirname ${0})/source.sh" ]
+        then
+            # zsh
+            HS_SCRIPT_PATH="$(dirname ${0})"
+        fi
+    elif [ "$(echo $SHELL | sed 's|/.*/||g')" = "bash" ]
+    then
+        HS_ENV_SHELL="bash"
+        if [ -n "${BASH_SOURCE}" ] && [ -f "$(dirname ${BASH_SOURCE[0]})/source.sh" ]
+        then
+            # bash
+            HS_SCRIPT_PATH="$(dirname ${BASH_SOURCE[0]})"
+        fi
+    elif [ "$(echo $SHELL | sed 's|/.*/||g')" = "sh" ]
+    then
+        HS_ENV_SHELL="sh"
+    else
+        # defaut use bash
+        HS_ENV_SHELL="bash"
+        if [ -n "${BASH_SOURCE}" ] && [ -f "$(dirname ${BASH_SOURCE[0]})/source.sh" ]
+        then
+            # bash
+            HS_SCRIPT_PATH="$(dirname ${BASH_SOURCE[0]})"
+        fi
+    fi
 fi
 HS_SCRIPT_PATH=$(realpath ${HS_SCRIPT_PATH})
 
