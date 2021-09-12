@@ -146,7 +146,6 @@ function excute()
 }
 function setup()
 {
-    hs_envautodetect
     while [ "$#" != "0" ]
     do
         case $1 in
