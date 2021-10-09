@@ -173,6 +173,15 @@ function pvim()
                 flag_time=y
                 cmd_args+=("-X --startuptime startup_${var_timestamp}.log")
                 ;;
+            -c|--clip)
+                shift 1
+                local buf_tmp="$@"
+                [ -f "${buf_tmp}" ] && buf_tmp=$(realpath ${buf_tmp})
+                [ -f "${HOME}/.vim/clip" ] && rm -f ${HOME}/.vim/clip
+
+                printf "%s" "${buf_tmp}" | sed '$ s/$.*//g' > ${HOME}/.vim/clip
+                return 0
+                ;;
             -h|--help)
                 cli_helper -c "pvim"
                 cli_helper -d "pvim [Options] [File]"
@@ -182,6 +191,7 @@ function pvim()
                 cli_helper -o "-m|--map" -d "Load cctree in vim"
                 cli_helper -o "-p|--pure-mode" -d "Load withouth ide file"
                 cli_helper -o "-t|--time" -d "Enable startup debug mode"
+                cli_helper -o "-c|--clip" -d "Save file in vim buffer file"
                 cli_helper -o "-h|--help" -d "Print help function "
                 cli_helper -t "vim-Options"
                 cli_helper -o "-R" -d "vim read only mode"
@@ -587,12 +597,17 @@ function session
                 var_action="attach"
                 break
                 ;;
+            -ao|--attach-only|ao)
+                var_taget_session=${2}
+                var_action="attach-only"
+                break
+                ;;
             -c|--create|c)
                 var_taget_session=${2}
                 var_action="create"
                 break
                 ;;
-            -d|--deattach-all|d)
+            -da|--deattach-all|da)
                 var_action="deatach-all"
                 break
                 ;;
@@ -616,8 +631,10 @@ function session
                 cli_helper -t "Options"
                 cli_helper -o "-r|--remove" -d "remove session with session list"
                 cli_helper -o "-a|--attach" -d "attach session with session name"
+                cli_helper -o "-ao|--attach-only|ao" -d "attach session with session name"
                 cli_helper -o "-c|--create" -d "create session with session name"
-                cli_helper -o "-d|--deatach-all" -d "deatach all session"
+                cli_helper -o "-da|--deatach-all" -d "deatach all session"
+                cli_helper -o "-d|--deatach" -d "deatach session"
                 cli_helper -o "--host|host|hostname|h" -d "deatach all session"
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
@@ -626,7 +643,7 @@ function session
                 local tmp_name=$(tmux ls |grep ${1}| cut -d ':' -f 1)
                 if [ "${tmp_name}" != "" ] &&  tmux ls
                 then
-                    var_action="attach"
+                    var_action="attach-only"
                     var_taget_session=${tmp_name}
                 else
                     var_action="create"
@@ -643,6 +660,11 @@ function session
         echo "Start session: ${var_taget_session}"
         retitle ${var_taget_session}
         tmux a -dt ${var_taget_session}
+    elif [ "${var_action}" = "attach-only" ]
+    then
+        echo "Start session: ${var_taget_session}"
+        retitle ${var_taget_session}
+        tmux a -t ${var_taget_session}
     elif [ "${var_action}" = "create" ]
     then
         echo "Create session: ${var_taget_session}"
@@ -764,7 +786,7 @@ function xcd()
     echo "Enhanced cd"
 
     local cpath=$(pwd)
-    local target_path="${HOME}"
+    local target_path=""
     local sub_folder=""
 
     while [[ "$#" != 0 ]]
@@ -875,7 +897,18 @@ function xcd()
                 ;;
 
             *)
-                sub_folder=$@
+                tmp_args=$@
+                if [ -z "${target_path}" ]
+                then
+                    if [ -d "${tmp_args}" ]
+                    then
+                        target_path=${tmp_args}
+                    else
+                        target_path="$(realpath *${tmp_args}*)"
+                    fi
+                else
+                    sub_folder=${tmp_args}
+                fi
                 break
                 ;;
             # *)
@@ -886,6 +919,10 @@ function xcd()
         esac
         shift 1
     done
+    if [ -z "${target_path}" ]
+    then
+        target_path="$(clip -d)"
+    fi
 
     if [ -d "${target_path}" ]
     then
