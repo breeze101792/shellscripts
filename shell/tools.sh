@@ -32,6 +32,7 @@ function waitsync()
 function clip()
 {
     local flag_fake_run=false
+    local var_clipboard=${HS_VAR_CLIPBOARD}
     if [ "$#" = 0 ]
     then
         eval "clip -g"
@@ -44,46 +45,64 @@ function clip()
             break
         fi
         case $1 in
+            -l|--list)
+                echo "Clipboard buffer def : $(clip -g )"
+                echo "Clipboard buffer 0   : $(clip -b 0 -g )"
+                echo "Clipboard buffer 1   : $(clip -b 1 -g )"
+                echo "Clipboard buffer 2   : $(clip -b 2 -g )"
+                echo "Clipboard buffer 3   : $(clip -b 3 -g )"
+                echo "Clipboard buffer 4   : $(clip -b 4 -g )"
+                echo "Clipboard buffer 5   : $(clip -b 5 -g )"
+                ;;
+            -b|--clip-buffer)
+                local var_clipboard="${HS_VAR_CLIPBOARD}_0"
+                if [[ $# > 1 ]] && [[ $2 < 6 ]] && [[ $2 > -1 ]]
+                then
+                    local var_clipboard="${HS_VAR_CLIPBOARD}_$2"
+                    shift 1
+                elif [[ $# > 1 ]] && [[ $2 < 6 ]] && [[ $2 > -1 ]]
+                then
+                    echo "Clip number should be in 0~5"
+                    return 1
+                fi
+                ;;
             -s|--set-clip)
                 shift 1
                 if [[ $# = 0 ]] && [ ! -t 0 ]
                 then
                     local var_from_pipe="$(xargs echo)"
                     # echo "FD 0 has opened."
-                    hs_config -s "${HS_VAR_CLIPBOARD}" "${var_from_pipe}"
+                    hs_config -s "${var_clipboard}" "${var_from_pipe}"
                 elif [[ ${#} = 0 ]]
                 then
-                    hs_config -s "${HS_VAR_CLIPBOARD}" "$(realpath .)"
+                    hs_config -s "${var_clipboard}" "$(realpath .)"
                 elif [[ ${#} = 1 ]] && [ -e ${1} ]
                 then
-                    hs_config -s "${HS_VAR_CLIPBOARD}" "$(realpath ${1})"
+                    hs_config -s "${var_clipboard}" "$(realpath ${1})"
                 else
-                    hs_config -s "${HS_VAR_CLIPBOARD}" "${@}"
+                    hs_config -s "${var_clipboard}" "${@}"
                 fi
                 break
                 ;;
             -p|--set-from-pipe)
                 local var_from_pipe="$(xargs echo)"
                 # echo "FD 0 has opened."
-                hs_config -s "${HS_VAR_CLIPBOARD}" "${var_from_pipe}"
+                hs_config -s "${var_clipboard}" "${var_from_pipe}"
                 ;;
             -g|--get-clip)
-                hs_config -g "${HS_VAR_CLIPBOARD}"
+                hs_config -g "${var_clipboard}"
                 ;;
             -d|--get-current-dir)
                 # get current dir
                 hs_config -g "${HS_VAR_CURRENT_DIR}"
                 ;;
-            -l|--link)
+            -ln|--link)
                 clip -x 'ln -s $(realpath %p) ./'
                 ;;
             -c|-cf|--copy-file)
                 clip -x cp -r %p .
                 ;;
-            -cd|--copy-directory)
-                clip -x cp -r %p .
-                ;;
-            -ca|--copy-directory)
+            -ca|--copy-all)
                 clip -x cp -r %p/* .
                 ;;
             -f|--fake-run)
@@ -107,13 +126,15 @@ function clip()
                 cli_helper -t "SYNOPSIS"
                 cli_helper -d "clip [Options] [Value]"
                 cli_helper -t "Options"
+                cli_helper -o "-b|--clip-buffer" -d "Set Clipbboard buffer from 0 to 5, default use None"
+                cli_helper -o "-l|--list" -d "List Clipbboard buffer from 0 to 5, and default"
                 cli_helper -o "-s|--set-clip" -d "Set Clipbboard, default use pwd for setting var"
                 cli_helper -o "-p|--set-from-pipe" -d "Set Clipbboard, default use pwd for setting var"
                 cli_helper -o "-g|--get-clip" -d "Get Clipbboard, default use getting action"
                 cli_helper -o "-d|--get-current-dir" -d "Get current dir vars, get current stored dir"
                 cli_helper -o "-c|-cf|--copy-file" -d "cp file to current folder"
-                cli_helper -o "-cd|--copy-directory" -d "cp dir to current folder"
                 cli_helper -o "-ca|--copy-all" -d "cp all file too current folder"
+                cli_helper -o "-ln|--link" -d "Link file to the current folder"
                 cli_helper -o "-f|--fake-run" -d "Do fake run on -x"
                 cli_helper -o "-x|--excute" -d "Excute command, replace %p with clip buffer"
                 cli_helper -o "-h|--help" -d "Print help function "
@@ -121,7 +142,7 @@ function clip()
                 return 0
                 ;;
             *)
-                hs_config -s "${HS_VAR_CLIPBOARD}" "${@}"
+                hs_config -s "${var_clipboard}" "${@}"
                 break
                 ;;
         esac
@@ -260,7 +281,7 @@ function compressor()
             -z|--xzip)
                 if command -v pigz
                 then
-                    cmd_args+=(--use-compress-program=pigz)
+                    cmd_args+=("--use-compress-program='pigz --best'")
                 else
                     cmd_args+=(-z)
                 fi
@@ -288,11 +309,11 @@ function compressor()
                 cmd_args+=(-v)
                 ;;
             -h|--help)
-                cli_helper -c "template" -cd "template function"
+                cli_helper -c "compressor" -cd "compressor function"
                 cli_helper -t "SYNOPSIS"
-                cli_helper -d "template [Options] [Value]"
+                cli_helper -d "compressor [Options] [Value]"
                 cli_helper -t "Options"
-                cli_helper -o "-f|--file" -d "file name for process"
+                cli_helper -o "-f|--file" -d "output file name"
                 cli_helper -o "-j|--bzip2" -d "use bzip2 alg"
                 cli_helper -o "-z|--xz" -d "use xz alg"
                 cli_helper -o "-x|--extract" -d "extract file"
