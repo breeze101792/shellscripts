@@ -1598,6 +1598,7 @@ function rreset()
 function rdate()
 {
     local checkout_date=$1
+    local var_action=""
     if [[ "$#" = "0" ]]
     then
         echo "Date not found."
@@ -1612,9 +1613,13 @@ function rdate()
                 shift 1
                 ;;
             -h|--help)
-                echo "rdate [Options]"
-                printlc -cp false -d "->" "-d|--date|date" "append file extension on search"
-                printlc -cp false -d "->" "-h|--help" "Print help function "
+                cli_helper -c "rdate" -cd "rdate function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "rdate [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-d|--date|date" -d "Specify date for commit"
+                cli_helper -t "Example"
+                cli_helper -d "rdate -d 2020-07-22 02:00"
                 return 0
                 ;;
             *)

@@ -32,7 +32,9 @@ function waitsync()
 function clip()
 {
     local flag_fake_run=false
-    local var_clipboard=${HS_VAR_CLIPBOARD}
+    local var_clipidx="0"
+    local var_clipboard="${HS_VAR_CLIPBOARD}_${var_clipidx}"
+
     if [ "$#" = 0 ]
     then
         eval "clip -g"
@@ -46,7 +48,7 @@ function clip()
         fi
         case $1 in
             -l|--list)
-                echo "Clipboard buffer def : $(clip -g )"
+                # echo "Clipboard buffer def : $(clip -g )"
                 echo "Clipboard buffer 0   : $(clip -b 0 -g )"
                 echo "Clipboard buffer 1   : $(clip -b 1 -g )"
                 echo "Clipboard buffer 2   : $(clip -b 2 -g )"
@@ -55,15 +57,15 @@ function clip()
                 echo "Clipboard buffer 5   : $(clip -b 5 -g )"
                 ;;
             -b|--clip-buffer)
-                local var_clipboard="${HS_VAR_CLIPBOARD}_0"
-                if [[ $# > 1 ]] && [[ $2 < 6 ]] && [[ $2 > -1 ]]
+                if (( $# > 1 )) && (( $2 < 6 )) && (( $2 > -1 ))
                 then
-                    local var_clipboard="${HS_VAR_CLIPBOARD}_$2"
+                    var_clipidx=${2}
+                    var_clipboard="${HS_VAR_CLIPBOARD}_${var_clipidx}"
                     shift 1
-                elif [[ $# > 1 ]] && [[ $2 < 6 ]] && [[ $2 > -1 ]]
-                then
-                    echo "Clip number should be in 0~5"
-                    return 1
+                # elif (( $# > 1 )) && (( $2 < 6 )) && (( $2 > -1 ))
+                # then
+                #     echo "Clip number should be in 0~5"
+                #     return 1
                 fi
                 ;;
             -s|--set-clip)
@@ -97,20 +99,20 @@ function clip()
                 hs_config -g "${HS_VAR_CURRENT_DIR}"
                 ;;
             -ln|--link)
-                clip -x 'ln -s $(realpath %p) ./'
+                clip -b ${var_clipidx} -x 'ln -s $(realpath %p) ./'
                 ;;
             -c|-cf|--copy-file)
-                clip -x cp -r %p .
+                clip -b ${var_clipidx} -x cp -r %p .
                 ;;
             -ca|--copy-all)
-                clip -x cp -r %p/* .
+                clip -b ${var_clipidx} -x cp -r %p/* .
                 ;;
             -f|--fake-run)
                 flag_fake_run=true
                 ;;
             -x|--excute)
                 shift 1
-                local excute_cmd=$(printf "$(echo $@ | sed 's/%p/%s/g' )" "$(clip -g)")
+                local excute_cmd=$(printf "$(echo $@ | sed 's/%p/%s/g' )" "$(clip -b ${var_clipidx} -g)")
                 echo ${excute_cmd} |mark -s yellow ${excute_cmd}
                 if ! ${flag_fake_run}
                 then
@@ -231,6 +233,104 @@ function fsync()
     local remote_path=$2
     # rsync -avhW --no-compress --progress ${*}
     rsync -avhW --no-compress --progress ${1}/* ${2}
+}
+function eftp()
+{
+    local ftp_server=""
+    local ftp_user="$(whoami)"
+    local ftp_pass=""
+    local ftp_prefix="./"
+    local ftp_action=""
+    local ftp_cmd=""
+
+    if [[ "$#" = "0" ]]
+    then
+        echo "Default action"
+    fi
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -s|--server)
+                ftp_server=${2}
+                shift 1
+                ;;
+            -u|--user)
+                ftp_user=${2}
+                shift 1
+                ;;
+            -p|--pass)
+                ftp_pass=${2}
+                shift 1
+                ;;
+            -f|--folder)
+                ftp_prefix=${2}
+                shift 1
+                ;;
+            put)
+                ftp_action="put"
+                ;;
+            pull)
+                ftp_action="pull"
+                ;;
+            # -f|--file)
+            #     cmd_args+="${2}"
+            #     shift 1
+            #     ;;
+            -v|--verbose)
+                flag_verbose="y"
+                shift 1
+                ;;
+            -h|--help)
+                cli_helper -c "template" -cd "template function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "template [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-a|--append" -d "append file extension on search"
+                cli_helper -o "-v|--verbose" -d "Verbose print "
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                ftp_cmd="$@"
+                break
+                ;;
+        esac
+        shift 1
+    done
+    # echo "Action ${ftp_action}"
+    # echo "Cmd: ${ftp_cmd}"
+
+    if [ "${ftp_action}" = "put" ]
+    then
+        echo "FTP put ${ftp_cmd}"
+        ftp -n <<EOF
+open ${ftp_server}
+user ${ftp_user} ${ftp_pass}
+cd ${ftp_prefix}
+put ${ftp_cmd}
+ls
+EOF
+    elif [ "${ftp_action}" = "pull" ]
+    then
+        echo "FTP pull ${ftp_cmd}"
+        ftp -n <<EOF
+open ${ftp_server}
+user ${ftp_user} ${ftp_pass}
+cd ${ftp_prefix}
+pull ${ftp_cmd}
+ls
+EOF
+    else
+        echo "FTP ${ftp_cmd}"
+        ftp -n <<EOF
+open ${ftp_server}
+user ${ftp_user} ${ftp_pass}
+cd ${ftp_prefix}
+${ftp_cmd}
+ls
+EOF
+    fi
+
 }
 function renter()
 {
