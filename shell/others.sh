@@ -155,7 +155,7 @@ function rv()
     # cmd="ffmpeg -f alsa -ac 2 -i hw:1,0 -f video4linux2 -i /dev/video0 -acodec ac3 -ab 128k -f matroska -s 1280x720 -vcodec libx264 -preset ultrafast -qp 16 -t $1  ${video_path}/video_`tstamp`.mkv"
 
     # cmd="ffmpeg -fflags +igndts -async 1 -f alsa -thread_queue_size 1024 -ac 2 -i hw:1 -f video4linux2 -i /dev/video0 -acodec aac -ab 128k -f matroska -vcodec libx265 -preset slow -crf 18 -t $1  ${video_path}/video_`tstamp`.mkv"
-    cmd="ffmpeg -async 1 -f alsa -thread_queue_size 1024 -ac 2 -i hw:1 -f video4linux2 -i /dev/video0 -acodec aac -ab 128k -f matroska -vcodec libx265 -preset slow -crf 18 -t $1  ${video_path}/video_`tstamp`.mkv"
+    cmd="ffmpeg -async 1 -f alsa -thread_queue_size 1024 -ac 2 -i hw:1 -f video4linux2 -i /dev/video2 -acodec aac -ab 128k -f matroska -vcodec libx265 -preset slow -crf 18 -t $1  ${video_path}/video_`tstamp`.mkv"
     # "-fflags +igndts" to regenerate DTS based on PTS
     printf "%s\n" "${cmd}"
     eval "${cmd}"
