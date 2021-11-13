@@ -68,6 +68,7 @@ function setup_shell()
 }
 function setup_tmux()
 {
+    echo "Dont forget to install bc on your shell"
     ln -sf ${HS_SCRIPT_PATH}/configs/others/tmux.conf ${HOME}/.tmux.conf
 }
 function setup_git()
