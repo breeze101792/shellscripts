@@ -9,6 +9,15 @@
 ########################################################
 #####    Usefull Function                          #####
 ########################################################
+function sysbench()
+{
+    for each_cpu in $(seq 1 "$(nproc)")
+    do
+        echo "Run Task ${each_cpu}"
+        openssl speed rsa &
+    done
+    wait
+}
 function tokenizer()
 {
     if [ "$#" = "0" ]
