@@ -120,7 +120,7 @@ function hs_source()
 function hs_motd()
 {
     # ps -Aeo pid,cmd | grep "^${PPID}"
-    local var_msg=()
+    local var_msg=("")
     local var_distro=$(cat /etc/os-release | grep "^ID=" | cut -d "=" -f 2 )
     local var_logo=""
     local var_info_len=0
@@ -132,11 +132,13 @@ function hs_motd()
 
     local tmp_pname="$(ps -Ao pid,fname |grep "${PPID}" |grep -v "grep" | sed 's/[[:space:]]\+/ /g' | cut -d ' ' -f 3)"
 
+
     var_msg+=$(printf "%- 16s: %s" "OS" "$(cat /etc/os-release | grep "^NAME=" | cut -d "\"" -f 2 )")
     var_msg+=$(printf "%- 16s: %s" "Hostname" "$(cat /etc/hostname)")
     var_msg+=$(printf "%- 16s: %s" "Kernel Version" "$(uname -r)")
     var_msg+=$(printf "%- 16s: %s" "CPU" "$(cat /proc/cpuinfo | grep 'model name' | head -n 1 | cut -d ':' -f 2 | sed 's/^\s//g')")
-    var_msg+=$(printf "%- 16s: %s" "GPU" "$(lspci|grep VGA | cut -d ':' -f 3 | sed 's/^\s//g')")
+    var_tmp_msg=$(lspci 2> /dev/null |grep VGA | cut -d ':' -f 3 | sed 's/^\s//g')
+    test -n "${var_tmp_msg}" && var_msg+=$(printf "%- 16s: %s" "GPU" "-${var_tmp_msg}-")
     var_msg+=$(printf "%- 16s: %s" "RAM Free" "$(free -h | grep Mem | sed 's/\s\+/ /g' | cut -d ' ' -f 4) / $(free -h | grep Mem | sed 's/\s\+/ /g' | cut -d ' ' -f 2)")
     var_msg+=$(printf "%- 16s: %s" "Uptime" "$(uptime | sed 's/\s\+/ /g' |cut -d " " -f 4 | sed 's/,//g')")
     var_msg+=$(printf "%- 16s: %s" "Root" "$(df -h / |tail -n 1 | sed 's/\s\+/ /g' | cut -d ' ' -f 3) / $(df -h / | tail -n 1 | sed 's/\s\+/ /g' | cut -d ' ' -f 2) ($(df -h / | tail -n 1 | sed 's/\s\+/ /g' | cut -d ' ' -f 5))")
@@ -191,18 +193,21 @@ function hs_motd()
         var_logo=(${var_ubuntu[@]})
     elif [ "${var_distro}" = "raspbian" ]
     then
-        var_raspberry+="                   "
-        var_raspberry+="    .~~.   .~~.    "
-        var_raspberry+="   '. \ ' ' / .'   "
-        var_raspberry+="    .~ .~~~..~.    "
-        var_raspberry+="   : .~.'~'.~. :   "
-        var_raspberry+="  ~ (   ) (   ) ~  "
-        var_raspberry+=" ( : '~'.~.'~' : ) "
-        var_raspberry+="  ~ .~ (   ) ~. ~  "
-        var_raspberry+="   (  : '~' :  )   "
-        var_raspberry+="    '~ .~~~. ~'    "
-        var_raspberry+="        '~'        "
-        var_raspberry+="                   "
+        local var_color=$(echo -e "\e[0;32m")
+        local var_clr_reset=$(echo -e "\e[0m")
+        var_raspberry+=${var_color}"                   "${var_clr_reset}
+        var_raspberry+=${var_color}"    .~~.   .~~.    "${var_clr_reset}
+        var_raspberry+=${var_color}"   '. \ ' ' / .'   "${var_clr_reset}
+        var_color=$(echo -e "\e[0;31m")
+        var_raspberry+=${var_color}"    .~ .~~~..~.    "${var_clr_reset}
+        var_raspberry+=${var_color}"   : .~.'~'.~. :   "${var_clr_reset}
+        var_raspberry+=${var_color}"  ~ (   ) (   ) ~  "${var_clr_reset}
+        var_raspberry+=${var_color}" ( : '~'.~.'~' : ) "${var_clr_reset}
+        var_raspberry+=${var_color}"  ~ .~ (   ) ~. ~  "${var_clr_reset}
+        var_raspberry+=${var_color}"   (  : '~' :  )   "${var_clr_reset}
+        var_raspberry+=${var_color}"    '~ .~~~. ~'    "${var_clr_reset}
+        var_raspberry+=${var_color}"        '~'        "${var_clr_reset}
+        var_raspberry+=${var_color}"                   "${var_clr_reset}
         var_logo=(${var_raspberry[@]})
     else
         var_other+=$(echo -e "                        ")
@@ -220,7 +225,7 @@ function hs_motd()
         var_logo=(${var_other[@]})
     fi
 
-    if [[ ${#var_msg} > ${#var_logo} ]] 
+    if (( ${#var_msg} > ${#var_logo} ))
     then
         var_info_len=${#var_msg}
     else
