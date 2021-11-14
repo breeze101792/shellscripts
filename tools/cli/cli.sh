@@ -94,7 +94,8 @@ fInfo()
 ###########################################################
 function fUtil_ClearScreen()
 {
-    echo -en "\ec"
+    # echo -en "\ec"
+    clear
 }
 function fReset()
 {
@@ -105,7 +106,8 @@ function fReset()
     # if n=1 clean head to cursor
     # if n=2 clean all
     # if n=3 clean all & move back to scroll buffer
-    echo -en "\ec\e[37;44m\e[J";
+    # echo -en "\ec\e[37;44m\e[J";
+    echo -en "\e[37;44m\e[J";
 }
 function fUtil_Mark()
 {
@@ -185,7 +187,12 @@ function fUtil_ReadKey()
 ## Others
 ###########################################################
 function fFinalize() {
-    fUtil_ClearScreen
+    # fUtil_ClearScreen
+    # Enable Cursor :CSI?25h
+    # Disable Cursor :CSI?25l
+    # echo -en "\e[?25h"
+    echo -en "\ec"
+
     echo "Terminate script."
     exit 0
 }
@@ -227,8 +234,8 @@ function fInitialize()
     trap fFinalize INT
     # Reset to Initial State
     fUtil_ClearScreen
-    # disable Cursor :CSI?25h
-    # Enable  Cursor :CSI?25l
+    # Enable Cursor :CSI?25h
+    # Disable Cursor :CSI?25l
     echo -en "\e[?25l"
     # fMainMenu
 }
