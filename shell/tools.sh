@@ -1,3 +1,4 @@
+#!/bin/bash
 ########################################################
 ########################################################
 #####                                              #####
@@ -15,13 +16,84 @@ alias clipx="clip -x "
 ########################################################
 #####    File Function                             #####
 ########################################################
+function crypt()
+{
+    local cmd_args=("openssl enc")
+    local var_src_file=""
+    local var_out_file=""
+
+    if [[ "$#" = "0" ]]
+    then
+        echo "Default action"
+    fi
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -e|--encrypt)
+                cmd_args+=("-aes-256-cbc")
+                cmd_args+=(" -iter 16")
+                ;;
+            -d|--decrypt)
+                cmd_args+=("-d -aes-256-cbc")
+                ;;
+            -k|--key)
+                cmd_args+=("-k ${2}")
+                shift 1
+                ;;
+            -i|--input-file)
+                cmd_args+=("-in")
+                cmd_args+=("${2}")
+                var_src_file=${2}
+                shift 1
+                ;;
+            -o|--output-file)
+                cmd_args+=("-out")
+                cmd_args+=("${2}")
+                var_out_file=${2}
+                shift 1
+                ;;
+            -a|--args)
+                cmd_args+=("${2}")
+                shift 1
+                ;;
+            -h|--help)
+                cli_helper -c "crypt" -cd "crypt function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "crypt [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-e|--encrypt" -d "DO encrypt "
+                cli_helper -o "-d|--decrypt" -d "DO decrypt "
+                cli_helper -o "-k|--key" -d "Specify password "
+                cli_helper -o "-i|--input-file" -d "Specify input file "
+                cli_helper -o "-o|--output-file" -d "Specify output file "
+                cli_helper -o "-a|--args" -d "add other args"
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                break
+                ;;
+        esac
+        shift 1
+    done
+    if [ -z "${var_out_file}" ]
+    then
+        cmd_args+=("-out")
+        cmd_args+=("${var_src_file}.aes")
+    fi
+
+    echo "${cmd_args[@]}"
+    eval "${cmd_args[@]}"
+    # openssl enc -aes-256-cbc -in un_encrypted.data -out encrypted.data
+    # openssl enc -d -aes-256-cbc -in encrypted.data -out un_encrypted.data
+}
 function waitsync()
 {
     # waitsync [target_file]
     # wait for target file exist
     local target=$1
     local interval=1
-    while [ ! -e ${target} ];
+    while [ ! -e "${target}" ];
     do
         echo "Wait for ${target}"
         sleep ${interval}

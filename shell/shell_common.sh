@@ -63,16 +63,15 @@ function hs_config()
         # echo "$*"
         local target_var=$2
         local content=$3
-        if [ -f "${HS_FILE_CONFIG}" ] && hs_config -e "${target_var}" > /dev/null
+        if hs_config -e "${target_var}" > /dev/null
         then
             # echo ${target_var}
-            # sed -i "s|${target_var}=.*|${target_var}=${content}|g" ${HS_FILE_CONFIG}
             sed -i "/${target_var}=.*/d" ${HS_FILE_CONFIG}
-            # printf "%s=%s\n" "${target_var}" "${content}" >> ${HS_FILE_CONFIG}
-        # else
-            # printf "%s=%s\n" "${target_var}" "${content}" >> ${HS_FILE_CONFIG}
         fi
         printf "%s=%s\n" "${target_var}" "${content}" >> ${HS_FILE_CONFIG}
+
+        # echo sed -i -e "/^\(${target_var//\//\\/}=\).*/{s//\1${content}/;:a;n;ba;q}" -e "$a ${target_var//\//\\/}=${content}" ${HS_FILE_CONFIG}
+
     elif [ "$#" = "2" ] && [ "$1" = "-g" ]
     then
         local target_var=$2
@@ -108,6 +107,7 @@ function set_working_path()
         -s|--set-current-path)
             # hs_config -s "${HS_VAR_CURRENT_DIR}" $(realpath ${PWD})
             # hs_config -s "${HS_VAR_CURRENT_DIR}" "${PWD}"
+            # time (hs_config -s "${HS_VAR_CURRENT_DIR}" "$(pwd)")
             hs_config -s "${HS_VAR_CURRENT_DIR}" "$(pwd)"
             # if [ -n "${HS_FILE_CONFIG}" ]
             # then

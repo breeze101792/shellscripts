@@ -1,3 +1,4 @@
+#!/bin/bash
 ########################################################
 ########################################################
 #####                                              #####
@@ -198,7 +199,7 @@ function vm_init()
 }
 function gcc_setup()
 {
-    if [ "$1" != "clang"]
+    if [ "$1" != "clang" ]
     then
         local gcc_ver=7
         alias gcc='gcc-$gcc_ver'
@@ -268,8 +269,8 @@ function link_folders()
     mkdir ${target_folder}
     shift 1
     local src_path=($@)
-    echo "link_folders->$@"
-    for each_folder in ${src_path[@]}
+    echo "link_folders->$*"
+    for each_folder in "${src_path[@]}"
     do
         local tmp_folder=$(realpath ${each_folder})
         echo "Link:${tmp_folder}"
@@ -353,7 +354,7 @@ function proj_root()
 function proj_man()
 {
     echo "Test"
-    for arg in $@
+    for arg in "$@"
     do
         echo loop ${arg}
         case $arg in
