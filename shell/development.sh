@@ -78,6 +78,18 @@ function pvinit()
                 file_exclude+="-o -name \"*.${2}\""
                 shift 1
                 ;;
+            -c|--clean)
+                local tmp_file_array=("${target_list_name}" "pvinit.err" "cscope.db" "cctree.db" "tags")
+                for each_file in "${tmp_file_array[@]}"
+                do
+                    if [ -f "${each_file}" ]
+                    then
+                        echo "remove ${each_file}"
+                        rm ${each_file}
+                    fi
+                done
+                return 0
+                ;;
             --header)
                 flag_header=y
                 ;;
@@ -89,6 +101,7 @@ function pvinit()
                 cli_helper -o "-a|--append" -d "append more fire in file list"
                 cli_helper -o "-e|--extension" -d "add file extension on search"
                 cli_helper -o "-x|--exclude" -d "exclude file on search"
+                cli_helper -o "-c|--clean" -d "Clean related files"
                 cli_helper -o "--header" -d "Add header vim code"
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
@@ -559,10 +572,7 @@ function lanalyser
     cat -n ${var_logfile} | grep -B 5 -A 5 "error.*generated\|^FAILED:" | mark_build
 
     echo "---- Make log analysis"
-    cat -n ${var_logfile} | grep "make.*Error" | mark_build
-
-    echo "---- Compiler log analysis"
-    cat -n ${var_logfile} | grep "error:" | mark_build
+    cat -n ${var_logfile} | grep "make.*Error\|Makefile.*\*\*\*" | mark_build
 
     echo "---- Others log analysis"
     cat -n ${var_logfile} | grep "command not found" | mark "command not found"
