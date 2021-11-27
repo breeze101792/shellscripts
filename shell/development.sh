@@ -1427,6 +1427,71 @@ function gfiles()
     fi
     cd ${var_cpath}
 }
+function gsize()
+{
+    local cpath=$(pwd)
+    local var_commit="HEAD"
+    local var_verbose="n"
+
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -c|--commit)
+                var_commit=$2
+                shift 1
+                ;;
+            -v|--verbose)
+                var_verbose="y"
+                ;;
+            -h|--help)
+                cli_helper -c "gsize" -cd "gsize function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "gsize [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-c|--commit" -d "Specify commit hash"
+                cli_helper -o "-v|--verbose" -d "Specify commit hash"
+                # cli_helper -o "-n|--number" -d "get commit before n commit"
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                var_commit="$1"
+                break
+                ;;
+        esac
+        shift 1
+    done
+
+    froot .git
+
+    ITEM_LIST_NAME=(`git diff-tree -r -c -M -C --no-commit-id $var_commit | sed "s/\s\+/ /g" | cut -d ' ' -f 6`)
+    # echo ${ITEM_LIST_NAME}
+    ITEM_LIST="`git diff-tree -r -c -M -C --no-commit-id $var_commit`"
+    BLOB_HASH_LIST=(`echo "$ITEM_LIST" | awk '{ print $4 }'`)
+    local COMMIT_SIZE=0
+
+    if [ "${var_verbose}" = "y" ]
+    then
+        for each_idx in $(seq 0 ${#BLOB_HASH_LIST[@]})
+        do
+            if [ ! -f "${ITEM_LIST_NAME[$each_idx]}" ]
+            then
+                continue
+            fi
+            local tmp_size=$(echo ${BLOB_HASH_LIST[$each_idx]} | git cat-file --batch-check | grep "blob" | awk '{ print $3}')
+            echo -E ${ITEM_LIST_NAME[$each_idx]}: $(numfmt --to=iec-i --suffix=B --padding=7 $tmp_size)
+            # COMMIT_SIZE=$((${tmp_size} + ${COMMIT_SIZE}))
+
+        done
+    fi
+    BLOB_HASH_LIST="`echo "$ITEM_LIST" | awk '{ print $4 }'`"
+
+    SIZE_LIST="`echo "$BLOB_HASH_LIST" | git cat-file --batch-check | grep "blob" | awk '{ print $3}'`"
+    COMMIT_SIZE="`echo "$SIZE_LIST" | awk '{ sum += $1 } END { print sum }'`"
+    echo "${var_commit}: $(numfmt --to=iec-i --suffix=B --padding=7 $COMMIT_SIZE)(${COMMIT_SIZE})"
+
+    cd ${cpath}
+}
 function gpatch()
 {
     local var_patch_url=""
