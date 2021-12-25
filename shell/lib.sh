@@ -101,6 +101,7 @@ function droot()
     local flag_ignore_case="y"
     local flag_full_match="n"
     local flag_verbose="n"
+    local flag_fake="n"
     local grep_args=("")
 
     while [[ "$#" != 0 ]]
@@ -115,10 +116,14 @@ function droot()
             -v|--verbose)
                 flag_verbose="y"
                 ;;
+            -f|--fake)
+                flag_fake="y"
+                ;;
             -h|--help)
                 echo "froot"
                 printlc -cp false -d "->" "-c|--case" "Ignore case"
                 printlc -cp false -d "->" "-m|--full-match" "full pattern match"
+                printlc -cp false -d "->" "-f|--fake" "return target path"
                 printlc -cp false -d "->" "-v|--verbose" "Echo Verbose"
                 return 0
                 ;;
@@ -138,7 +143,7 @@ function droot()
 
     local path_array=(`echo ${cpath} | sed 's/\//\n/g'`)
     # wallk through files
-    while ! echo ${tmp_path} | rev |  cut -d'/' -f 1 | rev   |  grep ${grep_args} ${target} > /dev/null;
+    while ! echo ${tmp_path} | rev |  cut -d'/' -f 1 | rev   |  grep -q ${grep_args} ${target};
     do
 
         tmp_path=${tmp_path}"/.."
@@ -161,7 +166,12 @@ function droot()
     fi
 
     [ "${flag_verbose}" = "y" ] && echo "goto ${target_path}"
-    cd "${target_path}"
+    if [ "${flag_fake}" = "y" ] 
+    then
+        echo "${target_path}"
+    else
+        cd "${target_path}"
+    fi
     return 0
 }
 function froot()
@@ -173,6 +183,7 @@ function froot()
     local flag_ignore_case="y"
     local flag_full_match="n"
     local flag_verbose="n"
+    local flag_fake="n"
     local grep_args=("")
 
     while [[ "$#" != 0 ]]
@@ -187,10 +198,14 @@ function froot()
             -v|--verbose)
                 flag_verbose="y"
                 ;;
+            -f|--fake)
+                flag_fake="y"
+                ;;
             -h|--help)
                 echo "froot"
                 printlc -cp false -d "->" "-c|--case" "Ignore case"
                 printlc -cp false -d "->" "-m|--full-match" "full pattern match"
+                printlc -cp false -d "->" "-f|--fake" "return target path"
                 printlc -cp false -d "->" "-v|--verbose" "Echo Verbose"
                 return 0
                 ;;
@@ -209,7 +224,7 @@ function froot()
     fi
 
     # wallk through files
-    while ! ls -a "${tmp_path}" | grep ${grep_args} $target > /dev/null;
+    while ! ls -a "${tmp_path}" | grep -q ${grep_args} $target;
     do
         tmp_path="${tmp_path}/.."
         pushd "${tmp_path}" > /dev/null
@@ -231,7 +246,13 @@ function froot()
     fi
 
     [ "${flag_verbose}" = "y" ] && echo "goto $target_path"
-    cd "${target_path}"
+    if [ "${flag_fake}" = "y" ] 
+    then
+        echo "${target_path}"
+    else
+        cd "${target_path}"
+    fi
+    return 0
 }
 function groot()
 {

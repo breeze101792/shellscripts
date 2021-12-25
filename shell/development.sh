@@ -128,20 +128,22 @@ function pvinit()
         target_list_name="$(realpath ${target_list_name})"
         cd ${var_cpath}
     fi
-    echo "Searching Path:${src_path[@]}"
+    echo "Searching Path:${#src_path[@]}${src_path[@]}"
     echo "file_ext: $file_ext"
     echo "Project List File: ${target_list_name}"
 
     for each_path in ${src_path[@]}
     do
-        # echo "Searching path: ${tmp_path}"
+        # echo "Searching path: ${each_path}"
         if [ ! -e ${each_path} ]
         then
-            # echo "Continue"
+            printc -c red "folder not found: "
+            echo -e "${each_path}"
             continue
         else
             local tmp_path=$(realpath ${each_path})
-            echo -e "Searching folder: $tmp_path"
+            printc -c green "Searching folder: "
+            echo -e "$tmp_path"
             find_cmd="find ${tmp_path} \( -type f -name '*.h' -o -name '*.c' -o -name '*.cpp' -o -name '*.java' ${file_ext[@]} \) -a \( -not -path '*/auto_gen*' -o -not -path '*/build*' ${file_exclude[@]} \) | xargs realpath >> \"${target_list_name}\""
             # echo ${find_cmd}
             eval "${find_cmd}"
@@ -1290,14 +1292,36 @@ function ginfo()
     local var_remote=""
     local var_branch=""
     local var_url=""
+    local flag_isgit='n'
 
-    local branch_name=""
     local tracking_branch_name=""
     local current_branch=""
+    local flag_info='n'
+    local flag_auto='n'
+
+    if froot -f -m '.git'
+    then
+        flag_isgit='y'
+    fi
+
+    if [ "${flag_isgit}" = 'y' ]
+    then
+        var_remote="$(git remote show)"
+        var_branch="$(git branch | grep '^\*' | sed 's/^\*//g')"
+        var_url="$(git remote get-url ${var_remote})"
+    fi
+
+    if [[ "$#" = "0" ]]
+    then
+        flag_info='y'
+    fi
 
     while [[ "$#" != 0 ]]
     do
         case $1 in
+            -a|--auto-detect)
+                cli_helper -o "-a|--auto-detect" -d "Auto detect branch/remote"
+                ;;
             -h|--help)
                 cli_helper -c "ginfo" -cd "git information"
                 cli_helper -t "SYNOPSIS"
@@ -1307,65 +1331,62 @@ function ginfo()
                 return 0
                 ;;
             *)
+                flag_info='y'
+                flag_auto='y'
                 break
                 ;;
         esac
         shift 1
     done
 
-    # if froot -m .git
-    # then
-    #     # var_remote="$(cat .git/config|grep '\[*\]' | grep remote | cut -d '"' -f2)"
-    #     # var_branch="$(cat .git/config|grep '\[*\]' | grep branch | cut -d '"' -f2)"
-    #     var_url="$(cat .git/config|grep 'url' | cut -d '=' -f2)"
-    #     cd ${var_cpath}
-    # fi
 
-    var_remote="$(git remote show)"
-    var_url="$(git remote get-url ${var_remote})"
-    var_branch="$(git branch | grep '^\*' | sed 's/^\*//g')"
-    # fetch_url="$(git remote show $(git remote show) | grep Fetch |cut -d':' -f 2- | tr -d '[:blank:]')"
-    # branch_name="$(git remote show $(git remote show) | grep 'HEAD branch' |cut -d':' -f 2- | tr -d '[:blank:]')"
-
-    tracking_branch_name="$(git branch -a | grep '\->' | cut -d'/' -f 4)"
-    current_branch=$(git branch| sed -e '/^[^*]/d' -e 's/* //g' | tr -d "[:blank:]")
-
-    if [ "${var_branch}" = "" ] && $(echo ${tracking_branch_name} | grep detached)
+    if [ "${flag_auto}" = "y" ]
     then
-        var_branch=${tracking_branch_name}
-    elif [ "${var_branch}" = "" ] && $(echo ${current_branch} | grep detached)
-    then
-        var_branch=${current_branch}
+        tracking_branch_name="$(git branch -a | grep '\->' | cut -d'/' -f 4)"
+        current_branch=$(git branch| sed -e '/^[^*]/d' -e 's/* //g' | tr -d "[:blank:]")
+
+        if [ "${var_branch}" = "" ] && $(echo ${tracking_branch_name} | grep detached)
+        then
+            var_branch=${tracking_branch_name}
+        elif [ "${var_branch}" = "" ] && $(echo ${current_branch} | grep detached)
+        then
+            var_branch=${current_branch}
+        fi
+        if [ "${var_branch}" = "" ] || $(echo ${var_branch} | grep detached)
+        then
+            echo "Branch Not found."
+            var_branch="master"
+            flag_user_check="y"
+        fi
     fi
 
-    if [ "${var_branch}" = "" ] || $(echo ${var_branch} | grep detached)
+
+    var_branch="$(echo ${var_branch} | sed 's/\ +//g')"
+
+    if [ "${flag_info}" = "y" ]
     then
-        echo "Branch Not found."
-        var_branch="master"
+        echo "Remote: \"${var_remote}\""
+        echo "Branch: \"${var_branch}\""
+        echo "URL   : \"${var_url}\""
+        echo "---- Clone ----"
+        echo "> git clone ${var_url} -b ${var_branch}"
+        echo "---- Reset Online ----"
+        echo "> git reset --hard ${var_remote}/${var_branch}"
+        echo "---- Pull Online Branch----"
+        echo "> git pull ${var_remote} ${var_branch}"
+        echo "---- track Online Branch ----"
+        echo "> git branch --set-upstream-to=${var_remote}/${var_branch} ${current_branch} "
+        echo "---- Patches ----"
+        echo "Generate Patch: git format-patch -n <num_of_patchs> <commit>"
+        echo "Apply Patch   : git am --directory=<path_to_your_patch_root> <path_to_your_patch>"
+        echo "---- Others ----"
+        echo "Fetch online commit: git fetch --all"
+        echo "Get Info for First 1 Commit: git log --pretty='format:%p->%h %cn(%an) %s' -n 1"
+        echo "Get Info for First 1 Commit: git log --pretty='format:%cd %p->%h %cn(%an) %s' -n 1"
+        echo "Show all file status: git status --ignored all"
+        echo "Add all file with ignored file: git add -Avf"
     fi
 
-    var_branch="$(echo ${var_branch} | sed 's/\ \+//g')"
-
-    echo "Remote: \"${var_remote}\""
-    echo "Branch: \"${var_branch}\""
-    echo "URL   : \"${var_url}\""
-    echo "---- Clone ----"
-    echo "> git clone ${var_url} -b ${var_branch}"
-    echo "---- Reset Online ----"
-    echo "> git reset --hard ${var_remote}/${var_branch}"
-    echo "---- Pull Online Branch----"
-    echo "> git pull ${var_remote} ${var_branch}"
-    echo "---- track Online Branch ----"
-    echo "> git branch --set-upstream-to=${var_remote}/${var_branch} ${current_branch} "
-    echo "---- Patches ----"
-    echo "Generate Patch: git format-patch -n <num_of_patchs> <commit>"
-    echo "Apply Patch   : git am --directory=<path_to_your_patch_root> <path_to_your_patch>"
-    echo "---- Others ----"
-    echo "Fetch online commit: git fetch --all"
-    echo "Get Info for First 1 Commit: git log --pretty='format:%p->%h %cn(%an) %s' -n 1"
-    echo "Get Info for First 1 Commit: git log --pretty='format:%cd %p->%h %cn(%an) %s' -n 1"
-    echo "Show all file status: git status --ignored all"
-    echo "Add all file with ignored file: git add -Avf"
 
 }
 function gfiles()
