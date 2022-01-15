@@ -1749,17 +1749,15 @@ hex2bin()
                 then
                     echo "Input file exist!!"
                     return 1
-                else
-                    tmp_input_file=$(echo "${2}" > "${tmp_input_file}")
                 fi
-                shift 1
-                ;;
-            -f|--input-file)
                 if [ -f "${2}" ]
                 then
                     cp ${2} ${tmp_input_file}
+                elif [ -n "${2}" ]
+                then
+                    tmp_input_file=$(echo "${2}" > "${tmp_input_file}")
                 else
-                    echo "Input file not exist!!"
+                    echo "Input file/str not exist!!"
                     return 1
                 fi
                 shift 1
@@ -1779,8 +1777,8 @@ hex2bin()
                 cli_helper -t "SYNOPSIS"
                 cli_helper -d "hex2bin [Options] [Value]"
                 cli_helper -t "Options"
-                cli_helper -o "-i|--input" -d "Input file"
-                cli_helper -o "-o|--output" -d "Output File"
+                cli_helper -o "-i|--input" -d "Input, could be file/str"
+                cli_helper -o "-o|--output" -d "Output File name"
                 cli_helper -o "-h|--help" -d "Print help function "
                 cli_helper -t "Output Formate"
                 cli_helper -o "-c|--c-header" -d "Output to c header fmt"

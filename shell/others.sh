@@ -123,6 +123,92 @@ function runtime()
 ########################################################
 #####    Others Function                           #####
 ########################################################
+function sinfo()
+{
+    local flag_info='n'
+
+    if [[ "$#" = "0" ]]
+    then
+        echo "Default action"
+        flag_info='y'
+    fi
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -a|--append)
+                cmd_args+="${2}"
+                shift 1
+                ;;
+            -v|--verbose)
+                flag_verbose="y"
+                shift 1
+                ;;
+            -h|--help)
+                cli_helper -c "sinfo" -cd "sinfo function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "sinfo [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-a|--append" -d "append file extension on search"
+                cli_helper -o "-v|--verbose" -d "Verbose print "
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                break
+                ;;
+        esac
+        shift 1
+    done
+    local var_hostname=
+
+    if true
+    then
+        local var_os="$(cat /etc/os-release | grep "^NAME=" | cut -d "\"" -f 2 )"
+        local var_hostname="$(cat /etc/hostname)"
+        local var_kernel="$(uname -r)"
+        local var_cpu="$(cat /proc/cpuinfo | grep 'model name' | head -n 1 | cut -d ':' -f 2 | sed 's/^\s//g')"
+        local_gpu=$(lspci 2> /dev/null |grep VGA | cut -d ':' -f 3 | sed 's/^\s//g')
+        local var_ram="$(free -h | grep Mem | sed 's/\s\+/ /g' | cut -d ' ' -f 4) / $(free -h | grep Mem | sed 's/\s\+/ /g' | cut -d ' ' -f 2)"
+        local var_uptime="$(uptime | sed 's/\s\+/ /g' |cut -d " " -f 4 | sed 's/,//g')"
+        local var_tmp="/"
+        local var_disk_root="$(df -h / |tail -n 1 | sed 's/\s\+/ /g' | cut -d ' ' -f 3) / $(df -h / | tail -n 1 | sed 's/\s\+/ /g' | cut -d ' ' -f 2) ($(df -h / | tail -n 1 | sed 's/\s\+/ /g' | cut -d ' ' -f 5))"
+        local var_tmp="/home"
+        local var_disk_home="$(df -h ${var_tmp} |tail -n 1 | sed 's/\s\+/ /g' | cut -d ' ' -f 3) / $(df -h ${var_tmp} | tail -n 1 | sed 's/\s\+/ /g' | cut -d ' ' -f 2) ($(df -h ${var_tmp} | tail -n 1 | sed 's/\s\+/ /g' | cut -d ' ' -f 5))"
+        local var_pproccess="$(ps -Ao pid,fname |grep "${PPID}" |grep -v "grep" | sed 's/[[:space:]]\+/ /g' |sed 's/^\s//g'| cut -d ' ' -f 2) (${PPID})"
+        local var_editor="${EDITOR}"
+    fi
+
+
+    if [ "${flag_info}" = "y" ]
+    then
+        echo "###############################################################"
+        echo "####  System Info"
+        echo "###############################################################"
+        echo "####  Hardware"
+        echo "##  CPU            : "${var_cpu}
+        echo "##  GPU            : "${var_gpu}
+        echo "##  Memory         : "${var_ram}
+        echo "####  Software"
+        echo "##  OS             : "${var_os}
+        echo "##  Kernel         : "${var_kernel}
+        echo "##  Hostname       : "${var_hostname}
+        echo "####  Configs"
+        echo "##  Parent Process : "${var_pproccess}
+        echo "##  Uptime         : "${var_uptime}
+        echo "##  Editor         : "${var_editor}
+        echo "####  Disk"
+        echo "##  Root Disk      : "${var_disk_root}
+        echo "##  Home Disk      : "${var_disk_home}
+        echo "###############################################################"
+        echo "####  Other Info"
+        echo "###############################################################"
+        echo "##  Memory       : "$(free -h  | grep Mem | sed 's/\s\+/;/g' | cut -d ';' -f 4)
+        echo "##  Working Disk : "$(df -h . | tail -n 1 | sed 's/\s\+/;/g' | cut -d ';' -f 4-5)
+        echo "##  TMP Disk     : "$(df -h /tmp | tail -n 1 | sed 's/\s\+/;/g' | cut -d ';' -f 4-5)
+        echo "###############################################################"
+    fi
+
+}
 function xsettings()
 {
     # .256 sec delay, 1 char/hz
@@ -213,12 +299,77 @@ function gcc_setup()
 ########################################################
 function cdwin()
 {
-    echo "I receive the variable --> $1"
-    line=$(sed -e 's#^J:##' -e 's#\\#/#g' <<< "$1")
-    echo "Path: $line"
-    if [ -d ${line} ]
+    local var_input_path="$(pwd)"
+    local var_output_path=""
+    local var_convert="linux"
+    local flag_fake="n"
+    local flag_verbose="n"
+
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            # -a|--append)
+            #     cmd_args+="${2}"
+            #     shift 1
+            #     ;;
+            -l|--linux)
+                var_convert="linux"
+                ;;
+            -w|--windows)
+                var_convert="win"
+                ;;
+            -f|--fake)
+                flag_fake="y"
+                ;;
+            -v|--verbose)
+                flag_verbose="y"
+                ;;
+            -h|--help)
+                cli_helper -c "cdwin" -cd "cdwin function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "cdwin [Options] [Value]"
+                cli_helper -t "Options"
+                # cli_helper -o "-a|--append" -d "append file extension on search"
+                cli_helper -o "-w|--windows" -d "convert to windows path "
+                cli_helper -o "-l|--linux" -d "convert to linux path "
+                cli_helper -o "-f|--fake" -d "fake run "
+                cli_helper -o "-v|--verbose" -d "Verbose print "
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                var_input_path=$@
+                break
+                ;;
+        esac
+        shift 1
+    done
+
+
+    if [ "${flag_verbose}" = "y" ]
     then
-        cd "$line"
+        echo "Input Path --> ${var_input_path}"
+    fi
+
+    if [ "${var_convert}" = "linux" ]
+    then
+        line=$(sed -e 's#^J:##' -e 's#\\#/#g' <<< "${var_input_path}")
+    elif [ "${var_convert}" = "win" ]
+    then
+        # line=$(sed -e 's|/|\\|g' -e 's|net||g' -e 's|shawn\.tseng\\||g'<<< ${var_input_path})
+        line=$(sed -e 's|/|\\|g' <<< ${var_input_path})
+    fi
+
+    if [ "${flag_fake}" = "y" ]
+    then
+        echo -E "$line"
+    else
+        if [ -d ${line} ]
+        then
+            cd "$line"
+        else
+            echo "Path no found: $line"
+        fi
     fi
 }
 function ctwin()

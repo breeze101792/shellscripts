@@ -202,17 +202,24 @@ function an_connect()
     local var_timeout=2
     if [[ $# != 1 ]]
     then
-        echo "No device ip found"
-        echo "Set IP to: ${HS_WORK_ENV_ANDROID_DEVICE_IP}"
+        local dev_ip=$(echo ${HS_WORK_ENV_ANDROID_DEVICE_IP}: | cut -d':' -f1)
+        local dev_port=$(echo ${HS_WORK_ENV_ANDROID_DEVICE_IP}: | cut -d':' -f2)
     else
         local dev_ip=$(echo $1: | cut -d':' -f1)
         local dev_port=$(echo $1: | cut -d':' -f2)
-        if [ "${dev_port}" = "" ]
-        then
-            dev_port=5555
-        fi
-        export HS_WORK_ENV_ANDROID_DEVICE_IP=$dev_ip:$dev_port
     fi
+    if [ "${dev_port}" = "" ]
+    then
+        dev_port=5555
+    fi
+    export HS_WORK_ENV_ANDROID_DEVICE_IP=$dev_ip:$dev_port
+    echo "Set IP to: ${HS_WORK_ENV_ANDROID_DEVICE_IP}"
+
+    while ping -W 5 -c 1 $(echo ${HS_WORK_ENV_ANDROID_DEVICE_IP}| cut -d ':' -f 1) -q | grep "0 received"
+    do
+        echo "Try to ping ${HS_WORK_ENV_ANDROID_DEVICE_IP}"
+    done
+
     echo "Connect ${HS_WORK_ENV_ANDROID_DEVICE_IP}"
     # an_adb -nc disconnect ${HS_WORK_ENV_ANDROID_DEVICE_IP}
     # an_adb -nc connect ${HS_WORK_ENV_ANDROID_DEVICE_IP}
