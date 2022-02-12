@@ -544,6 +544,14 @@ function mbuild()
 function lanalyser
 {
     local var_logfile=""
+    local flag_android="n"
+    local flag_make="n"
+    local flag_syntax="n"
+    local flag_command_missing="n"
+    local flag_file_missing="n"
+    local flag_others="n"
+    local flag_python="n"
+
     if [[ "$#" = "0" ]]
     then
         echo "Default action"
@@ -551,14 +559,28 @@ function lanalyser
     while [[ "$#" != 0 ]]
     do
         case $1 in
+            -a|--all)
+                flag_android="y"
+                flag_make="y"
+                flag_syntax="y"
+                flag_command_missing="y"
+                flag_file_missing="y"
+                flag_others="y"
+                flag_python="y"
+                ;;
             -f|--log-file)
                 var_logfile="${2}"
                 shift 1
                 ;;
             -h|--help)
-                echo "logger [Options]"
-                printlc -cp false -d "->" "-f|--log-file" "Specify log file"
-                printlc -cp false -d "->" "-h|--help" "Print help function "
+                cli_helper -c "lanalyser" -cd "lanalyser function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "lanalyser [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-a|--all" -d "enable all debug flag"
+                # cli_helper -o "-v|--verbose" -d "Verbose print "
+                cli_helper -o "-f|--log-file" -d "Specify log file"
+                cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;
             *)
@@ -568,17 +590,63 @@ function lanalyser
         esac
         shift 1
     done
-    echo "---- Android log analysis"
-    # local total_line=$(wc -l ${var_logfile} | cut -d " " -f1 )
-    # cat ${var_logfile} | grep -B ${total_line} "error.*generated" | tac | grep -B ${total_line} "generated.$" | tac | mark_build
-    cat -n ${var_logfile} | grep -B 5 -A 5 "error.*generated\|^FAILED:" | mark_build
 
-    echo "---- Make log analysis"
-    cat -n ${var_logfile} | grep "make.*Error\|Makefile.*\*\*\*" | mark_build
+    if [ "${flag_android}" = "y" ]
+    then
+        echo "flag_android: ${flag_android}"
+        echo "---- Android log analysis"
+        # local total_line=$(wc -l ${var_logfile} | cut -d " " -f1 )
+        # cat ${var_logfile} | grep -B ${total_line} "error.*generated" | tac | grep -B ${total_line} "generated.$" | tac | mark_build
+        cat -n ${var_logfile} | grep "error.*generated\|^FAILED:" | mark_build
+    fi
+    if [ "${flag_make}" = "y" ]
+    then
+        echo "---- Make log analysis"
+        cat -n ${var_logfile} | grep "make.*Error\|Makefile.*\*\*\*" | mark_build
+    fi
+    if [ "${flag_syntax}" = "y" ]
+    then
+        echo "---- Syntax log analysis"
+        cat -n ${var_logfile} | grep "undefined reference" | mark_build
+    fi
 
-    echo "---- Others log analysis"
-    cat -n ${var_logfile} | grep "command not found" | mark "command not found"
+    if [ "${flag_command_missing}" = "y" ]
+    then
+        echo "---- command missing "
+        cat -n ${var_logfile} | grep "command not found" | mark "command not found"
+    fi
 
+    if [ "${flag_file_missing}" = "y" ]
+    then
+        echo "---- file/dir/permission missing "
+        tmp_pattern="Can not find directory"
+        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
+
+        tmp_pattern="No such file or directory"
+        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
+
+        tmp_pattern="No space left on device"
+        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
+    fi
+
+    if [ "${flag_python}" = "y" ]
+    then
+        echo "---- python error"
+        tmp_pattern="Traceback (most recent call last):"
+        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
+
+    fi
+
+    if [ "${flag_others}" = "y" ]
+    then
+        echo "---- Others error"
+        tmp_pattern="syntax error"
+        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
+
+        tmp_pattern="\-\-help"
+        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
+
+    fi
 }
 ########################################################
 #####    Exc Enhance                               #####
@@ -1385,6 +1453,7 @@ function ginfo()
         echo "Get Info for First 1 Commit: git log --pretty='format:%cd %p->%h %cn(%an) %s' -n 1"
         echo "Show all file status: git status --ignored all"
         echo "Add all file with ignored file: git add -Avf"
+        echo "Clean out commit: git gc --prune=now --aggressive"
     fi
 
 
@@ -1392,12 +1461,14 @@ function ginfo()
 function gfiles()
 {
     local var_cpath=$(pwd)
+    local var_path=""
     # Use xargs tar cvf <your_tar_file.tar> could save the patch with tar
-    local var_commit="HEAD"
+    local var_commit=""
     local var_commit_start=""
     local var_commit_end=""
     local var_num="1"
     local var_commit_name=""
+    local var_extra_cmd=""
     local flag_compress="n"
 
     while [[ "$#" != 0 ]]
@@ -1409,6 +1480,10 @@ function gfiles()
                 ;;
             -n|--number)
                 var_num="$2"
+                shift 1
+                ;;
+            -p|--path)
+                var_path="$(realpath ${2})"
                 shift 1
                 ;;
             -t|--tar)
@@ -1434,17 +1509,26 @@ function gfiles()
     done
     froot .git
 
-    var_commit_start=$(git log --pretty='format:%h' -1 ${var_commit})
-    var_commit_end=$(git log --pretty='format:%h' -1 ${var_commit}~${var_num})
+    if [ -n "${var_commit}" ]
+    then
+        var_commit_start=$(git log --pretty='format:%h' -1 ${var_commit})
+        var_commit_end=$(git log --pretty='format:%h' -1 ${var_commit}~${var_num})
 
-    var_commit_name=${var_commit_start}_${var_commit_end}_$(git log --pretty='format:%s' -n 1 ${var_commit_start}| sed "s/://g" | sed "s/\]\[//g" | sed "s/\]//g" | sed "s/\[//g" | sed "s/\ /_/g")
+        var_commit_name=${var_commit_start}_${var_commit_end}_$(git log --pretty='format:%s' -n 1 ${var_commit_start}| sed "s/://g" | sed "s/\]\[//g" | sed "s/\]//g" | sed "s/\[//g" | sed "s/\ /_/g")
+    else
+        var_commit_start=""
+        var_commit_end=""
+
+        var_commit_name=$(tstamp)
+    fi
+
     if [ "${flag_compress}" = "y" ]
     then
         tmp_file="${var_commit_name}.tbz2"
-        git diff ${var_commit_start} ${var_commit_end} --name-only | xargs tar -cvjf "${tmp_file}"
+        git diff ${var_commit_start} ${var_commit_end} --name-only ${var_path}| xargs tar -cvjf "${tmp_file}"
         echo "Get Compressed file in :$(realpath ${tmp_file})"
     else
-        git diff ${var_commit_start} ${var_commit_end} --name-only
+        git diff ${var_commit_start} ${var_commit_end} --name-only ${var_path}
     fi
     cd ${var_cpath}
 }
@@ -1519,8 +1603,9 @@ function gpatch()
     local var_patch_file=""
     local var_manifest_file=""
     local var_patch_root="$(pwd)"
-    local flag_file_mismatch="n"
     local var_action="apply"
+    local flag_file_mismatch="n"
+    local flag_add_patch_file="n"
 
     local tmp_patch_file="test_$(tstamp).patch"
     while [[ "$#" != 0 ]]
@@ -1541,6 +1626,9 @@ function gpatch()
             -r|--revert-patch)
                 var_action='revert'
                 ;;
+            -g|--git)
+                flag_add_patch_file='y'
+                ;;
             # -m|--manifest)
             #     var_manifest_file="2"
             #     shift 1
@@ -1554,6 +1642,7 @@ function gpatch()
                 cli_helper -o "-f|--file" -d "Specify formate patch file"
                 cli_helper -o "-p|--apply-path" -d "Specify formate patch apply path"
                 cli_helper -o "-r|--revert-patch" -d "Action: Revert patch with formate patch"
+                cli_helper -o "-g|--git" -d "Add patched file to git"
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;
@@ -1570,7 +1659,7 @@ function gpatch()
     local var_patch_file="${var_patch_subject}_$(tstamp).patch"
 
 
-    for each_cl_file in $(cat ${tmp_patch_file} | grep "\-\-\- a" | cut -d "/" -f 2- )
+    for each_cl_file in $(cat ${tmp_patch_file} | grep "\-\-\- b" | cut -d "/" -f 2- )
     do
         if [ ! -f ${each_cl_file} ]
         then
@@ -1601,16 +1690,19 @@ function gpatch()
         patch -R -p1 -b -i ${tmp_patch_file} | mark "FAILED"
     fi
 
-    for each_cl_file in $(cat ${tmp_patch_file} | grep "\-\-\- a" | cut -d "/" -f 2- )
-    do
-        if [ -f "${each_cl_file}.rej" ]
-        then
-            printc -c red "Found reject file: ${each_cl_file}.rej\n"
-        elif [ -f ${each_cl_file} ]
-        then
-            git add ${each_cl_file}
-        fi
-    done
+    if [ "${flag_add_patch_file}" = "y" ]
+    then
+        for each_cl_file in $(cat ${tmp_patch_file} | grep "\-\-\- b" | cut -d "/" -f 2- )
+        do
+            if [ -f "${each_cl_file}.rej" ]
+            then
+                printc -c red "Found reject file: ${each_cl_file}.rej\n"
+            elif [ -f ${each_cl_file} ]
+            then
+                git add ${each_cl_file}
+            fi
+        done
+    fi
 
     echo "mv ${tmp_patch_file} ${var_patch_file}"
     mv "${tmp_patch_file}" "${var_patch_file}"

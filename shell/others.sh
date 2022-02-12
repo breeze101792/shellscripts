@@ -56,6 +56,10 @@ function doloop()
                 var_list_cmd="${2}"
                 shift 1
                 ;;
+            -n|--number)
+                var_list_cmd="seq 0 ${2}"
+                shift 1
+                ;;
             # -v|--verbose)
             #     flag_verbose="y"
             #     shift 1
@@ -67,6 +71,7 @@ function doloop()
                 cli_helper -t "Options"
                 cli_helper -o "-c|--cmd" -d "do command with %p do replace by list item"
                 cli_helper -o "-l|--list" -d "generate list command"
+                cli_helper -o "-n|--number" -d "generate number seq command(Start from 0), accept one number input"
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;

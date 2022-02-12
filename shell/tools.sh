@@ -109,7 +109,7 @@ function clip()
 
     if [ "$#" = 0 ]
     then
-        eval "clip -g"
+        eval "clip -l"
         return 0
     fi
     while true
@@ -200,8 +200,8 @@ function clip()
                 cli_helper -t "SYNOPSIS"
                 cli_helper -d "clip [Options] [Value]"
                 cli_helper -t "Options"
-                cli_helper -o "-b|--clip-buffer" -d "Set Clipbboard buffer from 0 to 5, default use None"
-                cli_helper -o "-l|--list" -d "List Clipbboard buffer from 0 to 5, and default"
+                cli_helper -o "-b|--clip-buffer" -d "Set Clipbboard buffer from 0 to 5, default use 0"
+                cli_helper -o "-l|--list" -d "List Clipbboard buffer from 0 to 5"
                 cli_helper -o "-s|--set-clip" -d "Set Clipbboard, default use pwd for setting var"
                 cli_helper -o "-p|--set-from-pipe" -d "Set Clipbboard, default use pwd for setting var"
                 cli_helper -o "-g|--get-clip" -d "Get Clipbboard, default use getting action"
