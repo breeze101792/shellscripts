@@ -131,6 +131,7 @@ function runtime()
 function sinfo()
 {
     local flag_info='n'
+    local flag_audio="n"
 
     if [[ "$#" = "0" ]]
     then
@@ -140,21 +141,25 @@ function sinfo()
     while [[ "$#" != 0 ]]
     do
         case $1 in
-            -a|--append)
-                cmd_args+="${2}"
+            # -a|--append)
+            #     cmd_args+="${2}"
+            #     shift 1
+            #     ;;
+            --audio)
+                flag_audio="y"
                 shift 1
                 ;;
-            -v|--verbose)
-                flag_verbose="y"
-                shift 1
-                ;;
+            # -v|--verbose)
+            #     flag_verbose="y"
+            #     shift 1
+            #     ;;
             -h|--help)
                 cli_helper -c "sinfo" -cd "sinfo function"
                 cli_helper -t "SYNOPSIS"
                 cli_helper -d "sinfo [Options] [Value]"
                 cli_helper -t "Options"
-                cli_helper -o "-a|--append" -d "append file extension on search"
-                cli_helper -o "-v|--verbose" -d "Verbose print "
+                # cli_helper -o "-a|--append" -d "append file extension on search"
+                # cli_helper -o "-v|--verbose" -d "Verbose print "
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;
@@ -166,7 +171,7 @@ function sinfo()
     done
     local var_hostname=
 
-    if true
+    if [ "${flag_info}" = "y" ]
     then
         local var_os="$(cat /etc/os-release | grep "^NAME=" | cut -d "\"" -f 2 )"
         local var_hostname="$(cat /etc/hostname)"
@@ -213,6 +218,20 @@ function sinfo()
         echo "###############################################################"
     fi
 
+    if [ "${flag_audio}" = "y" ]
+    then
+        # pacmd "set-default-source alsa_output.pci-0000_04_01.0.analog-stereo.monitor"
+        echo "###############################################################"
+        echo "####  Input Source Info"
+        echo "###############################################################"
+        # pacmd list-sources | grep -e 'index:' -e device.string -e 'name:'
+        arecord -l
+        echo "###############################################################"
+        echo "####  Output Info"
+        echo "###############################################################"
+        pacmd list-sinks | grep -e 'name:' -e 'index:'
+    fi
+
 }
 function xsettings()
 {
@@ -245,21 +264,102 @@ function audio_default()
 }
 function rv()
 {
-    echo "Record video for $1 second"
-    local video_path="${HOME}/media/videos/.recording"
-    local cmd=""
-    if [ ! -d ${video_path} ]
-    then
-        mkdir -p ${video_path}
-    fi
-    # cmd="ffmpeg -y -i /dev/video0 -t $1  ${video_path}/video_`tstamp`.avi"
-    # cmd="ffmpeg -f alsa -ac 2 -i hw:1,0 -f video4linux2 -i /dev/video0 -acodec ac3 -ab 128k -f matroska -s 1280x720 -vcodec libx264 -preset ultrafast -qp 16 -t $1  ${video_path}/video_`tstamp`.mkv"
+    # echo "Record video for $1 second"
+    local var_cmd=""
+    local var_video_path="${HS_PATH_MEDIA}/.recording"
+    local var_file="video_`tstamp`.mkv"
+    local var_video_dev="/dev/video0"
+    local var_audio_dev="hw:1"
+    local var_recording_time="3600"
 
-    # cmd="ffmpeg -fflags +igndts -async 1 -f alsa -thread_queue_size 1024 -ac 2 -i hw:1 -f video4linux2 -i /dev/video0 -acodec aac -ab 128k -f matroska -vcodec libx265 -preset slow -crf 18 -t $1  ${video_path}/video_`tstamp`.mkv"
-    cmd="ffmpeg -async 1 -f alsa -thread_queue_size 1024 -ac 2 -i hw:1 -f video4linux2 -i /dev/video2 -acodec aac -ab 128k -f matroska -vcodec libx265 -preset slow -crf 18 -t $1  ${video_path}/video_`tstamp`.mkv"
+    local flag_fake="true"
+
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -a|--audio)
+                var_audio_dev="${2}"
+                shift 1
+                ;;
+            -v|--video)
+                var_video_dev="${2}"
+                shift 1
+                ;;
+            -t|--time)
+                var_recording_time="${2}"
+                shift 1
+                ;;
+            -p|--path)
+                var_video_path="${2}"
+                shift 1
+                ;;
+            --file)
+                var_video_path=""
+                var_file="${2}"
+                shift 1
+                ;;
+            -f|--fake)
+                flag_fake="true"
+                ;;
+            -h|--help)
+                cli_helper -c "rv" -cd "rv function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "rv [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-p|--path" -d "recorder path"
+                cli_helper -o "--file" -d "recorder file"
+                cli_helper -o "-t|--time" -d "recording time"
+                cli_helper -o "-v|--video" -d "video device"
+                cli_helper -o "-a|--audio" -d "audio device"
+                cli_helper -o "-f|--fake" -d "fake run"
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                break
+                ;;
+        esac
+        shift 1
+    done
+    if [ -n "${var_video_path}" ] &&  [ ! -d ${var_video_path} ]
+    then
+        mkdir -p ${var_video_path}
+    fi
+    ## Old command
+    ##############################################################
+    # var_cmd="ffmpeg -y -i /dev/video0 -t $1  ${var_video_path}/video_`tstamp`.avi"
+    # var_cmd="ffmpeg -f alsa -ac 2 -i hw:1,0 -f video4linux2 -i /dev/video0 -acodec ac3 -ab 128k -f matroska -s 1280x720 -vcodec libx264 -preset ultrafast -qp 16 -t $1  ${var_video_path}/video_`tstamp`.mkv"
+
+    # var_cmd="ffmpeg -fflags +igndts -async 1 -f alsa -thread_queue_size 1024 -ac 2 -i hw:1 -f video4linux2 -i /dev/video0 -acodec aac -ab 128k -f matroska -vcodec libx265 -preset slow -crf 18 -t $1  ${var_video_path}/video_`tstamp`.mkv"
+    ##############################################################
+
+    # var_cmd="ffmpeg -async 1 -f alsa -thread_queue_size 1024 -ac 2 -i hw:1 -f video4linux2 -i /dev/video2 -acodec aac -ab 128k -f matroska -vcodec libx265 -preset slow -crf 18 -t $1  ${var_video_path}/video_`tstamp`.mkv"
+    # var_cmd=("ffmpeg -async 1 -f alsa -thread_queue_size 1024 -ac 2 -i ${var_audio_dev} -f video4linux2 -i ${var_video_dev} -acodec aac -ab 128k -f matroska -vcodec libx265 -preset slow -crf 18 -t ${var_recording_time} ${var_video_path}/video_`tstamp`.mkv")
+    var_cmd=("ffmpeg")
+    var_cmd+=(" -async 1")
+
+    # Audio Settings
+    var_cmd+=(" -f alsa")
+    var_cmd+=(" -thread_queue_size 1024")
+    var_cmd+=(" -ac 1") # audio channel
+    var_cmd+=(" -i ${var_audio_dev}")
+
+    # Video Settings
+    var_cmd+=(" -f video4linux2 -i ${var_video_dev}")
+    var_cmd+=(" -acodec aac -ab 128k -f matroska -vcodec libx265 -preset slow -crf 18")
+
+    # Output Settings
+    var_cmd+=(" -t ${var_recording_time}")
+    var_cmd+=(" ${var_video_path}/${var_file}")
     # "-fflags +igndts" to regenerate DTS based on PTS
-    printf "%s\n" "${cmd}"
-    eval "${cmd}"
+
+    if [ "${flag_fake}" = "true" ]
+    then
+        printf "%s\n" "${var_cmd}"
+    else
+        printf "%s\n" "${var_cmd}"
+        eval "${var_cmd}"
+    fi
 
 }
 function i3_reload()

@@ -51,6 +51,7 @@ export HS_PLATFORM_VM=n
 # export HS_PATH_LIB=$
 export HS_PATH_DOWNLOAD="${HOME}/downloads"
 export HS_PATH_DOCUMENT="${HOME}/documents"
+export HS_PATH_MEDIA="${HOME}/media"
 export HS_PATH_LAB="${HOME}/lab"
 export HS_PATH_BUILD="${HOME}/build"
 export HS_PATH_PROJ="${HOME}/projects"
