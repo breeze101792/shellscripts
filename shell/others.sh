@@ -378,10 +378,16 @@ function rv()
         var_cmd+=(" -acodec aac -ab 128k")
     elif [ "${flag_audio}" = "n" ] && [ "${flag_video}" = "y" ]
     then
-        var_cmd+=(" -f matroska -vcodec libx265 -preset slow -crf 18")
+        var_cmd+=(" -f matroska")
+        # var_cmd+=(" -vcodec libx265 -preset slow -crf 18")
+        var_cmd+=(" -vcodec libx264 -preset ultrafast -qp 16")
+        # var_cmd+=(" -threads 3")
     else
-        var_cmd+=(" -acodec aac -ab 128k -f matroska -vcodec libx265 -preset slow -crf 18")
+        var_cmd+=(" -f matroska")
+        var_cmd+=(" -vcodec libx264 -preset ultrafast -qp 16")
+        var_cmd+=(" -acodec aac -ab 128k")
     fi
+
 
     # Output Settings
     var_cmd+=(" -t ${var_recording_time}")
