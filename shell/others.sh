@@ -178,12 +178,14 @@ function sinfo()
         local var_kernel="$(uname -r)"
         local var_cpu="$(cat /proc/cpuinfo | grep 'model name' | head -n 1 | cut -d ':' -f 2 | sed 's/^\s//g')"
         local var_gpu=$(lspci 2> /dev/null |grep VGA | cut -d ':' -f 3 | sed 's/^\s//g')
-        local var_ram="$(free -h | grep Mem | sed 's/\s\+/ /g' | cut -d ' ' -f 4) / $(free -h | grep Mem | sed 's/\s\+/ /g' | cut -d ' ' -f 2)"
+        local var_ram="$(free -h | grep Mem | sed 's/\s\+/ /g' | cut -d ' ' -f 3) / $(free -h | grep Mem | sed 's/\s\+/ /g' | cut -d ' ' -f 2)"
         local var_uptime="$(uptime | sed 's/\s\+/ /g' |cut -d " " -f 4 | sed 's/,//g')"
         local var_tmp="/"
         local var_disk_root="$(df -h / |tail -n 1 | sed 's/\s\+/ /g' | cut -d ' ' -f 3) / $(df -h / | tail -n 1 | sed 's/\s\+/ /g' | cut -d ' ' -f 2) ($(df -h / | tail -n 1 | sed 's/\s\+/ /g' | cut -d ' ' -f 5))"
         local var_tmp="/home"
         local var_disk_home="$(df -h ${var_tmp} |tail -n 1 | sed 's/\s\+/ /g' | cut -d ' ' -f 3) / $(df -h ${var_tmp} | tail -n 1 | sed 's/\s\+/ /g' | cut -d ' ' -f 2) ($(df -h ${var_tmp} | tail -n 1 | sed 's/\s\+/ /g' | cut -d ' ' -f 5))"
+        local var_tmp="/tmp"
+        local var_disk_tmp="$(df -h ${var_tmp} |tail -n 1 | sed 's/\s\+/ /g' | cut -d ' ' -f 3) / $(df -h ${var_tmp} | tail -n 1 | sed 's/\s\+/ /g' | cut -d ' ' -f 2) ($(df -h ${var_tmp} | tail -n 1 | sed 's/\s\+/ /g' | cut -d ' ' -f 5))"
         local var_pproccess="$(ps -Ao pid,fname |grep "${PPID}" |grep -v "grep" | sed 's/[[:space:]]\+/ /g' |sed 's/^\s//g'| cut -d ' ' -f 2) (${PPID})"
         local var_editor="${EDITOR}"
     fi
@@ -209,12 +211,13 @@ function sinfo()
         echo "####  Disk"
         echo "##  Root Disk      : "${var_disk_root}
         echo "##  Home Disk      : "${var_disk_home}
-        echo "###############################################################"
-        echo "####  Other Info"
-        echo "###############################################################"
-        echo "##  Memory       : "$(free -h  | grep Mem | sed 's/\s\+/;/g' | cut -d ';' -f 4)
-        echo "##  Working Disk : "$(df -h . | tail -n 1 | sed 's/\s\+/;/g' | cut -d ';' -f 4-5)
-        echo "##  TMP Disk     : "$(df -h /tmp | tail -n 1 | sed 's/\s\+/;/g' | cut -d ';' -f 4-5)
+        echo "##  TMP Disk       : "${var_disk_tmp}
+        # echo "###############################################################"
+        # echo "####  Other Info"
+        # echo "###############################################################"
+        # echo "##  Memory       : "$(free -h  | grep Mem | sed 's/\s\+/;/g' | cut -d ';' -f 4)
+        # echo "##  Working Disk : "$(df -h . | tail -n 1 | sed 's/\s\+/;/g' | cut -d ';' -f 4-5)
+        # echo "##  TMP Disk     : "$(df -h /tmp | tail -n 1 | sed 's/\s\+/;/g' | cut -d ';' -f 4-5)
         echo "###############################################################"
     fi
 
@@ -264,15 +267,17 @@ function audio_default()
 }
 function rv()
 {
-    # echo "Record video for $1 second"
     local var_cmd=""
     local var_video_path="${HS_PATH_MEDIA}/.recording"
-    local var_file="video_`tstamp`.mkv"
+    local var_file_name="rv_`tstamp`"
+    local var_file_extension="mkv"
     local var_video_dev="/dev/video0"
-    local var_audio_dev="hw:1"
+    local var_audio_dev="hw:0"
     local var_recording_time="3600"
 
-    local flag_fake="true"
+    local flag_fake="n"
+    local flag_audio="y"
+    local flag_video="y"
 
     while [[ "$#" != 0 ]]
     do
@@ -295,23 +300,37 @@ function rv()
                 ;;
             --file)
                 var_video_path=""
-                var_file="${2}"
+                var_file_name="${2}"
+                shift 1
+                ;;
+            --type)
+                if [ "${2}" = "audio" ] || [ "${2}" = "a" ]
+                then
+                    flag_audio="y"
+                    flag_video="n"
+                elif [ "${2}" = "video" ] || [ "${2}" = "v" ]
+                then
+                    flag_audio="n"
+                    flag_video="y"
+                fi
                 shift 1
                 ;;
             -f|--fake)
-                flag_fake="true"
+                flag_fake="y"
                 ;;
             -h|--help)
                 cli_helper -c "rv" -cd "rv function"
                 cli_helper -t "SYNOPSIS"
                 cli_helper -d "rv [Options] [Value]"
+                cli_helper -d "rv -a hw:2 -t 3600"
                 cli_helper -t "Options"
                 cli_helper -o "-p|--path" -d "recorder path"
-                cli_helper -o "--file" -d "recorder file"
                 cli_helper -o "-t|--time" -d "recording time"
                 cli_helper -o "-v|--video" -d "video device"
                 cli_helper -o "-a|--audio" -d "audio device"
                 cli_helper -o "-f|--fake" -d "fake run"
+                cli_helper -o "--file" -d "recorder file"
+                cli_helper -o "--type" -d "recorder type, default av, optinal audio, video"
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;
@@ -338,27 +357,45 @@ function rv()
     var_cmd=("ffmpeg")
     var_cmd+=(" -async 1")
 
-    # Audio Settings
-    var_cmd+=(" -f alsa")
-    var_cmd+=(" -thread_queue_size 1024")
-    var_cmd+=(" -ac 1") # audio channel
-    var_cmd+=(" -i ${var_audio_dev}")
+    if [ "${flag_audio}" = "y" ]
+    then
+        # Audio Settings
+        var_cmd+=(" -f alsa")
+        var_cmd+=(" -thread_queue_size 1024")
+        var_cmd+=(" -ac 1") # audio channel
+        var_cmd+=(" -i ${var_audio_dev}")
+    fi
 
-    # Video Settings
-    var_cmd+=(" -f video4linux2 -i ${var_video_dev}")
-    var_cmd+=(" -acodec aac -ab 128k -f matroska -vcodec libx265 -preset slow -crf 18")
+    if [ "${flag_video}" = "y" ]
+    then
+        # Video Settings
+        var_cmd+=(" -f video4linux2 -i ${var_video_dev}")
+    fi
+
+    if [ "${flag_audio}" = "y" ] && [ "${flag_video}" = "n" ]
+    then
+        var_file_extension="aac"
+        var_cmd+=(" -acodec aac -ab 128k")
+    elif [ "${flag_audio}" = "n" ] && [ "${flag_video}" = "y" ]
+    then
+        var_cmd+=(" -f matroska -vcodec libx265 -preset slow -crf 18")
+    else
+        var_cmd+=(" -acodec aac -ab 128k -f matroska -vcodec libx265 -preset slow -crf 18")
+    fi
 
     # Output Settings
     var_cmd+=(" -t ${var_recording_time}")
-    var_cmd+=(" ${var_video_path}/${var_file}")
+    var_cmd+=(" ${var_video_path}/${var_file_name}.${var_file_extension}")
     # "-fflags +igndts" to regenerate DTS based on PTS
 
-    if [ "${flag_fake}" = "true" ]
+    if [ "${flag_fake}" = "y" ]
     then
         printf "%s\n" "${var_cmd}"
     else
         printf "%s\n" "${var_cmd}"
         eval "${var_cmd}"
+        printf "Recording File: %s\n" "${var_video_path}/${var_file_name}.${var_file_extension}"
+
     fi
 
 }
