@@ -374,20 +374,32 @@ function rv()
 
     if [ "${flag_audio}" = "y" ] && [ "${flag_video}" = "n" ]
     then
-        var_file_extension="aac"
         var_cmd+=(" -acodec aac -ab 128k")
+        var_file_extension="aac"
     elif [ "${flag_audio}" = "n" ] && [ "${flag_video}" = "y" ]
     then
-        var_cmd+=(" -f matroska")
-        # var_cmd+=(" -vcodec libx265 -preset slow -crf 18")
-        var_cmd+=(" -vcodec libx264 -preset ultrafast -qp 16")
-        # var_cmd+=(" -threads 3")
+        # var_cmd+=(" -f matroska")
+        ## Options
+        # CRF: Constant Rate Factor
+
+        ## h265
+        var_cmd+=(" -vcodec libx265 -preset slow -crf 18")
+        # var_file_extension="h265"
+
+        ## h264
+        # var_cmd+=(" -vcodec libx264 -preset ultrafast -qp 16")
+        # var_file_extension="h264"
+
+        ## raw formate
+        # var_cmd+=(" -codec:v copy")
+        # var_file_extension="nut"
+
+        ## Others
     else
-        var_cmd+=(" -f matroska")
-        var_cmd+=(" -vcodec libx264 -preset ultrafast -qp 16")
+        # var_cmd+=(" -f matroska")
+        var_cmd+=(" -vcodec libx265 -preset slow -crf 18")
         var_cmd+=(" -acodec aac -ab 128k")
     fi
-
 
     # Output Settings
     var_cmd+=(" -t ${var_recording_time}")
@@ -400,8 +412,8 @@ function rv()
     else
         printf "%s\n" "${var_cmd}"
         eval "${var_cmd}"
+        echo "----------------------------------------------------------------"
         printf "Recording File: %s\n" "${var_video_path}/${var_file_name}.${var_file_extension}"
-
     fi
 
 }
