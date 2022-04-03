@@ -568,6 +568,11 @@ function lanalyser
                 flag_others="y"
                 flag_python="y"
                 ;;
+            -v|--vim)
+                shift 1
+                eval vim $@
+                return 0
+                ;;
             -f|--log-file)
                 var_logfile="${2}"
                 shift 1
@@ -579,6 +584,7 @@ function lanalyser
                 cli_helper -t "Options"
                 cli_helper -o "-a|--all" -d "enable all debug flag"
                 # cli_helper -o "-v|--verbose" -d "Verbose print "
+                cli_helper -o "-v|--vim" -d "dirrect vim log file "
                 cli_helper -o "-f|--log-file" -d "Specify log file"
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
@@ -607,7 +613,11 @@ function lanalyser
     if [ "${flag_syntax}" = "y" ]
     then
         echo "---- Syntax log analysis"
-        cat -n ${var_logfile} | grep "undefined reference" | mark_build
+        tmp_pattern="undefined reference"
+        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
+
+        tmp_pattern="unknown type name"
+        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
     fi
 
     if [ "${flag_command_missing}" = "y" ]
@@ -1454,6 +1464,7 @@ function ginfo()
         echo "Show all file status: git status --ignored all"
         echo "Add all file with ignored file: git add -Avf"
         echo "Clean out commit: git gc --prune=now --aggressive"
+        echo "Parse current path: git rev-parse --show-prefix"
     fi
 
 
@@ -1606,6 +1617,7 @@ function gpatch()
     local var_action="apply"
     local flag_file_mismatch="n"
     local flag_add_patch_file="n"
+    local flag_git_tool='n'
 
     local tmp_patch_file="test_$(tstamp).patch"
     while [[ "$#" != 0 ]]
@@ -1627,6 +1639,9 @@ function gpatch()
                 var_action='revert'
                 ;;
             -g|--git)
+                flag_git_tool="y"
+                ;;
+            -a|--add)
                 flag_add_patch_file='y'
                 ;;
             # -m|--manifest)
@@ -1642,7 +1657,8 @@ function gpatch()
                 cli_helper -o "-f|--file" -d "Specify formate patch file"
                 cli_helper -o "-p|--apply-path" -d "Specify formate patch apply path"
                 cli_helper -o "-r|--revert-patch" -d "Action: Revert patch with formate patch"
-                cli_helper -o "-g|--git" -d "Add patched file to git"
+                cli_helper -o "-g|--git" -d "use get apply to apply patch, default use patch"
+                cli_helper -o "-a|--add" -d "Add patched file to git"
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;
@@ -1682,8 +1698,17 @@ function gpatch()
     # git am --directory ${var_patch_root} ${tmp_patch_file}
     if [ "${var_action}" = "apply" ]
     then
-        echo "patch -p1 -b -i ${tmp_patch_file}"
-        patch -p1 -b -i ${tmp_patch_file} | mark "FAILED"
+        if [ "${flag_git_tool}" = "y" ]
+        then
+            echo "flag_git_tool: ${flag_git_tool}"
+            ## apply with git
+            echo git apply -v -p 1 --directory $(git rev-parse --show-prefix) ${tmp_patch_file}
+            git apply -v -p 1 --directory $(git rev-parse --show-prefix) ${tmp_patch_file}
+        else
+            echo "patch -p1 -b -i ${tmp_patch_file}"
+            patch -p1 -b -i ${tmp_patch_file} | mark -s "FAILED" | mark -s red 'git binary diffs are not supported'
+        fi
+
     elif [ "${var_action}" = "revert" ]
     then
         echo "patch -R -p1 -b -i ${tmp_patch_file}"
@@ -1821,11 +1846,32 @@ function rdate()
 ########################################################
 #####    Binary                                    #####
 ########################################################
-wdiff()
+function wdiff()
 {
     diff -rq $1 $2 | cut -f2 -d' '| uniq | sort
 }
-hex2bin()
+
+function endian()
+{
+    cd ${COV_ROOT_PATH}
+    # echo "fcssn_to_rmaid"
+
+    for each_line in $(cat ${COV_INPUT_FILE} | head -n 10)
+    do
+        # echo "${each_line}"
+        local tmp_string=""
+        local tmp_idx=0
+
+        tmp_string="${each_line:$((${tmp_idx} + 2)):2}${each_line:$((${tmp_idx} + 0)):2}"
+        tmp_idx="$((${tmp_idx} + 4))"
+        tmp_string="${tmp_string}${each_line:$((${tmp_idx} + 2)):2}${each_line:$((${tmp_idx} + 0)):2}"
+
+        # echo "After ${#tmp_string} -> ${tmp_string}"
+        echo "${tmp_string}00000000" >> ${COV_OUTPUT_IDLIST}
+    done
+    echo "Generate list at file ${COV_OUTPUT_IDLIST}"
+}
+function hex2bin()
 {
     local tmp_input_file="hex2bin.${tstamp}.in"
 

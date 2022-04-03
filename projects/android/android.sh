@@ -105,6 +105,7 @@ function an_shell()
     local var_timeout=3
     local flag_timeout=n
     local var_serial
+    local flag_echo="n"
 
     while [[ "$#" != 0 ]]
     do
@@ -118,6 +119,9 @@ function an_shell()
                 var_timeout=${2}
                 shift 1
                 ;;
+            -e|--echo)
+                flag_echo="y"
+                ;;
             -h|--help)
                 cli_helper -c "adb shell" -cd "adb shell function"
                 cli_helper -t "SYNOPSIS"
@@ -125,6 +129,7 @@ function an_shell()
                 cli_helper -t "Options"
                 cli_helper -o "-s|--serial" -d "Set serial"
                 cli_helper -o "-t|--timeout" -d "set command timeout "
+                cli_helper -o "-e|--echo" -d "echo mode "
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;
@@ -135,6 +140,10 @@ function an_shell()
         shift 1
     done
 
+    if [ "${flag_timeout}" = "y" ]
+    then
+        echo "> $@"
+    fi
     if [ "${flag_timeout}" = "y" ]
     then
         an_adb -t ${var_timeout} shell $@
@@ -220,13 +229,15 @@ function an_connect()
         echo "Try to ping ${HS_WORK_ENV_ANDROID_DEVICE_IP}"
     done
 
-    echo "Connect ${HS_WORK_ENV_ANDROID_DEVICE_IP}"
+    # echo "Connect ${HS_WORK_ENV_ANDROID_DEVICE_IP}"
+
     # an_adb -nc disconnect ${HS_WORK_ENV_ANDROID_DEVICE_IP}
     # an_adb -nc connect ${HS_WORK_ENV_ANDROID_DEVICE_IP}
     # while ! an_adb -nc devices -l |grep product
     while ! an_adb -nc -t ${var_timeout} -s ${HS_WORK_ENV_ANDROID_DEVICE_IP} shell whoami |grep root
     do
-        echo "Wait for reconnect."
+        print "."
+        # echo "Wait for reconnect."
         # an_adb -nc connect ${HS_WORK_ENV_ANDROID_DEVICE_IP}
         if ! an_adb -nc -t ${var_timeout} connect ${HS_WORK_ENV_ANDROID_DEVICE_IP}
         then
@@ -238,17 +249,21 @@ function an_connect()
         fi
         sleep 1
 
-        if ! an_adb -nc -t ${var_timeout} -s ${HS_WORK_ENV_ANDROID_DEVICE_IP} root
+        local tmp_ret=$(an_adb -nc -t ${var_timeout} -s ${HS_WORK_ENV_ANDROID_DEVICE_IP} root)
+        echo $(tmp_ret)
+        if $(echo ${tmp_ret} | grep 'cannot run as root' > /dev/null)
+        then
+            echo "ADB Connected\n"
+        elif [ ${tmp_ret} = false ]
         then
             # echo "Root: Not Connected"
             an_adb -nc -t ${var_timeout} disconnect ${HS_WORK_ENV_ANDROID_DEVICE_IP}
             continue
-        # else
-        #     echo "Root: Connected\n"
-        #     break
+        else
+            echo "Root ADB Connected\n"
+            break
         fi
     done
-    echo "Root: Connected\n"
 }
 
 function an_cd()

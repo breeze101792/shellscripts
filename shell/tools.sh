@@ -106,6 +106,7 @@ function clip()
     local flag_fake_run=false
     local var_clipidx="0"
     local var_clipboard="${HS_VAR_CLIPBOARD}_${var_clipidx}"
+    local var_max_idx=5
 
     if [ "$#" = 0 ]
     then
@@ -121,12 +122,16 @@ function clip()
         case $1 in
             -l|--list)
                 # echo "Clipboard buffer def : $(clip -g )"
-                echo "Clipboard buffer 0   : $(clip -b 0 -g )"
-                echo "Clipboard buffer 1   : $(clip -b 1 -g )"
-                echo "Clipboard buffer 2   : $(clip -b 2 -g )"
-                echo "Clipboard buffer 3   : $(clip -b 3 -g )"
-                echo "Clipboard buffer 4   : $(clip -b 4 -g )"
-                echo "Clipboard buffer 5   : $(clip -b 5 -g )"
+                for each_idx in $(seq 0 ${var_max_idx})
+                do
+                    echo "Clipboard buffer ${each_idx}   : $(clip -b ${each_idx} -g )"
+                done
+                # echo "Clipboard buffer 0   : $(clip -b 0 -g )"
+                # echo "Clipboard buffer 1   : $(clip -b 1 -g )"
+                # echo "Clipboard buffer 2   : $(clip -b 2 -g )"
+                # echo "Clipboard buffer 3   : $(clip -b 3 -g )"
+                # echo "Clipboard buffer 4   : $(clip -b 4 -g )"
+                # echo "Clipboard buffer 5   : $(clip -b 5 -g )"
                 ;;
             -b|--clip-buffer)
                 if (( $# > 1 )) && (( $2 < 6 )) && (( $2 > -1 ))
@@ -166,10 +171,12 @@ function clip()
             -g|--get-clip)
                 hs_config -g "${var_clipboard}"
                 ;;
-            -d|--get-current-dir)
-                # get current dir
-                hs_config -g "${HS_VAR_CURRENT_DIR}"
-                ;;
+
+            ## Addictional options
+            # -d|--get-current-dir)
+            #     # get current dir
+            #     hs_config -g "${HS_VAR_CURRENT_DIR}"
+            #     ;;
             -ln|--link)
                 clip -b ${var_clipidx} -x 'ln -s $(realpath %p) ./'
                 ;;
@@ -185,6 +192,39 @@ function clip()
             -x|--excute)
                 shift 1
                 local excute_cmd=$(printf "$(echo $@ | sed 's/%p/%s/g' )" "$(clip -b ${var_clipidx} -g)")
+                if echo $@ | grep "%p" > /dev/null
+                then
+                    excute_cmd=$(printf "$(echo $@ | sed 's/%p/%s/g' )" "$(clip -b ${var_clipidx} -g)")
+                else
+                    excute_cmd=$(printf "$(echo $@ | sed 's/$/ %s/g' )" "$(clip -b ${var_clipidx} -g)")
+                fi
+                echo ${excute_cmd} |mark -s yellow ${excute_cmd}
+                if ! ${flag_fake_run}
+                then
+                    printf "Excute Commands?(Y/n)"
+                    read tmp_ans
+                    test "${tmp_ans}" != "n" && eval ${excute_cmd}
+                fi
+
+                break
+                ;;
+            -ex|--enhance-excute)
+                shift 1
+                # local excute_cmd=$(printf "$(echo $@ | sed 's/%p/%s/g' )" "$(clip -b ${var_clipidx} -g)")
+
+                excute_cmd=$(echo ${@} | sed 's/%p/$(clip -b ${var_clipidx} -g )/g' )
+                echo ${excute_cmd}
+
+                excute_cmd=$(echo ${excute_cmd} | sed 's/%0/$(clip -b 0 -g )/g' \
+                | sed 's/%1/$(clip -b 1 -g )/g' \
+                | sed 's/%2/$(clip -b 2 -g )/g' \
+                | sed 's/%3/$(clip -b 3 -g )/g' \
+                | sed 's/%4/$(clip -b 4 -g )/g' \
+                | sed 's/%5/$(clip -b 5 -g )/g' 
+                )
+                excute_cmd=$( eval echo ${excute_cmd})
+                # echo ${excute_cmd}
+
                 echo ${excute_cmd} |mark -s yellow ${excute_cmd}
                 if ! ${flag_fake_run}
                 then
@@ -205,27 +245,30 @@ function clip()
                 cli_helper -o "-s|--set-clip" -d "Set Clipbboard, default use pwd for setting var"
                 cli_helper -o "-p|--set-from-pipe" -d "Set Clipbboard, default use pwd for setting var"
                 cli_helper -o "-g|--get-clip" -d "Get Clipbboard, default use getting action"
-                cli_helper -o "-d|--get-current-dir" -d "Get current dir vars, get current stored dir"
+                # cli_helper -o "-d|--get-current-dir" -d "Get current dir vars, get current stored dir"
                 cli_helper -o "-c|-cf|--copy-file" -d "cp file to current folder"
                 cli_helper -o "-ca|--copy-all" -d "cp all file too current folder"
                 cli_helper -o "-ln|--link" -d "Link file to the current folder"
                 cli_helper -o "-f|--fake-run" -d "Do fake run on -x"
-                cli_helper -o "-x|--excute" -d "Excute command, replace %p with clip buffer"
+                cli_helper -o "-x|--excute" -d "Excute command, replace %p with clip buffer."
+                cli_helper -o "-x|--excute" -d "Excute command, replace %0,%1...%5 with clip buffer."
                 cli_helper -o "-h|--help" -d "Print help function "
 
                 return 0
                 ;;
             *)
-                hs_config -s "${var_clipboard}" "${@}"
+                # hs_config -s "${var_clipboard}" "${@}"
+                clip -ls
                 break
                 ;;
         esac
         shift 1
     done
 }
-bkfile()
+function bkfile()
 {
     local flag_auto_idx="y"
+    local flag_copy_mode="n"
     local var_bk_file=""
     local var_bk_name=""
     local var_description=""
@@ -246,10 +289,14 @@ bkfile()
                 var_bk_file="$(echo $2 | sed 's/\ /_/g')"
                 shift 1
                 ;;
+            -c|--copy)
+                flag_copy_mode="y"
+                ;;
             -h|--help)
                 echo "bkfile [Options] [file name]"
                 printlc -cp false -d "->" "-n|--name" "append description on the file name"
                 printlc -cp false -d "->" "-f|--backup-file" "specify file name"
+                printlc -cp false -d "->" "-c|--copy" "copy mode, leave original file"
                 printlc -cp false -d "->" "-h|--help" "Print help function "
                 return 0
                 ;;
@@ -281,7 +328,13 @@ bkfile()
     fi
 
     echo -e "Backup ${var_bk_file} to ${var_bk_name}"
-    mv "${var_bk_file}" "${var_bk_name}"
+
+    if [ "${flag_copy_mode}" = "y" ]
+    then
+        cp -r "${var_bk_file}" "${var_bk_name}"
+    else
+        mv "${var_bk_file}" "${var_bk_name}"
+    fi
 }
 function rln()
 {
@@ -430,6 +483,8 @@ function compressor()
     local cmd_prog="tar"
     local cmd_args=""
     cmd_args+=()
+    local var_archive_name=""
+    local var_ext_name="tar"
 
     if [[ "$#" = "0" ]]
     then
@@ -438,11 +493,17 @@ function compressor()
     while [[ "$#" != 0 ]]
     do
         case $1 in
-            -f|--file)
-                cmd_args+=(-f $2)
+            # -f|--file)
+            #     cmd_args+=(-f $2)
+            #     shift 1
+            #     ;;
+            -n|--name)
+                # cmd_args+=(-f $2)
+                var_archive_name=$2
                 shift 1
                 ;;
             -j|--bzip)
+                var_ext_name="tbz"
                 if command -v pbzip2
                 then
                     cmd_args+=(--use-compress-program=pbzip2)
@@ -451,6 +512,7 @@ function compressor()
                 fi
                 ;;
             -z|--xzip)
+                var_ext_name="tgz"
                 if command -v pigz
                 then
                     cmd_args+=("--use-compress-program='pigz --best'")
@@ -467,9 +529,9 @@ function compressor()
             -a|--auto|a)
                 shift 1
                 # local tmp_folder_name="$(dirname $(realpath ${1}) | sed 's|/.*/||g')"
-                local tmp_arch_name="$(echo ${1} |sed 's/\..*//g' |sed 's|/||g')_$(tstamp).tbz2"
-                compressor -j -c -f ${tmp_arch_name} $@
-                echo "Compressed file: ${tmp_arch_name}"
+                local tmp_archive_name="$(echo ${1} |sed 's/\..*//g' |sed 's|/||g' |sed 's| |_|g')_$(tstamp).tbz2"
+                compressor -j -c -n "${tmp_archive_name}" $@
+                # echo "Compressed file: ${tmp_archive_name}"
                 return 0
                 ;;
 
@@ -485,7 +547,8 @@ function compressor()
                 cli_helper -t "SYNOPSIS"
                 cli_helper -d "compressor [Options] [Value]"
                 cli_helper -t "Options"
-                cli_helper -o "-f|--file" -d "output file name"
+                # cli_helper -o "-f|--file" -d "output file name"
+                cli_helper -o "-n|--name" -d "output file name"
                 cli_helper -o "-j|--bzip2" -d "use bzip2 alg"
                 cli_helper -o "-z|--xz" -d "use xz alg"
                 cli_helper -o "-x|--extract" -d "extract file"
@@ -502,9 +565,21 @@ function compressor()
         esac
         shift 1
     done
+
+    if [ "${var_archive_name}" ]
+    then
+        cmd_args+=(-f "${var_archive_name}.${var_ext_name}")
+    else
+        tmp_archive_name="compressed_$(tstamp).${var_ext_name}"
+        cmd_args+=(-f ${tmp_archive_name})
+    fi
     echo ${cmd_prog} ${cmd_args[@]}
     eval ${cmd_prog} ${cmd_args[@]}
+
+    # Backup run with progress bar
+    # tar cf - /folder-with-big-files -P | pv -s $(du -sb /folder-with-big-files | awk '{print $1}') | gzip > big-files.tar.gz
 }
+
 function extract()
 {
     if [ -f $1 ] ; then
