@@ -1615,7 +1615,8 @@ function gpatch()
     local var_manifest_file=""
     local var_patch_root="$(pwd)"
     local var_action="apply"
-    local flag_file_mismatch="n"
+    local status_file_mismatch="n"
+    local status_apply_error="n"
     local flag_add_patch_file="n"
     local flag_git_tool='n'
 
@@ -1680,10 +1681,10 @@ function gpatch()
         if [ ! -f ${each_cl_file} ]
         then
             echo "${each_cl_file} not found in your code tree."
-            flag_file_mismatch=y
+            status_file_mismatch=y
         fi
     done
-    if [ ${flag_file_mismatch} = "y" ]
+    if [ ${status_file_mismatch} = "y" ]
     then
         echo "File misssing found. Do you want to proceed git am?(y/N)"
         read tmp_ans
@@ -1705,14 +1706,29 @@ function gpatch()
             echo git apply -v -p 1 --directory $(git rev-parse --show-prefix) ${tmp_patch_file}
             git apply -v -p 1 --directory $(git rev-parse --show-prefix) ${tmp_patch_file}
         else
-            echo "patch -p1 -b -i ${tmp_patch_file}"
-            patch -p1 -b -i ${tmp_patch_file} | mark -s "FAILED" | mark -s red 'git binary diffs are not supported'
+            echo "evaluate: patch -p1 -b -i ${tmp_patch_file}"
+            patch -p1 -b -i ${tmp_patch_file} | mark -s red "reject" | mark -s red "FAILED" | mark -s red 'git binary diffs are not supported'
+            if [[ $? = 0 ]]
+            then
+                status_apply_error=y
+            fi
         fi
 
     elif [ "${var_action}" = "revert" ]
     then
         echo "patch -R -p1 -b -i ${tmp_patch_file}"
-        patch -R -p1 -b -i ${tmp_patch_file} | mark "FAILED"
+        patch -R -p1 -b -i ${tmp_patch_file} | mark -s red "FAILED"
+    fi
+
+    if [ ${status_apply_error} = "y" ]
+    then
+        echo "File apply failed. Do you want to proceed?(y/N)"
+        read tmp_ans
+        # echo Ans:${tmp_ans}
+        if [ "${tmp_ans}" != "y" ] || [ "${tmp_ans}" != "Y" ]
+        then
+            return 0
+        fi
     fi
 
     if [ "${flag_add_patch_file}" = "y" ]
