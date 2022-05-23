@@ -31,10 +31,13 @@ function crypt()
         case $1 in
             -e|--encrypt)
                 cmd_args+=("-aes-256-cbc")
-                cmd_args+=(" -iter 16")
+                # cmd_args+=(" -iter 16")
+                cmd_args+=(" -md md5")
                 ;;
             -d|--decrypt)
                 cmd_args+=("-d -aes-256-cbc")
+                # cmd_args+=(" -iter 16")
+                cmd_args+=(" -md md5")
                 ;;
             -k|--key)
                 cmd_args+=("-k ${2}")
@@ -356,6 +359,46 @@ function fsync()
 {
     local local_path=$1
     local remote_path=$2
+    local var_cmd=("")
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            # -a|--append)
+            #     cmd_args+="${2}"
+            #     shift 1
+            #     ;;
+            # -v|--verbose)
+            #     flag_verbose="y"
+            #     shift 1
+            #     ;;
+            -h|--help)
+                cli_helper -c "fsync" -cd "fsync function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "fsync [Options] [Value]"
+
+                cli_helper -t "Options"
+                # cli_helper -o "-a|--append" -d "append file extension on search"
+                # cli_helper -o "-v|--verbose" -d "Verbose print "
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                echo "Wrong args, %@"
+                # return -1
+                ;;
+        esac
+        shift 1
+    done
+
+    ## Rsync args
+    # -v : verbose
+    # -r : copies data recursively (but don’t preserve timestamps and permission while transferring data.
+    # -a : archive mode, which allows copying files recursively and it also preserves symbolic links, file permissions, user & group ownerships, and timestamps.
+    # -z : compress file data.
+    # -h : human-readable, output numbers in a human-readable format.
+    # --whole-file, -W  copy files whole (w/o delta-xfer algorithm)
+
+
     # rsync -avhW --no-compress --progress ${*}
     rsync -avhW --no-compress --progress ${1}/* ${2}
 }

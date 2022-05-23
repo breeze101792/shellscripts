@@ -1062,17 +1062,17 @@ function fcd()
         esac
         shift 1
     done
-    echo "Fast cd to ${target_folder}"
+    # echo "Fast cd to ${target_folder}"
 
     if [[ ${depth} > 0 ]]
     then
-        echo "Finding in Layer 0"
+        # echo "Finding in Layer 0"
         test -d ${target_folder} && cd ${target_folder} && return 0
     fi
 
     if [[ ${depth} > 1 ]]
     then
-        echo "Finding in Layer 1"
+        # echo "Finding in Layer 1"
         if ls * | grep "^${target_folder}$"
         then
             test -d */${target_folder} && cd */${target_folder} && return 0
@@ -1082,7 +1082,7 @@ function fcd()
 
     if [[ ${depth} > 2 ]]
     then
-        echo "Finding in Layer 2"
+        # echo "Finding in Layer 2"
         if ls */* | grep "^${target_folder}$"
         then
             test -d */*/${target_folder} && cd */*/${target_folder} && return 0
@@ -1092,7 +1092,7 @@ function fcd()
 
     if [[ ${depth} > 3 ]]
     then
-        echo "Finding in Layer 3"
+        # echo "Finding in Layer 3"
         if ls */*/* | grep "^${target_folder}$"
         then
             test -d */*/*/${target_folder} && cd */*/*/${target_folder} && return 0
@@ -1102,7 +1102,7 @@ function fcd()
 
     if [[ ${depth} > 4 ]]
     then
-        echo "Finding in Layer 4"
+        # echo "Finding in Layer 4"
         if ls */*/*/* | grep "^${target_folder}$"
         then
             test -d */*/*/*/${target_folder} && cd */*/*/*/${target_folder} && return 0
@@ -1113,7 +1113,7 @@ function fcd()
 
     if [[ ${depth} > 5 ]]
     then
-        echo "Finding in Layer 5"
+        # echo "Finding in Layer 5"
         if ls */*/*/*/* | grep "^${target_folder}$"
         then
             test -d */*/*/*/*/${target_folder} && cd */*/*/*/*/${target_folder} && return 0
@@ -1122,7 +1122,7 @@ function fcd()
     fi
     if [[ ${depth} > 6 ]]
     then
-        echo "Finding in Layer 6"
+        # echo "Finding in Layer 6"
         if ls */*/*/*/*/* | grep "^${target_folder}$"
         then
             test -d */*/*/*/*/*/${target_folder} && cd */*/*/*/*/*/${target_folder} && return 0

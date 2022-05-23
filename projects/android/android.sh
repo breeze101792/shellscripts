@@ -234,9 +234,8 @@ function an_connect()
     # an_adb -nc disconnect ${HS_WORK_ENV_ANDROID_DEVICE_IP}
     # an_adb -nc connect ${HS_WORK_ENV_ANDROID_DEVICE_IP}
     # while ! an_adb -nc devices -l |grep product
-    while ! an_adb -nc -t ${var_timeout} -s ${HS_WORK_ENV_ANDROID_DEVICE_IP} shell whoami |grep root
+    while ! an_adb -nc -t ${var_timeout} -s ${HS_WORK_ENV_ANDROID_DEVICE_IP} shell whoami |grep root > /dev/null
     do
-        print "."
         # echo "Wait for reconnect."
         # an_adb -nc connect ${HS_WORK_ENV_ANDROID_DEVICE_IP}
         if ! an_adb -nc -t ${var_timeout} connect ${HS_WORK_ENV_ANDROID_DEVICE_IP}
@@ -250,20 +249,23 @@ function an_connect()
         sleep 1
 
         local tmp_ret=$(an_adb -nc -t ${var_timeout} -s ${HS_WORK_ENV_ANDROID_DEVICE_IP} root)
-        echo $(tmp_ret)
+        # echo ${tmp_ret}
         if $(echo ${tmp_ret} | grep 'cannot run as root' > /dev/null)
         then
             echo "ADB Connected\n"
-        elif [ ${tmp_ret} = false ]
+            return 0
+        elif [ "${tmp_ret}" = "false" ]
         then
             # echo "Root: Not Connected"
             an_adb -nc -t ${var_timeout} disconnect ${HS_WORK_ENV_ANDROID_DEVICE_IP}
             continue
-        else
-            echo "Root ADB Connected\n"
-            break
+        # else
+        #     # echo "Root ADB Connected"
+        #     break
         fi
     done
+    echo "Root ADB Connected"
+    return 0
 }
 
 function an_cd()
