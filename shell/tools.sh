@@ -341,7 +341,37 @@ function bkfile()
 }
 function rln()
 {
-    ln -sf $(realpath $1) $2
+    local var_args=('-f')
+
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -h|--hard)
+                var_args=('-h')
+                ;;
+            -s|--soft)
+                var_args=('-s')
+                ;;
+            -h|--help)
+                cli_helper -c "rln" -cd "rln(real link) function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "rln [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-h|--hard" -d "hard link"
+                cli_helper -o "-s|--soft" -d "soft link"
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                break
+                # echo "Wrong args, %@"
+                # return -1
+                ;;
+        esac
+        shift 1
+    done
+    echo "Do: ln ${var_args[@]} $(realpath $1) $2"
+    ln ${var_args[@]} $(realpath $1) $2
 }
 function retitle()
 {
