@@ -152,6 +152,7 @@ function hs_motd()
     then
         local var_color=$(echo -e "\033[38;2;23;147;209m")
         local var_clr_reset=$(echo -e "\e[0m")
+        var_arch=''
         var_arch+=${var_color}'                                        '${var_clr_reset}
         var_arch+=${var_color}'                   ▄                    '${var_clr_reset}
         var_arch+=${var_color}'                  ▟█▙                   '${var_clr_reset}
@@ -176,7 +177,7 @@ function hs_motd()
         var_logo=(${var_arch[@]})
     elif [ "${var_distro}" = "ubuntu" ]
     then
-
+        var_ubuntu=''
         var_ubuntu+=$(echo -e '                      ')
         var_ubuntu+=$(echo -e '              .-.     ')
         var_ubuntu+=$(echo -e "        .-'\`\`(|||)    ")
@@ -195,6 +196,7 @@ function hs_motd()
     then
         local var_color=$(echo -e "\e[0;32m")
         local var_clr_reset=$(echo -e "\e[0m")
+        var_raspberry=''
         var_raspberry+=${var_color}"                   "${var_clr_reset}
         var_raspberry+=${var_color}"    .~~.   .~~.    "${var_clr_reset}
         var_raspberry+=${var_color}"   '. \ ' ' / .'   "${var_clr_reset}
@@ -209,7 +211,31 @@ function hs_motd()
         var_raspberry+=${var_color}"        '~'        "${var_clr_reset}
         var_raspberry+=${var_color}"                   "${var_clr_reset}
         var_logo=(${var_raspberry[@]})
+    elif [ "${var_distro}" = "debian" ]
+    then
+        var_debian=''
+        var_debian+=('                                       ')
+        var_debian+=('              _,met$$$$$gg.            ')
+        var_debian+=('           ,g$$$$$$$$$$$$$$$P.         ')
+        var_debian+=('         ,g$$P""       """Y$$.".       ')
+        var_debian+=('        ,$$P"              `$$$.       ')
+        var_debian+=('       ,$$P       ,ggs.     `$$b:      ')
+        var_debian+=('      `d$$"     ,$P""   .    $$$       ')
+        var_debian+=('       $$P      d$"     ,    $$P       ')
+        var_debian+=('       $$:      $$.   -    ,d$$"       ')
+        var_debian+=('       $$;      Y$b._   _,d$P"         ')
+        var_debian+=('       Y$$.    `.`"Y$$$$P""            ')
+        var_debian+=('       `$$b      "-.__                 ')
+        var_debian+=('        `Y$$b                          ')
+        var_debian+=('         `Y$$.                         ')
+        var_debian+=('           `$$b.                       ')
+        var_debian+=('             `Y$$b.                    ')
+        var_debian+=('               `"Y$b._                 ')
+        var_debian+=('                   `""""               ')
+        var_debian+=('                                       ')
+        var_logo=(${var_debian[@]})
     else
+        var_other=''
         var_other+=$(echo -e "                        ")
         var_other+=$(echo -e "                        ")
         var_other+=$(echo -e "          .--.          ")

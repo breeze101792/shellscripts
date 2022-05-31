@@ -59,6 +59,7 @@ export HS_PATH_WORK="${HS_PATH_LIB}/../work"
 export HS_PATH_IDE="${HS_PATH_LIB}/../vim-ide"
 export HS_PATH_SLINK="${HOME}/slink"
 export HS_PATH_LOG="${HOME}/log"
+export HS_PATH_TMP="${HOME}/.cache/hs_temp"
 
 export HS_PATH_PYTHEN_ENV="${HOME}/env/pyenv"
 # ECD
@@ -70,11 +71,13 @@ export HS_PATH_ECD_1="${HOME}"
 ########################################################
 ########################################################
 #####                                              #####
-#####    FILE Setting Zone                         #####
+#####    Tmp Setting Zone                          #####
 #####                                              #####
 ########################################################
 ########################################################
-export HS_FILE_CONFIG="${HOME}/.cache/hs_config"
+export HS_TMP_SESSION_PATH="${HS_PATH_TMP}/session"
+export HS_TMP_FILE_CONFIG="${HS_PATH_TMP}/hs_config"
+# export HS_FILE_CONFIG="${HOME}/.cache/hs_config"
 
 ########################################################
 ########################################################

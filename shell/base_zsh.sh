@@ -121,9 +121,9 @@ zstyle ':vcs_info:git*' formats "%{${fg[cyan]}%}[%{${fg[green]}%}%s%{${fg[cyan]}
 
 # set_current_path()
 # {
-#     if [ -e "${HS_FILE_CONFIG}" ] && [ -f "${HS_FILE_CONFIG}" ]
+#     if [ -e "${HS_TMP_FILE_CONFIG}" ] && [ -f "${HS_TMP_FILE_CONFIG}" ]
 #     then
-#         echo `pwd` > ${HS_FILE_CONFIG}
+#         echo `pwd` > ${HS_TMP_FILE_CONFIG}
 #     else
 #         echo "[Set Current path fail]"
 #     fi

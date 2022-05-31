@@ -39,7 +39,7 @@ function tmp1()
                 return 0
                 ;;
             *)
-                echo "Wrong args, %@"
+                echo "Wrong args, $@"
                 return -1
                 ;;
         esac

@@ -397,7 +397,8 @@ function logfile()
                 shift 1
                 ;;
             -e|--error)
-                flag_error_file="y"
+                # disable this, cause it can't return error status
+                # flag_error_file="y"
                 ;;
             -f|--file-name)
                 local var_logname="${2}"
@@ -406,9 +407,15 @@ function logfile()
                 ;;
             -h|--help)
                 echo "logfile"
-                printlc -cp false -d "->" "-p|--path" "path name"
-                printlc -cp false -d "->" "-f|--file-name" "file name"
-                printlc -cp false -d "->" "-e|--error" "enable error file"
+                # printlc -cp false -d "->" "-e|--error" "enable error file"
+
+                cli_helper -c "logfile" -cd "logfile function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "logfile [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-p|--path" -d "path name"
+                cli_helper -o "-f|--file-name" -d "file name"
+                cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;
 
@@ -438,13 +445,16 @@ function logfile()
     then
         # eval "${var_cmd}" 2> >(tee ${var_error_logname}) > >(tee ${var_error_logname}) | tee -a ${fulllogname}
         eval "${var_cmd}" 2> >(tee ${var_error_logname}) | tee -a ${fulllogname}
+        var_ret=$(shell_status -e )
     else
         eval "${var_cmd}" 2>&1 | tee -a ${fulllogname}
+        var_ret=$(shell_status -e )
     fi
-    var_ret=$?
+    # echo "Return: ${var_ret}"
 
     echo "===================================================================" >> $fulllogname
     echo "Command Finished:\"${var_cmd}\"" >> $fulllogname
+    echo "Return code: ${var_ret}" >> $fulllogname
     echo "Start Date: ${start_date}" >> $fulllogname
     echo "End   Date: $(date)" >> $fulllogname
     echo "==================================================================="
@@ -541,16 +551,17 @@ function mbuild()
         eval "${var_cmd}" 2>&1 | eval "${var_mark_cmd}"
     fi
 }
-function lanalyser
+function banlys
 {
     local var_logfile=""
     local flag_android="n"
     local flag_make="n"
     local flag_syntax="n"
-    local flag_command_missing="n"
-    local flag_file_missing="n"
     local flag_others="n"
     local flag_python="n"
+    local flag_shell='n'
+
+    local flag_edit="n"
 
     if [[ "$#" = "0" ]]
     then
@@ -563,28 +574,39 @@ function lanalyser
                 flag_android="y"
                 flag_make="y"
                 flag_syntax="y"
-                flag_command_missing="y"
-                flag_file_missing="y"
+                flag_shell="y"
                 flag_others="y"
                 flag_python="y"
                 ;;
             -v|--vim)
-                shift 1
-                eval vim $@
-                return 0
+                flag_edit=y
+                # shift 1
+                # eval vim $@
+                # return 0
                 ;;
             -f|--log-file)
                 var_logfile="${2}"
                 shift 1
                 ;;
+            -d|-debug)
+                flag_android="y"
+                flag_make="y"
+                flag_syntax="y"
+                flag_shell="y"
+                flag_others="y"
+                flag_python="y"
+                var_logfile="${2}"
+                shift 1
+                ;;
             -h|--help)
-                cli_helper -c "lanalyser" -cd "lanalyser function"
+                cli_helper -c "banlys" -cd "build/compil error analyzer "
                 cli_helper -t "SYNOPSIS"
-                cli_helper -d "lanalyser [Options] [Value]"
+                cli_helper -d "banlys [Options] [Value]"
                 cli_helper -t "Options"
                 cli_helper -o "-a|--all" -d "enable all debug flag"
                 # cli_helper -o "-v|--verbose" -d "Verbose print "
                 cli_helper -o "-v|--vim" -d "dirrect vim log file "
+                cli_helper -o "-d|--debug" -d "Specify log file, and enable all debug filter, indicate -a,-f"
                 cli_helper -o "-f|--log-file" -d "Specify log file"
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
@@ -596,6 +618,12 @@ function lanalyser
         esac
         shift 1
     done
+
+    if [ "${flag_edit}" = "y" ]
+    then
+        vim ${var_logfile}
+        return 0
+    fi
 
     if [ "${flag_android}" = "y" ]
     then
@@ -620,14 +648,11 @@ function lanalyser
         cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
     fi
 
-    if [ "${flag_command_missing}" = "y" ]
+    if [ "${flag_shell}" = "y" ]
     then
         echo "---- command missing "
         cat -n ${var_logfile} | grep "command not found" | mark "command not found"
-    fi
 
-    if [ "${flag_file_missing}" = "y" ]
-    then
         echo "---- file/dir/permission missing "
         tmp_pattern="Can not find directory"
         cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
@@ -636,6 +661,13 @@ function lanalyser
         cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
 
         tmp_pattern="No space left on device"
+        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
+
+        tmp_pattern="Permission denied"
+        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
+
+        echo "---- shell error "
+        tmp_pattern="Argument list too long"
         cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
     fi
 
@@ -655,7 +687,141 @@ function lanalyser
 
         tmp_pattern="\-\-help"
         cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
+    fi
+}
+function lanlys
+{
+    local var_logfile=""
+    local flag_gereral="n"
+    local flag_kernel="n"
 
+    local flag_edit="n"
+
+    if [[ "$#" = "0" ]]
+    then
+        # echo "Default action"
+        lanlys -h
+        return 1
+    fi
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -a|--all)
+                flag_gereral="y"
+                flag_kernel="y"
+                flag_shell="y"
+                flag_others="y"
+                flag_python="y"
+                ;;
+            -v|--vim)
+                flag_edit=y
+                # shift 1
+                # eval vim $@
+                # return 0
+                ;;
+            -f|--log-file)
+                var_logfile="${2}"
+                shift 1
+                ;;
+            -d|-debug)
+                flag_android="y"
+                flag_make="y"
+                flag_syntax="y"
+                flag_shell="y"
+                flag_others="y"
+                flag_python="y"
+                var_logfile="${2}"
+                shift 1
+                ;;
+            -h|--help)
+                cli_helper -c "lanlys" -cd "Run time log error analyzer "
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "lanlys [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-a|--all" -d "enable all debug flag"
+                # cli_helper -o "-v|--verbose" -d "Verbose print "
+                cli_helper -o "-v|--vim" -d "dirrect vim log file "
+                cli_helper -o "-d|--debug" -d "Specify log file, and enable all debug filter, indicate -a,-f"
+                cli_helper -o "-f|--log-file" -d "Specify log file"
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                var_logfile="$@"
+                break
+                ;;
+        esac
+        shift 1
+    done
+
+    if [ "${flag_edit}" = "y" ]
+    then
+        vim ${var_logfile}
+        return 0
+    fi
+
+    if [ "${flag_android}" = "y" ]
+    then
+        echo "flag_android: ${flag_android}"
+        echo "---- Android log analysis"
+        # local total_line=$(wc -l ${var_logfile} | cut -d " " -f1 )
+        # cat ${var_logfile} | grep -B ${total_line} "error.*generated" | tac | grep -B ${total_line} "generated.$" | tac | mark_build
+        cat -n ${var_logfile} | grep "error.*generated\|^FAILED:" | mark_build
+    fi
+    if [ "${flag_make}" = "y" ]
+    then
+        echo "---- Make log analysis"
+        cat -n ${var_logfile} | grep "make.*Error\|Makefile.*\*\*\*" | mark_build
+    fi
+    if [ "${flag_syntax}" = "y" ]
+    then
+        echo "---- Syntax log analysis"
+        tmp_pattern="undefined reference"
+        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
+
+        tmp_pattern="unknown type name"
+        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
+    fi
+
+    if [ "${flag_shell}" = "y" ]
+    then
+        echo "---- command missing "
+        cat -n ${var_logfile} | grep "command not found" | mark "command not found"
+
+        echo "---- file/dir/permission missing "
+        tmp_pattern="Can not find directory"
+        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
+
+        tmp_pattern="No such file or directory"
+        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
+
+        tmp_pattern="No space left on device"
+        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
+
+        tmp_pattern="Permission denied"
+        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
+
+        echo "---- shell error "
+        tmp_pattern="Argument list too long"
+        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
+    fi
+
+    if [ "${flag_python}" = "y" ]
+    then
+        echo "---- python error"
+        tmp_pattern="Traceback (most recent call last):"
+        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
+
+    fi
+
+    if [ "${flag_others}" = "y" ]
+    then
+        echo "---- Others error"
+        tmp_pattern="syntax error"
+        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
+
+        tmp_pattern="\-\-help"
+        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
     fi
 }
 ########################################################
@@ -666,16 +832,39 @@ function session
     local var_taget_session=""
     local var_action=""
     local var_remove_list=()
+    local var_cmd=('tmux')
+    local flag_multiple_instance=y
+
+    if [ ! -d ${HS_TMP_SESSION_PATH} ]
+    then
+        mkdir -p ${HS_TMP_SESSION_PATH}
+    fi
 
     if [[ "$#" = "0" ]]
     then
         # var_taget_session="Tmp Session"
-        tmux ls
+        session ls
         return
     fi
     while [[ "$#" != 0 ]]
     do
         case $1 in
+            -D|--default)
+                flag_multiple_instance="n"
+                break
+                ;;
+            -l|--list|ls)
+                var_action="list"
+                break
+                ;;
+            -L|--real-list)
+                var_action="real-list"
+                break
+                ;;
+            -p|--purge)
+                var_action="purge"
+                break
+                ;;
             -rm|--remove|rm)
                 var_action="remove"
                 shift 1
@@ -703,8 +892,8 @@ function session
                 ;;
             --host|host|hostname|h)
                 local var_hostname="$(cat /etc/hostname)"
-                local tmp_name=$(tmux ls |grep ${var_hostname}| cut -d ':' -f 1)
-                if [ "${tmp_name}" != "" ] &&  tmux ls
+                local tmp_name=$(session ls |grep ${var_hostname}| cut -d ':' -f 1)
+                if [ "${tmp_name}" != "" ] &&  session ls
                 then
                     var_action="attach"
                     var_taget_session=${tmp_name}
@@ -715,23 +904,27 @@ function session
                 break
                 ;;
             -h|--help)
-                cli_helper -c "session" -cd "session function"
+                cli_helper -c "session" -cd "session is an independ instance of tmux"
                 cli_helper -t "SYNOPSIS"
                 cli_helper -d "session [Options] [Value]"
                 cli_helper -t "Options"
+                cli_helper -o "-l|--list" -d "list session"
+                cli_helper -o "-L|--real-list" -d "use command info to list session"
                 cli_helper -o "-r|--remove" -d "remove session with session list"
                 cli_helper -o "-a|--attach" -d "attach session with session name"
                 cli_helper -o "-ao|--attach-only|ao" -d "attach session with session name"
                 cli_helper -o "-c|--create" -d "create session with session name"
                 cli_helper -o "-da|--deatach-all" -d "deatach all session"
                 cli_helper -o "-d|--deatach" -d "deatach session"
+                cli_helper -o "-D|--default" -d "use default socket"
+                cli_helper -o "-p|--purge" -d "purge socket"
                 cli_helper -o "--host|host|hostname|h" -d "deatach all session"
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;
             *)
-                local tmp_name=$(tmux ls |grep ${1}| cut -d ':' -f 1)
-                if [ "${tmp_name}" != "" ] &&  tmux ls
+                local tmp_name=$(session ls |grep ${1}| cut -d ':' -f 1)
+                if [ "${tmp_name}" != "" ] &&  session ls
                 then
                     var_action="attach-only"
                     var_taget_session=${tmp_name}
@@ -744,22 +937,74 @@ function session
         esac
         shift 1
     done
+    ## Run with independ instance
+    # -S socket path
+    # -L socket name(default socket path)
+    # ${var_cmd[@]} -S test new -s sharedsession
+    if [ "${flag_multiple_instance}" = "y" ]
+    then
+        var_cmd+=("-S ${HS_TMP_SESSION_PATH}/${var_taget_session}")
+    fi
 
     if [ "${var_action}" = "attach" ]
     then
         echo "Start session: ${var_taget_session}"
         retitle ${var_taget_session}
-        tmux a -dt ${var_taget_session}
+        eval ${var_cmd[@]} a -dt ${var_taget_session}
     elif [ "${var_action}" = "attach-only" ]
     then
-        echo "Start session: ${var_taget_session}"
+        echo "Start-Only session: ${var_taget_session}"
         retitle ${var_taget_session}
-        tmux a -t ${var_taget_session}
+        echo ${var_cmd[@]} a -t ${var_taget_session}
+        eval ${var_cmd[@]} a -t ${var_taget_session}
+    elif [ "${var_action}" = "list" ]
+    then
+        echo "List session:"
+        # for each_session in $(ls ${HS_TMP_SESSION_PATH})
+        # do
+        #     printf "${each_session}\n"
+        # done
+        for each_session in $(ls ${HS_TMP_SESSION_PATH})
+        do
+            # ps -ef |grep 'tmux\|session' |grep "\/$each_session " 
+            if ps -ef |grep 'tmux\|session' | grep "\/$each_session " > /dev/null
+            then
+                printf "Session: ${each_session}\n"
+            fi
+        done
+    elif [ "${var_action}" = "real-list" ]
+    then
+        echo "List session by ps:"
+        for each_session in $(ls ${HS_TMP_SESSION_PATH})
+        do
+            # ps -ef |grep 'tmux\|session' |grep "\/$each_session " 
+            if ps -ef |grep 'tmux\|session' | grep "\/$each_session " > /dev/null
+            then
+                printf "Session on : ${each_session}\n"
+            else
+                printf "Session off: ${each_session}\n" | mark -s yellow ${each_session}
+            fi
+        done
+    elif [ "${var_action}" = "purge" ]
+    then
+        echo "List session by ps:"
+        for each_session in $(ls ${HS_TMP_SESSION_PATH})
+        do
+            # ps -ef |grep 'tmux\|session' |grep "\/$each_session " 
+            if ps -ef |grep 'tmux\|session' | grep "\/$each_session " > /dev/null
+            then
+                printf "Session on : ${each_session}\n"
+            else
+                printf "Remove : ${each_session}\n" | mark -s yellow ${each_session}
+                rm ${HS_TMP_SESSION_PATH}/${each_session}
+            fi
+        done
     elif [ "${var_action}" = "create" ]
     then
         echo "Create session: ${var_taget_session}"
         retitle ${var_taget_session}
-        pureshell "export TERM='xterm-256color' && tmux -u -2 new -s ${var_taget_session}"
+        # echo pureshell "export TERM='xterm-256color' && ${var_cmd[@]} -u -2 new -s ${var_taget_session}"
+        pureshell "export TERM='xterm-256color' && ${var_cmd[@]} -u -2 new -s ${var_taget_session}"
     elif [ "${var_action}" = "remove" ]
     then
         echo "Remove session: ${var_remove_list}"
@@ -768,24 +1013,59 @@ function session
             if [ "${each_session}" != "" ]
             then
                 echo "Remove ${each_session}"
-                tmux kill-session -t "${each_session}"
+                eval ${var_cmd[@]} kill-session -t "${each_session}"
+                if ${?}
+                then
+                    rm ${HS_TMP_SESSION_PATH}/${each_session}
+                else
+                    echo 'Remove session fail: ${each_session}'
+                fi
             fi
         done
     elif [ "${var_action}" = "deatach-all" ]
     then
         echo "Deatach all session"
 
-        for each_session in $(tmux ls | cut -d ":" -f 1)
+        for each_session in $(session ls | cut -d ":" -f 1)
         do
             if [ "${each_session}" != "" ]
             then
                 echo "Detach ${each_session}"
-                tmux detach-client -s "${each_session}"
+                eval ${var_cmd[@]} detach-client -s "${each_session}"
             fi
         done
     fi
 
-    # tmux a -t ${var_taget_session} || tmux new -s ${var_taget_session}
+    # Remove session socket if it exit
+    if [ "${var_action}" = "create" ] || [ "${var_action}" = "attach" ] || [ "${var_action}" = "attach-only" ]
+    then
+        if [ "${var_taget_session}" != "" ] && ! session ls |grep ${var_taget_session} && test -S ${HS_TMP_SESSION_PATH}/${var_taget_session}
+        then
+            echo "Remove session ${var_taget_session}"
+            rm ${HS_TMP_SESSION_PATH}/${var_taget_session}
+        fi
+    fi
+
+    # ${var_cmd[@]} a -t ${var_taget_session} || ${var_cmd[@]} new -s ${var_taget_session}
+}
+function sanity_check()
+{
+    local threshold=95
+    local var_disk=$(pwd)
+    tmp_percent=$(df -h ${var_disk} | tr -s ' '  | tail -n 1 | cut -d ' ' -f 5 | sed 's/%//g')
+    tmp_size=$(df -h ${var_disk} | tr -s ' '  | tail -n 1 | cut -d ' ' -f 4 | sed 's/%//g')
+    if ((${tmp_percent} > ${threshold} ))
+    then
+        printc -c red "${var_disk}(${tmp_size}/${tmp_percent}) is bigger then ${threshold}%\n"
+    fi
+
+    local var_disk=/tmp
+    tmp_percent=$(df -h ${var_disk} | tr -s ' '  | tail -n 1 | cut -d ' ' -f 5 | sed 's/%//g')
+    tmp_size=$(df -h ${var_disk} | tr -s ' '  | tail -n 1 | cut -d ' ' -f 4 | sed 's/%//g')
+    if ((${tmp_percent} > ${threshold} ))
+    then
+        printc -c red "${var_disk}(${tmp_size}/${tmp_percent}) is bigger then ${threshold}%\n"
+    fi
 }
 function erun()
 {
@@ -800,6 +1080,7 @@ function erun()
     local flag_log_enable="y"
     local flag_color_enable="n"
     local flag_send_mail="n"
+    local var_cmd_ret='0'
 
     while [[ "$#" != 0 ]]
     do
@@ -850,7 +1131,8 @@ function erun()
         then
             mkdir -p ${log_path}
         fi
-        printf "Cmd: %s\nLogfile: %s\n----------------------------\n" "${excute_cmd}" "${log_file}" >> ${history_file}
+        # should keep this in one line to prevent insertion of other task
+        printf "Command: %s\nLogfile: %s\n================================================================\n" "${excute_cmd}" "${log_file}" >> ${history_file}
 
         logfile -e -f "${log_file}" "${excute_cmd}"
     else
@@ -858,15 +1140,30 @@ function erun()
         eval "${excute_cmd}"
     fi
     var_ret=$?
+    # if [ ${var_ret} != 0 ]
+    # then
+    #     echo "An Error occur, return:${var_ret}" | mark -s red Error
+    # fi
     # local end_time=$(date "+%Y-%m-%d_%H:%M:%S")
     local end_time=$(date)
     # echo $(elapse "${start_time}" "${end_time}")
     printt "$(printlc -lw 50 -cw 0 -d " " "Job Finished" "")\n$(printlc -lw 14 -cw 36 "Start" "${start_time}")\n$(printlc -lw 14 -cw 36  "End" "${end_time}")\n$(printlc -lw 14 -cw 36  "Elapse" "$(elapse "${start_time}" "${end_time}")")" | mark -s green "#"
-    echo "Finished cmd: $(printc -c yellow ${excute_cmd})"
+    if [ ${var_ret} != 0 ]
+    then
+        # echo "An Error occur, return:${var_ret}" | mark -s red Error
+        echo "Fail to finished cmd, Return (${var_ret}): $(printc -c yellow ${excute_cmd})"| mark -s red 'Fail'
+    else
+        echo "Finished cmd: $(printc -c yellow ${excute_cmd})"
+    fi
 
     if [ "${flag_send_mail}" = "y" ]
     then
-        printf 'Command finished: %s\nCommand Log: %s\n' "${excute_cmd}" "${log_file}" | mail -s "[Notify][ERUN] Command finished" ${HS_ENV_MAIL}
+        printf 'Command finished: %s\nCommand Log: %s\n Return: %d\n' "${excute_cmd}" "${log_file}" | mail -s "[Notify][ERUN] Command finished" ${HS_ENV_MAIL} ${var_ret}
+    fi
+
+    if [ "${fun_ret}" != '0' ]
+    then
+        sanity_check
     fi
     return ${var_ret}
 }
@@ -913,36 +1210,27 @@ function xcd()
             -b|--build|build)
                 target_path=${HS_PATH_BUILD}
                 ;;
-            ${HS_VAR_ECD_NAME_0})
-                target_path=${HS_PATH_ECD_0}
-                ;;
-            ${HS_VAR_ECD_NAME_1})
-                target_path=${HS_PATH_ECD_1}
-                ;;
-            ${HS_VAR_ECD_NAME_2})
-                target_path=${HS_PATH_ECD_2}
-                ;;
-            ${HS_VAR_ECD_NAME_3})
-                target_path=${HS_PATH_ECD_3}
-                ;;
-            ${HS_VAR_ECD_NAME_4})
-                target_path=${HS_PATH_ECD_4}
-                ;;
-            ${HS_VAR_ECD_NAME_5})
-                target_path=${HS_PATH_ECD_5}
-                ;;
-            ${HS_VAR_ECD_NAME_6})
-                target_path=${HS_PATH_ECD_6}
-                ;;
-            ${HS_VAR_ECD_NAME_7})
-                target_path=${HS_PATH_ECD_7}
-                ;;
-            ${HS_VAR_ECD_NAME_8})
-                target_path=${HS_PATH_ECD_8}
-                ;;
-            ${HS_VAR_ECD_NAME_9})
-                target_path=${HS_PATH_ECD_9}
-                ;;
+            ${HS_VAR_ECD_NAME_0}) target_path=${HS_PATH_ECD_0} ;;
+            ${HS_VAR_ECD_NAME_1}) target_path=${HS_PATH_ECD_1} ;;
+            ${HS_VAR_ECD_NAME_2}) target_path=${HS_PATH_ECD_2} ;;
+            ${HS_VAR_ECD_NAME_3}) target_path=${HS_PATH_ECD_3} ;;
+            ${HS_VAR_ECD_NAME_4}) target_path=${HS_PATH_ECD_4} ;;
+            ${HS_VAR_ECD_NAME_5}) target_path=${HS_PATH_ECD_5} ;;
+            ${HS_VAR_ECD_NAME_6}) target_path=${HS_PATH_ECD_6} ;;
+            ${HS_VAR_ECD_NAME_7}) target_path=${HS_PATH_ECD_7} ;;
+            ${HS_VAR_ECD_NAME_8}) target_path=${HS_PATH_ECD_8} ;;
+            ${HS_VAR_ECD_NAME_9}) target_path=${HS_PATH_ECD_9} ;;
+
+            ${HS_VAR_ECD_NAME_10}) target_path=${HS_PATH_ECD_10} ;;
+            ${HS_VAR_ECD_NAME_11}) target_path=${HS_PATH_ECD_11} ;;
+            ${HS_VAR_ECD_NAME_12}) target_path=${HS_PATH_ECD_12} ;;
+            ${HS_VAR_ECD_NAME_13}) target_path=${HS_PATH_ECD_13} ;;
+            ${HS_VAR_ECD_NAME_14}) target_path=${HS_PATH_ECD_14} ;;
+            ${HS_VAR_ECD_NAME_15}) target_path=${HS_PATH_ECD_15} ;;
+            ${HS_VAR_ECD_NAME_16}) target_path=${HS_PATH_ECD_16} ;;
+            ${HS_VAR_ECD_NAME_17}) target_path=${HS_PATH_ECD_17} ;;
+            ${HS_VAR_ECD_NAME_18}) target_path=${HS_PATH_ECD_18} ;;
+            ${HS_VAR_ECD_NAME_19}) target_path=${HS_PATH_ECD_19} ;;
             -p|--proj|proj|project|projects)
                 local tmp_path=$(echo ${HS_PATH_PROJ})
                 if [ -n "${2}" ]
@@ -983,6 +1271,16 @@ function xcd()
                 [ ! -z ${HS_VAR_ECD_NAME_8} ] && cli_helper -o  "$(echo ${HS_VAR_ECD_NAME_8} | sed 's/[()@]//g')" -d "cd to ${HS_PATH_ECD_8}"
                 [ ! -z ${HS_VAR_ECD_NAME_9} ] && cli_helper -o  "$(echo ${HS_VAR_ECD_NAME_9} | sed 's/[()@]//g')" -d "cd to ${HS_PATH_ECD_9}"
 
+                [ ! -z ${HS_VAR_ECD_NAME_10} ] && cli_helper -o  "$(echo ${HS_VAR_ECD_NAME_10} | sed 's/[()@]//g')" -d "cd to ${HS_PATH_ECD_10}"
+                [ ! -z ${HS_VAR_ECD_NAME_11} ] && cli_helper -o  "$(echo ${HS_VAR_ECD_NAME_11} | sed 's/[()@]//g')" -d "cd to ${HS_PATH_ECD_11}"
+                [ ! -z ${HS_VAR_ECD_NAME_12} ] && cli_helper -o  "$(echo ${HS_VAR_ECD_NAME_12} | sed 's/[()@]//g')" -d "cd to ${HS_PATH_ECD_12}"
+                [ ! -z ${HS_VAR_ECD_NAME_13} ] && cli_helper -o  "$(echo ${HS_VAR_ECD_NAME_13} | sed 's/[()@]//g')" -d "cd to ${HS_PATH_ECD_13}"
+                [ ! -z ${HS_VAR_ECD_NAME_14} ] && cli_helper -o  "$(echo ${HS_VAR_ECD_NAME_14} | sed 's/[()@]//g')" -d "cd to ${HS_PATH_ECD_14}"
+                [ ! -z ${HS_VAR_ECD_NAME_15} ] && cli_helper -o  "$(echo ${HS_VAR_ECD_NAME_15} | sed 's/[()@]//g')" -d "cd to ${HS_PATH_ECD_15}"
+                [ ! -z ${HS_VAR_ECD_NAME_16} ] && cli_helper -o  "$(echo ${HS_VAR_ECD_NAME_16} | sed 's/[()@]//g')" -d "cd to ${HS_PATH_ECD_16}"
+                [ ! -z ${HS_VAR_ECD_NAME_17} ] && cli_helper -o  "$(echo ${HS_VAR_ECD_NAME_17} | sed 's/[()@]//g')" -d "cd to ${HS_PATH_ECD_17}"
+                [ ! -z ${HS_VAR_ECD_NAME_18} ] && cli_helper -o  "$(echo ${HS_VAR_ECD_NAME_18} | sed 's/[()@]//g')" -d "cd to ${HS_PATH_ECD_18}"
+                [ ! -z ${HS_VAR_ECD_NAME_19} ] && cli_helper -o  "$(echo ${HS_VAR_ECD_NAME_19} | sed 's/[()@]//g')" -d "cd to ${HS_PATH_ECD_19}"
                 return 0
                 ;;
 
@@ -1062,17 +1360,17 @@ function fcd()
         esac
         shift 1
     done
-    echo "Fast cd to ${target_folder}"
+    # echo "Fast cd to ${target_folder}"
 
     if [[ ${depth} > 0 ]]
     then
-        echo "Finding in Layer 0"
+        # echo "Finding in Layer 0"
         test -d ${target_folder} && cd ${target_folder} && return 0
     fi
 
     if [[ ${depth} > 1 ]]
     then
-        echo "Finding in Layer 1"
+        # echo "Finding in Layer 1"
         if ls * | grep "^${target_folder}$"
         then
             test -d */${target_folder} && cd */${target_folder} && return 0
@@ -1082,7 +1380,7 @@ function fcd()
 
     if [[ ${depth} > 2 ]]
     then
-        echo "Finding in Layer 2"
+        # echo "Finding in Layer 2"
         if ls */* | grep "^${target_folder}$"
         then
             test -d */*/${target_folder} && cd */*/${target_folder} && return 0
@@ -1092,7 +1390,7 @@ function fcd()
 
     if [[ ${depth} > 3 ]]
     then
-        echo "Finding in Layer 3"
+        # echo "Finding in Layer 3"
         if ls */*/* | grep "^${target_folder}$"
         then
             test -d */*/*/${target_folder} && cd */*/*/${target_folder} && return 0
@@ -1102,7 +1400,7 @@ function fcd()
 
     if [[ ${depth} > 4 ]]
     then
-        echo "Finding in Layer 4"
+        # echo "Finding in Layer 4"
         if ls */*/*/* | grep "^${target_folder}$"
         then
             test -d */*/*/*/${target_folder} && cd */*/*/*/${target_folder} && return 0
@@ -1113,7 +1411,7 @@ function fcd()
 
     if [[ ${depth} > 5 ]]
     then
-        echo "Finding in Layer 5"
+        # echo "Finding in Layer 5"
         if ls */*/*/*/* | grep "^${target_folder}$"
         then
             test -d */*/*/*/*/${target_folder} && cd */*/*/*/*/${target_folder} && return 0
@@ -1122,7 +1420,7 @@ function fcd()
     fi
     if [[ ${depth} > 6 ]]
     then
-        echo "Finding in Layer 6"
+        # echo "Finding in Layer 6"
         if ls */*/*/*/*/* | grep "^${target_folder}$"
         then
             test -d */*/*/*/*/*/${target_folder} && cd */*/*/*/*/*/${target_folder} && return 0
