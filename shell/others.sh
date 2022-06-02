@@ -272,8 +272,10 @@ function rv()
     local var_file_name="rv_`tstamp`"
     local var_file_extension="mkv"
     local var_video_dev="/dev/video0"
+    local var_video_codec="h265"
     local var_audio_dev="hw:0"
     local var_recording_time="3600"
+    local var_video_input_formate="mjpeg"
 
     local flag_fake="n"
     local flag_audio="y"
@@ -281,6 +283,7 @@ function rv()
 
     while [[ "$#" != 0 ]]
     do
+        echo $1
         case $1 in
             -a|--audio)
                 var_audio_dev="${2}"
@@ -296,6 +299,14 @@ function rv()
                 ;;
             -p|--path)
                 var_video_path="${2}"
+                shift 1
+                ;;
+            -n|--name)
+                var_file_name="${2}"
+                shift 1
+                ;;
+            --vdec)
+                var_video_codec="${2}"
                 shift 1
                 ;;
             --file)
@@ -325,8 +336,10 @@ function rv()
                 cli_helper -d "rv -a hw:2 -t 3600"
                 cli_helper -t "Options"
                 cli_helper -o "-p|--path" -d "recorder path"
+                cli_helper -o "-n|--name" -d "recorder file name"
                 cli_helper -o "-t|--time" -d "recording time"
                 cli_helper -o "-v|--video" -d "video device"
+                cli_helper -o "--vdec" -d "video codec, h265,h264,copy"
                 cli_helper -o "-a|--audio" -d "audio device"
                 cli_helper -o "-f|--fake" -d "fake run"
                 cli_helper -o "--file" -d "recorder file"
@@ -368,37 +381,64 @@ function rv()
 
     if [ "${flag_video}" = "y" ]
     then
-        # Video Settings
-        var_cmd+=(" -f video4linux2 -i ${var_video_dev}")
+        # you can use followings command to list webcam formate
+        # v4l2-ctl --list-formats-ext
+        # ffmpeg -f v4l2 -list_formats all -i /dev/video0
+
+        var_cmd+=(" -f video4linux2")
+
+        ## Video Settings
+        var_cmd+=(" -framerate 30")
+        var_cmd+=(" -video_size 1280x720")
+        # var_cmd+=(" -video_size 640x480")
+
+        if [ "${var_video_input_formate}" = "mjpeg" ]
+        then
+            # pre compress, but fast decode
+            var_cmd+=(" -input_format mjpeg")
+        elif [ "${var_video_input_formate}" = "yuv422" ]
+        then
+            # raw video
+            var_cmd+=(" -input_format yuyv422")
+        fi
+
+
+        var_cmd+=(" -i ${var_video_dev}")
     fi
 
-    if [ "${flag_audio}" = "y" ] && [ "${flag_video}" = "n" ]
+    if [ "${flag_audio}" = "y" ]
     then
         var_cmd+=(" -acodec aac -ab 128k")
         var_file_extension="aac"
-    elif [ "${flag_audio}" = "n" ] && [ "${flag_video}" = "y" ]
+    fi
+
+    if [ "${flag_video}" = "y" ]
     then
         # var_cmd+=(" -f matroska")
         ## Options
         # CRF: Constant Rate Factor
-
-        ## h265
-        var_cmd+=(" -vcodec libx265 -preset slow -crf 18")
-        # var_file_extension="h265"
-
-        ## h264
-        # var_cmd+=(" -vcodec libx264 -preset ultrafast -qp 16")
-        # var_file_extension="h264"
-
-        ## raw formate
-        # var_cmd+=(" -codec:v copy")
-        # var_file_extension="nut"
-
+        if [ "${var_video_codec}" = "h265" ]
+        then
+            ## h265
+            var_cmd+=(" -vcodec libx265 -preset slow -crf 18")
+            var_file_extension="h265"
+        elif [ "${var_video_codec}" = "h264" ]
+        then
+            ## h264
+            var_cmd+=(" -vcodec libx264 -preset ultrafast -qp 16")
+            var_file_extension="h264"
+        elif [ "${var_video_codec}" = "copy" ]
+        then
+            ## raw formate
+            var_cmd+=(" -codec:v copy")
+            var_file_extension="nut"
+        fi
         ## Others
-    else
-        # var_cmd+=(" -f matroska")
-        var_cmd+=(" -vcodec libx265 -preset slow -crf 18")
-        var_cmd+=(" -acodec aac -ab 128k")
+    fi
+
+    if [ "${flag_video}" = "y" ] && [ "${flag_audio}" = "y" ]
+    then
+        var_file_extension="mkv"
     fi
 
     # Output Settings
