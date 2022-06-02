@@ -18,6 +18,9 @@ alias glog="git log --graph --abbrev-commit --decorate --format=format:'%C(bold 
 alias proot="froot -m .repo || froot -m .git"
 alias nlfsgit="GIT_LFS_SKIP_SMUDGE=1 git "
 
+# for compatibale
+alias xession='session'
+
 ########################################################
 #####    VIM                                      #####
 ########################################################
@@ -851,7 +854,6 @@ function session
         case $1 in
             -D|--default)
                 flag_multiple_instance="n"
-                break
                 ;;
             -l|--list|ls)
                 var_action="list"
@@ -892,8 +894,8 @@ function session
                 ;;
             --host|host|hostname|h)
                 local var_hostname="$(cat /etc/hostname)"
-                local tmp_name=$(session ls |grep ${var_hostname}| cut -d ':' -f 1)
-                if [ "${tmp_name}" != "" ] &&  session ls
+                local tmp_name=$(session ls |grep ${var_hostname}| cut -d ':' -f 1| tr -d  ' ')
+                if [ "${tmp_name}" != "" ]
                 then
                     var_action="attach"
                     var_taget_session=${tmp_name}
@@ -923,8 +925,8 @@ function session
                 return 0
                 ;;
             *)
-                local tmp_name=$(session ls |grep ${1}| cut -d ':' -f 1)
-                if [ "${tmp_name}" != "" ] &&  session ls
+                local tmp_name=$(session ls |grep ${1}| cut -d ':' -f 1 | tr -d ' ')
+                if [ "${tmp_name}" != "" ]
                 then
                     var_action="attach-only"
                     var_taget_session=${tmp_name}
@@ -941,53 +943,80 @@ function session
     # -S socket path
     # -L socket name(default socket path)
     # ${var_cmd[@]} -S test new -s sharedsession
-    if [ "${flag_multiple_instance}" = "y" ]
-    then
-        var_cmd+=("-S ${HS_TMP_SESSION_PATH}/${var_taget_session}")
-    fi
 
     if [ "${var_action}" = "attach" ]
     then
-        echo "Start session: ${var_taget_session}"
+        echo "${var_action} session: ${var_taget_session}"
         retitle ${var_taget_session}
+        if [ "${flag_multiple_instance}" = "y" ] && [ -n "${var_taget_session}" ]
+        then
+            var_cmd+=("-S ${HS_TMP_SESSION_PATH}/${var_taget_session}")
+        fi
         eval ${var_cmd[@]} a -dt ${var_taget_session}
     elif [ "${var_action}" = "attach-only" ]
     then
-        echo "Start-Only session: ${var_taget_session}"
+        echo "${var_action} session: ${var_taget_session}"
         retitle ${var_taget_session}
         echo ${var_cmd[@]} a -t ${var_taget_session}
+        if [ "${flag_multiple_instance}" = "y" ] && [ -n "${var_taget_session}" ]
+        then
+            var_cmd+=("-S ${HS_TMP_SESSION_PATH}/${var_taget_session}")
+        fi
         eval ${var_cmd[@]} a -t ${var_taget_session}
+    elif [ "${var_action}" = "create" ]
+    then
+        echo "${var_action} session: ${var_taget_session}"
+        retitle ${var_taget_session}
+        # echo pureshell "export TERM='xterm-256color' && ${var_cmd[@]} -u -2 new -s ${var_taget_session}"
+        if [ "${flag_multiple_instance}" = "y" ] && [ -n "${var_taget_session}" ]
+        then
+            var_cmd+=("-S ${HS_TMP_SESSION_PATH}/${var_taget_session}")
+        fi
+        pureshell "export TERM='xterm-256color' && ${var_cmd[@]} -u -2 new -s ${var_taget_session}"
     elif [ "${var_action}" = "list" ]
     then
-        echo "List session:"
+        echo "${var_action} session:"
         # for each_session in $(ls ${HS_TMP_SESSION_PATH})
         # do
         #     printf "${each_session}\n"
         # done
-        for each_session in $(ls ${HS_TMP_SESSION_PATH})
-        do
-            # ps -ef |grep 'tmux\|session' |grep "\/$each_session " 
-            if ps -ef |grep 'tmux\|session' | grep "\/$each_session " > /dev/null
-            then
-                printf "Session: ${each_session}\n"
-            fi
-        done
+
+        if [ "${flag_multiple_instance}" = "y" ]
+        then
+            for each_session in $(ls ${HS_TMP_SESSION_PATH})
+            do
+                # ps -ef |grep 'tmux\|session' |grep "\/$each_session " 
+                if ps -ef |grep 'tmux\|session' | grep "\/$each_session " > /dev/null
+                then
+                    # printf "${each_session}: On\n"
+                    eval ${var_cmd[@]} -S ${HS_TMP_SESSION_PATH}/${each_session} ls
+                fi
+            done
+        else
+            tmux ls
+            # for each_session in $(tmux ls | cut -d ':' -f 1)
+            # do
+            #     printf "${each_session}: Off\n"
+            # done
+        fi
+
     elif [ "${var_action}" = "real-list" ]
     then
-        echo "List session by ps:"
+        echo "${var_action} session by ps:"
         for each_session in $(ls ${HS_TMP_SESSION_PATH})
         do
             # ps -ef |grep 'tmux\|session' |grep "\/$each_session " 
             if ps -ef |grep 'tmux\|session' | grep "\/$each_session " > /dev/null
             then
-                printf "Session on : ${each_session}\n"
+                # printf "${each_session}: On\n"
+                eval ${var_cmd[@]} -S ${HS_TMP_SESSION_PATH}/${each_session} ls
             else
-                printf "Session off: ${each_session}\n" | mark -s yellow ${each_session}
+                printf "${each_session}: Off\n" | mark -s yellow ${each_session}
             fi
         done
     elif [ "${var_action}" = "purge" ]
     then
-        echo "List session by ps:"
+        echo "${var_action} session by ps:"
         for each_session in $(ls ${HS_TMP_SESSION_PATH})
         do
             # ps -ef |grep 'tmux\|session' |grep "\/$each_session " 
@@ -999,21 +1028,15 @@ function session
                 rm ${HS_TMP_SESSION_PATH}/${each_session}
             fi
         done
-    elif [ "${var_action}" = "create" ]
-    then
-        echo "Create session: ${var_taget_session}"
-        retitle ${var_taget_session}
-        # echo pureshell "export TERM='xterm-256color' && ${var_cmd[@]} -u -2 new -s ${var_taget_session}"
-        pureshell "export TERM='xterm-256color' && ${var_cmd[@]} -u -2 new -s ${var_taget_session}"
     elif [ "${var_action}" = "remove" ]
     then
-        echo "Remove session: ${var_remove_list}"
+        echo "${var_action} session: ${var_remove_list}"
         for each_session in $(echo "${var_remove_list}")
         do
             if [ "${each_session}" != "" ]
             then
                 echo "Remove ${each_session}"
-                eval ${var_cmd[@]} kill-session -t "${each_session}"
+                eval ${var_cmd[@]} -S ${HS_TMP_SESSION_PATH}/${each_session} kill-session -t "${each_session}"
                 if ${?}
                 then
                     rm ${HS_TMP_SESSION_PATH}/${each_session}
@@ -1024,14 +1047,14 @@ function session
         done
     elif [ "${var_action}" = "deatach-all" ]
     then
-        echo "Deatach all session"
+        echo "${var_action} all session"
 
         for each_session in $(session ls | cut -d ":" -f 1)
         do
             if [ "${each_session}" != "" ]
             then
                 echo "Detach ${each_session}"
-                eval ${var_cmd[@]} detach-client -s "${each_session}"
+                eval ${var_cmd[@]} -S ${HS_TMP_SESSION_PATH}/${each_session} detach-client -s "${each_session}"
             fi
         done
     fi
@@ -1675,7 +1698,7 @@ function ginfo()
     local flag_info='n'
     local flag_auto='n'
 
-    if froot -f -m '.git'
+    if froot -f -m '.git' > /dev/null
     then
         flag_isgit='y'
     fi

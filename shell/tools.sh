@@ -342,22 +342,23 @@ function bkfile()
 function rln()
 {
     local var_args=('-f')
+    local flag_mode="hard"
 
     while [[ "$#" != 0 ]]
     do
         case $1 in
             -h|--hard)
-                var_args=('-h')
+                flag_mode="hard"
                 ;;
             -s|--soft)
-                var_args=('-s')
+                flag_mode="soft"
                 ;;
             -h|--help)
                 cli_helper -c "rln" -cd "rln(real link) function"
                 cli_helper -t "SYNOPSIS"
                 cli_helper -d "rln [Options] [Value]"
                 cli_helper -t "Options"
-                cli_helper -o "-h|--hard" -d "hard link"
+                cli_helper -o "-h|--hard" -d "hard link, default behavior"
                 cli_helper -o "-s|--soft" -d "soft link"
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
@@ -370,7 +371,16 @@ function rln()
         esac
         shift 1
     done
-    echo "Do: ln ${var_args[@]} $(realpath $1) $2"
+    if [ "${flag_mode}" = "soft" ]
+    then
+        var_args=('-s')
+    # elif [ "${flag_mode}" = "hard" ]
+    # then
+    #     var_args=('-h')
+    fi
+
+    # echo "Do: ln ${var_args[@]} $(echo $1) $2"
+    echo "ln ${var_args[@]} $(realpath $1) $2"
     ln ${var_args[@]} $(realpath $1) $2
 }
 function retitle()
