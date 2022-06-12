@@ -19,7 +19,8 @@ alias proot="froot -m .repo || froot -m .git"
 alias nlfsgit="GIT_LFS_SKIP_SMUDGE=1 git "
 
 # for compatibale
-alias xession='session'
+alias ecd="ecd"
+alias mark_build="mbuild "
 
 ########################################################
 #####    VIM                                      #####
@@ -478,18 +479,74 @@ function logfile()
 function slink()
 {
     local target_path=""
-    if [ "$#" = "1" ]
+    local var_slink_path="${HS_PATH_SLINK}"
+
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -p|--path)
+                if [ -d "${2}" ]
+                then
+                    target_path=$(realpath ${2})
+                fi
+                shift 1
+                ;;
+            -2)
+                var_slink_path="${var_slink_path}_2"
+                shift 1
+                ;;
+            -3)
+                var_slink_path="${var_slink_path}_3"
+                shift 1
+                ;;
+            -c|--clean)
+                test -d ${var_slink_path} && rm ${var_slink_path}
+                test -d ${var_slink_path}_2 && rm ${var_slink_path}_2
+                test -d ${var_slink_path}_3 && rm ${var_slink_path}_3
+                return 0
+                ;;
+            # -v|--verbose)
+            #     flag_verbose="y"
+            #     shift 1
+            #     ;;
+            -h|--help)
+                cli_helper -c "slink" -cd "slink function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "slink [Options] [Value]"
+                cli_helper -t "Options"
+                # cli_helper -o "-a|--append" -d "append file extension on search"
+                cli_helper -o "-p|--path" -d "Target path "
+                cli_helper -o "-c|--clean" -d "Clean slink path "
+                cli_helper -o "-2" -d "Using 2nd slink path"
+                cli_helper -o "-3" -d "Using 3rd slink path"
+                # cli_helper -o "-v|--verbose" -d "Verbose print "
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                # echo "Wrong args, $@"
+                # return -1
+                if [ -d "${@}" ]
+                then
+                    target_path=$(realpath ${@})
+                    break;
+                fi
+                ;;
+        esac
+        shift 1
+    done
+
+    if [ -z "${target_path}" ]
     then
-        target_path=$(realpath ${1})
-    else
         target_path=$(realpath ${PWD})
     fi
 
+
     if [ -d "${target_path}" ]
     then
-        rm ${HS_PATH_SLINK}
-        ln -sf  ${target_path} ${HS_PATH_SLINK}
-        ls -al ${HS_PATH_SLINK}
+        test -d ${var_slink_path} && rm ${var_slink_path}
+        ln -sf  ${target_path} ${var_slink_path}
+        ls -al ${var_slink_path}
     else
         echo "Forder not found.(${target_path})"
     fi
@@ -498,7 +555,6 @@ function slink()
 ########################################################
 #####    Build                                     #####
 ########################################################
-alias mark_build="mbuild "
 function mbuild()
 {
     local var_cmd=""
@@ -605,141 +661,6 @@ function banlys
                 cli_helper -c "banlys" -cd "build/compil error analyzer "
                 cli_helper -t "SYNOPSIS"
                 cli_helper -d "banlys [Options] [Value]"
-                cli_helper -t "Options"
-                cli_helper -o "-a|--all" -d "enable all debug flag"
-                # cli_helper -o "-v|--verbose" -d "Verbose print "
-                cli_helper -o "-v|--vim" -d "dirrect vim log file "
-                cli_helper -o "-d|--debug" -d "Specify log file, and enable all debug filter, indicate -a,-f"
-                cli_helper -o "-f|--log-file" -d "Specify log file"
-                cli_helper -o "-h|--help" -d "Print help function "
-                return 0
-                ;;
-            *)
-                var_logfile="$@"
-                break
-                ;;
-        esac
-        shift 1
-    done
-
-    if [ "${flag_edit}" = "y" ]
-    then
-        vim ${var_logfile}
-        return 0
-    fi
-
-    if [ "${flag_android}" = "y" ]
-    then
-        echo "flag_android: ${flag_android}"
-        echo "---- Android log analysis"
-        # local total_line=$(wc -l ${var_logfile} | cut -d " " -f1 )
-        # cat ${var_logfile} | grep -B ${total_line} "error.*generated" | tac | grep -B ${total_line} "generated.$" | tac | mark_build
-        cat -n ${var_logfile} | grep "error.*generated\|^FAILED:" | mark_build
-    fi
-    if [ "${flag_make}" = "y" ]
-    then
-        echo "---- Make log analysis"
-        cat -n ${var_logfile} | grep "make.*Error\|Makefile.*\*\*\*" | mark_build
-    fi
-    if [ "${flag_syntax}" = "y" ]
-    then
-        echo "---- Syntax log analysis"
-        tmp_pattern="undefined reference"
-        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
-
-        tmp_pattern="unknown type name"
-        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
-    fi
-
-    if [ "${flag_shell}" = "y" ]
-    then
-        echo "---- command missing "
-        cat -n ${var_logfile} | grep "command not found" | mark "command not found"
-
-        echo "---- file/dir/permission missing "
-        tmp_pattern="Can not find directory"
-        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
-
-        tmp_pattern="No such file or directory"
-        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
-
-        tmp_pattern="No space left on device"
-        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
-
-        tmp_pattern="Permission denied"
-        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
-
-        echo "---- shell error "
-        tmp_pattern="Argument list too long"
-        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
-    fi
-
-    if [ "${flag_python}" = "y" ]
-    then
-        echo "---- python error"
-        tmp_pattern="Traceback (most recent call last):"
-        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
-
-    fi
-
-    if [ "${flag_others}" = "y" ]
-    then
-        echo "---- Others error"
-        tmp_pattern="syntax error"
-        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
-
-        tmp_pattern="\-\-help"
-        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
-    fi
-}
-function lanlys
-{
-    local var_logfile=""
-    local flag_gereral="n"
-    local flag_kernel="n"
-
-    local flag_edit="n"
-
-    if [[ "$#" = "0" ]]
-    then
-        # echo "Default action"
-        lanlys -h
-        return 1
-    fi
-    while [[ "$#" != 0 ]]
-    do
-        case $1 in
-            -a|--all)
-                flag_gereral="y"
-                flag_kernel="y"
-                flag_shell="y"
-                flag_others="y"
-                flag_python="y"
-                ;;
-            -v|--vim)
-                flag_edit=y
-                # shift 1
-                # eval vim $@
-                # return 0
-                ;;
-            -f|--log-file)
-                var_logfile="${2}"
-                shift 1
-                ;;
-            -d|-debug)
-                flag_android="y"
-                flag_make="y"
-                flag_syntax="y"
-                flag_shell="y"
-                flag_others="y"
-                flag_python="y"
-                var_logfile="${2}"
-                shift 1
-                ;;
-            -h|--help)
-                cli_helper -c "lanlys" -cd "Run time log error analyzer "
-                cli_helper -t "SYNOPSIS"
-                cli_helper -d "lanlys [Options] [Value]"
                 cli_helper -t "Options"
                 cli_helper -o "-a|--all" -d "enable all debug flag"
                 # cli_helper -o "-v|--verbose" -d "Verbose print "
@@ -1190,7 +1111,6 @@ function erun()
     fi
     return ${var_ret}
 }
-alias ecd="ecd"
 function xcd()
 {
     echo "Enhanced cd"

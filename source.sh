@@ -305,7 +305,7 @@ function hs_print()
 function refresh
 {
     local cpath=$(realpath .)
-    source $HS_PATH_LIB/source.sh -p=${HS_PATH_LIB} -s=${HS_ENV_SHELL} -S=${HS_ENV_SILENCE} --refresh
+    source ${HS_PATH_LIB}/source.sh -p=${HS_PATH_LIB} -s=${HS_ENV_SHELL} -S=${HS_ENV_SILENCE} --refresh
     cd ${cpath}
 }
 
@@ -405,7 +405,7 @@ function hs_main
     else
         export HS_PATH_LIB=${flag_env_lib_path}
     fi
-    source $HS_PATH_LIB/shell/env_config.sh
+    source ${HS_PATH_LIB}/shell/env_config.sh
     if [ -f ${var_user_config} ]
     then
         source ${var_user_config}
@@ -452,22 +452,28 @@ function hs_main
     ##########################################
     # shell init
     ##########################################
-    if [ "$HS_ENV_SHELL" = "bash" ]
+    if [ "${HS_ENV_SHELL}" = "bash" ]
     then
         export HS_ENV_SHELL="bash"
-        hs_source $HS_PATH_LIB/shell/base_bash.sh
+        hs_source ${HS_PATH_LIB}/shell/base_bash.sh
     else
         export HS_ENV_SHELL="zsh"
-        hs_source $HS_PATH_LIB/shell/base_zsh.sh
+        hs_source ${HS_PATH_LIB}/shell/base_zsh.sh
     fi
     hs_print "Version: $HS_ENV_VER"
-    hs_source $HS_PATH_LIB/shell/env_platform.sh
-    hs_source $HS_PATH_LIB/shell/lib.sh
-    hs_source $HS_PATH_LIB/shell/cli.sh
-    hs_source $HS_PATH_LIB/shell/tools.sh
-    hs_source $HS_PATH_LIB/shell/development.sh
-    hs_source $HS_PATH_LIB/shell/others.sh
-    hs_source $HS_PATH_LIB/projects/project.sh
+    hs_source ${HS_PATH_LIB}/shell/env_platform.sh
+    hs_source ${HS_PATH_LIB}/shell/lib.sh
+    hs_source ${HS_PATH_LIB}/shell/cli.sh
+    hs_source ${HS_PATH_LIB}/shell/tools.sh
+    hs_source ${HS_PATH_LIB}/shell/development.sh
+    hs_source ${HS_PATH_LIB}/shell/others.sh
+    hs_source ${HS_PATH_LIB}/projects/project.sh
+
+    ##########################################
+    # Path setup
+    ##########################################
+    epath ${HS_PATH_LIB}/scripts
+
     ##########################################
     # shell post init
     ##########################################
@@ -487,9 +493,9 @@ function hs_main
     # Source Other settings
     ##########################################
 
-    if [ -f $HS_PATH_LIB/shell/lab.sh ]
+    if [ -f ${HS_PATH_LIB}/shell/lab.sh ]
     then
-        hs_source $HS_PATH_LIB/shell/lab.sh
+        hs_source ${HS_PATH_LIB}/shell/lab.sh
     fi
     # End of shell
     if [ -f ${HS_PATH_WORK}/work.sh ]
