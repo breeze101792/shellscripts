@@ -188,6 +188,7 @@ function sinfo()
         local var_disk_tmp="$(df -h ${var_tmp} |tail -n 1 | sed 's/\s\+/ /g' | cut -d ' ' -f 3) / $(df -h ${var_tmp} | tail -n 1 | sed 's/\s\+/ /g' | cut -d ' ' -f 2) ($(df -h ${var_tmp} | tail -n 1 | sed 's/\s\+/ /g' | cut -d ' ' -f 5))"
         local var_pproccess="$(ps -Ao pid,fname |grep "${PPID}" |grep -v "grep" | sed 's/[[:space:]]\+/ /g' |sed 's/^\s//g'| cut -d ' ' -f 2) (${PPID})"
         local var_editor="${EDITOR}"
+        local var_ssh_client_ip=${SSH_CLIENT}
     fi
 
 
@@ -212,9 +213,10 @@ function sinfo()
         echo "##  Root Disk      : "${var_disk_root}
         echo "##  Home Disk      : "${var_disk_home}
         echo "##  TMP Disk       : "${var_disk_tmp}
-        # echo "###############################################################"
-        # echo "####  Other Info"
-        # echo "###############################################################"
+        echo "###############################################################"
+        echo "####  Other Info"
+        echo "###############################################################"
+        test -n ${var_ssh_client_ip} && echo "##  SSH Client IP  : ${var_ssh_client_ip}"
         # echo "##  Memory       : "$(free -h  | grep Mem | sed 's/\s\+/;/g' | cut -d ';' -f 4)
         # echo "##  Working Disk : "$(df -h . | tail -n 1 | sed 's/\s\+/;/g' | cut -d ';' -f 4-5)
         # echo "##  TMP Disk     : "$(df -h /tmp | tail -n 1 | sed 's/\s\+/;/g' | cut -d ';' -f 4-5)
@@ -632,16 +634,6 @@ function link_folders()
             echo "Folder dosen't exist. ${tmp_folder}"
         fi
     done
-}
-function sys_status()
-{
-    local cpu_num=$(nproc)
-    local memory=$(free -h  | grep -i mem | tr -s ' ' | cut -d ' ' -f2)
-    local sep="\n"
-
-    # local contant=("$(printlc 'Hostname' $(hostname))" "$(printlc 'CPU(s)' ${cpu_num})" "$(printlc 'Memory' ${memory})")
-    # echo $contant
-    printt "$(printlc 'Hostname' $(hostname))${sep}$(printlc 'CPU(s)' ${cpu_num})${sep}$(printlc 'Memory' ${memory})"
 }
 function user_mount()
 {

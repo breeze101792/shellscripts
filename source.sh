@@ -470,11 +470,6 @@ function hs_main
     hs_source ${HS_PATH_LIB}/projects/project.sh
 
     ##########################################
-    # Path setup
-    ##########################################
-    epath ${HS_PATH_LIB}/scripts
-
-    ##########################################
     # shell post init
     ##########################################
     if [ "${HS_ENV_SHELL}" = "bash" ] && [ "${HS_CONFIG_FUNCTION_EXPORT}" = "y" ]

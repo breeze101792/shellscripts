@@ -75,11 +75,11 @@ function pvinit()
                 flag_append="y"
                 ;;
             -e|--extension)
-                file_ext+="-o -name \"*.${2}\""
+                file_ext+="-o -iname \"*.${2}\""
                 shift 1
                 ;;
             -x|--exclude)
-                file_exclude+="-o -name \"*.${2}\""
+                file_exclude+="-o -iname \"*.${2}\""
                 shift 1
                 ;;
             -c|--clean)
@@ -148,7 +148,7 @@ function pvinit()
             local tmp_path=$(realpath ${each_path})
             printc -c green "Searching folder: "
             echo -e "$tmp_path"
-            find_cmd="find ${tmp_path} \( -type f -name '*.h' -o -name '*.c' -o -name '*.cpp' -o -name '*.java' ${file_ext[@]} \) -a \( -not -path '*/auto_gen*' -o -not -path '*/build*' ${file_exclude[@]} \) | xargs realpath >> \"${target_list_name}\""
+            find_cmd="find ${tmp_path} \( -type f -iname '*.h' -o -iname '*.c' -o -iname '*.cpp' -o -iname '*.java' ${file_ext[@]} \) -a \( -not -path '*/auto_gen*' -o -not -path '*/build*' ${file_exclude[@]} \) | xargs realpath >> \"${target_list_name}\""
             # echo ${find_cmd}
             eval "${find_cmd}"
         fi
@@ -493,16 +493,16 @@ function slink()
                 ;;
             -2)
                 var_slink_path="${var_slink_path}_2"
-                shift 1
                 ;;
             -3)
                 var_slink_path="${var_slink_path}_3"
-                shift 1
+                ;;
+            -l|--list|ls)
+                echo "List ${var_slink_path}"
+                ls ${var_slink_path}
+                return 0
                 ;;
             -c|--clean)
-                test -d ${var_slink_path} && rm ${var_slink_path}
-                test -d ${var_slink_path}_2 && rm ${var_slink_path}_2
-                test -d ${var_slink_path}_3 && rm ${var_slink_path}_3
                 return 0
                 ;;
             # -v|--verbose)
@@ -519,6 +519,7 @@ function slink()
                 cli_helper -o "-c|--clean" -d "Clean slink path "
                 cli_helper -o "-2" -d "Using 2nd slink path"
                 cli_helper -o "-3" -d "Using 3rd slink path"
+                cli_helper -o "-l|--list|ls" -d "List slink path"
                 # cli_helper -o "-v|--verbose" -d "Verbose print "
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
@@ -544,7 +545,7 @@ function slink()
 
     if [ -d "${target_path}" ]
     then
-        test -d ${var_slink_path} && rm ${var_slink_path}
+        test -L ${var_slink_path} && rm ${var_slink_path}
         ln -sf  ${target_path} ${var_slink_path}
         ls -al ${var_slink_path}
     else
@@ -833,7 +834,7 @@ function session
                 cli_helper -t "Options"
                 cli_helper -o "-l|--list" -d "list session"
                 cli_helper -o "-L|--real-list" -d "use command info to list session"
-                cli_helper -o "-r|--remove" -d "remove session with session list"
+                cli_helper -o "-rm|--remove" -d "remove session with session list"
                 cli_helper -o "-a|--attach" -d "attach session with session name"
                 cli_helper -o "-ao|--attach-only|ao" -d "attach session with session name"
                 cli_helper -o "-c|--create" -d "create session with session name"
@@ -958,11 +959,11 @@ function session
             then
                 echo "Remove ${each_session}"
                 eval ${var_cmd[@]} -S ${HS_TMP_SESSION_PATH}/${each_session} kill-session -t "${each_session}"
-                if ${?}
+                if [[ ${?} = 0 ]]
                 then
                     rm ${HS_TMP_SESSION_PATH}/${each_session}
                 else
-                    echo 'Remove session fail: ${each_session}'
+                    echo "Remove session fail: ${each_session}"
                 fi
             fi
         done
@@ -1949,7 +1950,7 @@ function gpatch()
         else
             echo "evaluate: patch -p1 -b -i ${tmp_patch_file}"
             patch -p1 -b -i ${tmp_patch_file} | mark -s red "reject" | mark -s red "FAILED" | mark -s red 'git binary diffs are not supported'
-            if [[ $? = 0 ]]
+            if [[ $? != 0 ]]
             then
                 status_apply_error=y
             fi

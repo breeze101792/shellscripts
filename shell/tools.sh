@@ -123,7 +123,7 @@ function clip()
             break
         fi
         case $1 in
-            -l|--list)
+            -l|--list|ls)
                 # echo "Clipboard buffer def : $(clip -g )"
                 for each_idx in $(seq 0 ${var_max_idx})
                 do
@@ -147,6 +147,31 @@ function clip()
                 #     echo "Clip number should be in 0~5"
                 #     return 1
                 fi
+                ;;
+            -1)
+                var_clipidx=1
+                var_clipboard="${HS_VAR_CLIPBOARD}_${var_clipidx}"
+                shift 1
+                ;;
+            -2)
+                var_clipidx=2
+                var_clipboard="${HS_VAR_CLIPBOARD}_${var_clipidx}"
+                shift 1
+                ;;
+            -3)
+                var_clipidx=3
+                var_clipboard="${HS_VAR_CLIPBOARD}_${var_clipidx}"
+                shift 1
+                ;;
+            -4)
+                var_clipidx=4
+                var_clipboard="${HS_VAR_CLIPBOARD}_${var_clipidx}"
+                shift 1
+                ;;
+            -5)
+                var_clipidx=5
+                var_clipboard="${HS_VAR_CLIPBOARD}_${var_clipidx}"
+                shift 1
                 ;;
             -s|--set-clip)
                 shift 1
@@ -216,7 +241,7 @@ function clip()
                 # local excute_cmd=$(printf "$(echo $@ | sed 's/%p/%s/g' )" "$(clip -b ${var_clipidx} -g)")
 
                 excute_cmd=$(echo ${@} | sed 's/%p/$(clip -b ${var_clipidx} -g )/g' )
-                echo ${excute_cmd}
+                # echo ${excute_cmd}
 
                 excute_cmd=$(echo ${excute_cmd} | sed 's/%0/$(clip -b 0 -g )/g' \
                 | sed 's/%1/$(clip -b 1 -g )/g' \
@@ -254,14 +279,23 @@ function clip()
                 cli_helper -o "-ln|--link" -d "Link file to the current folder"
                 cli_helper -o "-f|--fake-run" -d "Do fake run on -x"
                 cli_helper -o "-x|--excute" -d "Excute command, replace %p with clip buffer."
-                cli_helper -o "-x|--excute" -d "Excute command, replace %0,%1...%5 with clip buffer."
+                cli_helper -o "-ex|--enhance-excute" -d "Excute command, replace %0,%1...%5 with clip buffer."
                 cli_helper -o "-h|--help" -d "Print help function "
 
                 return 0
                 ;;
             *)
-                # hs_config -s "${var_clipboard}" "${@}"
-                clip -ls
+                excute_cmd=$(echo "${@}" $(clip -b ${var_clipidx} -g ))
+                # echo ${excute_cmd}
+
+                echo ${excute_cmd} |mark -s yellow ${excute_cmd}
+                if ! ${flag_fake_run}
+                then
+                    printf "Excute Commands?(Y/n)"
+                    read tmp_ans
+                    test "${tmp_ans}" != "n" && eval ${excute_cmd}
+                fi
+
                 break
                 ;;
         esac
@@ -586,7 +620,7 @@ function compressor()
                 shift 1
                 ;;
             -j|--bzip)
-                var_ext_name="tbz"
+                var_ext_name="tbz2"
                 if command -v pbzip2
                 then
                     cmd_args+=(--use-compress-program=pbzip2)
@@ -612,7 +646,13 @@ function compressor()
             -a|--auto|a)
                 shift 1
                 # local tmp_folder_name="$(dirname $(realpath ${1}) | sed 's|/.*/||g')"
-                local tmp_archive_name="$(echo ${1} |sed 's/\..*//g' |sed 's|/||g' |sed 's| |_|g')_$(tstamp).tbz2"
+                local tmp_archive_name=""
+                if [ -z ${var_archive_name} ]
+                then
+                    tmp_archive_name="$(echo ${1} |sed 's/\..*//g' |sed 's|/||g' |sed 's| |_|g')_$(tstamp)"
+                else
+                    tmp_archive_name="$(echo ${var_archive_name} |sed 's/\..*//g' |sed 's|/||g' |sed 's| |_|g')_$(tstamp)"
+                fi
                 compressor -j -c -n "${tmp_archive_name}" $@
                 # echo "Compressed file: ${tmp_archive_name}"
                 return 0
@@ -658,6 +698,7 @@ function compressor()
     fi
     echo ${cmd_prog} ${cmd_args[@]}
     eval ${cmd_prog} ${cmd_args[@]}
+    echo "Compressed file is ${var_archive_name}"
 
     # Backup run with progress bar
     # tar cf - /folder-with-big-files -P | pv -s $(du -sb /folder-with-big-files | awk '{print $1}') | gzip > big-files.tar.gz
@@ -712,14 +753,43 @@ function tstamp()
 }
 function fakeshell()
 {
-    local precmd=$1
-    local postcmd=""
+    local frontcmd=""
+    local rearcmd=""
     local cmd=""
     echo "Fake shell"
 
-    while printf "FShell>" && read cmd
+    while [[ "$#" != 0 ]]
     do
-        eval "${precmd} ${cmd} ${postcmd}"
+        case $1 in
+            -f|--front)
+                frontcmd="${2}"
+                shift 1
+                ;;
+            -r|--rear)
+                rearcmd="${2}"
+                shift 1
+                ;;
+            -h|--help)
+                cli_helper -c "template" -cd "template function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "template [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-f|--front" -d "Add comand before target cmd"
+                cli_helper -o "-r|--rear" -d "Add comand after of target cmd"
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                echo "Wrong args, $@"
+                return -1
+                ;;
+        esac
+        shift 1
+    done
+
+    while printf "FShell:${PWD}>" && read cmd
+    do
+        eval "${frontcmd} ${cmd} ${rearcmd}"
     done
 }
 function read_key()

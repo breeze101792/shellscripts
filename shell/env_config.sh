@@ -59,6 +59,7 @@ export HS_PATH_WORK="${HS_PATH_LIB}/../work"
 export HS_PATH_IDE="${HS_PATH_LIB}/../vim-ide"
 export HS_PATH_SLINK="${HOME}/slink"
 export HS_PATH_LOG="${HOME}/log"
+# it's better to set tmp to ramdisk
 export HS_PATH_TMP="${HOME}/.cache/hs_temp"
 
 export HS_PATH_PYTHEN_ENV="${HOME}/env/pyenv"
@@ -71,17 +72,6 @@ export HS_PATH_ECD_1="${HOME}"
 ########################################################
 ########################################################
 #####                                              #####
-#####    Tmp Setting Zone                          #####
-#####                                              #####
-########################################################
-########################################################
-export HS_TMP_SESSION_PATH="${HS_PATH_TMP}/session"
-export HS_TMP_FILE_CONFIG="${HS_PATH_TMP}/hs_config"
-# export HS_FILE_CONFIG="${HOME}/.cache/hs_config"
-
-########################################################
-########################################################
-#####                                              #####
 #####    Config Vars                               #####
 #####                                              #####
 ########################################################
@@ -90,6 +80,18 @@ export HS_VAR_CURRENT_DIR="CURRENT_DIR"
 export HS_VAR_CLIPBOARD="CLIPBOARD"
 export HS_VAR_TTY_START_CMD="echo start WM"
 export HS_VAR_VIM="vim"
+
+########################################################
+########################################################
+#####                                              #####
+#####    Tmp Setting Zone                          #####
+#####                                              #####
+########################################################
+########################################################
+# FIXME, this should move out to the config file
+export HS_TMP_SESSION_PATH="${HS_PATH_TMP}/session"
+export HS_TMP_FILE_CONFIG="${HS_PATH_TMP}/hs_config"
+# export HS_FILE_CONFIG="${HOME}/.cache/hs_config"
 
 ########################################################
 ########################################################

@@ -57,12 +57,9 @@ function pureshell()
 function ffind()
 {
     local flag_color="n"
-    while true
+    local pattern=""
+    while [[ "$#" != 0 ]]
     do
-        if [ "$#" = 0 ]
-        then
-            break
-        fi
         case $1 in
             -c|--color)
                 flag_color="y"
@@ -71,20 +68,22 @@ function ffind()
                 flag_color="n"
                 ;;
             -h|--help)
-                echo "sdebug Usage"
-                printlc -cp false -d "->" "-d|--device" "Set device"
-                printlc -cp false -d "->" "-b|--baud-rate" "Set Baud Rate"
-                printlc -cp false -d "->" "-s|--session-name" "Set Session Name"
+                cli_helper -c "template" -cd "template function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "template [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-c|--color" -d "Hilight keywords"
+                cli_helper -o "-n|--no-color" -d "Don't hilight keywords"
+                cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;
             *)
-                # echo Looking for $pattern
+                pattern="$@"
                 break
                 ;;
         esac
         shift 1
     done
-    local pattern=$1
     if [ "$flag_color" = "y" ]
     then
         find . -iname "*${pattern}*" | mark ${pattern}

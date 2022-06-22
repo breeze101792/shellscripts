@@ -201,6 +201,39 @@ function hs_config()
 }
 function set_working_path()
 {
+    # writing file to fs will slow down the shell respond time
+    # case $1 in
+    #     -s|--set-current-path)
+    #         # hs_config -s "${HS_VAR_CURRENT_DIR}" "$(pwd)"
+    #         # if test -f ${HS_PATH_TMP}/${HS_VAR_CURRENT_DIR} &&  [ "${PWD}" != "$(cat ${HS_PATH_TMP}/${HS_VAR_CURRENT_DIR} | head -n 1)" ]
+    #         # then
+    #         #     rm ${HS_PATH_TMP}/${HS_VAR_CURRENT_DIR}
+    #         #     echo ${PWD} > ${HS_PATH_TMP}/${HS_VAR_CURRENT_DIR}
+    #         # else
+    #         #     echo ${PWD} > ${HS_PATH_TMP}/${HS_VAR_CURRENT_DIR}
+    #         # fi
+    #         test -f ${HS_PATH_TMP}/${HS_VAR_CURRENT_DIR} && rm ${HS_PATH_TMP}/${HS_VAR_CURRENT_DIR}
+    #         echo ${PWD} > ${HS_PATH_TMP}/${HS_VAR_CURRENT_DIR}
+    #         ;;
+    #     -g|--go-to-setting-path)
+    #         # cd "$(hs_config -g "${HS_VAR_CURRENT_DIR}")"
+    #         if test -f ${HS_PATH_TMP}/${HS_VAR_CURRENT_DIR}
+    #         then
+    #             cd $(cat ${HS_PATH_TMP}/${HS_VAR_CURRENT_DIR} | head -n 1)
+    #         fi
+    #         ;;
+    #     -e|*)
+    #         # echo $(hs_config -g "${HS_VAR_CURRENT_DIR}")
+    #         if test -f ${HS_PATH_TMP}/${HS_VAR_CURRENT_DIR}
+    #         then
+    #             cat ${HS_PATH_TMP}/${HS_VAR_CURRENT_DIR} | head -n 1
+    #         else
+    #             echo ${PWD}
+    #         fi
+    #         ;;
+    # esac
+    # return 0
+
     case $1 in
         -s|--set-current-path)
             # hs_config -s "${HS_VAR_CURRENT_DIR}" $(realpath ${PWD})
