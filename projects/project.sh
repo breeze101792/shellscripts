@@ -1,6 +1,6 @@
-test -z  ${HS_PROJ_ANDROID} && export HS_PROJ_ANDROID=y
-test -z  ${HS_PROJ_LINUX} && export HS_PROJ_LINUX=y
-test -z  ${HS_PROJ_FPGA} && export HS_PROJ_FPGA=y
+test -z  "${HS_PROJ_ANDROID}" && export HS_PROJ_ANDROID=y
+test -z  "${HS_PROJ_LINUX}" && export HS_PROJ_LINUX=y
+test -z  "${HS_PROJ_FPGA}" && export HS_PROJ_FPGA=y
 
 if [ "${HS_PROJ_ANDROID}" = "y" ]
 then

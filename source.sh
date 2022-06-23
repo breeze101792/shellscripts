@@ -61,6 +61,10 @@ else
 fi
 HS_SCRIPT_PATH=$(realpath ${HS_SCRIPT_PATH})
 
+if [ "${HS_STARTUP_DEBUG}" = 'y' ]
+then
+    echo "[Checkpoint] finished env var setup"
+fi
 
 #####    Private Function
 ########################################################

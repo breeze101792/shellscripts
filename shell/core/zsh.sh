@@ -112,6 +112,22 @@ setprompt() {
     p_host='%F{green}%M%f'
   fi
 
+  # PS1=${(j::Q)${(Z:Cn:):-$'
+  #   %F{white}[%f
+  #   %(!.%F{red}%n%f.%F{white}%n%f)
+  #   %F{white}@%f
+  #   ${p_host}
+  #   %F{white}][%f
+  #   %F{white}%T-%w%f
+  #   %F{white}]%f
+  #   $(item_promote $(check_cmd_status $?))
+  #   $(item_promote $(parse_git_branch))
+  #   %F{white}`set_working_path -s`%f
+  #   %F{white}[%f
+  #   %F{cyan}%~%f
+  #   %F{white}]%f
+  # '}}$'\n%(!.%F{red}%#%f.%F{white}%#%f) '
+
   PS1=${(j::Q)${(Z:Cn:):-$'
     %F{white}[%f
     %(!.%F{red}%n%f.%F{white}%n%f)
@@ -120,9 +136,9 @@ setprompt() {
     %F{white}][%f
     %F{white}%T-%w%f
     %F{white}]%f
-    $(item_promote $(check_cmd_status $?))
-    $(item_promote $(parse_git_branch))
-    %F{white}`set_working_path -s`%f
+    $(item_promote -c check_cmd_status $?)
+    $(item_promote -c parse_git_branch)
+    $(item_promote -c set_working_path -s)
     %F{white}[%f
     %F{cyan}%~%f
     %F{white}]%f
