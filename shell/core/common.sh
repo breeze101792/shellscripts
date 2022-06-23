@@ -10,7 +10,7 @@ function epath()
     local flag_verbose=n
     if [[ $# == 0 ]]
     then
-        echo ${PATH}
+        echo "PATH=${PATH}"
         return 0
     fi
     #echo "Export Path $1";

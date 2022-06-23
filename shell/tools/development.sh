@@ -7,22 +7,6 @@
 ########################################################
 
 ########################################################
-#####    Alias                                     #####
-########################################################
-# git alias ##
-alias glog2="git log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) %C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(bold yellow)%d%C(reset)' --all"
-alias gstatus='git status -uno '
-alias gdiff='git diff --check --no-ext-diff'
-alias glog="git log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold cyan)%aD%C(reset) %C(bold green)(%ar)%C(reset)%C(bold yellow)%d%C(reset)%n''          %C(white)%s%C(reset) %C(dim white)- %an%C(reset)' --all"
-#alias lg="git $lg1"
-alias proot="froot -m .repo || froot -m .git"
-alias nlfsgit="GIT_LFS_SKIP_SMUDGE=1 git "
-
-# for compatibale
-alias ecd="ecd"
-alias mark_build="mbuild "
-
-########################################################
 #####    VIM                                      #####
 ########################################################
 function pvupdate()
@@ -320,7 +304,6 @@ function sdebug()
     echo "${var_cmd}"
     eval "${var_cmd}"
 }
-alias mdebug="sdebug --device /dev/ttyUSB1"
 
 ########################################################
 #####    Others Function                           #####
@@ -2099,7 +2082,7 @@ function rdate()
         esac
         shift 1
     done
-    repo forall -j ${HS_ENV_CPU_NUMBER}  -c "pwd && git reset --hard \$(git rev-list -n 1 --first-parent --before=\"${checkout_date}\" \$(git rev-parse --abbrev-ref HEAD))"
+    repo forall -j $(nproc --all)  -c "pwd && git reset --hard \$(git rev-list -n 1 --first-parent --before=\"${checkout_date}\" \$(git rev-parse --abbrev-ref HEAD))"
 }
 ########################################################
 #####    Binary                                    #####

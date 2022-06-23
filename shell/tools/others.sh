@@ -754,7 +754,6 @@ function proj_refresh()
 #####                                              #####
 ########################################################
 ########################################################
-alias drinking_reminder="reminder -i 3600 -l 'Drink Reminder' -c 'GO Drink Water'"
 function reminder
 {
     local interval='60'
@@ -784,6 +783,7 @@ function reminder
                 printlc -cp false -d "->" "-i|--interval" "Set interval"
                 printlc -cp false -d "->" "-l|--label" "Set label"
                 printlc -cp false -d "->" "-c|--content" "Set content"
+                echo "reminder -i 3600 -l 'Drink Reminder' -c 'GO Drink Water'"
                 return 0
                 ;;
             *)

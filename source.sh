@@ -405,7 +405,6 @@ function hs_main
     else
         export HS_PATH_LIB=${flag_env_lib_path}
     fi
-    source ${HS_PATH_LIB}/shell/env_config.sh
     if [ -f ${var_user_config} ]
     then
         source ${var_user_config}
@@ -416,6 +415,7 @@ function hs_main
         echo "[Warning] need to use .hsconfig"
         source $HOME/.hsconfig
     fi
+    source ${HS_PATH_LIB}/shell/enviroment/config.sh
 
     # silence mode in subshell
     if [[ "${SHLVL}" > "1" ]]
@@ -425,7 +425,7 @@ function hs_main
     ##########################################
     # setup custom configs
     ##########################################
-    hs_source ${HS_PATH_LIB}/shell/shell_common.sh
+    hs_source ${HS_PATH_LIB}/shell/core/common.sh
     if [ "${flag_env_shell}" != "" ]
     then
         export HS_ENV_SHELL=${flag_env_shell}
@@ -455,18 +455,21 @@ function hs_main
     if [ "${HS_ENV_SHELL}" = "bash" ]
     then
         export HS_ENV_SHELL="bash"
-        hs_source ${HS_PATH_LIB}/shell/base_bash.sh
+        hs_source ${HS_PATH_LIB}/shell/core/bash.sh
     else
         export HS_ENV_SHELL="zsh"
-        hs_source ${HS_PATH_LIB}/shell/base_zsh.sh
+        hs_source ${HS_PATH_LIB}/shell/core/zsh.sh
     fi
     hs_print "Version: $HS_ENV_VER"
-    hs_source ${HS_PATH_LIB}/shell/env_platform.sh
-    hs_source ${HS_PATH_LIB}/shell/lib.sh
-    hs_source ${HS_PATH_LIB}/shell/cli.sh
-    hs_source ${HS_PATH_LIB}/shell/tools.sh
-    hs_source ${HS_PATH_LIB}/shell/development.sh
-    hs_source ${HS_PATH_LIB}/shell/others.sh
+    hs_source ${HS_PATH_LIB}/shell/enviroment/platform.sh
+    hs_source ${HS_PATH_LIB}/shell/enviroment/alias.sh
+    hs_source ${HS_PATH_LIB}/shell/library/lib.sh
+    hs_source ${HS_PATH_LIB}/shell/library/cli.sh
+    hs_source ${HS_PATH_LIB}/shell/tools/tools.sh
+    hs_source ${HS_PATH_LIB}/shell/tools/development.sh
+    hs_source ${HS_PATH_LIB}/shell/tools/others.sh
+
+    # source project root script
     hs_source ${HS_PATH_LIB}/projects/project.sh
 
     ##########################################
@@ -474,10 +477,11 @@ function hs_main
     ##########################################
     if [ "${HS_ENV_SHELL}" = "bash" ] && [ "${HS_CONFIG_FUNCTION_EXPORT}" = "y" ]
     then
-        export_sh_func ${HS_PATH_LIB}/shell/shell_common.sh
-        export_sh_func ${HS_PATH_LIB}/shell/lib.sh
-        export_sh_func ${HS_PATH_LIB}/shell/tools.sh
-        export_sh_func ${HS_PATH_LIB}/shell/development.sh
+        export_sh_func ${HS_PATH_LIB}/shell/core/common.sh
+        export_sh_func ${HS_PATH_LIB}/shell/library/lib.sh
+        export_sh_func ${HS_PATH_LIB}/shell/library/cli.sh
+        export_sh_func ${HS_PATH_LIB}/shell/tools/tools.sh
+        export_sh_func ${HS_PATH_LIB}/shell/tools/development.sh
     fi
     # if [ "${flag_var_refresh}" = "n" ] && [ ${HS_ENV_SILENCE} = "n" ]
     # then

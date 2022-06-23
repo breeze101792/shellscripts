@@ -5,19 +5,6 @@
 #####                                              #####
 ########################################################
 ########################################################
-#####    Alias                                     #####
-########################################################
-alias ls='ls --color=auto --group-directories-first -X '
-alias l='ls -a --color=auto'
-alias ll='l -lh'
-alias llt='ll -t'
-alias lld='ll -al $@| grep "^d"'
-alias cgrep='grep --color=always '
-alias sgrep='grep -rnIi  '
-alias scgrep='grep --color=always -rnIi  '
-alias vim='TERM=xterm-256color && vim '
-alias vi='TERM=xterm-256color && vim -m '
-########################################################
 #####    Shell Env                                 #####
 ########################################################
 function pureshell()

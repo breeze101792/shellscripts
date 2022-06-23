@@ -103,40 +103,6 @@ zstyle ':vcs_info:*' enable git hg
 zstyle ':vcs_info:*' check-for-changes true
 zstyle ':vcs_info:git*' formats "%{${fg[cyan]}%}[%{${fg[green]}%}%s%{${fg[cyan]}%}][%{${fg[blue]}%}%r/%S%%{${fg[cyan]}%}][%{${fg[blue]}%}%b%{${fg[yellow]}%}%m%u%c%{${fg[cyan]}%}]%{$reset_color%}"
 
-# function check_cmd_status()
-# {
-#     RETVAL=$?
-#     case $RETVAL in 
-#         1)
-#             echo "%B%F{yellow}Error%b%F{cyan}][%f"
-#             ;;
-#         0)
-#             return 0
-#             ;;
-#         *)
-#             return $RETVAL
-#             ;;
-#     esac
-# }
-
-# set_current_path()
-# {
-#     if [ -e "${HS_TMP_FILE_CONFIG}" ] && [ -f "${HS_TMP_FILE_CONFIG}" ]
-#     then
-#         echo `pwd` > ${HS_TMP_FILE_CONFIG}
-#     else
-#         echo "[Set Current path fail]"
-#     fi
-# }
-#parse_git_branch()
-#{
-#    #git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/(\1)/'
-#    git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1%F{cyan}][%f/'
-#}
-# nonzero_return() {
-#     RETVAL=$?
-#     [ $RETVAL -ne 0 ] && echo "-$RETVAL-"
-# }
 setprompt() {
   setopt prompt_subst
 
