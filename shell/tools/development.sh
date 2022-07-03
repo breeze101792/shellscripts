@@ -1160,10 +1160,11 @@ function xcd()
             ${HS_VAR_ECD_NAME_19}) target_path=${HS_PATH_ECD_19} ;;
             -p|--proj|proj|project|projects)
                 local tmp_path=$(echo ${HS_PATH_PROJ})
-                if [ -n "${2}" ]
+                if [ -n "${2}" ] && test -d $(realpath ${tmp_path}/*${2}*)
                 then
-                    target_path=${tmp_path}/*${2}*
-                    echo "HAL to ${2}"
+                    # target_path=${tmp_path}/*${2}*
+                    target_path=$(realpath ${tmp_path}/*${2}*)
+                    # echo "HAL to ${2}"
                 else
                     target_path=${tmp_path}
                 fi
