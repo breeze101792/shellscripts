@@ -151,6 +151,59 @@ function an_shell()
         an_adb shell $@
     fi
 }
+function an_pull()
+{
+    local var_timeout=3
+    local flag_timeout=n
+    local var_serial
+    local var_file=""
+    local var_target=""
+
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -s|--serial)
+                an_setip -s ${2}
+                shift 1
+                ;;
+            -h|--help)
+                cli_helper -c "adb pull" -cd "adb pull function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "an_push [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-s|--serial" -d "Set serial"
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                if [[ $# = 2 ]]
+                then
+                    var_file=${1}
+                    var_target=${2}
+                    shift 2
+                fi
+
+                break
+                ;;
+        esac
+        shift 1
+    done
+    if [ "${var_file}" = "" ] && [ "${var_target}" = "" ]
+    then
+        echo "No target found"
+        return
+    fi
+
+    echo  "pull ${var_file} to ${var_target}"
+    local var_md5_ori=$(an_shell "ls ${var_target}| grep $(basename ${var_file}) | xargs md5sum ")
+    local var_md5_src=$(md5sum ${var_file})
+    an_adb pull  ${var_file} ${var_target}
+    local var_md5_target=$(an_shell "ls ${var_target}| grep $(basename ${var_file}) | xargs md5sum ")
+    echo an_shell "ls ${var_target}| grep $(basename ${var_file}) | xargs md5sum "
+    echo "Orignal:${var_md5_ori}"
+    echo "source :${var_md5_src}"
+    echo "target :${var_md5_target}"
+}
 function an_push()
 {
     local var_timeout=3
