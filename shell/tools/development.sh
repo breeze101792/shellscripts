@@ -2115,10 +2115,10 @@ function endian()
 }
 function hex2bin()
 {
-    local tmp_input_file="hex2bin.${tstamp}.in"
+    local tmp_input_file="hex2bin.$(tstamp).in"
 
     local var_output_file=""
-    local tmp_output_file="hex2bin.${tstamp}.out"
+    local tmp_output_file="hex2bin.$(tstamp)"
     local var_fmt=""
 
     while [[ "$#" != 0 ]]
@@ -2181,8 +2181,8 @@ function hex2bin()
 
     if [ "${var_fmt}" = "c-header" ]
     then
-        xxd -i ${tmp_output_file} > ${tmp_output_file}
-        rm ${tmp_output_file}
+        xxd -i ${tmp_output_file}  > ${tmp_output_file}.h
+        mv -f ${tmp_output_file}.h ${tmp_output_file}
     fi
 
     if [ "${var_output_file}" = "" ]
