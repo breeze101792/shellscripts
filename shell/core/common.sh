@@ -194,7 +194,7 @@ function hs_config()
     then
         if [ ! -d "${HS_PATH_TMP}" ]
         then
-            mkdir -p "${HS_TMP_FILE_CONFIG}"
+            mkdir -p "${HS_PATH_TMP}"
         fi
         touch "${HS_TMP_FILE_CONFIG}"
     fi
