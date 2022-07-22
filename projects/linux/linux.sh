@@ -1,6 +1,6 @@
 hs_print "Source Linux(lx,ub) project"
-alias lcd="lx_cd "
-function lx_ide()
+alias lcd="lxcd "
+function lxide()
 {
     local arch=arm
     local target_dirs=("block" "certs" "crypto" "fs" "include" "init" "ipc" "kernel" "lib" "mm" "net" "security" "virt")
@@ -13,9 +13,9 @@ function lx_ide()
                 shift 1
                 ;;
             -h|--help)
-                cli_helper -c "template" -cd "template function"
+                cli_helper -c "lxide" -cd "lxide function"
                 cli_helper -t "SYNOPSIS"
-                cli_helper -d "template [Options] [Value]"
+                cli_helper -d "lxide [Options] [Value]"
                 cli_helper -t "Options"
                 cli_helper -o "-a|--arch" -d "Select arch(riscv, x86, arm, arm64, mips), defaut arm"
                 cli_helper -o "-h|--help" -d "Print help function "
@@ -28,9 +28,9 @@ function lx_ide()
         shift 1
     done
     target_dirs+=("arch/${arch}/")
-    pvinit ${target_dirs}
+    pvinit ${target_dirs[@]}
 }
-function lx_cd()
+function lxcd()
 {
     echo "Linux Enhanced cd"
     local cpath=$(pwd)
@@ -167,7 +167,7 @@ function lx_cd()
         return 1
     fi
 }
-function ub_ide()
+function ubide()
 {
     local arch=arm
     local target_dirs=("api" "cmd" "common" "disk" "drivers" "env" "fs" "include" "lib" "net" "post" "test" "tools")
