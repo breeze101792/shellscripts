@@ -68,7 +68,11 @@ function setup_shell()
 }
 function setup_tmux()
 {
-    echo "Dont forget to install bc on your shell"
+    if ! command -v bc > /dev/null
+    then
+        echo "bc not found on your shell"
+        exit -1
+    fi
     ln -sf ${HS_SCRIPT_PATH}/configs/others/tmux.conf ${HOME}/.tmux.conf
 }
 function setup_git()
