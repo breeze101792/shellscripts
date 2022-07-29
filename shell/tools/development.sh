@@ -52,6 +52,12 @@ function pvinit()
     local flag_append=n
     local flag_header=n
 
+    file_ext+="-o -iname '*.cpp'"
+    file_ext+="-o -iname '*.cxx'"
+    file_ext+="-o -iname '*.hpp'"
+    file_ext+="-o -iname '*.hxx'"
+    file_ext+="-o -iname '*.java'"
+
     while [[ "$#" != 0 ]]
     do
         case $1 in
@@ -88,7 +94,7 @@ function pvinit()
                 cli_helper -t "Options"
                 cli_helper -o "-a|--append" -d "append more fire in file list"
                 cli_helper -o "-e|--extension" -d "add file extension on search"
-                cli_helper -o "-x|--exclude" -d "exclude file on search"
+                # cli_helper -o "-x|--exclude" -d "exclude file on search"
                 cli_helper -o "-c|--clean" -d "Clean related files"
                 cli_helper -o "--header" -d "Add header vim code"
                 cli_helper -o "-h|--help" -d "Print help function "
@@ -132,8 +138,10 @@ function pvinit()
             local tmp_path=$(realpath ${each_path})
             printc -c green "Searching folder: "
             echo -e "$tmp_path"
-            find_cmd="find ${tmp_path} \( -type f -iname '*.h' -o -iname '*.c' -o -iname '*.cpp' -o -iname '*.java' ${file_ext[@]} \) -a \( -not -path '*/auto_gen*' -o -not -path '*/build*' ${file_exclude[@]} \) | xargs realpath >> \"${target_list_name}\""
-            # echo ${find_cmd}
+            # find_cmd="find ${tmp_path} \( -type f -iname '*.h' -o -iname '*.c' ${file_ext[@]} \) -a \( -not -path '*/auto_gen*' -o -not -path '*/build*' ${file_exclude[@]} \) | xargs realpath >> \"${target_list_name}\""
+            find_cmd="find ${tmp_path} \( -type f -iname '*.h' -o -iname '*.c' ${file_ext[@]} \) | xargs realpath >> \"${target_list_name}\""
+            # find_cmd="find ${tmp_path} \( -type f -iname '*.h' -o -iname '*.c' ${file_ext[@]} \) -a \( ${file_exclude[@]} \) | xargs realpath >> \"${target_list_name}\""
+            echo ${find_cmd}
             eval "${find_cmd}"
         fi
     done
@@ -166,11 +174,15 @@ function pvim()
     while [[ "$#" != 0 ]]
     do
         case $1 in
-            -m|--map)
-                flag_cctree=y
-                ;;
             -p|--pure-mode)
                 cmd_args+=("-u NONE")
+                ;;
+            -e|--extra-command)
+                cmd_args+=("$2")
+                shift 1
+                ;;
+            -m|--map)
+                flag_cctree=y
                 ;;
             -t|--time)
                 flag_time=y
@@ -185,6 +197,39 @@ function pvim()
                 printf "%s" "${buf_tmp}" | sed '$ s/$.*//g' > ${HOME}/.vim/clip
                 return 0
                 ;;
+            # ENV
+            p|plugin)
+                if [[ "$#" > 2 ]]
+                then
+                    tmp_var=$2
+                    if [ "${tmp_var}" = "y" ] || [ "${tmp_var}" = "n" ] 
+                    then
+                        export VIDE_SH_PLUGIN_ENABLE=$2
+                    else
+                        export VIDE_SH_PLUGIN_ENABLE='y'
+                    fi
+                else
+                    echo 'fail to read args. $@'
+                    return -1
+                fi
+                shift 1
+                ;;
+            sc|schars)
+                if [[ "$#" > 2 ]]
+                then
+                    tmp_var=$2
+                    if [ "${tmp_var}" = "y" ] || [ "${tmp_var}" = "n" ] 
+                    then
+                        export VIDE_SH_SPECIAL_CHARS=$2
+                    else
+                        export VIDE_SH_SPECIAL_CHARS='y'
+                    fi
+                else
+                    echo 'fail to read args. $@'
+                    return -1
+                fi
+                shift 1
+                ;;
             -h|--help)
                 cli_helper -c "pvim"
                 cli_helper -d "pvim [Options] [File]"
@@ -195,7 +240,11 @@ function pvim()
                 cli_helper -o "-p|--pure-mode" -d "Load withouth ide file"
                 cli_helper -o "-t|--time" -d "Enable startup debug mode"
                 cli_helper -o "-c|--clip" -d "Save file in vim buffer file"
+                cli_helper -o "-e|--extra-command" -d "pass extra command to vim"
                 cli_helper -o "-h|--help" -d "Print help function "
+                cli_helper -t "Options"
+                cli_helper -o "p|plugin" -d "Plugin disable/enable, plugin y/n"
+                cli_helper -o "sc|schars" -d "Special chars disable/enable, schars y/n"
                 cli_helper -t "vim-Options"
                 cli_helper -o "-R" -d "vim read only mode"
                 return 0
@@ -210,34 +259,38 @@ function pvim()
     vim_args=$@
 
     # unset var
-    unset CSCOPE_DB
-    unset CCTREE_DB
+    unset VIDE_SH_CSCOPE_DB
+    unset VIDE_SH_CCTREE_DB
+    unset VIDE_SH_PROJ_VIM
 
     if froot "cscope.db"
     then
-        export CSCOPE_DB=`pwd`/cscope.db
-        echo "CSCOPE: ${CSCOPE_DB}"
+        export VIDE_SH_CSCOPE_DB=`pwd`/cscope.db
+        echo "CSCOPE: ${VIDE_SH_CSCOPE_DB}"
     else
         echo "Project ccscop tag not found."
     fi
     if [ "${flag_proj_vim}" = "y" ] && test -f "proj.vim"
     then
-        export PROJ_VIM=`pwd`/proj.vim
-        echo "Proj VIM: ${PROJ_VIM}"
+        export VIDE_SH_PROJ_VIM=`pwd`/proj.vim
+        echo "Proj VIM: ${VIDE_SH_PROJ_VIM}"
     fi
 
     if [ "${flag_cctree}" = "y" ] && test -f "cctree.db"
     then
-        export CCTREE_DB=`pwd`/cctree.db
-        echo "CCTREE: ${CCTREE_DB}"
+        export VIDE_SH_CCTREE_DB=`pwd`/cctree.db
+        echo "CCTREE: ${VIDE_SH_CCTREE_DB}"
     fi
 
     cd $cpath
     eval ${HS_VAR_VIM} ${cmd_args[@]} ${vim_args[@]}
     echo "Launching: ${HS_VAR_VIM} ${cmd_args[@]} ${vim_args[@]}"
     # unset var
-    unset CSCOPE_DB
-    unset CCTREE_DB
+    unset VIDE_SH_CSCOPE_DB
+    unset VIDE_SH_CCTREE_DB
+    unset VIDE_SH_PROJ_VIM
+    unset VIDE_SH_SPECIAL_CHARS
+    unset VIDE_SH_PLUGIN_ENABLE
 
     if [ "${flag_time}" = "y" ]
     then
@@ -597,12 +650,13 @@ function mbuild()
 function banlys
 {
     local var_logfile=""
-    local flag_android="n"
-    local flag_make="n"
-    local flag_syntax="n"
-    local flag_others="n"
-    local flag_python="n"
-    local flag_shell='n'
+    local flag_android="y"
+    local flag_make="y"
+    local flag_syntax="y"
+    local flag_others="y"
+    local flag_clike="y"
+    local flag_python="y"
+    local flag_shell="y"
 
     local flag_edit="n"
 
@@ -613,13 +667,29 @@ function banlys
     while [[ "$#" != 0 ]]
     do
         case $1 in
-            -a|--all)
+            -a|--all|a|all)
                 flag_android="y"
                 flag_make="y"
                 flag_syntax="y"
                 flag_shell="y"
                 flag_others="y"
                 flag_python="y"
+                flag_clike="y"
+                ;;
+            android|an)
+                flag_android="y"
+                ;;
+            make)
+                flag_make="y"
+                ;;
+            c|cpp)
+                flag_clike="y"
+                ;;
+            python|py)
+                flag_python="y"
+                ;;
+            sh)
+                flag_shell="y"
                 ;;
             -v|--vim)
                 flag_edit=y
@@ -638,6 +708,7 @@ function banlys
                 flag_shell="y"
                 flag_others="y"
                 flag_python="y"
+                flag_clike="y"
                 var_logfile="${2}"
                 shift 1
                 ;;
@@ -651,6 +722,7 @@ function banlys
                 cli_helper -o "-v|--vim" -d "dirrect vim log file "
                 cli_helper -o "-d|--debug" -d "Specify log file, and enable all debug filter, indicate -a,-f"
                 cli_helper -o "-f|--log-file" -d "Specify log file"
+                cli_helper -o "sh|c|python|make|android" -d "Enable log function"
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;
@@ -712,6 +784,13 @@ function banlys
         echo "---- shell error "
         tmp_pattern="Argument list too long"
         cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
+    fi
+    if [ "${flag_clike}" = "y" ]
+    then
+        echo "---- C/Cpp error"
+        tmp_pattern="error:"
+        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
+
     fi
 
     if [ "${flag_python}" = "y" ]

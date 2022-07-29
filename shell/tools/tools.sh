@@ -114,6 +114,7 @@ function clip()
     do
         if [ "$#" = 0 ]
         then
+            # echo no args
             break
         fi
         case $1 in
@@ -145,43 +146,41 @@ function clip()
             -1)
                 var_clipidx=1
                 var_clipboard="${HS_VAR_CLIPBOARD}_${var_clipidx}"
-                shift 1
                 ;;
             -2)
                 var_clipidx=2
                 var_clipboard="${HS_VAR_CLIPBOARD}_${var_clipidx}"
-                shift 1
                 ;;
             -3)
                 var_clipidx=3
                 var_clipboard="${HS_VAR_CLIPBOARD}_${var_clipidx}"
-                shift 1
                 ;;
             -4)
                 var_clipidx=4
                 var_clipboard="${HS_VAR_CLIPBOARD}_${var_clipidx}"
-                shift 1
                 ;;
             -5)
                 var_clipidx=5
                 var_clipboard="${HS_VAR_CLIPBOARD}_${var_clipidx}"
-                shift 1
                 ;;
             -s|--set-clip)
                 shift 1
                 if [[ $# = 0 ]] && [ ! -t 0 ]
                 then
+                    echo "get args from pipe"
                     local var_from_pipe="$(xargs echo)"
                     # echo "FD 0 has opened."
                     hs_config -s "${var_clipboard}" "${var_from_pipe}"
-                elif [[ ${#} = 0 ]]
-                then
-                    hs_config -s "${var_clipboard}" "$(realpath .)"
                 elif [[ ${#} = 1 ]] && [ -e ${1} ]
                 then
                     hs_config -s "${var_clipboard}" "$(realpath ${1})"
+                # elif [[ ${#} = 0 ]]
+                # then
+                #     hs_config -s "${var_clipboard}" "$(realpath .)"
                 else
-                    hs_config -s "${var_clipboard}" "${@}"
+                    echo "No args specify"
+                    return -1
+                    # hs_config -s "${var_clipboard}" "${@}"
                 fi
                 break
                 ;;
