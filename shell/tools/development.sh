@@ -194,7 +194,8 @@ function pvim()
                 [ -f "${buf_tmp}" ] && buf_tmp=$(realpath ${buf_tmp})
                 [ -f "${HOME}/.vim/clip" ] && rm -f ${HOME}/.vim/clip
 
-                printf "%s" "${buf_tmp}" | sed '$ s/$.*//g' > ${HOME}/.vim/clip
+                # printf "V\n%s" "${buf_tmp}" | sed '$ s/$.*//g' > ${HOME}/.vim/clip
+                printf "V\n%s\n" "${buf_tmp}" > ${HOME}/.vim/clip
                 return 0
                 ;;
             # ENV
@@ -757,7 +758,7 @@ function banlys
     then
         echo "---- Syntax log analysis"
         tmp_pattern="undefined reference"
-        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
+        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark -s red "${tmp_pattern}"
 
         tmp_pattern="unknown type name"
         cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
@@ -766,7 +767,7 @@ function banlys
     if [ "${flag_shell}" = "y" ]
     then
         echo "---- command missing "
-        cat -n ${var_logfile} | grep "command not found" | mark "command not found"
+        cat -n ${var_logfile} | grep "command not found" | mark -s red "command not found"
 
         echo "---- file/dir/permission missing "
         tmp_pattern="Can not find directory"
@@ -789,7 +790,7 @@ function banlys
     then
         echo "---- C/Cpp error"
         tmp_pattern="error:"
-        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
+        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark -s red "${tmp_pattern}"
 
     fi
 
@@ -797,7 +798,7 @@ function banlys
     then
         echo "---- python error"
         tmp_pattern="Traceback (most recent call last):"
-        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
+        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark -s red "${tmp_pattern}"
 
     fi
 
@@ -1558,14 +1559,62 @@ function gclone()
 }
 function gcheckoutByDate()
 {
-    pwd
-    local checkout_date=$1
-    local cBranch=$(git rev-parse --abbrev-ref HEAD)
-    local target_commit=`git rev-list -n 1 --first-parent --before="$checkout_date" $cBranch`
-    echo branch: $cBranch
-    echo commit: $target_commit
-    echo git checkout $target_commit
-    git checkout $target_commit
+    local cpath="$(pwd)"
+    local checkout_date=""
+    local cBranch=""
+    local target_commit=""
+    local flag_fake="n"
+
+    if [[ "$#" = "0" ]]
+    then
+        gcheckoutByDate -h
+        return -1
+    fi
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -d|--date)
+                checkout_date="${2}"
+                shift 1
+                ;;
+            -f|--fake)
+                flag_fake="y"
+                ;;
+
+            -h|--help)
+                cli_helper -c "gcheckoutByDate" -cd "gcheckoutByDate function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "gcheckoutByDate [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-d|--date" -d "Checkout date, format: 1979-02-26 18:30:00"
+                cli_helper -o "-f|--fake" -d "Fake run"
+                # cli_helper -o "-v|--verbose" -d "Verbose print "
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                checkout_date="${2}"
+                ;;
+        esac
+        shift 1
+    done
+    if [ -z "${checkout_date}" ]
+    then
+        echo 'No checkout date found'
+        return -1
+    fi
+    cBranch=$(git rev-parse --abbrev-ref HEAD)
+    target_commit=`git rev-list -n 1 --first-parent --before="$checkout_date" $cBranch`
+
+    echo path   : ${cpath}
+    echo branch : ${cBranch}
+    echo commit : ${target_commit}
+    echo git checkout ${target_commit}
+
+    if [ "${flag_fake}" != "y" ]
+    then
+        git checkout ${target_commit}
+    fi
 }
 function gpush()
 {
@@ -2129,14 +2178,17 @@ function rreset()
     repo forall -j ${var_jobs} -vc "git clean -fd"
     repo sync  -j ${var_jobs}
 }
-function rdate()
+function rcheckoutByDate()
 {
-    local checkout_date=$1
+    local cpath="$(pwd)"
+    local checkout_date=""
     local var_action=""
+    local flag_fake="n"
+
     if [[ "$#" = "0" ]]
     then
         echo "Date not found."
-        echo "ex. rdate \"2020-07-22 02:00\""
+        echo "ex. rcheckoutByDate \"2020-07-22 02:00\""
         return 0
     fi
     while [[ "$#" != 0 ]]
@@ -2146,14 +2198,18 @@ function rdate()
                 checkout_date=$1
                 shift 1
                 ;;
+            -f|--fake|fake)
+                flag_fake=y
+                ;;
             -h|--help)
-                cli_helper -c "rdate" -cd "rdate function"
+                cli_helper -c "rcheckoutByDate" -cd "rcheckoutByDate stand for repo checkout"
                 cli_helper -t "SYNOPSIS"
-                cli_helper -d "rdate [Options] [Value]"
+                cli_helper -d "rcheckoutByDate [Options] [Value]"
                 cli_helper -t "Options"
                 cli_helper -o "-d|--date|date" -d "Specify date for commit"
+                cli_helper -o "-f|--fake|fake" -d "Fake run"
                 cli_helper -t "Example"
-                cli_helper -d "rdate -d 2020-07-22 02:00"
+                cli_helper -d "rcheckoutByDate -d 2020-07-22 02:00"
                 return 0
                 ;;
             *)
@@ -2162,7 +2218,18 @@ function rdate()
         esac
         shift 1
     done
-    repo forall -j $(nproc --all)  -c "pwd && git reset --hard \$(git rev-list -n 1 --first-parent --before=\"${checkout_date}\" \$(git rev-parse --abbrev-ref HEAD))"
+    if [ -z "${checkout_date}" ]
+    then
+        echo 'No checkout date found'
+        return -1
+    fi
+
+    if [ "${flag_fake}" = "y" ]
+    then
+        echo repo forall -j $(nproc --all)  -c "pwd && git reset --hard \$(git rev-list -n 1 --first-parent --before=\"${checkout_date}\" \$(git rev-parse --abbrev-ref HEAD))"
+    else
+        repo forall -j $(nproc --all)  -c "pwd && git reset --hard \$(git rev-list -n 1 --first-parent --before=\"${checkout_date}\" \$(git rev-parse --abbrev-ref HEAD))"
+    fi
 }
 ########################################################
 #####    Binary                                    #####
