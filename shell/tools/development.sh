@@ -52,11 +52,19 @@ function pvinit()
     local flag_append=n
     local flag_header=n
 
-    file_ext+="-o -iname '*.cpp'"
-    file_ext+="-o -iname '*.cxx'"
-    file_ext+="-o -iname '*.hpp'"
-    file_ext+="-o -iname '*.hxx'"
-    file_ext+="-o -iname '*.java'"
+    file_ext+=("-iname '*.c'")
+    file_ext+=("-o -iname '*.cc'")
+    file_ext+=("-o -iname '*.c++'")
+    file_ext+=("-o -iname '*.cxx'")
+    file_ext+=("-o -iname '*.cpp'")
+
+    file_ext+=("-o -iname '*.h'")
+    file_ext+=("-o -iname '*.hh'")
+    file_ext+=("-o -iname '*.h++'")
+    file_ext+=("-o -iname '*.hxx'")
+    file_ext+=("-o -iname '*.hpp'")
+
+    file_ext+=("-o -iname '*.java'")
 
     while [[ "$#" != 0 ]]
     do
@@ -65,11 +73,11 @@ function pvinit()
                 flag_append="y"
                 ;;
             -e|--extension)
-                file_ext+="-o -iname \"*.${2}\""
+                file_ext+=("-o -iname \"*.${2}\"")
                 shift 1
                 ;;
             -x|--exclude)
-                file_exclude+="-o -iname \"*.${2}\""
+                file_exclude+=("-o -iname \"*.${2}\"")
                 shift 1
                 ;;
             -c|--clean)
@@ -139,7 +147,7 @@ function pvinit()
             printc -c green "Searching folder: "
             echo -e "$tmp_path"
             # find_cmd="find ${tmp_path} \( -type f -iname '*.h' -o -iname '*.c' ${file_ext[@]} \) -a \( -not -path '*/auto_gen*' -o -not -path '*/build*' ${file_exclude[@]} \) | xargs realpath >> \"${target_list_name}\""
-            find_cmd="find ${tmp_path} \( -type f -iname '*.h' -o -iname '*.c' ${file_ext[@]} \) | xargs realpath >> \"${target_list_name}\""
+            find_cmd="find ${tmp_path} \( -type f ${file_ext[@]} \) | xargs realpath >> \"${target_list_name}\""
             # find_cmd="find ${tmp_path} \( -type f -iname '*.h' -o -iname '*.c' ${file_ext[@]} \) -a \( ${file_exclude[@]} \) | xargs realpath >> \"${target_list_name}\""
             echo ${find_cmd}
             eval "${find_cmd}"
@@ -408,7 +416,7 @@ function scheduler()
         echo "-------------------------------------------------"
         eval task ${task_cmd}
         echo ""
-        var_hist_list+=${task_cmd}
+        var_hist_list+=(${task_cmd})
         if [[ ${#var_hist_list} = 21 ]]
         then
             var_hist_list=${var_hist_list:2:20}
@@ -616,7 +624,7 @@ function mbuild()
     do
         case $1 in
             # -a|--append)
-            #     cmd_args+="${2}"
+            #     cmd_args+=("${2}")
             #     shift 1
             #     ;;
             -c|--cat)
@@ -855,7 +863,7 @@ function session
             -rm|--remove|rm)
                 var_action="remove"
                 shift 1
-                var_remove_list+=${@}
+                var_remove_list+=(${@})
                 break
                 ;;
             -a|--attach|a)
@@ -1957,7 +1965,7 @@ function gsize()
     BLOB_HASH_LIST="`echo "$ITEM_LIST" | awk '{ print $4 }'`"
 
     SIZE_LIST="`echo "$BLOB_HASH_LIST" | git cat-file --batch-check | grep "blob" | awk '{ print $3}'`"
-    COMMIT_SIZE="`echo "$SIZE_LIST" | awk '{ sum += $1 } END { print sum }'`"
+    C    OMMIT_SIZE="`echo "$SIZE_LIST" | awk '{ sum += $1 } END { print sum }'`"
     echo "${var_commit}: $(numfmt --to=iec-i --suffix=B --padding=7 $COMMIT_SIZE)(${COMMIT_SIZE})"
 
     cd ${cpath}

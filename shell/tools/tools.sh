@@ -431,7 +431,7 @@ function fsync()
     do
         case $1 in
             # -a|--append)
-            #     cmd_args+="${2}"
+            #     cmd_args+=("${2}")
             #     shift 1
             #     ;;
             # -v|--verbose)
@@ -508,7 +508,7 @@ function eftp()
                 ftp_action="pull"
                 ;;
             # -f|--file)
-            #     cmd_args+="${2}"
+            #     cmd_args+=("${2}")
             #     shift 1
             #     ;;
             -v|--verbose)
@@ -652,7 +652,7 @@ function compressor()
                 ;;
 
             # -a|--append)
-            #     cmd_args+="${2}"
+                #     cmd_args+=("${2}")
             #     shift 1
             #     ;;
             -v|--verbose)

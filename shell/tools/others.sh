@@ -103,14 +103,50 @@ function doloop()
 function looptimes()
 {
     local times=10
+    local interval=3
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -t|--times)
+                times="${2}"
+                shift 1
+                ;;
+            -i|--interval)
+                interval="${2}"
+                shift 1
+                ;;
+            -v|--verbose)
+                flag_verbose="y"
+                shift 1
+                ;;
+            -h|--help)
+                cli_helper -c "looptimes" -cd "looptimes function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "looptimes [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-t|--time" -d "times to loop"
+                cli_helper -o "-i|--interval" -d "delay for each time"
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                break
+                # echo "Wrong args, $@"
+                # return -1
+                ;;
+        esac
+        shift 1
+    done
+
     for each_time in $(seq 0 ${times})
     do
-        echo Times: ${each_time}
+        clear
+        echo Times: ${each_time}, update ${interval} seconds
+        echo cmd: $@
         echo "==========================================="
         eval $@
         echo "==========================================="
-        echo Sleep 3 seconds
-        sleep 3
+        sleep ${interval}
     done
 }
 function runtime()
@@ -142,7 +178,7 @@ function sinfo()
     do
         case $1 in
             # -a|--append)
-            #     cmd_args+="${2}"
+            #     cmd_args+=("${2}")
             #     shift 1
             #     ;;
             --audio)
@@ -511,7 +547,7 @@ function cdwin()
     do
         case $1 in
             # -a|--append)
-            #     cmd_args+="${2}"
+            #     cmd_args+=("${2}")
             #     shift 1
             #     ;;
             -l|--linux)

@@ -125,7 +125,7 @@ function droot()
 
     if [ "${flag_ignore_case}" = "y" ]
     then
-        grep_args+="-i"
+        grep_args+=("-i")
     fi
 
     local path_array=(`echo ${cpath} | sed 's/\//\n/g'`)
@@ -207,7 +207,7 @@ function froot()
 
     if [ "${flag_ignore_case}" = "y" ]
     then
-        grep_args+="-i"
+        grep_args+=("-i")
     fi
 
     # wallk through files

@@ -21,7 +21,7 @@ function tmp1()
     do
         case $1 in
             -a|--append)
-                cmd_args+="${2}"
+                cmd_args+=("${2}")
                 shift 1
                 ;;
             -v|--verbose)
@@ -47,6 +47,6 @@ function tmp1()
     done
     if [ "${flag_echo}" = "y" ]
     then
-        eval "${cmd_args}"
+        eval "${cmd_args[@]}"
     fi
 }
