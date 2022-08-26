@@ -202,10 +202,10 @@ function clip()
                 clip -b ${var_clipidx} -x 'ln -s $(realpath %p) ./'
                 ;;
             -c|-cf|--copy-file)
-                clip -b ${var_clipidx} -x cp -r %p .
+                clip -b ${var_clipidx} -x cp -r "%p" .
                 ;;
             -ca|--copy-all)
-                clip -b ${var_clipidx} -x cp -r %p/* .
+                clip -b ${var_clipidx} -x cp -r "%p/*" .
                 ;;
             -f|--fake-run)
                 flag_fake_run=true

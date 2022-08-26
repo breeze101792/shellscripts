@@ -2342,11 +2342,11 @@ function hex2bin()
     if [ "${var_output_file}" = "" ]
     then
         cat ${tmp_output_file}
+        [ -f "${tmp_output_file}" ] && rm ${tmp_output_file}
     else
         mv ${tmp_output_file} ${var_output_file}
     fi
-    rm ${tmp_input_file}
-    [ -f "${tmp_output_file}" ] && rm ${tmp_output_file}
+    [ -f "${tmp_input_file}" ] && rm ${tmp_input_file}
 
 }
 ########################################################
