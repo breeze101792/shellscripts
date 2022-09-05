@@ -2416,6 +2416,7 @@ function pyenv()
     elif [ "${var_action}" = "update" ]
     then
         python -m pip install --upgrade pip
+        pip list --outdated --format=freeze | grep -v '^\-e' | cut -d = -f 1 | xargs -n1 pip3 install -U
     elif [ "${var_action}" = "create" ]
     then
         if [ -d ${var_target_path} ]
