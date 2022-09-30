@@ -787,8 +787,32 @@ function fakeshell()
 }
 function read_key()
 {
+    local var_count=1
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -c|--cont)
+                var_count=$2
+                shift 1
+                ;;
+            -h|--help)
+                cli_helper -c "read_key" -cd "read_key function, please use it on BASH"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "read_key [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-c|--count" -d "count for recieve char "
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                echo "Wrong args, $@"
+                return -1
+                ;;
+        esac
+        shift 1
+    done
     # /usr/include/linux/input-event-codes.h
-    read -n 1 var_input
+    read -n ${var_count} var_input
     # printf ${var_input} | xxd | cut -d " " -f 2-7
     printf "\nvar: \$\'\\\x%s\'\n" $(printf ${var_input} | xxd | cut -d " " -f 2-7) 
 }
