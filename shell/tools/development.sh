@@ -2399,6 +2399,8 @@ function pyenv()
                 cli_helper -o "-p|--path" -d "setting pyen path"
                 cli_helper -o "--pip|pip" -d "Do pip install with trust host"
                 cli_helper -o "-h|--help" -d "Print help function "
+                cli_helper -t "Note."
+                cli_helper -d "pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org [Pkg]"
 
                 return 0
                 ;;

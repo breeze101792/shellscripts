@@ -25,9 +25,13 @@ function an_setip()
         -20)
             target_ip=${ip_domain}.20
             ;;
+        -d|--domain-set)
+            target_ip=${ip_domain}.${2}
+            shift 1
+            ;;
         -s|--set)
             target_ip=${2}
-            shift
+            shift 1
             ;;
         -h|--help)
             echo "setip Usage"
@@ -35,10 +39,11 @@ function an_setip()
             printlc -cp false -d "->" "-20" "set ip to ${ip_domain}.20"
             printlc -cp false -d "->" "-72" "set ip to ${ip_domain}.72"
             printlc -cp false -d "->" "-s|--set" "set ip"
+            printlc -cp false -d "->" "-d|--domain-set" "set ip with default domain"
             return 0
             ;;
         *)
-            target_ip=${ip_domain}.19
+            target_ip=${2}
             ;;
     esac
     export HS_WORK_ENV_ANDROID_DEVICE_IP=${target_ip}
