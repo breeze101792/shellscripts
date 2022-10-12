@@ -1747,7 +1747,7 @@ function ginfo()
     if [ "${flag_isgit}" = 'y' ]
     then
         var_remote="$(git remote show)"
-        var_branch="$(git branch | grep '^\*' | sed 's/^\*//g')"
+        var_branch="$(git branch | grep '^\*' | sed 's/^\* //g')"
         var_url="$(git remote get-url ${var_remote})"
     fi
 
