@@ -10,6 +10,10 @@
 ########################################################
 #####    Usefull Function                          #####
 ########################################################
+function screenshot()
+{
+    import -window root ./screenshot_$(date '+%Y%m%d-%H%M%S').png
+}
 function sysbench()
 {
     for each_cpu in $(seq 1 "$(nproc)")
