@@ -8,6 +8,61 @@
 ########################################################
 
 ########################################################
+#####    Text Function                             #####
+########################################################
+function tpurify()
+{
+    local var_action=''
+    local var_input_file=''
+    if [[ "$#" = "0" ]]
+    then
+        echo "Not option found"
+        tpurify -h
+        return 1
+    fi
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -s|--stdin)
+                var_action='stdin'
+                ;;
+            -f|--file)
+                var_action='file'
+                var_input_file="${2}"
+                shift 1
+                ;;
+            -o|--output)
+                ;;
+            -h|--help)
+                cli_helper -c "tpurify" -cd "tpurify function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "tpurify [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-f|--file" -d "get stream from file"
+                cli_helper -o "-s|--stdin" -d "get stream from stdin"
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                echo 'Unknown options: $@'
+                break
+                ;;
+        esac
+        shift 1
+    done
+
+    echo "Purify on ${var_action}"
+    if [ ${var_action} = "stdin" ]
+    then
+        # get things from std stream
+        sed -r "s/\x1B\[[0-9]{0,3}(;[0-9]{1,3}){0,2}[a-zA-Z]//g" | sed -r "s/\r//g"
+    elif [ ${var_action} = "file" ]
+    then
+        cat ${var_input_file} | sed -r "s/\x1B\[[0-9]{0,3}(;[0-9]{1,3}){0,2}[a-zA-Z]//g" | sed -r "s/\r//g"
+    fi
+}
+
+########################################################
 #####    File Function                             #####
 ########################################################
 function crypt()
