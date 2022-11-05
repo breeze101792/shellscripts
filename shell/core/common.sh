@@ -212,7 +212,12 @@ function hs_config()
                 # echo grep true
                 # sed -i "/${target_var}=.*/d" ${HS_TMP_FILE_CONFIG}
                 # sed -i "s/${target_var}=.*/${target_var}=${content}/g" ${HS_TMP_FILE_CONFIG}
-                sed  -i "s|${target_var}=.*|${target_var}=${content}|g" ${HS_TMP_FILE_CONFIG}
+                if [ $HS_ENV_OS = "bsd" ]
+                then
+                    sed -i "" "s|${target_var}=.*|${target_var}=${content}|g" ${HS_TMP_FILE_CONFIG}
+                else
+                    sed -i "s|${target_var}=.*|${target_var}=${content}|g" ${HS_TMP_FILE_CONFIG}
+                fi
             else
                 # echo grep false
                 printf "%s=%s\n" "${target_var}" "${content}" >> ${HS_TMP_FILE_CONFIG}
