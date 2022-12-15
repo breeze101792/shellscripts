@@ -134,7 +134,7 @@ function hs_motd()
     local var_arch=()
     local var_other=()
 
-    local tmp_pname="$(ps -Ao pid,fname |grep "${PPID}" |grep -v "grep" | sed 's/[[:space:]]\+/ /g' | cut -d ' ' -f 3)"
+    local tmp_pname="$(ps -Ao pid,fname 2> /dev/null |grep "${PPID}" |grep -v "grep" | sed 's/[[:space:]]\+/ /g' | cut -d ' ' -f 3)"
 
 
     var_msg+=$(printf "%- 16s: %s" "OS" "$(cat /etc/os-release | grep "^NAME=" | cut -d "\"" -f 2 )")
@@ -146,7 +146,7 @@ function hs_motd()
     var_msg+=$(printf "%- 16s: %s" "RAM Free" "$(free -h | grep Mem | sed 's/\s\+/ /g' | cut -d ' ' -f 4) / $(free -h | grep Mem | sed 's/\s\+/ /g' | cut -d ' ' -f 2)")
     var_msg+=$(printf "%- 16s: %s" "Uptime" "$(uptime | sed 's/\s\+/ /g' |cut -d " " -f 4 | sed 's/,//g')")
     var_msg+=$(printf "%- 16s: %s" "Root" "$(df -h / |tail -n 1 | sed 's/\s\+/ /g' | cut -d ' ' -f 3) / $(df -h / | tail -n 1 | sed 's/\s\+/ /g' | cut -d ' ' -f 2) ($(df -h / | tail -n 1 | sed 's/\s\+/ /g' | cut -d ' ' -f 5))")
-    var_msg+=$(printf "%- 16s: %s" "Parent Proccess" "$(ps -Ao pid,fname |grep "${PPID}" |grep -v "grep" | sed 's/[[:space:]]\+/ /g' |sed 's/^\s//g'| cut -d ' ' -f 2) (${PPID})")
+    var_msg+=$(printf "%- 16s: %s" "Parent Proccess" "$(ps -Ao pid,fname 2> /dev/null |grep "${PPID}" |grep -v "grep" | sed 's/[[:space:]]\+/ /g' |sed 's/^\s//g'| cut -d ' ' -f 2) (${PPID})")
     var_msg+=$(printf "%- 16s: %s" "EDITOR" "${EDITOR}")
     # var_msg+=$(printf "%- 16s: %s" "WM" "None")
     # var_msg+=$(printf "%- 16s: %s" "DE" "GNOME")
@@ -514,7 +514,7 @@ function hs_main
         hs_autostart ${var_user_autostart}
     fi
 
-    local tmp_pname="$(ps -Ao pid,fname |grep "${PPID}" |grep -v "grep" | sed 's/[[:space:]]\+/ /g' | sed 's/^\s//g' | cut -d ' ' -f 2)"
+    local tmp_pname="$(ps -Ao pid,fname 2> /dev/null |grep "${PPID}" |grep -v "grep" | sed 's/[[:space:]]\+/ /g' | sed 's/^\s//g' | cut -d ' ' -f 2)"
     # currently bash not soupport this function
     if [ "${HS_ENV_SHELL}" = "zsh" ] && [ "${flag_var_refresh}" = "n" ] && [ ${HS_ENV_SILENCE} = "n" ] && [[ "${SHLVL}" = "1" ]] && \
         ( [ "${tmp_pname}" = "login" ] || [ "${tmp_pname}" = "sshd" ] || [ "${tmp_pname}" = "init" ] )

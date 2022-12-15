@@ -16,9 +16,16 @@ alias mark_build="mbuild "
 ########################################################
 #####    Library                                   #####
 ########################################################
-alias ls='ls --color=auto --group-directories-first -X '
-alias l='ls -a --color=auto'
-alias lt='ls -a --color=auto -t'
+if [ $HS_ENV_OS = "bsd" ]
+then
+    alias ls='ls --color=auto '
+    alias l='ls -a --color'
+    alias lt='ls -a --color -t'
+else
+    alias ls='ls --color=auto --group-directories-first -X '
+    alias l='ls -a --color=auto'
+    alias lt='ls -a --color=auto -t'
+fi
 alias ll='l -lh'
 alias llt='ll -t'
 alias lld='ll -al $@| grep "^d"'

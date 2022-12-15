@@ -11,6 +11,7 @@
 # Vars
 export HS_ENV_VER=0.3.0
 export HS_ENV_TITLE="DO IT NOW"
+test -z "${HS_ENV_OS}" && export HS_ENV_OS="linux"
 
 test -z "${HS_ENV_SHELL}" && export HS_ENV_SHELL=""
 test -z "${HS_ENV_SILENCE}" && export HS_ENV_SILENCE=n

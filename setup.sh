@@ -91,6 +91,7 @@ function setup_git()
         then
             echo [include] >> ${var_def_cfg}
         fi
+        echo sed -i "/\[include\]/a \ \ \ \ path = ${HOME}/.config/git/config.cfg" ${var_def_cfg}
         sed -i "/\[include\]/a \ \ \ \ path = ${HOME}/.config/git/config.cfg" ${var_def_cfg}
     else
         echo "${var_def_cfg} exist"
