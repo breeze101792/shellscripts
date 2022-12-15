@@ -1,6 +1,7 @@
 export ROOT_PATH=$(realpath .)
 # device settings
-export TARGET_DEVICE=/dev/sdx
+# export TARGET_DEVICE=/dev/sdx
+export TARGET_DEVICE=''
 export TARGET_DEVICE_PARTITION=1
 # Path settings
 export IMAGE_PATH=${ROOT_PATH}/imgs
@@ -13,11 +14,30 @@ export TMP_MOUNT_POINT=${ROOT_PATH}/mnt
 alias printt="echo $@"
 
 # functions
+function fPreCheck()
+{
+    if [ "${TARGET_DEVICE}" = '' ]
+    then
+        echo please assign devices
+        fHelp
+        exit 1
+    elif ! test -b "${TARGET_DEVICE}"
+    then
+        echo Device is not block device assign devices
+        exit 1
+    fi
+    if ! test -d ${TMP_MOUNT_POINT}
+    then
+        mkdir -p ${TMP_MOUNT_POINT}
+    fi
+}
 function fPrepareDisk()
 {
     printt ${FUNCNAME[0]}
     echo "This command should be use with caution."
-    exit 1
+    echo "Install system on ${TARGET_DEVICE}"
+    echo "Press Enter to Continue"
+    read x
     cd ${ROOT_PATH}
     # dd if=/dev/zero of=/dev/sdX bs=1M count=8
     sudo umount ${TARGET_DEVICE}*
@@ -56,7 +76,6 @@ function fInstallSystem()
     printt ${FUNCNAME[0]}
     cd ${ROOT_PATH}
     sudo bsdtar -xpf ${IMAGE_PATH}/ArchLinuxARM-armv7-latest.tar.gz -C ${TMP_MOUNT_POINT}/
-    sync
 }
 function fInstallBootloader()
 {
@@ -64,7 +83,6 @@ function fInstallBootloader()
     cd ${ROOT_PATH}
     sudo dd if=${IMAGE_PATH}/u-boot-sunxi-with-spl.bin of=${TARGET_DEVICE} bs=1024 seek=8
     sudo cp ${IMAGE_PATH}/boot.scr ${TMP_MOUNT_POINT}/boot/boot.scr
-    sync
 }
 function fPostInstall()
 {
@@ -80,7 +98,19 @@ function fSystemInit()
     pacman-key --populate archlinuxarm
     pacman -Syu uboot-cubieboard2
 }
-
+fHelp()
+{
+    echo "Cubieboard Arhclinux installer"
+    echo "[Example]"
+    printf "    %s\n" "run test: .sh -a"
+    echo "[Options]"
+    printf "    %- 16s\t%s\n" "-a|--all" "Install all"
+    printf "    %- 16s\t%s\n" "-s|--system" "Install System"
+    printf "    %- 16s\t%s\n" "-b|--bootloader" "Install bootloader"
+    printf "    %- 16s\t%s\n" "-d|--device" "Pass device"
+    printf "    %- 16s\t%s\n" "-v|--verbose" "Print in verbose mode"
+    printf "    %- 16s\t%s\n" "-h|--help" "Print helping"
+}
 function fmain()
 {
     printt ${FUNCNAME[0]}
@@ -101,27 +131,36 @@ function fmain()
             -b|--bootloader)
                 flag_bootload="y"
                 ;;
-            -d)
+            -d|--device)
+                flag_prepare="y"
                 TARGET_DEVICE=$2
                 shift 1
                 ;;
+            -h|--help)
+                fHelp
+                return 0
+                ;;
             *)
                 break
+                # echo "Unknown args $1 => $@"
+                # fHelp
+                # return 1
                 ;;
         esac
         shift 1
     done
     echo "Install in Target Disk:$TARGET_DEVICE"
+    fPreCheck
     fDownloadAll
-    if [ "${flag_prepare}" = "y"]
+    if [ "${flag_prepare}" = "y" ]
     then
         fPrepareDisk
     fi
-    if [ "${flag_system}" = "y"]
+    if [ "${flag_system}" = "y" ]
     then
         fInstallSystem
     fi
-    if [ "${flag_bootload}" = "y"]
+    if [ "${flag_bootload}" = "y" ]
     then
         fInstallBootloader
     fi
