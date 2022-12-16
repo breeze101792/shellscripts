@@ -303,8 +303,58 @@ function xsettings()
 }
 function audio_default()
 {
-    local audio_dev=$(pactl list sinks | grep Name |grep hdmi | cut -d ':' -f 2)
-    echo "Set Default Audio Device to${audio_dev}"
+    local audio_dev=''
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -l|--list)
+                # eval pactl list sinks | grep Name | sed 's/\t//g'
+                local idx=1
+                for each_dev in $(pactl list sinks | grep Name | cut -d ':' -f 2)
+                do
+                    echo "Dev ${idx}: ${each_dev}"
+                    # echo "${each_dev}"
+                    idx=$((${idx}+1))
+                done
+                return 0
+                ;;
+            -d|--dev)
+                local idx=1
+                for each_dev in $(pactl list sinks | grep Name | cut -d ':' -f 2)
+                do
+                    if [ "${idx}" = ${2} ]
+                    then
+                        audio_dev=${each_dev}
+                    fi
+                    idx=$((${idx}+1))
+                done
+                shift 1
+                ;;
+            -n|--name)
+                local audio_dev=$2
+                shift 1
+                ;;
+            -h|--help)
+                cli_helper -c "audio_default" -cd "audio_default function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "audio_default [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-l|--list" -d "list audio devices"
+                cli_helper -o "-d|--dev" -d "set default device with idx"
+                cli_helper -o "-n|--name" -d "set default device with name"
+                # cli_helper -o "-v|--verbose" -d "Verbose print "
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                echo "Wrong args, $@"
+                return -1
+                ;;
+        esac
+        shift 1
+    done
+    # local audio_dev=$(pactl list sinks | grep Name |grep hdmi | cut -d ':' -f 2)
+    echo "Set Default Audio Device to ${audio_dev}"
     eval pactl set-default-sink "${audio_dev}"
 }
 function rv()
