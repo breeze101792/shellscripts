@@ -10,6 +10,102 @@
 ########################################################
 #####    Usefull Function                          #####
 ########################################################
+function wifi()
+{
+    local var_utility='sudo wpa_cli'
+    local var_dev='wlan0'
+    local var_psk=''
+    local var_ssid=''
+    local var_type=''
+    # local var_command=('wpa_cli')
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -d|--device)
+                var_dev="${2}"
+                shift 1
+                ;;
+            -s|--scan|-l|--list)
+                var_cmd="${var_utility} -i ${var_dev} scan"
+                echo ${var_cmd}
+                eval ${var_cmd}
+                var_cmd="${var_utility} -i ${var_dev} scan_result"
+                echo ${var_cmd}
+                eval ${var_cmd}
+                ;;
+            -c|--connect)
+                var_ssid="${2}"
+                shift 1
+                ;;
+            -p|--password)
+                var_psk="${2}"
+                shift 1
+                ;;
+            -t|--type)
+                var_type="${2}"
+                shift 1
+                ;;
+            -h|--help)
+                cli_helper -c "template" -cd "template function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "template [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-s|--scan" -d "scan wifi"
+                cli_helper -o "-d|--device" -d "set device"
+                cli_helper -o "-c|--connect" -d "connect ssid"
+                cli_helper -o "-p|--password" -d "ssid password"
+                cli_helper -o "-t|--type" -d "encrypt type"
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                echo "Wrong args, $@"
+                return -1
+                ;;
+        esac
+        shift 1
+    done
+
+    if false
+    then
+        # 如果要连接加密方式是[WPA-PSK-CCMP+TKIP][WPA2-PSK-CCMP+TKIP][ESS] (wpa加密)，wifi名称是name，wifi密码是：psk。
+        eval ${var_utility} -i wlan0 set_network 0 ssid '"name"'
+        eval ${var_utility} -i wlan0 set_network 0 psk '"psk"'
+        eval ${var_utility} -i wlan0 enable_network 0
+
+        # 如果要连接加密方式是[WEP][ESS] (wep加密)，wifi名称是name，wifi密码是psk。
+        eval ${var_utility} -i wlan0 set_network 0 ssid '"name"'
+        eval ${var_utility} -i wlan0 set_network 0 key_mgmt NONE
+        eval ${var_utility} -i wlan0 set_network 0 wep_key0 '"psk"'
+        eval ${var_utility} -i wlan0 enable_network 0
+
+        # 如果要连接加密方式是[ESS] (无加密)，wifi名称是name。
+        eval ${var_utility} -i wlan0 set_network 0 ssid '"name"'
+        eval ${var_utility} -i wlan0 set_network 0 key_mgmt NONE
+        eval ${var_utility} -i wlan0 enable_network 0
+
+        # list all saved connection
+        wpa_cli -i wlan0 list_network
+        # Connect first connection
+        wpa_cli -i wlan0 select_network 0
+        # enable first connection
+        wpa_cli -i wlan0 enable_network 0
+
+    fi
+
+    if [ "$var_type" = 'wpa' ]
+    then
+        echo 'Wpa Encrypt'
+    elif [ "$var_type" = 'wep' ]
+    then
+        echo 'Wep Encrypt'
+    elif [ "$var_type" = 'none' ]
+    then
+        echo 'None Encrypt'
+    else
+        echo 'Wep Encrypt'
+    fi
+}
 function screenshot()
 {
     import -window root ./screenshot_$(date '+%Y%m%d-%H%M%S').png
