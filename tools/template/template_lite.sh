@@ -1,0 +1,115 @@
+#!/bin/bash
+###########################################################
+## Vars
+###########################################################
+export VAR_SCRIPT_NAME="$(basename ${BASH_SOURCE[0]%=.})"
+export VAR_CPU_CNT=$(nproc --all)
+
+###########################################################
+## Options
+###########################################################
+export OPTION_VERBOSE=false
+
+###########################################################
+## Path
+###########################################################
+export PATH_ROOT="$(realpath $(dirname ${BASH_SOURCE[0]}))"
+
+###########################################################
+## Utils Functions
+###########################################################
+fPrintHeader()
+{
+    local msg=${1}
+    printf "###########################################################\n"
+    printf "###########################################################\n"
+    printf "##  %- $((60-4-${#msg}))s  ##\n" "${msg}"
+    printf "###########################################################\n"
+    printf "###########################################################\n"
+    printf ""
+}
+fErrControl()
+{
+    local ret_var=$?
+    local func_name=${1}
+    local line_num=${2}
+    if [[ ${ret_var} == 0 ]]
+    then
+        return ${ret_var}
+    else
+        echo ${func_name} ${line_num}
+        exit ${ret_var}
+    fi
+}
+fHelp()
+{
+    echo "${VAR_SCRIPT_NAME}"
+    echo "[Example]"
+    printf "    %s\n" "run test: .sh -a"
+    echo "[Options]"
+    printf "    %- 16s\t%s\n" "-v|--verbose" "Print in verbose mode"
+    printf "    %- 16s\t%s\n" "-h|--help" "Print helping"
+}
+fInfo()
+{
+    local var_title_pading""
+
+    fPrintHeader ${FUNCNAME[0]}
+    printf "###########################################################\n"
+    printf "##  Vars\n"
+    printf "###########################################################\n"
+    printf "##    %s\t: %- 16s\n" "Script" "${VAR_SCRIPT_NAME}"
+    printf "###########################################################\n"
+    printf "##  Path\n"
+    printf "###########################################################\n"
+    printf "##    %s\t: %- 16s\n" "Working Path" "${PATH_ROOT}"
+    printf "###########################################################\n"
+    printf "##  Options\n"
+    printf "###########################################################\n"
+    printf "##    %s\t: %- 16s\n" "Verbose" "${OPTION_VERBOSE}"
+    printf "###########################################################\n"
+}
+###########################################################
+## Functions
+###########################################################
+function fexample()
+{
+    fPrintHeader ${FUNCNAME[0]}
+
+}
+## Main Functions
+###########################################################
+function fMain()
+{
+    # fPrintHeader "Launch ${VAR_SCRIPT_NAME}"
+    local flag_verbose=false
+
+    while [[ $# != 0 ]]
+    do
+        case $1 in
+            # Options
+            -v|--verbose)
+                flag_verbose=true
+                ;;
+            -h|--help)
+                fHelp
+                exit 0
+                ;;
+            *)
+                echo "Unknown Options: ${1}"
+                fHelp
+                exit 1
+                ;;
+        esac
+        shift 1
+    done
+
+    ## Download
+    if [ ${flag_verbose} = true ]
+    then
+        OPTION_VERBOSE=y
+        fInfo; fErrControl ${FUNCNAME[0]} ${LINENO}
+    fi
+}
+
+fMain $@
