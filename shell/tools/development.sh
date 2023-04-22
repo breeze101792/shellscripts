@@ -171,7 +171,7 @@ function pvim()
     # then
     #     echo "Please enter a file name"
     # fi
-    local vim_args=""
+    local vim_args=( "" )
     local cpath=`pwd`
     local cmd_args=()
     local flag_cctree=n
@@ -192,9 +192,13 @@ function pvim()
             -m|--map)
                 flag_cctree=y
                 ;;
+            -b|--buffer-file)
+                vim_args+=${HS_BUF_FILE}
+                ;;
             -t|--time)
                 flag_time=y
                 cmd_args+=("-X --startuptime startup_${var_timestamp}.log")
+                HS_BUF_FILE="startup_${var_timestamp}.log"
                 ;;
             -c|--clip)
                 shift 1
@@ -247,6 +251,7 @@ function pvim()
                 cli_helper -t "Options"
                 cli_helper -o "-m|--map" -d "Load cctree in vim"
                 cli_helper -o "-p|--pure-mode" -d "Load withouth ide file"
+                cli_helper -o "-b|--buffer-file" -d "Open file with hs var HS_BUF_FILE"
                 cli_helper -o "-t|--time" -d "Enable startup debug mode"
                 cli_helper -o "-c|--clip" -d "Save file in vim buffer file"
                 cli_helper -o "-e|--extra-command" -d "pass extra command to vim"
@@ -265,7 +270,7 @@ function pvim()
         shift 1
     done
 
-    vim_args=$@
+    vim_args+=$@
 
     # unset var
     unset VIDE_SH_CSCOPE_DB
@@ -509,6 +514,7 @@ function logfile()
     echo "==================================================================="
     echo "Log file has been stored in the following path." | mark -s green "${fulllogname}"
     echo "Full Log: ${fulllogname}" | mark -s green "${fulllogname}"
+    HS_BUF_FILE="${fulllogname}"
 
     if [ "${flag_error_file}" = "y" ] && [ -n "${full_error_logname}" ]
     then
