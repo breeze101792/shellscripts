@@ -171,7 +171,7 @@ function pvim()
     # then
     #     echo "Please enter a file name"
     # fi
-    local vim_args=""
+    local vim_args=( "" )
     local cpath=`pwd`
     local cmd_args=()
     local flag_cctree=n
@@ -192,9 +192,13 @@ function pvim()
             -m|--map)
                 flag_cctree=y
                 ;;
+            -b|--buffer-file)
+                vim_args+=${HS_BUF_FILE}
+                ;;
             -t|--time)
                 flag_time=y
                 cmd_args+=("-X --startuptime startup_${var_timestamp}.log")
+                HS_BUF_FILE="startup_${var_timestamp}.log"
                 ;;
             -c|--clip)
                 shift 1
@@ -247,6 +251,7 @@ function pvim()
                 cli_helper -t "Options"
                 cli_helper -o "-m|--map" -d "Load cctree in vim"
                 cli_helper -o "-p|--pure-mode" -d "Load withouth ide file"
+                cli_helper -o "-b|--buffer-file" -d "Open file with hs var HS_BUF_FILE"
                 cli_helper -o "-t|--time" -d "Enable startup debug mode"
                 cli_helper -o "-c|--clip" -d "Save file in vim buffer file"
                 cli_helper -o "-e|--extra-command" -d "pass extra command to vim"
@@ -265,7 +270,7 @@ function pvim()
         shift 1
     done
 
-    vim_args=$@
+    vim_args+=$@
 
     # unset var
     unset VIDE_SH_CSCOPE_DB
@@ -509,6 +514,7 @@ function logfile()
     echo "==================================================================="
     echo "Log file has been stored in the following path." | mark -s green "${fulllogname}"
     echo "Full Log: ${fulllogname}" | mark -s green "${fulllogname}"
+    HS_BUF_FILE="${fulllogname}"
 
     if [ "${flag_error_file}" = "y" ] && [ -n "${full_error_logname}" ]
     then
@@ -1185,8 +1191,7 @@ function erun()
 }
 function xcd()
 {
-    echo "Enhanced cd"
-
+    # echo "Enhanced cd"
     local cpath=$(pwd)
     local target_path=""
     local sub_folder=""
@@ -1246,6 +1251,17 @@ function xcd()
             ${HS_VAR_ECD_NAME_17}) target_path=${HS_PATH_ECD_17} ;;
             ${HS_VAR_ECD_NAME_18}) target_path=${HS_PATH_ECD_18} ;;
             ${HS_VAR_ECD_NAME_19}) target_path=${HS_PATH_ECD_19} ;;
+
+            ${HS_VAR_ECD_NAME_20}) target_path=${HS_PATH_ECD_20} ;;
+            ${HS_VAR_ECD_NAME_21}) target_path=${HS_PATH_ECD_21} ;;
+            ${HS_VAR_ECD_NAME_22}) target_path=${HS_PATH_ECD_22} ;;
+            ${HS_VAR_ECD_NAME_23}) target_path=${HS_PATH_ECD_23} ;;
+            ${HS_VAR_ECD_NAME_24}) target_path=${HS_PATH_ECD_24} ;;
+            ${HS_VAR_ECD_NAME_25}) target_path=${HS_PATH_ECD_25} ;;
+            ${HS_VAR_ECD_NAME_26}) target_path=${HS_PATH_ECD_26} ;;
+            ${HS_VAR_ECD_NAME_27}) target_path=${HS_PATH_ECD_27} ;;
+            ${HS_VAR_ECD_NAME_28}) target_path=${HS_PATH_ECD_28} ;;
+            ${HS_VAR_ECD_NAME_29}) target_path=${HS_PATH_ECD_29} ;;
             -p|--proj|proj|project|projects)
                 local tmp_path=$(echo ${HS_PATH_PROJ})
                 if [ -n "${2}" ] && test -d $(realpath ${tmp_path}/*${2}*)
@@ -1297,6 +1313,17 @@ function xcd()
                 [ ! -z ${HS_VAR_ECD_NAME_17} ] && cli_helper -o  "$(echo ${HS_VAR_ECD_NAME_17} | sed 's/[()@]//g')" -d "cd to ${HS_PATH_ECD_17}"
                 [ ! -z ${HS_VAR_ECD_NAME_18} ] && cli_helper -o  "$(echo ${HS_VAR_ECD_NAME_18} | sed 's/[()@]//g')" -d "cd to ${HS_PATH_ECD_18}"
                 [ ! -z ${HS_VAR_ECD_NAME_19} ] && cli_helper -o  "$(echo ${HS_VAR_ECD_NAME_19} | sed 's/[()@]//g')" -d "cd to ${HS_PATH_ECD_19}"
+
+                [ ! -z ${HS_VAR_ECD_NAME_20} ] && cli_helper -o  "$(echo ${HS_VAR_ECD_NAME_20} | sed 's/[()@]//g')" -d "cd to ${HS_PATH_ECD_20}"
+                [ ! -z ${HS_VAR_ECD_NAME_21} ] && cli_helper -o  "$(echo ${HS_VAR_ECD_NAME_21} | sed 's/[()@]//g')" -d "cd to ${HS_PATH_ECD_21}"
+                [ ! -z ${HS_VAR_ECD_NAME_22} ] && cli_helper -o  "$(echo ${HS_VAR_ECD_NAME_22} | sed 's/[()@]//g')" -d "cd to ${HS_PATH_ECD_22}"
+                [ ! -z ${HS_VAR_ECD_NAME_23} ] && cli_helper -o  "$(echo ${HS_VAR_ECD_NAME_23} | sed 's/[()@]//g')" -d "cd to ${HS_PATH_ECD_23}"
+                [ ! -z ${HS_VAR_ECD_NAME_24} ] && cli_helper -o  "$(echo ${HS_VAR_ECD_NAME_24} | sed 's/[()@]//g')" -d "cd to ${HS_PATH_ECD_24}"
+                [ ! -z ${HS_VAR_ECD_NAME_25} ] && cli_helper -o  "$(echo ${HS_VAR_ECD_NAME_25} | sed 's/[()@]//g')" -d "cd to ${HS_PATH_ECD_25}"
+                [ ! -z ${HS_VAR_ECD_NAME_26} ] && cli_helper -o  "$(echo ${HS_VAR_ECD_NAME_26} | sed 's/[()@]//g')" -d "cd to ${HS_PATH_ECD_26}"
+                [ ! -z ${HS_VAR_ECD_NAME_27} ] && cli_helper -o  "$(echo ${HS_VAR_ECD_NAME_27} | sed 's/[()@]//g')" -d "cd to ${HS_PATH_ECD_27}"
+                [ ! -z ${HS_VAR_ECD_NAME_28} ] && cli_helper -o  "$(echo ${HS_VAR_ECD_NAME_28} | sed 's/[()@]//g')" -d "cd to ${HS_PATH_ECD_28}"
+                [ ! -z ${HS_VAR_ECD_NAME_29} ] && cli_helper -o  "$(echo ${HS_VAR_ECD_NAME_29} | sed 's/[()@]//g')" -d "cd to ${HS_PATH_ECD_29}"
                 return 0
                 ;;
 
@@ -1323,10 +1350,12 @@ function xcd()
         esac
         shift 1
     done
-    if [ -z "${target_path}" ]
-    then
-        target_path="$(clip -d)"
-    fi
+
+    # if [ -z "${target_path}" ]
+    # then
+    #     tmp_clip="$(clip --silence -d)"
+    #     test -z tmp_clip && target_path="${tmp_clip}"
+    # fi
 
     if [ -d "${target_path}" ]
     then
@@ -1339,10 +1368,13 @@ function xcd()
         fi
         ls
         return 0
-    else
+    elif [ ! -z "${target_path}" ]
+    then
         echo "Can't find ${target_path}"
         cd ${cpath}
         return 1
+    else
+        echo "target path is empty"
     fi
 
 }
