@@ -597,11 +597,11 @@ function an_remote()
                 ;;
             $'\x7f')
                 # echo "backspace dected"
-                var_target_key="BACK"
+                var_target_key="KEYCODE_DEL"
                 ;;
             ' ')
                 # echo "Space dected"
-                var_target_key=" "
+                var_target_key="KEYCODE_SPACE"
                 ;;
         esac
 
@@ -632,10 +632,14 @@ function an_remote()
                     # echo "HOME dected"
                     var_target_key="HOME"
                     ;;
-                $'\x1b'$'\x1b')
-                    # echo "esc dected"
-                    var_target_key="esc"
+                '[3')
+                    # echo "Del dected"
+                    var_target_key="KEYCODE_BACK"
                     ;;
+                # $'\x1b'$'\x1b')
+                #     # echo "esc dected"
+                #     var_target_key="esc"
+                #     ;;
             esac
         fi
         var_previous=${var_input}
@@ -652,13 +656,13 @@ function an_remote()
         then
             printf "%s %s\n" "${var_promote}" "${var_input}"
             var_skey_args="text"
-            var_cmd="${var_skey_prefix} ${var_skey_args} \"${var_input}\""
+            var_cmd="${var_skey_prefix} ${var_skey_args} \'${var_input}\'"
         else
             printf "%s %s\n" "${var_promote}" "${var_target_key}"
             var_skey_args="keyevent"
-            var_cmd="${var_skey_prefix} ${var_skey_args} \"${var_target_key}\""
+            var_cmd="${var_skey_prefix} ${var_skey_args} \'${var_target_key}\'"
         fi
-        # echo ${var_cmd}
+        echo ${var_cmd}
         eval "${var_cmd}" 2> /dev/null
     done
     printf "\n"

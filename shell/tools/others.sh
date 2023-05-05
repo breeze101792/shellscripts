@@ -308,7 +308,6 @@ function audio_default()
     do
         case $1 in
             -l|--list)
-                # eval pactl list sinks | grep Name | sed 's/\t//g'
                 local idx=1
                 for each_dev in $(pactl list sinks | grep Name | cut -d ':' -f 2)
                 do
@@ -342,7 +341,6 @@ function audio_default()
                 cli_helper -o "-l|--list" -d "list audio devices"
                 cli_helper -o "-d|--dev" -d "set default device with idx"
                 cli_helper -o "-n|--name" -d "set default device with name"
-                # cli_helper -o "-v|--verbose" -d "Verbose print "
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;
