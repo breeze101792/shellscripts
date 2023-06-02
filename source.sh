@@ -308,7 +308,9 @@ function hs_print()
 }
 function refresh
 {
-    local cpath=$(realpath .)
+    local cpath=${PWD}
+    cd
+    cd ${cpath}
     source ${HS_PATH_LIB}/source.sh -p=${HS_PATH_LIB} -s=${HS_ENV_SHELL} -S=${HS_ENV_SILENCE} --refresh
     cd ${cpath}
 }

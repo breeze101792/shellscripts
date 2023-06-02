@@ -34,6 +34,9 @@ vbell_msg "   Wuff  ----  Wuff!!  "
 # define a bigger scrollback, default is 100 lines
 defscrollback 1024
 
+# it's painfull to use vim under screen with esc, so set maptimeout to 5ms
+maptimeout 5
+
 # ------------------------------------------------------------------------------
 # SCREEN KEYBINDINGS
 # ------------------------------------------------------------------------------

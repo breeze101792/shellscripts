@@ -82,17 +82,7 @@ test -z "${HS_VAR_CURRENT_DIR}" && export HS_VAR_CURRENT_DIR="CURRENT_DIR"
 test -z "${HS_VAR_CLIPBOARD}" && export HS_VAR_CLIPBOARD="CLIPBOARD"
 test -z "${HS_VAR_TTY_START_CMD}" && export HS_VAR_TTY_START_CMD="echo start WM"
 test -z "${HS_VAR_VIM}" && export HS_VAR_VIM="vim"
-
-########################################################
-########################################################
-#####                                              #####
-#####    Buffer Vars                               #####
-#####                                              #####
-########################################################
-########################################################
-# It's for command buffer. after running commands, it 
-# can set vars on the folloing variables
-export HS_BUF_FILE="~/.bashrc"
+test -z "${HS_VAR_LOGFILE}" && export HS_VAR_LOGFILE="LOGFILE"
 
 ########################################################
 ########################################################

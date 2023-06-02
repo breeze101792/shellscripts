@@ -46,11 +46,15 @@ function pvinit()
     local var_cpath=$(pwd)
     local file_ext=()
     local file_exclude=()
+    local path_exclude=()
     local find_cmd=""
     local target_list_name="proj.files"
     local target_proj_name="proj.vim"
     local flag_append=n
     local flag_header=n
+
+    file_exclude+=("-iname '*.pyc'")
+    path_exclude+=("-not -path '*/.repo/*'")
 
     file_ext+=("-iname '*.c'")
     file_ext+=("-o -iname '*.cc'")
@@ -77,7 +81,11 @@ function pvinit()
                 shift 1
                 ;;
             -x|--exclude)
-                file_exclude+=("-o -iname \"*.${2}\"")
+                file_exclude+=("-o -iname \"${2}\"")
+                shift 1
+                ;;
+            -xp|--exclude-path)
+                path_exclude+=("-not -path \"*/${2}/*\"")
                 shift 1
                 ;;
             -c|--clean)
@@ -102,7 +110,8 @@ function pvinit()
                 cli_helper -t "Options"
                 cli_helper -o "-a|--append" -d "append more fire in file list"
                 cli_helper -o "-e|--extension" -d "add file extension on search"
-                # cli_helper -o "-x|--exclude" -d "exclude file on search"
+                cli_helper -o "-x|--exclude" -d "exclude file on search"
+                cli_helper -o "-xp|--exclude-path" -d "exclude file path on search"
                 cli_helper -o "-c|--clean" -d "Clean related files"
                 cli_helper -o "--header" -d "Add header vim code"
                 cli_helper -o "-h|--help" -d "Print help function "
@@ -146,8 +155,8 @@ function pvinit()
             local tmp_path=$(realpath ${each_path})
             printc -c green "Searching folder: "
             echo -e "$tmp_path"
-            # find_cmd="find ${tmp_path} \( -type f -iname '*.h' -o -iname '*.c' ${file_ext[@]} \) -a \( -not -path '*/auto_gen*' -o -not -path '*/build*' ${file_exclude[@]} \) | xargs realpath >> \"${target_list_name}\""
-            find_cmd="find ${tmp_path} \( -type f ${file_ext[@]} \) | xargs realpath >> \"${target_list_name}\""
+            # find_cmd="find ${tmp_path} \( -type f ${file_ext[@]} \) | xargs realpath >> \"${target_list_name}\""
+            find_cmd="find ${tmp_path} \( -type f ${file_ext[@]} \) -not \( ${file_exclude[@]} \) ${path_exclude[@]} | xargs realpath >> \"${target_list_name}\""
             # find_cmd="find ${tmp_path} \( -type f -iname '*.h' -o -iname '*.c' ${file_ext[@]} \) -a \( ${file_exclude[@]} \) | xargs realpath >> \"${target_list_name}\""
             echo ${find_cmd}
             eval "${find_cmd}"
@@ -192,13 +201,10 @@ function pvim()
             -m|--map)
                 flag_cctree=y
                 ;;
-            -b|--buffer-file)
-                vim_args+=${HS_BUF_FILE}
-                ;;
             -t|--time)
                 flag_time=y
                 cmd_args+=("-X --startuptime startup_${var_timestamp}.log")
-                HS_BUF_FILE="startup_${var_timestamp}.log"
+                hs_config -s "${HS_VAR_LOGFILE}" "startup_${var_timestamp}.log"
                 ;;
             -c|--clip)
                 shift 1
@@ -209,6 +215,9 @@ function pvim()
                 # printf "V\n%s" "${buf_tmp}" | sed '$ s/$.*//g' > ${HOME}/.vim/clip
                 printf "V\n%s\n" "${buf_tmp}" > ${HOME}/.vim/clip
                 return 0
+                ;;
+            --buffer-file|buffer|buf)
+                vim_args+="$(hs_config -g ${HS_VAR_LOGFILE})"
                 ;;
             # ENV
             p|plugin)
@@ -251,7 +260,7 @@ function pvim()
                 cli_helper -t "Options"
                 cli_helper -o "-m|--map" -d "Load cctree in vim"
                 cli_helper -o "-p|--pure-mode" -d "Load withouth ide file"
-                cli_helper -o "-b|--buffer-file" -d "Open file with hs var HS_BUF_FILE"
+                cli_helper -o "--buffer-file|buffer|buf" -d "Open file with hs var(${HS_VAR_LOGFILE})"
                 cli_helper -o "-t|--time" -d "Enable startup debug mode"
                 cli_helper -o "-c|--clip" -d "Save file in vim buffer file"
                 cli_helper -o "-e|--extra-command" -d "pass extra command to vim"
@@ -514,7 +523,7 @@ function logfile()
     echo "==================================================================="
     echo "Log file has been stored in the following path." | mark -s green "${fulllogname}"
     echo "Full Log: ${fulllogname}" | mark -s green "${fulllogname}"
-    HS_BUF_FILE="${fulllogname}"
+    hs_config -s "${HS_VAR_LOGFILE}" "${fulllogname}"
 
     if [ "${flag_error_file}" = "y" ] && [ -n "${full_error_logname}" ]
     then
@@ -1156,6 +1165,7 @@ function erun()
         # should keep this in one line to prevent insertion of other task
         printf "Command: %s\nLogfile: %s\n================================================================\n" "${excute_cmd}" "${log_file}" >> ${history_file}
 
+        hs_config -s "${HS_VAR_LOGFILE}" "${log_file}"
         logfile -e -f "${log_file}" "${excute_cmd}"
     else
         # echo "Log file path not define.HS_PATH_LOG=${HS_PATH_LOG}"

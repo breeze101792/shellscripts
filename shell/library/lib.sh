@@ -73,9 +73,9 @@ function ffind()
     done
     if [ "$flag_color" = "y" ]
     then
-        find . -iname "*${pattern}*" | mark ${pattern}
+        find -L . -iname "*${pattern}*" | mark ${pattern}
     else
-        find . -iname "*${pattern}*"
+        find -L . -iname "*${pattern}*"
     fi
 
 }

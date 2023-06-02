@@ -25,7 +25,7 @@ function wifi()
                 var_dev="${2}"
                 shift 1
                 ;;
-            -s|--scan|-l|--list)
+            -s|--scan)
                 var_cmd="${var_utility} -i ${var_dev} scan"
                 echo ${var_cmd}
                 eval ${var_cmd}
@@ -39,6 +39,18 @@ function wifi()
                 ;;
             -p|--password)
                 var_psk="${2}"
+                shift 1
+                ;;
+            -l|--list)
+                # list all saved connection
+                eval ${var_utility} -i wlan0 list_network
+                ;;
+            -e|--enable-network)
+                netowrk_id=$2
+                # Connect first connection
+                eval ${var_utility} -i wlan0 select_network ${netowrk_id}
+                # enable first connection
+                eval ${var_utility} -i wlan0 enable_network ${netowrk_id}
                 shift 1
                 ;;
             -t|--type)
@@ -55,6 +67,8 @@ function wifi()
                 cli_helper -o "-c|--connect" -d "connect ssid"
                 cli_helper -o "-p|--password" -d "ssid password"
                 cli_helper -o "-t|--type" -d "encrypt type"
+                cli_helper -o "-l|--list" -d "List saved profile"
+                cli_helper -o "-e|--enable-network" -d "enable saved netowrk with network ID"
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;
@@ -246,6 +260,7 @@ function looptimes()
         echo "==========================================="
         eval $@
         echo "==========================================="
+        echo "Return Value: $?"
         sleep ${interval}
     done
 }
