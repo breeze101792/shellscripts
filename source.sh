@@ -273,7 +273,7 @@ function hs_autostart()
 {
     local var_target=${1}
     local var_autostart_name="AUTOSTART_$(hostname)"
-    local var_stored_uptime="$(hs_config -g ${var_autostart_name})"
+    local var_stored_uptime="$(hs_varconfig -g ${var_autostart_name})"
     local var_current_uptime=$(($(date +%s -d "$(uptime -s)") / 10))
 
     if [ "${var_stored_uptime}" = "" ] || [ "${var_stored_uptime}" != "${var_current_uptime}" ]
@@ -283,7 +283,7 @@ function hs_autostart()
         ##########################################
         hs_source ${var_target}
 
-        hs_config -s "${var_autostart_name}" "${var_current_uptime}"
+        hs_varconfig -s "${var_autostart_name}" "${var_current_uptime}"
     fi
 }
 
