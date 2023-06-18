@@ -38,6 +38,68 @@ function pureshell()
     fi
 
 }
+function testnset()
+{
+    local var_variable=''
+    local var_content=''
+    local flag_empty_write='n'
+    local flag_echo='n'
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -v|--variable)
+                var_variable=${2}
+                shift 1
+                ;;
+            -c|--content)
+                var_content=${2}
+                shift 1
+                ;;
+            -e|--empty-write)
+                flag_empty_write='y'
+                ;;
+            --echo)
+                flag_echo='y'
+                ;;
+            -h|--help)
+                cli_helper -c "testnset" -cd "testnset function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "testnset [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-v|--variable" -d "Variable name"
+                cli_helper -o "-c|--content" -d "Variable content"
+                cli_helper -o "-e|--empty-write" -d "Write variable when it's empty"
+                cli_helper -o "-e|--echo" -d "Echo back after setting"
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                echo "Wrong args, $@"
+                return -1
+                ;;
+        esac
+        shift 1
+    done
+
+    local set_cmd="export ${var_variable}=\"${var_content}\""
+    local tmp_cmd='echo ${'${var_variable}'}'
+    local tmp_rst=$(eval $tmp_cmd)
+
+    if [ ${flag_empty_write} = 'y' ]
+    then
+        if test -z ${tmp_rst}
+        then
+            eval ${set_cmd}
+        fi
+    else
+        eval ${set_cmd}
+    fi
+
+    if [ ${flag_echo} = 'y' ]
+    then
+        echo ${tmp_rst}
+    fi
+}
 ########################################################
 #####    Folder Manipulation                       #####
 ########################################################

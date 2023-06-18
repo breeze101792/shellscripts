@@ -225,33 +225,33 @@ function clip()
                     echo "get args from pipe"
                     local var_from_pipe="$(xargs echo)"
                     # echo "FD 0 has opened."
-                    hs_config -s "${var_clipboard}" "${var_from_pipe}"
+                    hs_varconfig -s "${var_clipboard}" "${var_from_pipe}"
                 elif [[ ${#} = 1 ]] && [ -e ${1} ]
                 then
-                    hs_config -s "${var_clipboard}" "$(realpath ${1})"
+                    hs_varconfig -s "${var_clipboard}" "$(realpath ${1})"
                 # elif [[ ${#} = 0 ]]
                 # then
-                #     hs_config -s "${var_clipboard}" "$(realpath .)"
+                #     hs_varconfig -s "${var_clipboard}" "$(realpath .)"
                 else
                     echo "No args specify"
                     return -1
-                    # hs_config -s "${var_clipboard}" "${@}"
+                    # hs_varconfig -s "${var_clipboard}" "${@}"
                 fi
                 break
                 ;;
             -p|--set-from-pipe)
                 local var_from_pipe="$(xargs echo)"
                 # echo "FD 0 has opened."
-                hs_config -s "${var_clipboard}" "${var_from_pipe}"
+                hs_varconfig -s "${var_clipboard}" "${var_from_pipe}"
                 ;;
             -g|--get-clip)
-                hs_config -g "${var_clipboard}"
+                hs_varconfig -g "${var_clipboard}"
                 ;;
 
             ## Addictional options
             # -d|--get-current-dir)
             #     # get current dir
-            #     hs_config -g "${HS_VAR_CURRENT_DIR}"
+            #     hs_varconfig -g "${HS_VAR_CURRENT_DIR}"
             #     ;;
             -ln|--link)
                 clip -b ${var_clipidx} -x 'ln -s $(realpath %p) ./'
@@ -798,6 +798,54 @@ function extract()
 function tstamp()
 {
     date +%Y%m%d_%H%M%S
+}
+function synctime()
+{
+    local target_host=''
+    local target_user=''
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -t|--taget-host)
+                target_host="${2}"
+                shift 1
+                ;;
+            -u|--user)
+                target_host="${2}"
+                shift 1
+                ;;
+            -h|--help)
+                cli_helper -c "synctime" -cd "synctime for remote host"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "template [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-t|--taget-host" -d "Specify host name"
+                cli_helper -o "-u|--user" -d "Specify user name"
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                echo "Wrong args, $@"
+                return -1
+                ;;
+        esac
+        shift 1
+    done
+
+    if test -z ${target_host}
+    then
+        echo 'Please enter host name'
+        synctime -h
+        return 0
+    fi
+
+    if test -z ${target_user}
+    then
+        ssh ${target_host} "sudo date $(date +%m%d%H%M%G.%S)"
+    else
+        ssh ${target_user}@${target_host} "sudo date $(date +%m%d%H%M%G.%S)"
+    fi
+
 }
 function fakeshell()
 {

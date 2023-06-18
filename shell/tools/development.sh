@@ -204,7 +204,7 @@ function pvim()
             -t|--time)
                 flag_time=y
                 cmd_args+=("-X --startuptime startup_${var_timestamp}.log")
-                hs_config -s "${HS_VAR_LOGFILE}" "startup_${var_timestamp}.log"
+                hs_varconfig -s "${HS_VAR_LOGFILE}" "startup_${var_timestamp}.log"
                 ;;
             -c|--clip)
                 shift 1
@@ -217,7 +217,7 @@ function pvim()
                 return 0
                 ;;
             --buffer-file|buffer|buf)
-                vim_args+="$(hs_config -g ${HS_VAR_LOGFILE})"
+                vim_args+="$(hs_varconfig -g ${HS_VAR_LOGFILE})"
                 ;;
             # ENV
             p|plugin)
@@ -523,7 +523,7 @@ function logfile()
     echo "==================================================================="
     echo "Log file has been stored in the following path." | mark -s green "${fulllogname}"
     echo "Full Log: ${fulllogname}" | mark -s green "${fulllogname}"
-    hs_config -s "${HS_VAR_LOGFILE}" "${fulllogname}"
+    hs_varconfig -s "${HS_VAR_LOGFILE}" "${fulllogname}"
 
     if [ "${flag_error_file}" = "y" ] && [ -n "${full_error_logname}" ]
     then
@@ -1165,7 +1165,7 @@ function erun()
         # should keep this in one line to prevent insertion of other task
         printf "Command: %s\nLogfile: %s\n================================================================\n" "${excute_cmd}" "${log_file}" >> ${history_file}
 
-        hs_config -s "${HS_VAR_LOGFILE}" "${log_file}"
+        hs_varconfig -s "${HS_VAR_LOGFILE}" "${log_file}"
         logfile -e -f "${log_file}" "${excute_cmd}"
     else
         # echo "Log file path not define.HS_PATH_LOG=${HS_PATH_LOG}"
@@ -1562,12 +1562,17 @@ function gforall()
                 var_target_cmd="git log --pretty='format:%cd %p->%h %cn(%an) %s' -n 1"
                 break
                 ;;
+            status)
+                var_target_cmd="git status"
+                break
+                ;;
             -h|--help)
                 cli_helper -c "gforall" -cd "gforall function"
                 cli_helper -t "SYNOPSIS"
                 cli_helper -d "gforall [Options] [Value]"
                 cli_helper -t "Options"
                 cli_helper -o "-l|--log" -d "Print first commit"
+                cli_helper -o "status" -d "git status"
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;

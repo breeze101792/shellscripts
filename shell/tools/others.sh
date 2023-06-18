@@ -389,25 +389,49 @@ function sinfo()
     fi
 
 }
-function xsettings()
+function xkeyrate()
 {
+    local var_level=2
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -l|--level)
+                var_level=${2}
+                shift 1
+                ;;
+            -h|--help)
+                cli_helper -c "xkeyrate" -cd "xkeyrate, adjust key board rate on x"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "xkeyrate [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-l|--level" -d "specify keyboard rate level "
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                echo "Wrong args, $@"
+                return -1
+                ;;
+        esac
+        shift 1
+    done
+
     # .256 sec delay, 1 char/hz
-    local var_mode=3
     if [[ ${#} = 1 ]]
     then
-        var_mode=${1}
+        var_level=${1}
     fi
 
-    if [[ ${var_mode} = 0 ]]
+    if [[ ${var_level} = 0 ]]
     then
-        xset r rate 256 64
-    elif [[ ${var_mode} = 1 ]]
+        xset r rate 256 72
+    elif [[ ${var_level} = 1 ]]
     then
-        xset r rate 200 50
-    elif [[ ${var_mode} = 2 ]]
+        xset r rate 200 64
+    elif [[ ${var_level} = 2 ]]
     then
         xset r rate 192 64
-    elif [[ ${var_mode} = 3 ]]
+    elif [[ ${var_level} = 3 ]]
     then
         xset r rate 160 64
     fi
