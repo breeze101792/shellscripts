@@ -901,7 +901,7 @@ function session
                 break
                 ;;
             --host|host|hostname|h)
-                local var_hostname="$(cat /etc/hostname)"
+                local var_hostname="$(hostname)"
                 local tmp_name=$(session ls |grep ${var_hostname}| cut -d ':' -f 1| tr -d  ' ')
                 if [ "${tmp_name}" != "" ]
                 then
