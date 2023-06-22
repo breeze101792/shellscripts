@@ -188,7 +188,7 @@ function item_promote()
     test -n "${content}" && echo -e ${start_str}${content}${end_str}
     # echo -e "-[\033[33;5;11mError\033[38;5;15m\033[00m]"
 }
-function hs_config()
+function hs_varconfig()
 {
     if [ ! -f "${HS_TMP_FILE_CONFIG}" ]
     then
@@ -198,7 +198,7 @@ function hs_config()
         fi
         touch "${HS_TMP_FILE_CONFIG}"
     fi
-    # get and set hs_config
+    # get and set hs_varconfig
     # if [ "$#" = "3" ] && [ "$1" = "-s" ]
     case $1 in
         -s)
@@ -256,15 +256,15 @@ function set_working_path()
 {
     case $1 in
         -s|--set-current-path)
-            local var_tmp_path="$(hs_config -g ${HS_VAR_CURRENT_DIR})"
+            local var_tmp_path="$(hs_varconfig -g ${HS_VAR_CURRENT_DIR})"
             if [ -d "${PWD}" ] && [ "${var_tmp_path}" != ${PWD} ]
             then
-                hs_config -s "${HS_VAR_CURRENT_DIR}" "$(pwd)"
+                hs_varconfig -s "${HS_VAR_CURRENT_DIR}" "$(pwd)"
             fi
 
             ;;
         -g|--go-to-setting-path)
-            local var_tmp_path="$(hs_config -g ${HS_VAR_CURRENT_DIR})"
+            local var_tmp_path="$(hs_varconfig -g ${HS_VAR_CURRENT_DIR})"
             if [ -d "${var_tmp_path}" ]
             then
                 cd "${var_tmp_path}"
@@ -272,7 +272,7 @@ function set_working_path()
 
             ;;
         -e|*)
-            echo $(hs_config -g "${HS_VAR_CURRENT_DIR}")
+            echo $(hs_varconfig -g "${HS_VAR_CURRENT_DIR}")
             ;;
     esac
 }
@@ -302,11 +302,16 @@ function check_cmd_status()
 }
 function parse_git_branch()
 {
-    git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/'
-    # bash
-    # git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/(\1)/'
-    # zsh
-    # git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1%F{cyan}][%f/'
+    # only give 200 ms for git command
+    # timeout 0.2 git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/'
+    timeout 0.2 git rev-parse --abbrev-ref HEAD 2> /dev/null | sed 's/HEAD/no branch/g'
+    # only support on > git 2.22
+    # git branch --show-current
+
+    if ! check_cmd_status
+    then
+        echo 'git command tiemout'
+    fi
 }
 function export_sh_func()
 {
@@ -327,4 +332,31 @@ function export_sh_func()
     else
         echo "Only work in bash"
     fi
+}
+function hsconfig()
+{
+
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -p|--advanced-promote)
+                HS_CONFIG_ADVANCED_PROMOTE=${2}
+                shift 1
+                ;;
+            -h|--help)
+                cli_helper -c "hsconfig" -cd "hsconfig function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "hsconfig [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-p|--advanced-promote" -d "Enable/Disable(Y/n) advance promote"
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                echo "Wrong args, $@"
+                return -1
+                ;;
+        esac
+        shift 1
+    done
 }

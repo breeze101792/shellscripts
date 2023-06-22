@@ -12,11 +12,14 @@
 ########################################################
 function wifi()
 {
+    # local var_utility='sudo wpa_cli'
     local var_utility='sudo wpa_cli'
     local var_dev='wlan0'
+    local var_action=''
     local var_psk=''
     local var_ssid=''
     local var_type=''
+    local var_profile_idx=''
     # local var_command=('wpa_cli')
     while [[ "$#" != 0 ]]
     do
@@ -37,26 +40,39 @@ function wifi()
                 var_ssid="${2}"
                 shift 1
                 ;;
-            -p|--password)
+            -l|--list)
+                # list all saved connection
+                eval ${var_utility} -i ${var_dev} list_network
+                ;;
+            -e|--enable-network)
+                var_profile_idx=$2
+                # Connect first connection
+                eval ${var_utility} -i ${var_dev} select_network ${var_profile_idx}
+                # enable first connection
+                eval ${var_utility} -i ${var_dev} enable_network ${var_profile_idx}
+                shift 1
+                ;;
+            # Add profile
+            -r|--remove-profile)
+                var_action="remove"
+                var_profile_idx=$2
+                shift 1
+                ;;
+            -a|--add-profile)
+                var_action="profile"
+                ;;
+            -i|--ssid)
+                var_ssid="${2}"
+                shift 1
+                ;;
+            -k|--passkey)
                 var_psk="${2}"
                 shift 1
                 ;;
-            -l|--list)
-                # list all saved connection
-                eval ${var_utility} -i wlan0 list_network
-                ;;
-            -e|--enable-network)
-                netowrk_id=$2
-                # Connect first connection
-                eval ${var_utility} -i wlan0 select_network ${netowrk_id}
-                # enable first connection
-                eval ${var_utility} -i wlan0 enable_network ${netowrk_id}
-                shift 1
-                ;;
-            -t|--type)
-                var_type="${2}"
-                shift 1
-                ;;
+            # -t|--type)
+            #     var_type="${2}"
+            #     shift 1
+            #     ;;
             -h|--help)
                 cli_helper -c "template" -cd "template function"
                 cli_helper -t "SYNOPSIS"
@@ -69,6 +85,10 @@ function wifi()
                 cli_helper -o "-t|--type" -d "encrypt type"
                 cli_helper -o "-l|--list" -d "List saved profile"
                 cli_helper -o "-e|--enable-network" -d "enable saved netowrk with network ID"
+                cli_helper -o "-r|--remove-profile" -d "remove netowrk profile"
+                cli_helper -o "-a|--add-profile" -d "add netowrk profile"
+                cli_helper -o "-k|--passkey" -d "add netowrk options, passkey"
+                cli_helper -o "-i|--ssid" -d "add netowrk options, name/ssid"
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;
@@ -79,6 +99,44 @@ function wifi()
         esac
         shift 1
     done
+
+    if [ "${var_action}" = "remove" ]
+    then
+        eval ${var_utility} -i ${var_dev} remove_network ${var_profile_idx}
+        eval ${var_utility} -i ${var_dev} list_network
+    elif [ "${var_action}" = "profile" ]
+    then
+        var_scan_result=$(wifi -s | grep ${var_ssid})
+        if test -z ${var_scan_result}
+        then
+            echo "${var_ssid} not found. ${var_scan_result}"
+            return -1
+        fi
+        echo ${var_ssid}, ${var_scan_result}
+
+        var_profile_idx=$(eval "${var_utility} -i ${var_dev} add_network")
+
+        eval ${var_utility} -i ${var_dev} set_network ${var_profile_idx} ssid "\"\\\"${var_ssid}\"\\\""
+        if echo ${var_scan_result} | grep 'WPA'
+        then
+            var_type='wpa'
+            eval "${var_utility} -i ${var_dev} set_network ${var_profile_idx} psk \"\\\"${var_psk}\"\\\""
+        elif echo ${var_scan_result} | grep 'WEA'
+        then
+            var_type='wep'
+            eval ${var_utility} -i ${var_dev} set_network ${var_profile_idx} key_mgmt NONE
+            eval "${var_utility} -i ${var_dev} set_network ${var_profile_idx} wep_key0 \"\\\"${var_psk}\"\\\""
+        elif test -z ${var_psk}
+        then
+            echo 'Known connection type'
+            eval "${var_utility} -i ${var_dev} set_network ${var_profile_idx} psk \"\\\"${var_psk}\"\\\""
+        else
+            var_type='none'
+            eval ${var_utility} -i ${var_dev} set_network ${var_profile_idx} key_mgmt NONE
+        fi
+        echo "Add profile to ${var_ssid} with ${var_type}"
+        eval ${var_utility} -i ${var_dev} enable_network ${var_profile_idx}
+    fi
 
     if false
     then
@@ -104,20 +162,6 @@ function wifi()
         wpa_cli -i wlan0 select_network 0
         # enable first connection
         wpa_cli -i wlan0 enable_network 0
-
-    fi
-
-    if [ "$var_type" = 'wpa' ]
-    then
-        echo 'Wpa Encrypt'
-    elif [ "$var_type" = 'wep' ]
-    then
-        echo 'Wep Encrypt'
-    elif [ "$var_type" = 'none' ]
-    then
-        echo 'None Encrypt'
-    else
-        echo 'Wep Encrypt'
     fi
 }
 function screenshot()
@@ -389,25 +433,49 @@ function sinfo()
     fi
 
 }
-function xsettings()
+function xkeyrate()
 {
+    local var_level=2
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -l|--level)
+                var_level=${2}
+                shift 1
+                ;;
+            -h|--help)
+                cli_helper -c "xkeyrate" -cd "xkeyrate, adjust key board rate on x"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "xkeyrate [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-l|--level" -d "specify keyboard rate level "
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                echo "Wrong args, $@"
+                return -1
+                ;;
+        esac
+        shift 1
+    done
+
     # .256 sec delay, 1 char/hz
-    local var_mode=3
     if [[ ${#} = 1 ]]
     then
-        var_mode=${1}
+        var_level=${1}
     fi
 
-    if [[ ${var_mode} = 0 ]]
+    if [[ ${var_level} = 0 ]]
     then
-        xset r rate 256 64
-    elif [[ ${var_mode} = 1 ]]
+        xset r rate 256 72
+    elif [[ ${var_level} = 1 ]]
     then
-        xset r rate 200 50
-    elif [[ ${var_mode} = 2 ]]
+        xset r rate 200 64
+    elif [[ ${var_level} = 2 ]]
     then
         xset r rate 192 64
-    elif [[ ${var_mode} = 3 ]]
+    elif [[ ${var_level} = 3 ]]
     then
         xset r rate 160 64
     fi
