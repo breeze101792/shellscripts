@@ -1641,7 +1641,7 @@ function gcheckoutByDate()
                 cli_helper -t "SYNOPSIS"
                 cli_helper -d "gcheckoutByDate [Options] [Value]"
                 cli_helper -t "Options"
-                cli_helper -o "-d|--date" -d "Checkout date, format: 1979-02-26 18:30:00"
+                cli_helper -o "-d|--date" -d "Checkout date, format: $(date '+%Y-%m-%d\\ %H:%M:%S'), may need \\ on space"
                 cli_helper -o "-f|--fake" -d "Fake run"
                 # cli_helper -o "-v|--verbose" -d "Verbose print "
                 cli_helper -o "-h|--help" -d "Print help function "
