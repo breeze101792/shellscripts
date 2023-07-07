@@ -905,8 +905,8 @@ function link_folders()
 function user_mount()
 {
     # user_mount /dev/sda1 /mnt/tmp
-    local uid=${UID}
-    local gid=${GID}
+    local uid=$(id -u)
+    local gid=$(id -g)
 
     local target_dev=""
     local target_dir="/mnt/tmp"

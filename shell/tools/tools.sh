@@ -477,41 +477,91 @@ function bisync()
     rsync -rtuvh --no-compress --progress $local_path/* $remote_path
     rsync -rtuvh --no-compress --progress $remote_path/* $local_path
 }
-function fsync()
+function filesync()
 {
-    local local_path=$1
-    local remote_path=$2
-    local var_cmd=("")
+    local var_excute_cmd=("rsync")
+    local var_exclude_list=("")
+
+    local flag_fake="n"
+
+    local flag_ssh="n"
+    local var_src_host=""
+    local var_dst_host=""
+
+    local var_src_path=""
+    local var_dst_path=""
+
+    # Pre set
+    var_exclude_list+=("--exclude='*.swp'")
+    var_exclude_list+=("--exclude='.git'")
+    var_exclude_list+=("--exclude='.repo'")
+
     while [[ "$#" != 0 ]]
     do
         case $1 in
-            # -a|--append)
-            #     cmd_args+=("${2}")
-            #     shift 1
-            #     ;;
-            # -v|--verbose)
-            #     flag_verbose="y"
-            #     shift 1
-            #     ;;
+            -s|--source)
+                var_src_path="${2}"
+                shift 1
+                ;;
+            -d|--destination)
+                var_dst_path="${2}"
+                shift 1
+                ;;
+            -sh|--source-host)
+                flag_ssh="y"
+                var_src_host="${2}"
+                shift 1
+                ;;
+            -dh|--destination-host)
+                flag_ssh="y"
+                var_dst_host="${2}"
+                shift 1
+                ;;
+            -e|--exclude)
+                var_exclude_list+=("${2}")
+                shift 1
+                ;;
+            -f|--fake)
+                flag_fake="y"
+                ;;
             -h|--help)
-                cli_helper -c "fsync" -cd "fsync function"
+                cli_helper -c "filesync" -cd "filesync function"
                 cli_helper -t "SYNOPSIS"
-                cli_helper -d "fsync [Options] [Value]"
+                cli_helper -d "filesync [Options] [Value]"
 
                 cli_helper -t "Options"
                 # cli_helper -o "-a|--append" -d "append file extension on search"
                 # cli_helper -o "-v|--verbose" -d "Verbose print "
+                cli_helper -o "-s|--source" -d "Source path"
+                cli_helper -o "-d|--destination" -d "Destination path"
+                cli_helper -o "-sh|--source-host" -d "Source host, imply ssh connection"
+                cli_helper -o "-dh|--destination-host" -d "Destination host, imply ssh connection"
+                cli_helper -o "-e|--exclude" -d "Exclude file"
+                cli_helper -o "-f|--fake" -d "Fake run, print command"
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;
             *)
-                echo "Wrong args, %@"
-                # return -1
+                echo "Wrong args, $@"
+                return -1
                 ;;
         esac
         shift 1
     done
 
+    ## Pre check
+    if test -z ${var_src_path}
+    then
+        echo "Source path not found"
+        return -1
+    fi
+    if test -z ${var_dst_path}
+    then
+        echo "Destination path not found"
+        return -1
+    fi
+
+    # commands prepare
     ## Rsync args
     # -v : verbose
     # -r : copies data recursively (but don’t preserve timestamps and permission while transferring data.
@@ -520,9 +570,43 @@ function fsync()
     # -h : human-readable, output numbers in a human-readable format.
     # --whole-file, -W  copy files whole (w/o delta-xfer algorithm)
 
+    # rsync -avhW --no-compress --exclude='*.git*' --exclude='*.repo*' --progress --omit-dir-times ${var_src_path}/* ${var_dst_path}
+    var_excute_cmd+=("-avhW" "--no-compress" "--progress" "--omit-dir-times" )
 
+    if [ "${flag_ssh}" = 'y' ]
+    then
+        var_excute_cmd+=("-e ssh")
+    fi
+
+    var_excute_cmd+=("${var_exclude_list[@]}")
+
+    if test -n "${var_src_host}"
+    then
+        var_excute_cmd+=("${var_src_host}:${var_src_path}/*")
+    else
+        var_excute_cmd+=("${var_src_path}/*")
+    fi
+
+    if test -n "${var_dst_host}"
+    then
+        var_excute_cmd+=("${var_dst_host}:${var_dst_path}")
+    else
+        var_excute_cmd+=("${var_dst_path}")
+    fi
+
+    ## do sync
     # rsync -avhW --no-compress --progress ${*}
-    rsync -avhW --no-compress --progress ${1}/* ${2}
+    # rsync -avhW --no-compress --progress ${var_src_path}/* ${var_dst_path}
+    # rsync -av -e ssh --exclude='*.git*' --exclude='*.swp*' ${local_path}/shellscripts/* ${remote_host}:${tools_path}/shellscripts/ &
+
+    # rsync -avhW --no-compress --exclude='*.git*' --exclude='*.repo*' --progress --omit-dir-times ${var_src_path}/* ${var_dst_path}
+    if [ "${flag_fake}" = 'y' ]
+    then
+        echo ${var_excute_cmd[@]}
+    else
+        echo ${var_excute_cmd[@]}
+        eval ${var_excute_cmd[@]}
+    fi
 }
 function eftp()
 {

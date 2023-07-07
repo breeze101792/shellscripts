@@ -144,6 +144,32 @@ function setup_usr()
     mkdir ${local_usr_path}/lib
 
 }
+function setup_config()
+{
+    echo "Setup Local config"
+    local local_config_path=${HOME}/.hsconfig.sh
+
+    echo "########################################################" >> ${local_config_path}
+    echo "#####                                              #####" >> ${local_config_path}
+    echo "#####    Template Setting                          #####" >> ${local_config_path}
+    echo "#####                                              #####" >> ${local_config_path}
+    echo "########################################################" >> ${local_config_path}
+
+    echo "########################################################" >> ${local_config_path}
+    echo "#####    Config Setting Zone                       #####" >> ${local_config_path}
+    echo "########################################################" >> ${local_config_path}
+    cat ${HS_SCRIPT_PATH}/shell/enviroment/config.sh | grep test |grep HS_CONFIG | sed "s/^.*&/#/g" >> ${local_config_path}
+    echo "########################################################" >> ${local_config_path}
+    echo "#####    Path Setting Zone                         #####" >> ${local_config_path}
+    echo "########################################################" >> ${local_config_path}
+    cat ${HS_SCRIPT_PATH}/shell/enviroment/config.sh | grep test |grep HS_PATH | sed "s/^.*&/#/g" >> ${local_config_path}
+    echo "########################################################" >> ${local_config_path}
+    echo "#####    Platform Setting Zone                     #####" >> ${local_config_path}
+    echo "########################################################" >> ${local_config_path}
+    cat ${HS_SCRIPT_PATH}/shell/enviroment/config.sh | grep test |grep HS_PLATFORM | sed "s/^.*&/#/g" >> ${local_config_path}
+
+    cat ${local_config_path}
+}
 function excute()
 {
     echo "Script Path:${HS_SCRIPT_PATH}"
@@ -167,6 +193,9 @@ function setup()
             -u|--usr)
                 setup_usr
                 ;;
+            -c|--config)
+                setup_config
+                ;;
             -x|--excute)
                 shift 1
                 excute $@
@@ -177,6 +206,7 @@ function setup()
                 printf "    %s%s%s\n" "-t|--tmux" "->" "Setup tmux"
                 printf "    %s%s%s\n" "-g|--git" "->" "Setup git"
                 printf "    %s%s%s\n" "-s|--shell" "->" "Setup shell"
+                printf "    %s%s%s\n" "-c|--config" "->" "Setup config"
                 printf "    %s%s%s\n" "-u|--usr" "->" "setup local usr"
                 printf "    %s%s%s\n" "-x|--excute" "->" "Excute with hs env"
                 printf "    %s%s%s\n" "-h|--help" "->" "Help me"

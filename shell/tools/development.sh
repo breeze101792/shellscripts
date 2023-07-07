@@ -1683,8 +1683,8 @@ function gpush()
     local var_topic=""
     local flag_user_check="n"
 
-    local var_remote="$(git remote show)"
-    local var_branch="$(git branch | grep '^\*' | sed 's/^\*//g')"
+    local var_remote="$(ginfo remote)"
+    local var_branch="$(ginfo branch)"
 
     while true
     do
@@ -1732,24 +1732,6 @@ function gpush()
         esac
         shift 1
     done
-    tracking_branch_name="$(git branch -a | grep '\->' | cut -d'/' -f 4)"
-    current_branch=$(git branch| sed -e '/^[^*]/d' -e 's/* //g' | tr -d "[:blank:]")
-
-    if [ "${var_branch}" = "" ] && $(echo ${tracking_branch_name} | grep detached)
-    then
-        var_branch=${tracking_branch_name}
-    elif [ "${var_branch}" = "" ] && $(echo ${current_branch} | grep detached)
-    then
-        var_branch=${current_branch}
-    fi
-    if [ "${var_branch}" = "" ] || $(echo ${var_branch} | grep detached)
-    then
-        echo "Branch Not found."
-        var_branch="master"
-        flag_user_check="y"
-    fi
-
-    var_branch="$(echo ${var_branch} | sed 's/\ +//g')"
 
     local cmd="git push ${var_remote} ${var_commit}:refs/${var_push_word}/${var_branch}"
 
@@ -1775,6 +1757,7 @@ function gpush()
 }
 function ginfo()
 {
+    local var_action='info'
     local var_cpath=$(pwd)
     local var_remote=""
     local var_branch=""
@@ -1783,8 +1766,7 @@ function ginfo()
 
     local tracking_branch_name=""
     local current_branch=""
-    local flag_info='n'
-    local flag_auto='n'
+    # local flag_info='n'
 
     if froot -f -m '.git' > /dev/null
     then
@@ -1800,57 +1782,55 @@ function ginfo()
 
     if [[ "$#" = "0" ]]
     then
-        flag_info='y'
+        var_action='info'
     fi
 
     while [[ "$#" != 0 ]]
     do
         case $1 in
-            -a|--auto-detect)
-                cli_helper -o "-a|--auto-detect" -d "Auto detect branch/remote"
+            -b|--branch|branch)
+                var_action='branch'
+                ;;
+            -r|--remote|remote)
+                var_action='remote'
                 ;;
             -h|--help)
                 cli_helper -c "ginfo" -cd "git information"
                 cli_helper -t "SYNOPSIS"
                 cli_helper -d "ginfo [Options] [Value]"
                 cli_helper -t "Options"
+                cli_helper -o "-b|--branch|branch" -d "get branch info"
+                cli_helper -o "-r|--remote|remote" -d "get remote info"
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;
             *)
-                flag_info='y'
-                flag_auto='y'
+                # var_action='info'
                 break
                 ;;
         esac
         shift 1
     done
 
-
-    if [ "${flag_auto}" = "y" ]
+    tracking_branch_name="$(git branch -a | grep '\->' | cut -d'/' -f 4)"
+    current_branch=$(git branch| sed -e '/^[^*]/d' -e 's/* //g' | tr -d "[:blank:]")
+    if test -n "$(echo ${var_branch} | grep detached)"·
     then
-        tracking_branch_name="$(git branch -a | grep '\->' | cut -d'/' -f 4)"
-        current_branch=$(git branch| sed -e '/^[^*]/d' -e 's/* //g' | tr -d "[:blank:]")
-
-        if [ "${var_branch}" = "" ] && $(echo ${tracking_branch_name} | grep detached)
+        if [ $(echo ${tracking_branch_name} | grep -v detached) ]
         then
             var_branch=${tracking_branch_name}
-        elif [ "${var_branch}" = "" ] && $(echo ${current_branch} | grep detached)
+        elif [ $(echo ${current_branch} | grep -v detached) ]
         then
             var_branch=${current_branch}
         fi
-        if [ "${var_branch}" = "" ] || $(echo ${var_branch} | grep detached)
-        then
-            echo "Branch Not found."
-            var_branch="master"
-            flag_user_check="y"
-        fi
     fi
-
-
-    var_branch="$(echo ${var_branch} | sed 's/\ +//g')"
-
-    if [ "${flag_info}" = "y" ]
+    if [ "${var_action}" = "branch" ]
+    then
+        echo "${var_branch}"
+    elif [ "${var_action}" = "remote" ]
+    then
+        echo "${var_remote}"
+    elif [ "${var_action}" = "info" ]
     then
         echo "Remote: \"${var_remote}\""
         echo "Branch: \"${var_branch}\""
