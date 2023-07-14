@@ -603,9 +603,11 @@ function filesync()
     if [ "${flag_fake}" = 'y' ]
     then
         echo ${var_excute_cmd[@]}
+        return $?
     else
         echo ${var_excute_cmd[@]}
         eval ${var_excute_cmd[@]}
+        return $?
     fi
 }
 function eftp()

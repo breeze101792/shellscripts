@@ -12,30 +12,44 @@
 function pvupdate()
 {
     local cpath=${PWD}
-    local target_file="proj.files"
-    if froot ${target_file}
+    local var_proj_folder="vimproj"
+    local var_list_file="proj.files"
+
+    local var_tags_file="tags"
+    local var_cscope_file="cscope.db"
+    local var_cctree_file="cctree.db"
+
+    if froot -m ${var_proj_folder} && test -f "${var_proj_folder}/${var_list_file}"
     then
-        echo "Found ${target_file} in $(pwd)"
+        cd ${var_proj_folder}
+        var_list_file=$(realpath "${var_list_file}")
+
+        echo "Found ${var_list_file} in $(pwd)"
+    elif froot -m ${var_proj_folder} && test -f "${var_proj_folder}/${var_list_file}"
+    then
+        var_list_file=$(realpath "${var_list_file}")
+
+        echo "Found ${var_list_file} in $(pwd)"
     else
-        echo "${target_file} not found."
+        echo "${var_list_file} not found."
         return 1
     fi
 
-    [ -f cscope.db ] && rm cscope.db 2> /dev/null
-    [ -f cctree.db ] && rm cctree.db 2> /dev/null
-    [ -f tags ] && rm tags 2> /dev/null
+    [ -f ${var_cscope_file} ] && rm ${var_cscope_file} 2> /dev/null
+    [ -f ${var_cctree_file} ] && rm ${var_cctree_file} 2> /dev/null
+    [ -f ${var_tags_file} ] && rm ${var_tags_file} 2> /dev/null
 
     ########################################
     # Add c(uncompress) for fast read
     # ctags -L proj.files
-    ctags -R --c++-kinds=+p --C-kinds=+p --fields=+iaS --extra=+q -L proj.files &
+    ctags -R --c++-kinds=+p --C-kinds=+p --fields=+iaS --extra=+q -L ${var_list_file} &
     # ctags -R  --C-kinds=+p --fields=+aS --extra=+q
-    # ctags -R -f ~/.vim/tags/c  --C-kinds=+p --fields=+aS --extra=+q
-    cscope -c -b -i proj.files -f cscope.db&
+    # ctags -R -f ~/.vim/${var_tags_file}/c  --C-kinds=+p --fields=+aS --extra=+q
+    cscope -c -b -i ${var_list_file} -f ${var_cscope_file}&
     wait
-    # command -V ccglue && ccglue -S cscope.out -o cctree.db
-    command -V ccglue && ccglue -S cscope.db -o cctree.db
-    # mv cscope.out cscope.db
+    # command -V ccglue && ccglue -S cscope.out -o ${var_cctree_file}
+    command -V ccglue && ccglue -S ${var_cscope_file} -o ${var_cctree_file}
+    # mv cscope.out ${var_cscope_file}
     echo "Tag generate successfully."
     ########################################
 
@@ -44,12 +58,20 @@ function pvupdate()
 function pvinit()
 {
     local var_cpath=$(pwd)
+    local var_proj_path="."
+    local var_proj_folder="vimproj"
+    local var_list_file="proj.files"
+
+    local var_tags_file="tags"
+    local var_cscope_file="cscope.db"
+    local var_cctree_file="cctree.db"
+    local var_config_file="proj.vim"
+
+    local src_path=()
     local file_ext=()
     local file_exclude=()
     local path_exclude=()
     local find_cmd=""
-    local target_list_name="proj.files"
-    local target_proj_name="proj.vim"
     local flag_append=n
     local flag_header=n
 
@@ -89,7 +111,7 @@ function pvinit()
                 shift 1
                 ;;
             -c|--clean)
-                local tmp_file_array=("${target_list_name}" "pvinit.err" "cscope.db" "cctree.db" "tags")
+                local tmp_file_array=("${var_list_file}" "${var_tags_file}" "${var_cscope_file}" "${var_cctree_file}" "pvinit.err" )
                 for each_file in "${tmp_file_array[@]}"
                 do
                     if [ -f "${each_file}" ]
@@ -123,26 +145,43 @@ function pvinit()
         esac
         shift 1
     done
+    # prechecking
     if [ "$#" = "0" ]
     then
         echo "Please enter folder name"
         return -1
+    else
+        src_path=($@)
     fi
 
-    local src_path=($@)
-
-    if [ "${flag_append}" = "n" ] && [ -f "${target_list_name}" ]
+    # path checking
+    if ! froot -m ${var_proj_folder}
     then
-        rm "${target_list_name}" 2> /dev/null
-    elif [ "${flag_append}" = "y" ] && froot ${target_list_name}
-    then
-        target_list_name="$(realpath ${target_list_name})"
-        cd ${var_cpath}
+        froot -m ".repo" || froot -m ".git"
+        mkdir -p ${var_proj_folder}
     fi
-    echo "Searching Path:${#src_path[@]}${src_path[@]}"
-    echo "file_ext: $file_ext"
-    echo "Project List File: ${target_list_name}"
+    var_proj_path="$(realpath .)"
+    var_proj_folder="${var_proj_path}/${var_proj_folder}"
+    var_list_file="${var_proj_folder}/${var_list_file}"
+    var_config_file="${var_proj_folder}/${var_config_file}"
 
+    # file cleaning
+    if [ "${flag_append}" = "n" ]
+    then
+        if [ -f "${var_list_file}" ]
+        then
+            rm "${var_list_file}" 2> /dev/null
+        fi
+    fi
+
+    echo "################################################################"
+    echo "Searching Path    : ${#src_path[@]}:${src_path[@]}"
+    echo "file_ext          : ${file_ext[@]}"
+    echo "Project List File : ${var_list_file}"
+    echo "Project file path : ${var_proj_path}"
+    echo "################################################################"
+
+    cd ${var_cpath}
     for each_path in ${src_path[@]}
     do
         # echo "Searching path: ${each_path}"
@@ -155,23 +194,25 @@ function pvinit()
             local tmp_path=$(realpath ${each_path})
             printc -c green "Searching folder: "
             echo -e "$tmp_path"
-            # find_cmd="find ${tmp_path} \( -type f ${file_ext[@]} \) | xargs realpath >> \"${target_list_name}\""
-            find_cmd="find ${tmp_path} \( -type f ${file_ext[@]} \) -not \( ${file_exclude[@]} \) ${path_exclude[@]} | xargs realpath >> \"${target_list_name}\""
-            # find_cmd="find ${tmp_path} \( -type f -iname '*.h' -o -iname '*.c' ${file_ext[@]} \) -a \( ${file_exclude[@]} \) | xargs realpath >> \"${target_list_name}\""
+            # find_cmd="find ${tmp_path} \( -type f ${file_ext[@]} \) | xargs realpath >> \"${var_list_file}\""
+            find_cmd="find ${tmp_path} \( -type f ${file_ext[@]} \) -not \( ${file_exclude[@]} \) ${path_exclude[@]} | xargs realpath >> \"${var_list_file}\""
+            # find_cmd="find ${tmp_path} \( -type f -iname '*.h' -o -iname '*.c' ${file_ext[@]} \) -a \( ${file_exclude[@]} \) | xargs realpath >> \"${var_list_file}\""
             echo ${find_cmd}
             eval "${find_cmd}"
         fi
     done
 
-    if [ "${flag_header}" = "y" ] && froot ${target_list_name}
+    if [ "${flag_header}" = "y" ] && test -f ${var_list_file}
     then
-        cat ${target_list_name} | grep "h$\|hpp$\|hxx$" | xargs dirname | sort |uniq |sed "s/^/set path+=/g" > ${target_proj_name}
+        cat ${var_list_file} | grep "h$\|hpp$\|hxx$" | xargs dirname | sort |uniq |sed "s/^/set path+=/g" > ${var_config_file}
     fi
 
-    local tmp_file="tmp.files"
-    cat "${target_list_name}" | sort | uniq > "${tmp_file}"
-    mv "${tmp_file}" "${target_list_name}"
+    local tmp_file="${var_proj_folder}/tmp.files"
+    cat "${var_list_file}" | sort | uniq > "${tmp_file}"
+    mv "${tmp_file}" "${var_list_file}"
     pvupdate
+    cd ${var_cpath}
+    echo Vim project create on ${var_proj_path}
 }
 
 function pvim()
@@ -187,6 +228,14 @@ function pvim()
     local flag_proj_vim=y
     local flag_time=n
     local var_timestamp="$(tstamp)"
+
+    local var_proj_folder="vimproj"
+    local var_list_file="proj.files"
+
+    local var_tags_file="tags"
+    local var_cscope_file="cscope.db"
+    local var_cctree_file="cctree.db"
+    local var_config_file="proj.vim"
 
     while [[ "$#" != 0 ]]
     do
@@ -221,7 +270,7 @@ function pvim()
                 ;;
             # ENV
             p|plugin)
-                if [[ "$#" > 2 ]]
+                if [[ "$#" > 1 ]]
                 then
                     tmp_var=$2
                     if [ "${tmp_var}" = "y" ] || [ "${tmp_var}" = "n" ] 
@@ -237,7 +286,7 @@ function pvim()
                 shift 1
                 ;;
             sc|schars)
-                if [[ "$#" > 2 ]]
+                if [[ "$#" > 1 ]]
                 then
                     tmp_var=$2
                     if [ "${tmp_var}" = "y" ] || [ "${tmp_var}" = "n" ] 
@@ -282,26 +331,43 @@ function pvim()
     vim_args+=$@
 
     # unset var
+    unset VIDE_SH_TAGS_DB
     unset VIDE_SH_CSCOPE_DB
     unset VIDE_SH_CCTREE_DB
-    unset VIDE_SH_PROJ_VIM
+    unset VIDE_SH_PROJ_SCRIPT
 
-    if froot "cscope.db"
+    if froot -m ${var_proj_folder}
     then
-        export VIDE_SH_CSCOPE_DB=`pwd`/cscope.db
+        var_proj_folder="$(realpath ${var_proj_folder})"
+    else
+        var_proj_folder="$(realpath .)"
+    fi
+    cd ${var_proj_folder}
+
+    if test -f "${var_tags_file}"
+    then
+        export VIDE_SH_TAGS_DB=$(realpath ${var_tags_file})
+        echo "Tags: ${VIDE_SH_TAGS_DB}"
+    else
+        echo "Project ctag not found."
+    fi
+
+    if test -f "${var_cscope_file}"
+    then
+        export VIDE_SH_CSCOPE_DB=$(realpath ${var_cscope_file})
         echo "CSCOPE: ${VIDE_SH_CSCOPE_DB}"
     else
         echo "Project ccscop tag not found."
     fi
-    if [ "${flag_proj_vim}" = "y" ] && test -f "proj.vim"
+    if [ "${flag_proj_vim}" = "y" ] && test -f "${var_config_file}"
     then
-        export VIDE_SH_PROJ_VIM=`pwd`/proj.vim
-        echo "Proj VIM: ${VIDE_SH_PROJ_VIM}"
+        export VIDE_SH_PROJ_SCRIPT=$(realpath ${var_config_file})
+        echo "Proj VIM: ${VIDE_SH_PROJ_SCRIPT}"
     fi
 
-    if [ "${flag_cctree}" = "y" ] && test -f "cctree.db"
+    if [ "${flag_cctree}" = "y" ] && test -f "${var_cctree_file}"
     then
-        export VIDE_SH_CCTREE_DB=`pwd`/cctree.db
+        export VIDE_SH_CCTREE_DB=$(realpath ${var_cctree_file})
         echo "CCTREE: ${VIDE_SH_CCTREE_DB}"
     fi
 
@@ -309,9 +375,11 @@ function pvim()
     eval ${HS_VAR_VIM} ${cmd_args[@]} ${vim_args[@]}
     echo "Launching: ${HS_VAR_VIM} ${cmd_args[@]} ${vim_args[@]}"
     # unset var
+    unset VIDE_SH_TAGS_DB
     unset VIDE_SH_CSCOPE_DB
     unset VIDE_SH_CCTREE_DB
-    unset VIDE_SH_PROJ_VIM
+    unset VIDE_SH_PROJ_SCRIPT
+
     unset VIDE_SH_SPECIAL_CHARS
     unset VIDE_SH_PLUGIN_ENABLE
 
