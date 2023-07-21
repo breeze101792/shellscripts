@@ -783,6 +783,9 @@ function banlys
             sh)
                 flag_shell="y"
                 ;;
+            --buffer-file|buffer|buf)
+                var_logfile="$(hs_varconfig -g ${HS_VAR_LOGFILE})"
+                ;;
             -v|--vim)
                 flag_edit=y
                 # shift 1
@@ -814,6 +817,7 @@ function banlys
                 cli_helper -o "-v|--vim" -d "dirrect vim log file "
                 cli_helper -o "-d|--debug" -d "Specify log file, and enable all debug filter, indicate -a,-f"
                 cli_helper -o "-f|--log-file" -d "Specify log file"
+                cli_helper -o "--buffer-file|buffer|buf" -d "Read file from hs buffer"
                 cli_helper -o "sh|c|python|make|android" -d "Enable log function"
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
@@ -837,51 +841,51 @@ function banlys
         echo "flag_android: ${flag_android}"
         echo "---- Android log analysis"
         # local total_line=$(wc -l ${var_logfile} | cut -d " " -f1 )
-        # cat ${var_logfile} | grep -B ${total_line} "error.*generated" | tac | grep -B ${total_line} "generated.$" | tac | mark_build
-        cat -n ${var_logfile} | grep "error.*generated\|^FAILED:" | mark_build
+        # cat ${var_logfile} | purify | grep -B ${total_line} "error.*generated" | tac | grep -B ${total_line} "generated.$" | tac | mark_build
+        cat -n ${var_logfile} | purify | grep "error.*generated\|^FAILED:" | mark_build
     fi
     if [ "${flag_make}" = "y" ]
     then
         echo "---- Make log analysis"
-        cat -n ${var_logfile} | grep "make.*Error\|Makefile.*\*\*\*" | mark_build
+        cat -n ${var_logfile} | purify | grep "make.*Error\|Makefile.*\*\*\*" | mark_build
     fi
     if [ "${flag_syntax}" = "y" ]
     then
         echo "---- Syntax log analysis"
         tmp_pattern="undefined reference"
-        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark -s red "${tmp_pattern}"
+        cat -n ${var_logfile} | purify | grep "${tmp_pattern}" | mark -s red "${tmp_pattern}"
 
         tmp_pattern="unknown type name"
-        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
+        cat -n ${var_logfile} | purify | grep "${tmp_pattern}" | mark "${tmp_pattern}"
     fi
 
     if [ "${flag_shell}" = "y" ]
     then
         echo "---- command missing "
-        cat -n ${var_logfile} | grep "command not found" | mark -s red "command not found"
+        cat -n ${var_logfile} | purify | grep "command not found" | mark -s red "command not found"
 
         echo "---- file/dir/permission missing "
         tmp_pattern="Can not find directory"
-        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
+        cat -n ${var_logfile} | purify | grep "${tmp_pattern}" | mark "${tmp_pattern}"
 
         tmp_pattern="No such file or directory"
-        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
+        cat -n ${var_logfile} | purify | grep "${tmp_pattern}" | mark "${tmp_pattern}"
 
         tmp_pattern="No space left on device"
-        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
+        cat -n ${var_logfile} | purify | grep "${tmp_pattern}" | mark "${tmp_pattern}"
 
         tmp_pattern="Permission denied"
-        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
+        cat -n ${var_logfile} | purify | grep "${tmp_pattern}" | mark "${tmp_pattern}"
 
         echo "---- shell error "
         tmp_pattern="Argument list too long"
-        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
+        cat -n ${var_logfile} | purify | grep "${tmp_pattern}" | mark "${tmp_pattern}"
     fi
     if [ "${flag_clike}" = "y" ]
     then
         echo "---- C/Cpp error"
         tmp_pattern="error:"
-        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark -s red "${tmp_pattern}"
+        cat -n ${var_logfile} | purify | grep "${tmp_pattern}" | mark -s red "${tmp_pattern}"
 
     fi
 
@@ -889,7 +893,7 @@ function banlys
     then
         echo "---- python error"
         tmp_pattern="Traceback (most recent call last):"
-        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark -s red "${tmp_pattern}"
+        cat -n ${var_logfile} | purify | grep "${tmp_pattern}" | mark -s red "${tmp_pattern}"
 
     fi
 
@@ -897,10 +901,10 @@ function banlys
     then
         echo "---- Others error"
         tmp_pattern="syntax error"
-        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
+        cat -n ${var_logfile} | purify | grep "${tmp_pattern}" | mark "${tmp_pattern}"
 
         tmp_pattern="\-\-help"
-        cat -n ${var_logfile} | grep "${tmp_pattern}" | mark "${tmp_pattern}"
+        cat -n ${var_logfile} | purify | grep "${tmp_pattern}" | mark "${tmp_pattern}"
     fi
 }
 ########################################################
@@ -970,7 +974,7 @@ function session
                 ;;
             --host|host|hostname|h)
                 local var_hostname="$(hostname)"
-                local tmp_name=$(session ls |grep ${var_hostname}| cut -d ':' -f 1| tr -d  ' ')
+                local tmp_name=$(session ls |grep "${var_hostname}" | cut -d ':' -f 1| tr -d  ' ')
                 if [ "${tmp_name}" != "" ]
                 then
                     var_action="attach"
@@ -1001,7 +1005,7 @@ function session
                 return 0
                 ;;
             *)
-                local tmp_name=$(session ls |grep ${1}| cut -d ':' -f 1 | tr -d ' ')
+                local tmp_name=$(session ls |grep "${1}" | cut -d ':' -f 1 | tr -d ' ')
                 if [ "${tmp_name}" != "" ]
                 then
                     var_action="attach-only"
@@ -1062,7 +1066,7 @@ function session
             for each_session in $(ls ${HS_TMP_SESSION_PATH})
             do
                 # ps -ef |grep 'tmux\|session' |grep "\/$each_session " 
-                if ps -ef |grep 'tmux\|session' | grep "\/$each_session " > /dev/null
+                if ps -ef |grep 'tmux\|session' | grep "/$each_session " > /dev/null
                 then
                     # printf "${each_session}: On\n"
                     eval ${var_cmd[@]} -S ${HS_TMP_SESSION_PATH}/${each_session} ls
@@ -1082,7 +1086,7 @@ function session
         for each_session in $(ls ${HS_TMP_SESSION_PATH})
         do
             # ps -ef |grep 'tmux\|session' |grep "\/$each_session " 
-            if ps -ef |grep 'tmux\|session' | grep "\/$each_session " > /dev/null
+            if ps -ef |grep 'tmux\|session' | grep "/$each_session " > /dev/null
             then
                 # printf "${each_session}: On\n"
                 eval ${var_cmd[@]} -S ${HS_TMP_SESSION_PATH}/${each_session} ls
@@ -1096,7 +1100,7 @@ function session
         for each_session in $(ls ${HS_TMP_SESSION_PATH})
         do
             # ps -ef |grep 'tmux\|session' |grep "\/$each_session " 
-            if ps -ef |grep 'tmux\|session' | grep "\/$each_session " > /dev/null
+            if ps -ef |grep 'tmux\|session' | grep "/$each_session " > /dev/null
             then
                 printf "Session on : ${each_session}\n"
             else
@@ -1252,6 +1256,7 @@ function erun()
     then
         # echo "An Error occur, return:${var_ret}" | mark -s red Error
         echo "Fail to finished cmd, Return (${var_ret}): $(printc -c yellow ${excute_cmd})"| mark -s red 'Fail'
+        echo "Note. You could use 'banlys buf' to analyze error."
     else
         echo "Finished cmd: $(printc -c yellow ${excute_cmd})"
     fi

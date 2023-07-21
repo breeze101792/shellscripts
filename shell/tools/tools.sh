@@ -10,6 +10,28 @@
 ########################################################
 #####    Text Function                             #####
 ########################################################
+function purify()
+{
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -h|--help)
+                cli_helper -c "purify" -cd "purify, remove color code, for text stream"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "purify [Options] [Value]"
+                # cli_helper -t "Options"
+                # cli_helper -o "-f|--file" -d "get stream from file"
+                return 0
+                ;;
+            *)
+                break
+                ;;
+        esac
+        shift 1
+    done
+
+    sed -r "s/\x1B\[([0-9]{1,3}(;[0-9]{1,2})?)?[mGK]//g"
+}
 function tpurify()
 {
     local var_action=''

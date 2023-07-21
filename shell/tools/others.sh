@@ -202,6 +202,9 @@ function doloop()
 {
     local var_list_cmd=""
     local var_cmd=""
+    local var_interval="0.5"
+    local var_terminate_condiction='default'
+    local flag_clean_on_start='n'
 
     while [[ "$#" != 0 ]]
     do
@@ -218,6 +221,17 @@ function doloop()
                 var_list_cmd="seq 0 ${2}"
                 shift 1
                 ;;
+            -i|--interval)
+                var_interval="${2}"
+                shift 1
+                ;;
+            -t|--terminate)
+                var_terminate_condiction="${2}"
+                shift 1
+                ;;
+            -cs|--clear)
+                flag_clean_on_start="y"
+                ;;
             # -v|--verbose)
             #     flag_verbose="y"
             #     shift 1
@@ -230,6 +244,9 @@ function doloop()
                 cli_helper -o "-c|--cmd" -d "do command with %p do replace by list item"
                 cli_helper -o "-l|--list" -d "generate list command"
                 cli_helper -o "-n|--number" -d "generate number seq command(Start from 0), accept one number input"
+                cli_helper -o "-i|--interval" -d "Specify running interval, default is 0.5 seconds"
+                cli_helper -o "-t|--terminate" -d "Specify terminate condiction, default/fail/success"
+                cli_helper -o "-cs|--clear" -d "Clear screen in each start"
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;
@@ -243,71 +260,97 @@ function doloop()
         esac
         shift 1
     done
+    if [ -z "${var_list_cmd}" ]  
+    then
+        var_list_cmd="seq 0 1000"
+        flag_fail_on_terminate='y'
+    fi
+
     if [ -z "${var_cmd}" ] && [ -z "${var_list_cmd}" ]  
     then
         echo "Not command found. cmd:${var_cmd}, list:${var_list_cmd}"
         return 1
     fi
 
+    local var_idx=0
     for each_input in $(eval ${var_list_cmd})
     do
-        echo ${each_input}
         local tmp_cmd=$(printf "$(echo ${var_cmd} | sed 's/%p/%s/g' )" "${each_input}")
+        if [ "${flag_clean_on_start}" = "y" ]
+        then
+            clear
+        fi
+        echo "[${var_idx}@$(tstamp)]:\"${each_input}\":\"${tmp_cmd}\""
+        echo "==========================================="
         # bash -c "${var_cmd} ${each_input}"
-        echo "> ${tmp_cmd}"
         eval "${tmp_cmd}"
-    done
-}
-function looptimes()
-{
-    local times=10
-    local interval=3
-    while [[ "$#" != 0 ]]
-    do
-        case $1 in
-            -t|--times)
-                times="${2}"
-                shift 1
-                ;;
-            -i|--interval)
-                interval="${2}"
-                shift 1
-                ;;
-            -v|--verbose)
-                flag_verbose="y"
-                shift 1
-                ;;
-            -h|--help)
-                cli_helper -c "looptimes" -cd "looptimes function"
-                cli_helper -t "SYNOPSIS"
-                cli_helper -d "looptimes [Options] [Value]"
-                cli_helper -t "Options"
-                cli_helper -o "-t|--time" -d "times to loop"
-                cli_helper -o "-i|--interval" -d "delay for each time"
-                cli_helper -o "-h|--help" -d "Print help function "
-                return 0
-                ;;
-            *)
-                break
-                # echo "Wrong args, $@"
-                # return -1
-                ;;
-        esac
-        shift 1
-    done
+        result=$?
+        echo "Return Value: ${result}"
+        echo "==========================================="
 
-    for each_time in $(seq 0 ${times})
-    do
-        clear
-        echo Times: ${each_time}, update ${interval} seconds
-        echo cmd: $@
-        echo "==========================================="
-        eval $@
-        echo "==========================================="
-        echo "Return Value: $?"
-        sleep ${interval}
+
+        if [ "${var_terminate_condiction}" = "fail" ] && [ "${result}" != "0" ]
+        then
+            echo "Command fail at \"${each_input}\":\"${tmp_cmd}\""
+            return ${result}
+        elif [ "${var_terminate_condiction}" = "success" ] && [ "${result}" = "0" ]
+        then
+            echo "Command success at \"${each_input}\":\"${tmp_cmd}\""
+            return ${result}
+        fi
+        sleep ${var_interval}
     done
 }
+# function looptimes()
+# {
+#     local times=10
+#     local interval=3
+#     while [[ "$#" != 0 ]]
+#     do
+#         case $1 in
+#             -t|--times)
+#                 times="${2}"
+#                 shift 1
+#                 ;;
+#             -i|--interval)
+#                 interval="${2}"
+#                 shift 1
+#                 ;;
+#             -v|--verbose)
+#                 flag_verbose="y"
+#                 shift 1
+#                 ;;
+#             -h|--help)
+#                 cli_helper -c "looptimes" -cd "looptimes function"
+#                 cli_helper -t "SYNOPSIS"
+#                 cli_helper -d "looptimes [Options] [Value]"
+#                 cli_helper -t "Options"
+#                 cli_helper -o "-t|--time" -d "times to loop"
+#                 cli_helper -o "-i|--interval" -d "delay for each time"
+#                 cli_helper -o "-h|--help" -d "Print help function "
+#                 return 0
+#                 ;;
+#             *)
+#                 break
+#                 # echo "Wrong args, $@"
+#                 # return -1
+#                 ;;
+#         esac
+#         shift 1
+#     done
+
+#     for each_time in $(seq 0 ${times})
+#     do
+#         clear
+#         echo Times: ${each_time}, update ${interval} seconds
+#         echo cmd: $@
+#         echo "==========================================="
+#         eval $@
+#         echo "==========================================="
+#         echo "Return Value: $?"
+#         sleep ${interval}
+#     done
+# }
 function runtime()
 {
     local source_file=$@
