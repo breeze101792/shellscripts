@@ -56,14 +56,42 @@ HS_SCRIPT_PATH=$(realpath ${HS_SCRIPT_PATH})
 
 function setup_shell()
 {
+    local rc_script=''
     if [ "${HS_ENV_SHELL}" = "bash" ]
     then
-        echo source ${HS_SCRIPT_PATH}/source.sh -s=${HS_ENV_SHELL}
-        echo source ${HS_SCRIPT_PATH}/source.sh -s=${HS_ENV_SHELL} >> ~/.bashrc
+        rc_script=~/.bashrc
     elif [ "${HS_ENV_SHELL}" = "zsh" ]
     then
+        rc_script=~/.zshrc
+    else
+        echo 'Shell not supported.'
+        return -1
+    fi
+    if test -f ${rc_script} && !cat ${rc_script} | grep 'source\.sh'
+    then
         echo source ${HS_SCRIPT_PATH}/source.sh -s=${HS_ENV_SHELL}
-        echo source ${HS_SCRIPT_PATH}/source.sh -s=${HS_ENV_SHELL} >> ~/.zshrc
+        echo source ${HS_SCRIPT_PATH}/source.sh -s=${HS_ENV_SHELL} >> ${rc_script}
+    else
+        echo 'HS Already install'
+    fi
+}
+function setup_shell_lite()
+{
+    local rc_script=''
+    if [ "${HS_ENV_SHELL}" = "bash" ]
+    then
+        rc_script=~/.bashrc
+    else
+        echo 'Shell not supported.'
+        return -1
+    fi
+    cp -f ${HS_SCRIPT_PATH}/tools/hslite/hslite.sh ${HOME}/hslite.sh
+    if test -f ${rc_script} && ! $(cat ${rc_script} | grep 'source\.sh')
+    then
+        echo source ${HOME}/hslite.sh
+        echo source ${HOME}/hslite.sh >> ${rc_script}
+    else
+        echo 'HS Already install'
     fi
 }
 function setup_tmux()
@@ -189,6 +217,9 @@ function setup()
                 ;;
             -s|--shell)
                 setup_shell
+                ;;
+            -l|--lite)
+                setup_shell_lite
                 ;;
             -u|--usr)
                 setup_usr

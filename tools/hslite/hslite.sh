@@ -1,14 +1,32 @@
 #!/bin/sh
 ################################################################
+####    Env
+################################################################
+[ -z ${HOME} ] && export HOME=/
+
+################################################################
+####    Settings
+################################################################
+# Use GNU ls colors when tab-completing files
+set colored-stats on
+
+# Disable history function
+set +o history
+
+# check the window size after each command and, if necessary,
+# update the values of LINES and COLUMNS.
+shopt -s checkwinsize
+
+# set a fancy prompt (non-color, unless we know we "want" color)
+case "$TERM" in
+    xterm-color|*-256color) color_prompt=yes;;
+esac
+
+################################################################
 ####    Alias
 ################################################################
 alias ll="ls -al"
 alias grep="grep --line-buffered"
-
-################################################################
-####    Env
-################################################################
-[ -z ${HOME} ] && export HOME=/
 
 ################################################################
 ####    Function
