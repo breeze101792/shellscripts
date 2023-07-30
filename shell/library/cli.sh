@@ -268,7 +268,7 @@ function cli_readkey()
     while [[ ${var_idx} < 3 ]]
     do
         read -t 0.005 -s -n 1 var_char 2>/dev/null >&2
-        if [ ${var_char} != "" ]
+        if [ "${var_char}" != "" ]
         then
             var_input_buffer="${var_input_buffer}${var_char}"
         else
