@@ -394,7 +394,7 @@ function pvim()
 # Serial debug
 function sdebug()
 {
-    local target_dev=/dev/ttyUSB0
+    local target_dev=''
     local baud_rate=115200
     local session_name="Debug"
     local serial_log_path="${HS_PATH_LOG}/serial"
@@ -442,7 +442,19 @@ function sdebug()
         esac
         shift 1
     done
-    retitle ${session_name}
+    if ! $(test -c "${target_dev}")
+    then
+        if ls /dev/ttyACM*
+        then
+            target_dev=$(ls /dev/ttyACM*|head -n 1)
+        elif ls /dev/ttyUSB*
+        then
+            target_dev=$(ls /dev/ttyUSB*|head -n 1)
+        else
+            echo 'Please specify serial device'
+        fi
+    fi
+    retitle ${session_name}-${target_dev}
     [ ! -d ${serial_log_path} ] && mkdir -p ${serial_log_path} && echo "Create ${serial_log_path}"
     var_cmd="${var_prefix} screen -S ${session_name} -L -Logfile ${serial_log_path}/debug_$(tstamp).log ${target_dev} ${baud_rate}"
     echo "${var_cmd}"
