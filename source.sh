@@ -20,7 +20,7 @@ then
 elif [ "$(echo $0 | sed 's/^-//g')" = "bash" ]
 then
     HS_ENV_SHELL="bash"
-    if [ -n "${BASH_SOURCE}" ] && [ -f "$(dirname ${BASH_SOURCE[0]})/source.sh" ] 
+    if [ -n "${BASH_SOURCE}" ] && [ -f "$(dirname ${BASH_SOURCE[0]})/source.sh" ]
     then
         # bash
         HS_SCRIPT_PATH="$(dirname ${BASH_SOURCE[0]})"
@@ -396,7 +396,7 @@ function hs_main
         flag_env_shell="$(echo ${SHELL} | rev |  cut -d '/' -f 1 | rev)"
     fi
 
-    if [ -z "${flag_env_lib_path}" ] && [ -n "${HS_SCRIPT_PATH}" ] 
+    if [ -z "${flag_env_lib_path}" ] && [ -n "${HS_SCRIPT_PATH}" ]
     then
         flag_env_lib_path="$(realpath ${HS_SCRIPT_PATH})"
     fi

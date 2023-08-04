@@ -37,3 +37,10 @@ then
         exec ${HS_VAR_TTY_START_CMD}
     fi
 fi
+
+if [ "${HS_PLATFORM_PRESERVE_DISK}" = "y" ]
+then
+    hs_print "Enable Local Usr"
+    # On Python, when you run it, it will not create __pycache__
+    export PYTHONDONTWRITEBYTECODE=1
+fi

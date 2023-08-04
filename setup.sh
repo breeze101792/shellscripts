@@ -13,7 +13,7 @@ then
 elif [ "$(echo $0 | sed 's/^-//g')" = "bash" ]
 then
     HS_ENV_SHELL="bash"
-    if [ -n "${BASH_SOURCE}" ] && [ -f "$(dirname ${BASH_SOURCE[0]})/source.sh" ] 
+    if [ -n "${BASH_SOURCE}" ] && [ -f "$(dirname ${BASH_SOURCE[0]})/source.sh" ]
     then
         # bash
         HS_SCRIPT_PATH="$(dirname ${BASH_SOURCE[0]})"
@@ -198,11 +198,17 @@ function setup_config()
 
     cat ${local_config_path}
 }
+function setup_hsexc()
+{
+    local var_hs_target_path="$(realpath ~/.usr/bin)/hsexc"
+    echo "${SHELL} ${HS_SCRIPT_PATH}/source.sh --silence=n -p ${HS_SCRIPT_PATH} -x "'$@' > ${var_hs_target_path}
+    chmod u+x ${var_hs_target_path}
+}
 function excute()
 {
     echo "Script Path:${HS_SCRIPT_PATH}"
-    echo ${HS_SCRIPT_PATH}/source.sh --silence=n -x -p ${HS_SCRIPT_PATH} $@
-    ${HS_SCRIPT_PATH}/source.sh --silence=n -x -p ${HS_SCRIPT_PATH} $@
+    echo ${SHELL} ${HS_SCRIPT_PATH}/source.sh --silence=n -p ${HS_SCRIPT_PATH} -x $@
+    ${SHELL} ${HS_SCRIPT_PATH}/source.sh --silence=n -p ${HS_SCRIPT_PATH} -x $@
 }
 function setup()
 {
@@ -227,6 +233,9 @@ function setup()
             -c|--config)
                 setup_config
                 ;;
+            -hs|--hs-excute)
+                setup_hsexc
+                ;;
             -x|--excute)
                 shift 1
                 excute $@
@@ -239,6 +248,7 @@ function setup()
                 printf "    %s%s%s\n" "-s|--shell" "->" "Setup shell"
                 printf "    %s%s%s\n" "-c|--config" "->" "Setup config"
                 printf "    %s%s%s\n" "-u|--usr" "->" "setup local usr"
+                printf "    %s%s%s\n" "-hs|--hs-excute" "->" "Create hs excutable on .usr/bin"
                 printf "    %s%s%s\n" "-x|--excute" "->" "Excute with hs env"
                 printf "    %s%s%s\n" "-h|--help" "->" "Help me"
                 return 0

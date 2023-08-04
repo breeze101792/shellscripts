@@ -38,10 +38,12 @@ test -z "${HS_CONFIG_FUNCTION_EXPORT}" && export HS_CONFIG_FUNCTION_EXPORT=n
 #####                                              #####
 ########################################################
 ########################################################
-test -z "${HS_PLATFORM_WSL}" && export HS_PLATFORM_WSL=n
+# Default on
 test -z "${HS_PLATFORM_LOCAL_USR}" && export HS_PLATFORM_LOCAL_USR=y
+# Default off
+test -z "${HS_PLATFORM_PRESERVE_DISK}" && export HS_PLATFORM_PRESERVE_DISK=n
 test -z "${HS_PLATFORM_TTY_START}" && export HS_PLATFORM_TTY_START=n
-test -z "${HS_PLATFORM_VM}" && export HS_PLATFORM_VM=n
+test -z "${HS_PLATFORM_WSL}" && export HS_PLATFORM_WSL=n
 
 ########################################################
 ########################################################

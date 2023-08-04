@@ -18,6 +18,8 @@ function pvupdate()
     local var_tags_file="tags"
     local var_cscope_file="cscope.db"
     local var_cctree_file="cctree.db"
+    local var_tmp_folder='tmp_db'
+    local flag_error_happen='n'
 
     if froot -m ${var_proj_folder} && test -f "${var_proj_folder}/${var_list_file}"
     then
@@ -35,23 +37,34 @@ function pvupdate()
         return 1
     fi
 
-    [ -f ${var_cscope_file} ] && rm ${var_cscope_file} 2> /dev/null
-    [ -f ${var_cctree_file} ] && rm ${var_cctree_file} 2> /dev/null
-    [ -f ${var_tags_file} ] && rm ${var_tags_file} 2> /dev/null
+    # [ -f ${var_cscope_file} ] && rm ${var_cscope_file} 2> /dev/null
+    # [ -f ${var_cctree_file} ] && rm ${var_cctree_file} 2> /dev/null
+    # [ -f ${var_tags_file} ] && rm ${var_tags_file} 2> /dev/null
+    [ -d ${var_tmp_folder} ] && rm -rf ${var_tmp_folder} 2> /dev/null
 
+    mkdir -p ${var_tmp_folder}
+    pushd ${var_tmp_folder}
     ########################################
     # Add c(uncompress) for fast read
     # ctags -L proj.files
-    ctags -R --c++-kinds=+p --C-kinds=+p --fields=+iaS --extra=+q -L ${var_list_file} &
+    $(ctags -R --c++-kinds=+p --C-kinds=+p --fields=+iaS --extra=+q -L ${var_list_file} || flag_error_happen='y' )&
     # ctags -R  --C-kinds=+p --fields=+aS --extra=+q
     # ctags -R -f ~/.vim/${var_tags_file}/c  --C-kinds=+p --fields=+aS --extra=+q
-    cscope -c -b -i ${var_list_file} -f ${var_cscope_file}&
+    cscope -c -b -i ${var_list_file} -f ${var_cscope_file} || flag_error_happen='y'
     wait
     # command -V ccglue && ccglue -S cscope.out -o ${var_cctree_file}
-    command -V ccglue && ccglue -S ${var_cscope_file} -o ${var_cctree_file}
+    command -V ccglue && ccglue -S ${var_cscope_file} -o ${var_cctree_file} || flag_error_happen='y'
     # mv cscope.out ${var_cscope_file}
-    echo "Tag generate successfully."
     ########################################
+    popd
+    if [ "${flag_error_happen}" = "n" ]
+    then
+        cp -rf ${var_tmp_folder}/* .
+    else
+        echo "Tag generate successfully."
+    fi
+
+    rm -rf ${var_tmp_folder} 2> /dev/null
 
     cd ${cpath}
 }
@@ -273,7 +286,7 @@ function pvim()
                 if [[ "$#" > 1 ]]
                 then
                     tmp_var=$2
-                    if [ "${tmp_var}" = "y" ] || [ "${tmp_var}" = "n" ] 
+                    if [ "${tmp_var}" = "y" ] || [ "${tmp_var}" = "n" ]
                     then
                         export VIDE_SH_PLUGIN_ENABLE=$2
                     else
@@ -289,7 +302,7 @@ function pvim()
                 if [[ "$#" > 1 ]]
                 then
                     tmp_var=$2
-                    if [ "${tmp_var}" = "y" ] || [ "${tmp_var}" = "n" ] 
+                    if [ "${tmp_var}" = "y" ] || [ "${tmp_var}" = "n" ]
                     then
                         export VIDE_SH_SPECIAL_CHARS=$2
                     else
@@ -347,28 +360,29 @@ function pvim()
     if test -f "${var_tags_file}"
     then
         export VIDE_SH_TAGS_DB=$(realpath ${var_tags_file})
-        echo "Tags: ${VIDE_SH_TAGS_DB}"
+        printf "Project %- 6s: %s\n" "Ctag" "${VIDE_SH_TAGS_DB}"
     else
-        echo "Project ctag not found."
+        printf "Project %- 6s: %s\n" "Ctag" "not found"
     fi
 
     if test -f "${var_cscope_file}"
     then
         export VIDE_SH_CSCOPE_DB=$(realpath ${var_cscope_file})
-        echo "CSCOPE: ${VIDE_SH_CSCOPE_DB}"
+        printf "Project %- 6s: %s\n" "CScope" "${VIDE_SH_CSCOPE_DB}"
     else
-        echo "Project ccscop tag not found."
+        printf "Project %- 6s: %s\n" "CScope" "not found"
     fi
+
     if [ "${flag_proj_vim}" = "y" ] && test -f "${var_config_file}"
     then
         export VIDE_SH_PROJ_SCRIPT=$(realpath ${var_config_file})
-        echo "Proj VIM: ${VIDE_SH_PROJ_SCRIPT}"
+        printf "Project %- 6s: %s\n" "Script" "${VIDE_SH_PROJ_SCRIPT}"
     fi
 
     if [ "${flag_cctree}" = "y" ] && test -f "${var_cctree_file}"
     then
         export VIDE_SH_CCTREE_DB=$(realpath ${var_cctree_file})
-        echo "CCTREE: ${VIDE_SH_CCTREE_DB}"
+        printf "Project %- 6s: %s\n" "CCTree" "${VIDE_SH_CCTREE_DB}"
     fi
 
     cd $cpath
@@ -754,6 +768,7 @@ function mbuild()
 function banlys
 {
     local var_logfile=""
+    local var_next_line='\n'
     local flag_android="y"
     local flag_make="y"
     local flag_syntax="y"
@@ -763,6 +778,7 @@ function banlys
     local flag_shell="y"
 
     local flag_edit="n"
+    local flag_found_error="n"
 
     if [[ "$#" = "0" ]]
     then
@@ -850,73 +866,164 @@ function banlys
 
     if [ "${flag_android}" = "y" ]
     then
-        echo "flag_android: ${flag_android}"
-        echo "---- Android log analysis"
+        tmp_buf=''
+        # echo "flag_android: ${flag_android}"
+        # echo "---- Android log analysis"
+        section_title="Android log analysis"
         # local total_line=$(wc -l ${var_logfile} | cut -d " " -f1 )
         # cat ${var_logfile} | purify | grep -B ${total_line} "error.*generated" | tac | grep -B ${total_line} "generated.$" | tac | mark_build
-        cat -n ${var_logfile} | purify | grep "error.*generated\|^FAILED:" | mark_build
+        line_buf=$(cat -n ${var_logfile} | purify | grep "error.*generated\|^FAILED:" | mark_build)
+        test -n "${line_buf}" && tmp_buf+=${line_buf}${var_next_line}
+
+        if test -n "${tmp_buf}"
+        then
+            echo "## ${section_title}"
+            echo '################################################################'
+            printf "%s\n" "${tmp_buf}"
+            flag_found_error='y'
+        fi
     fi
     if [ "${flag_make}" = "y" ]
     then
-        echo "---- Make log analysis"
-        cat -n ${var_logfile} | purify | grep "make.*Error\|Makefile.*\*\*\*" | mark_build
+        tmp_buf=''
+        # echo "---- Make log analysis"
+        section_title="Make log analysis"
+        line_buf=$(cat -n ${var_logfile} | purify | grep "make.*Error\|Makefile.*\*\*\*" | mark_build)
+        test -n "${line_buf}" && tmp_buf+=${line_buf}${var_next_line}
+
+        if test -n "${tmp_buf}"
+        then
+            echo "## ${section_title}"
+            echo '################################################################'
+            printf "%s\n" "${tmp_buf}"
+            flag_found_error='y'
+        fi
     fi
     if [ "${flag_syntax}" = "y" ]
     then
-        echo "---- Syntax log analysis"
+        tmp_buf=''
+        # echo "---- Syntax log analysis"
+        section_title="Syntax log analysis"
         tmp_pattern="undefined reference"
-        cat -n ${var_logfile} | purify | grep "${tmp_pattern}" | mark -s red "${tmp_pattern}"
+        line_buf=$(cat -n ${var_logfile} | purify | grep "${tmp_pattern}" | mark -s red "${tmp_pattern}")
+        test -n "${line_buf}" && tmp_buf+=${line_buf}${var_next_line}
 
         tmp_pattern="unknown type name"
-        cat -n ${var_logfile} | purify | grep "${tmp_pattern}" | mark "${tmp_pattern}"
+        line_buf=$(cat -n ${var_logfile} | purify | grep "${tmp_pattern}" | mark "${tmp_pattern}")
+        test -n "${line_buf}" && tmp_buf+=${line_buf}${var_next_line}
+
+        if test -n "${tmp_buf}"
+        then
+            echo "## ${section_title}"
+            echo '################################################################'
+            printf "%s\n" "${tmp_buf}"
+            flag_found_error='y'
+        fi
     fi
 
     if [ "${flag_shell}" = "y" ]
     then
-        echo "---- command missing "
-        cat -n ${var_logfile} | purify | grep "command not found" | mark -s red "command not found"
+        tmp_buf=''
+        # echo "---- command missing "
+        section_title="Shell Error"
+        line_buf=$(cat -n ${var_logfile} | purify | grep "command not found" | mark -s red "command not found")
+        test -n "${line_buf}" && tmp_buf+=${line_buf}${var_next_line}
 
-        echo "---- file/dir/permission missing "
+        # echo "---- file/dir/permission missing "
         tmp_pattern="Can not find directory"
-        cat -n ${var_logfile} | purify | grep "${tmp_pattern}" | mark "${tmp_pattern}"
+        line_buf=$(cat -n ${var_logfile} | purify | grep "${tmp_pattern}" | mark "${tmp_pattern}")
+        test -n "${line_buf}" && tmp_buf+=${line_buf}${var_next_line}
 
         tmp_pattern="No such file or directory"
-        cat -n ${var_logfile} | purify | grep "${tmp_pattern}" | mark "${tmp_pattern}"
+        line_buf=$(cat -n ${var_logfile} | purify | grep "${tmp_pattern}" | mark "${tmp_pattern}")
+        test -n "${line_buf}" && tmp_buf+=${line_buf}${var_next_line}
 
         tmp_pattern="No space left on device"
-        cat -n ${var_logfile} | purify | grep "${tmp_pattern}" | mark "${tmp_pattern}"
+        line_buf=$(cat -n ${var_logfile} | purify | grep "${tmp_pattern}" | mark "${tmp_pattern}")
+        test -n "${line_buf}" && tmp_buf+=${line_buf}${var_next_line}
 
         tmp_pattern="Permission denied"
-        cat -n ${var_logfile} | purify | grep "${tmp_pattern}" | mark "${tmp_pattern}"
+        line_buf=$(cat -n ${var_logfile} | purify | grep "${tmp_pattern}" | mark "${tmp_pattern}")
+        test -n "${line_buf}" && tmp_buf+=${line_buf}${var_next_line}
 
-        echo "---- shell error "
+        # echo "---- shell error "
         tmp_pattern="Argument list too long"
-        cat -n ${var_logfile} | purify | grep "${tmp_pattern}" | mark "${tmp_pattern}"
+        line_buf=$(cat -n ${var_logfile} | purify | grep "${tmp_pattern}" | mark "${tmp_pattern}")
+        test -n "${line_buf}" && tmp_buf+=${line_buf}${var_next_line}
+
+        if test -n "${tmp_buf}"
+        then
+            echo "## ${section_title}"
+            echo '################################################################'
+            printf "%s\n" "${tmp_buf}"
+            flag_found_error='y'
+        fi
     fi
     if [ "${flag_clike}" = "y" ]
     then
-        echo "---- C/Cpp error"
-        tmp_pattern="error:"
-        cat -n ${var_logfile} | purify | grep "${tmp_pattern}" | mark -s red "${tmp_pattern}"
+        tmp_buf=''
 
+        # echo "---- C/Cpp error"
+        section_title="C/Cpp error"
+        tmp_pattern="error:"
+        line_buf=$(cat -n ${var_logfile} | purify | grep "${tmp_pattern}" | mark -s red "${tmp_pattern}")
+        test -n "${line_buf}" && tmp_buf+=${line_buf}${var_next_line}
+
+        if test -n "${tmp_buf}"
+        then
+            echo "## ${section_title}"
+            echo '################################################################'
+            printf "%s\n" "${tmp_buf}"
+            flag_found_error='y'
+        fi
     fi
 
     if [ "${flag_python}" = "y" ]
     then
-        echo "---- python error"
+        tmp_buf=''
+        # echo "---- python error"
+        section_title="python error"
         tmp_pattern="Traceback (most recent call last):"
-        cat -n ${var_logfile} | purify | grep "${tmp_pattern}" | mark -s red "${tmp_pattern}"
+        line_buf=$(cat -n ${var_logfile} | purify | grep "${tmp_pattern}" | mark -s red "${tmp_pattern}")
+        test -n "${line_buf}" && tmp_buf+=${line_buf}${var_next_line}
 
+        if test -n "${tmp_buf}"
+        then
+            echo "## ${section_title}"
+            echo '################################################################'
+            printf "%s\n" "${tmp_buf}"
+            flag_found_error='y'
+        fi
     fi
 
     if [ "${flag_others}" = "y" ]
     then
-        echo "---- Others error"
+        tmp_buf=''
+        # echo "---- Others error"
+        section_title="Others error"
         tmp_pattern="syntax error"
-        cat -n ${var_logfile} | purify | grep "${tmp_pattern}" | mark "${tmp_pattern}"
+        line_buf=$(cat -n ${var_logfile} | purify | grep "${tmp_pattern}" | mark "${tmp_pattern}")
+        test -n "${line_buf}" && tmp_buf+=${line_buf}${var_next_line}
 
-        tmp_pattern="\-\-help"
-        cat -n ${var_logfile} | purify | grep "${tmp_pattern}" | mark "${tmp_pattern}"
+        # tmp_pattern='\-\-help'
+        tmp_pattern='[-]\{2\}help'
+        line_buf=$(cat -n ${var_logfile} | purify | grep "${tmp_pattern}" | mark "${tmp_pattern}")
+        test -n "${line_buf}" && tmp_buf+=${line_buf}${var_next_line}
+
+        if test -n "${tmp_buf}"
+        then
+            echo "## ${section_title}"
+            echo '################################################################'
+            printf "%s\n" "${tmp_buf}"
+            flag_found_error='y'
+        fi
+    fi
+
+    if [ "${flag_found_error}" = 'y' ]
+    then
+        echo '################################################################'
+    else
+        echo 'Error not found.'
     fi
 }
 ########################################################
@@ -1077,7 +1184,7 @@ function session
         then
             for each_session in $(ls ${HS_TMP_SESSION_PATH})
             do
-                # ps -ef |grep 'tmux\|session' |grep "\/$each_session " 
+                # ps -ef |grep 'tmux\|session' |grep "\/$each_session "
                 if ps -ef |grep 'tmux\|session' | grep "/$each_session " > /dev/null
                 then
                     # printf "${each_session}: On\n"
@@ -1097,7 +1204,7 @@ function session
         echo "${var_action} session by ps:"
         for each_session in $(ls ${HS_TMP_SESSION_PATH})
         do
-            # ps -ef |grep 'tmux\|session' |grep "\/$each_session " 
+            # ps -ef |grep 'tmux\|session' |grep "\/$each_session "
             if ps -ef |grep 'tmux\|session' | grep "/$each_session " > /dev/null
             then
                 # printf "${each_session}: On\n"
@@ -1111,7 +1218,7 @@ function session
         echo "${var_action} session by ps:"
         for each_session in $(ls ${HS_TMP_SESSION_PATH})
         do
-            # ps -ef |grep 'tmux\|session' |grep "\/$each_session " 
+            # ps -ef |grep 'tmux\|session' |grep "\/$each_session "
             if ps -ef |grep 'tmux\|session' | grep "/$each_session " > /dev/null
             then
                 printf "Session on : ${each_session}\n"
@@ -1195,6 +1302,7 @@ function erun()
     local flag_log_enable="y"
     local flag_color_enable="n"
     local flag_send_mail="n"
+    local flag_analize_fail="n"
     local var_cmd_ret='0'
 
     while [[ "$#" != 0 ]]
@@ -1212,6 +1320,9 @@ function erun()
             -m|--mail)
                 flag_send_mail="y"
                 ;;
+            -d|--debug)
+                flag_analize_fail="y"
+                ;;
             -h|--help)
                 cli_helper -c "erun"
                 cli_helper -t "SYNOPSIS"
@@ -1221,6 +1332,7 @@ function erun()
                 cli_helper -o "-L|--no-log" -d "Run with record log"
                 cli_helper -o "-c|--color" -d "Enable Color"
                 cli_helper -o "-m|--mail" -d "Send mail after command is finished"
+                cli_helper -o "-d|--debug" -d "use banlys to debug"
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 return 0
@@ -1268,7 +1380,12 @@ function erun()
     then
         # echo "An Error occur, return:${var_ret}" | mark -s red Error
         echo "Fail to finished cmd, Return (${var_ret}): $(printc -c yellow ${excute_cmd})"| mark -s red 'Fail'
-        echo "Note. You could use 'banlys buf' to analyze error."
+        if [ "${flag_analize_fail}" = 'y' ]
+        then
+            banlys -a -d ${log_file}
+        else
+            echo "Note. You could use 'banlys buf' to analyze error."
+        fi
     else
         echo "Finished cmd: $(printc -c yellow ${excute_cmd})"
     fi
