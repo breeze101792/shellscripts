@@ -67,7 +67,8 @@ function setup_shell()
         echo 'Shell not supported.'
         return -1
     fi
-    if test -f ${rc_script} && !cat ${rc_script} | grep 'source\.sh'
+    touch ${rc_script}
+    if ! cat ${rc_script} | grep 'source\.sh'
     then
         echo source ${HS_SCRIPT_PATH}/source.sh -s=${HS_ENV_SHELL}
         echo source ${HS_SCRIPT_PATH}/source.sh -s=${HS_ENV_SHELL} >> ${rc_script}

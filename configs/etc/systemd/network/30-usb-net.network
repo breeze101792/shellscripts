@@ -1,0 +1,7 @@
+[Match]
+Name=usb0
+
+[Network]
+Address=169.254.7.11/16
+# Gateway=169.254.7.11
+# DNS=10.1.10.1

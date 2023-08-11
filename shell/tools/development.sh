@@ -19,7 +19,43 @@ function pvupdate()
     local var_cscope_file="cscope.db"
     local var_cctree_file="cctree.db"
     local var_tmp_folder='tmp_db'
-    local flag_error_happen='n'
+    local flag_error_happen='y'
+
+    local flag_system_include='n'
+
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -si|--system-include)
+                flag_system_include='y'
+                ;;
+            -v|--verbose)
+                flag_verbose="y"
+                shift 1
+                ;;
+            -h|--help)
+                cli_helper -c "pvupdate" -cd "pvupdate function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "pvupdate [Options] [Value]"
+                cli_helper -t "Options"
+                # cli_helper -o "-a|--append" -d "append file extension on search"
+                # cli_helper -o "-v|--verbose" -d "Verbose print "
+                cli_helper -o "-si|--system-include" -d "Add linux system include "
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                echo "Wrong args, $@"
+                return -1
+                ;;
+        esac
+        shift 1
+    done
+
+    if [ "${flag_system_include}" = "n" ]
+    then
+        var_cscope_cmd+=("-k")
+    fi
 
     if froot -m ${var_proj_folder} && test -f "${var_proj_folder}/${var_list_file}"
     then
@@ -46,22 +82,34 @@ function pvupdate()
     pushd ${var_tmp_folder}
     ########################################
     # Add c(uncompress) for fast read
+
+    ## Ctags
     # ctags -L proj.files
-    $(ctags -R --c++-kinds=+p --C-kinds=+p --fields=+iaS --extra=+q -L ${var_list_file} || flag_error_happen='y' )&
+    $(ctags -R --c++-kinds=+p --C-kinds=+p --fields=+iaS --extra=+q -L ${var_list_file} || echo 'catg run fail' && flag_error_happen='n' )&
     # ctags -R  --C-kinds=+p --fields=+aS --extra=+q
     # ctags -R -f ~/.vim/${var_tags_file}/c  --C-kinds=+p --fields=+aS --extra=+q
-    cscope -c -b -i ${var_list_file} -f ${var_cscope_file} || flag_error_happen='y'
+
+    ## Cscope
+    # cscope -c -b -i ${var_list_file} -f ${var_cscope_file} || echo 'cscope run fail' && flag_error_happen='n'
+    cscope -c -b -R -q ${var_cscope_cmd[@]} -i ${var_list_file} -f ${var_cscope_file} || echo 'cscope run fail' && flag_error_happen='n'
+
     wait
     # command -V ccglue && ccglue -S cscope.out -o ${var_cctree_file}
-    command -V ccglue && ccglue -S ${var_cscope_file} -o ${var_cctree_file} || flag_error_happen='y'
+    command -V ccglue && ccglue -S ${var_cscope_file} -o ${var_cctree_file}
     # mv cscope.out ${var_cscope_file}
     ########################################
     popd
     if [ "${flag_error_happen}" = "n" ]
     then
-        cp -rf ${var_tmp_folder}/* .
-    else
+        cp -rf ${var_tmp_folder}/${var_tags_file} .
+        cp -rf ${var_tmp_folder}/*.db .
         echo "Tag generate successfully."
+    else
+        ls ${var_tmp_folder}
+        echo "Fail to generate tag"
+        test -f ${var_tags_file} || echo 'Update ctags' && cp ${var_tmp_folder}/${var_tags_file}
+        test -f ${var_cscope_file} || echo 'Update cscope' && cp ${var_tmp_folder}/${var_cscope_file}
+        test -f ${var_cctree_file} || echo 'Update cctree' && cp ${var_tmp_folder}/${var_cctree_file}
     fi
 
     rm -rf ${var_tmp_folder} 2> /dev/null
@@ -74,12 +122,14 @@ function pvinit()
     local var_proj_path="."
     local var_proj_folder="vimproj"
     local var_list_file="proj.files"
+    local var_list_header_file="proj_header.files"
 
     local var_tags_file="tags"
     local var_cscope_file="cscope.db"
     local var_cctree_file="cctree.db"
     local var_config_file="proj.vim"
 
+    local header_rule=()
     local src_path=()
     local file_ext=()
     local file_exclude=()
@@ -104,6 +154,9 @@ function pvinit()
     file_ext+=("-o -iname '*.hpp'")
 
     file_ext+=("-o -iname '*.java'")
+
+    header_rule+=("-iname 'include'")
+    header_rule+=("-o -iname 'inc'")
 
     while [[ "$#" != 0 ]]
     do
@@ -133,9 +186,11 @@ function pvinit()
                         rm ${each_file}
                     fi
                 done
-                return 0
+                test -d ${var_proj_folder} && rm -rf ${var_proj_folder}
+
+                # return 0
                 ;;
-            --header)
+            -H|--header)
                 flag_header=y
                 ;;
             -h|--help)
@@ -148,7 +203,7 @@ function pvinit()
                 cli_helper -o "-x|--exclude" -d "exclude file on search"
                 cli_helper -o "-xp|--exclude-path" -d "exclude file path on search"
                 cli_helper -o "-c|--clean" -d "Clean related files"
-                cli_helper -o "--header" -d "Add header vim code"
+                cli_helper -o "-H|--header" -d "Add header vim code"
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;
@@ -177,6 +232,7 @@ function pvinit()
     var_proj_folder="${var_proj_path}/${var_proj_folder}"
     var_list_file="${var_proj_folder}/${var_list_file}"
     var_config_file="${var_proj_folder}/${var_config_file}"
+    var_list_header_file="${var_proj_folder}/${var_list_header_file}"
 
     # file cleaning
     if [ "${flag_append}" = "n" ]
@@ -205,24 +261,43 @@ function pvinit()
             continue
         else
             local tmp_path=$(realpath ${each_path})
+
+            ## Searcing srouce file
             printc -c green "Searching folder: "
             echo -e "$tmp_path"
-            # find_cmd="find ${tmp_path} \( -type f ${file_ext[@]} \) | xargs realpath >> \"${var_list_file}\""
             find_cmd="find ${tmp_path} \( -type f ${file_ext[@]} \) -not \( ${file_exclude[@]} \) ${path_exclude[@]} | xargs realpath >> \"${var_list_file}\""
-            # find_cmd="find ${tmp_path} \( -type f -iname '*.h' -o -iname '*.c' ${file_ext[@]} \) -a \( ${file_exclude[@]} \) | xargs realpath >> \"${var_list_file}\""
             echo ${find_cmd}
             eval "${find_cmd}"
+
+            ## Search inlcude
+            if [ "${flag_header}" = "y" ]
+            then
+                find_cmd="find ${tmp_path} \( -type d ${header_rule[@]} \) ${path_exclude[@]} | xargs realpath >> \"${var_list_header_file}\""
+                echo ${find_cmd}
+                eval "${find_cmd}"
+            fi
         fi
     done
 
-    if [ "${flag_header}" = "y" ] && test -f ${var_list_file}
-    then
-        cat ${var_list_file} | grep "h$\|hpp$\|hxx$" | xargs dirname | sort |uniq |sed "s/^/set path+=/g" > ${var_config_file}
-    fi
-
+    ## Remove duplication
     local tmp_file="${var_proj_folder}/tmp.files"
+    # resort file list
     cat "${var_list_file}" | sort | uniq > "${tmp_file}"
     mv "${tmp_file}" "${var_list_file}"
+
+    cat "${var_list_header_file}" | sort | uniq > "${tmp_file}"
+    mv "${tmp_file}" "${var_list_header_file}"
+
+
+    # update vim script file
+    if [ "${flag_header}" = "y" ] && test -f ${var_list_header_file}
+    then
+        cat ${var_list_header_file} | sed "s/^/set path+=/g" > ${var_config_file}
+    fi
+
+    test -f "${var_config_file}" || touch ${var_config_file}
+
+
     pvupdate
     cd ${var_cpath}
     echo Vim project create on ${var_proj_path}
@@ -357,38 +432,42 @@ function pvim()
     fi
     cd ${var_proj_folder}
 
+    export VIDE_SH_PROJ_DATA_PATH=$(realpath ${var_proj_folder})
+    printf "Project %- 6s: %s\n" "Path" "${VIDE_SH_PROJ_DATA_PATH}"
+
     if test -f "${var_tags_file}"
     then
         export VIDE_SH_TAGS_DB=$(realpath ${var_tags_file})
-        printf "Project %- 6s: %s\n" "Ctag" "${VIDE_SH_TAGS_DB}"
-    else
-        printf "Project %- 6s: %s\n" "Ctag" "not found"
+        # printf "Project %- 6s: %s\n" "Ctag" "${VIDE_SH_TAGS_DB}"
+    # else
+    #     printf "Project %- 6s: %s\n" "Ctag" "not found"
     fi
 
     if test -f "${var_cscope_file}"
     then
         export VIDE_SH_CSCOPE_DB=$(realpath ${var_cscope_file})
-        printf "Project %- 6s: %s\n" "CScope" "${VIDE_SH_CSCOPE_DB}"
-    else
-        printf "Project %- 6s: %s\n" "CScope" "not found"
+        # printf "Project %- 6s: %s\n" "CScope" "${VIDE_SH_CSCOPE_DB}"
+    # else
+    #     printf "Project %- 6s: %s\n" "CScope" "not found"
     fi
 
     if [ "${flag_proj_vim}" = "y" ] && test -f "${var_config_file}"
     then
         export VIDE_SH_PROJ_SCRIPT=$(realpath ${var_config_file})
-        printf "Project %- 6s: %s\n" "Script" "${VIDE_SH_PROJ_SCRIPT}"
+        # printf "Project %- 6s: %s\n" "Script" "${VIDE_SH_PROJ_SCRIPT}"
     fi
 
     if [ "${flag_cctree}" = "y" ] && test -f "${var_cctree_file}"
     then
         export VIDE_SH_CCTREE_DB=$(realpath ${var_cctree_file})
-        printf "Project %- 6s: %s\n" "CCTree" "${VIDE_SH_CCTREE_DB}"
+        # printf "Project %- 6s: %s\n" "CCTree" "${VIDE_SH_CCTREE_DB}"
     fi
 
     cd $cpath
     eval ${HS_VAR_VIM} ${cmd_args[@]} ${vim_args[@]}
     echo "Launching: ${HS_VAR_VIM} ${cmd_args[@]} ${vim_args[@]}"
     # unset var
+    unset VIDE_SH_PROJ_DATA_PATH
     unset VIDE_SH_TAGS_DB
     unset VIDE_SH_CSCOPE_DB
     unset VIDE_SH_CCTREE_DB

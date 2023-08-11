@@ -2,6 +2,7 @@ hs_print "Source Linux(lx,ub) project"
 alias lcd="lxcd "
 function lxide()
 {
+    local cpath=$(pwd)
     local arch=arm
     local target_dirs=("block" "certs" "crypto" "fs" "include" "init" "ipc" "kernel" "lib" "mm" "net" "security" "virt")
 
@@ -27,8 +28,10 @@ function lxide()
         esac
         shift 1
     done
+    proot
     target_dirs+=("arch/${arch}/")
-    pvinit ${target_dirs[@]}
+    pvinit ${target_dirs[@]} $@
+    cd ${cpath}
 }
 function lxcd()
 {
