@@ -87,7 +87,8 @@ function setup_shell_lite()
         return -1
     fi
     cp -f ${HS_SCRIPT_PATH}/tools/hslite/hslite.sh ${HOME}/hslite.sh
-    if test -f ${rc_script} && ! $(cat ${rc_script} | grep 'source\.sh')
+    touch ${rc_script}
+    if ! $(cat ${rc_script} | grep 'source\.sh')
     then
         echo source ${HOME}/hslite.sh
         echo source ${HOME}/hslite.sh >> ${rc_script}
@@ -247,6 +248,7 @@ function setup()
                 printf "    %s%s%s\n" "-t|--tmux" "->" "Setup tmux"
                 printf "    %s%s%s\n" "-g|--git" "->" "Setup git"
                 printf "    %s%s%s\n" "-s|--shell" "->" "Setup shell"
+                printf "    %s%s%s\n" "-l|--lite" "->" "Setup lite shell"
                 printf "    %s%s%s\n" "-c|--config" "->" "Setup config"
                 printf "    %s%s%s\n" "-u|--usr" "->" "setup local usr"
                 printf "    %s%s%s\n" "-hs|--hs-excute" "->" "Create hs excutable on .usr/bin"

@@ -285,18 +285,16 @@ function pvinit()
     cat "${var_list_file}" | sort | uniq > "${tmp_file}"
     mv "${tmp_file}" "${var_list_file}"
 
-    cat "${var_list_header_file}" | sort | uniq > "${tmp_file}"
-    mv "${tmp_file}" "${var_list_header_file}"
-
-
     # update vim script file
     if [ "${flag_header}" = "y" ] && test -f ${var_list_header_file}
     then
+        cat "${var_list_header_file}" | sort | uniq > "${tmp_file}"
+        mv "${tmp_file}" "${var_list_header_file}"
+
         cat ${var_list_header_file} | sed "s/^/set path+=/g" > ${var_config_file}
     fi
 
     test -f "${var_config_file}" || touch ${var_config_file}
-
 
     pvupdate
     cd ${var_cpath}
