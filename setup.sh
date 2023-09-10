@@ -197,6 +197,10 @@ function setup_config()
     echo "#####    Platform Setting Zone                     #####" >> ${local_config_path}
     echo "########################################################" >> ${local_config_path}
     cat ${HS_SCRIPT_PATH}/shell/enviroment/config.sh | grep test |grep HS_PLATFORM | sed "s/^.*&/#/g" >> ${local_config_path}
+    echo "########################################################" >> ${local_config_path}
+    echo "#####    VARs Zone                                 #####" >> ${local_config_path}
+    echo "########################################################" >> ${local_config_path}
+    cat ${HS_SCRIPT_PATH}/shell/enviroment/config.sh | grep test |grep HS_VAR | sed "s/^.*&/#/g" >> ${local_config_path}
 
     cat ${local_config_path}
 }

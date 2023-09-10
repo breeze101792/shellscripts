@@ -54,5 +54,4 @@ alias glog="git log --graph --abbrev-commit --decorate --format=format:'%C(bold 
 #alias lg="git $lg1"
 alias nlfsgit="GIT_LFS_SKIP_SMUDGE=1 git "
 
-alias proot="froot -m .repo || froot -m .git"
 alias mdebug="sdebug --device /dev/ttyUSB1"

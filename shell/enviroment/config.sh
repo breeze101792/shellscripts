@@ -66,6 +66,8 @@ test -z "${HS_PATH_LOG}" && export HS_PATH_LOG="${HOME}/log"
 # it's better to set tmp to ramdisk
 test -z "${HS_PATH_TMP}" && export HS_PATH_TMP="${HOME}/.cache/hs_temp"
 
+test -z "${HS_PATH_LOCAL_USR}" && export HS_PATH_LOCAL_USR="${HOME}/.usr"
+
 test -z "${HS_PATH_PYTHEN_ENV}" && export HS_PATH_PYTHEN_ENV="${HOME}/env/pyenv"
 # ECD
 test -z "${HS_VAR_ECD_NAME_0}" && export HS_VAR_ECD_NAME_0="@(tmp|t)"

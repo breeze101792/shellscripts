@@ -90,6 +90,9 @@ function wifi()
                 cli_helper -o "-k|--passkey" -d "add netowrk options, passkey"
                 cli_helper -o "-i|--ssid" -d "add netowrk options, name/ssid"
                 cli_helper -o "-h|--help" -d "Print help function "
+
+                cli_helper -t "Wpa Commands"
+                cli_helper -d "sudo wpa_supplicant -B -Dnl80211 -i wlan0 -dddd -c /proj/mtk19320/workspace/config/wpa_supplicant.conf -f ./wpa_supplicant.log"
                 return 0
                 ;;
             *)
@@ -260,13 +263,13 @@ function doloop()
         esac
         shift 1
     done
-    if [ -z "${var_list_cmd}" ]  
+    if [ -z "${var_list_cmd}" ]
     then
         var_list_cmd="seq 0 1000"
         flag_fail_on_terminate='y'
     fi
 
-    if [ -z "${var_cmd}" ] && [ -z "${var_list_cmd}" ]  
+    if [ -z "${var_cmd}" ] && [ -z "${var_list_cmd}" ]
     then
         echo "Not command found. cmd:${var_cmd}, list:${var_list_cmd}"
         return 1

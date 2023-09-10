@@ -550,6 +550,7 @@ function sdebug()
     var_cmd="${var_prefix} screen -S ${session_name} -L -Logfile ${serial_log_path}/debug_$(tstamp).log ${target_dev} ${baud_rate}"
     echo "${var_cmd}"
     eval "${var_cmd}"
+    echo "${var_cmd}"
 }
 
 ########################################################
@@ -1164,8 +1165,14 @@ function session
                 var_action="create"
                 break
                 ;;
-            -da|--deattach-all|da)
-                var_action="deatach-all"
+            -da|--detach-all|da)
+                var_action="detach-all"
+                break
+                ;;
+            -d|--detach|d)
+                var_action="detach"
+                var_taget_session=${2}
+                shift 1
                 break
                 ;;
             --host|host|hostname|h)
@@ -1186,18 +1193,18 @@ function session
                 cli_helper -t "SYNOPSIS"
                 cli_helper -d "session [Options] [Value]"
                 cli_helper -t "Options"
-                cli_helper -o "-l|--list" -d "list session"
-                cli_helper -o "-L|--real-list" -d "use command info to list session"
-                cli_helper -o "-rm|--remove" -d "remove session with session list"
-                cli_helper -o "-a|--attach" -d "attach session with session name"
-                cli_helper -o "-ao|--attach-only|ao" -d "attach session with session name"
-                cli_helper -o "-c|--create" -d "create session with session name"
-                cli_helper -o "-da|--deatach-all" -d "deatach all session"
-                cli_helper -o "-d|--deatach" -d "deatach session"
                 cli_helper -o "-D|--default" -d "use default socket"
-                cli_helper -o "-p|--purge" -d "purge socket"
-                cli_helper -o "--host|host|hostname|h" -d "deatach all session"
+                cli_helper -o "-L|--real-list" -d "use command info to list session"
+                cli_helper -o "-ao|--attach-only|ao" -d "attach session with session name"
+                cli_helper -o "-a|--attach" -d "attach session with session name"
+                cli_helper -o "-c|--create" -d "create session with session name"
+                cli_helper -o "-da|--detach-all" -d "detach all session"
+                cli_helper -o "-d|--detach" -d "detach session"
                 cli_helper -o "-h|--help" -d "Print help function "
+                cli_helper -o "-l|--list" -d "list session"
+                cli_helper -o "-p|--purge" -d "purge socket"
+                cli_helper -o "-rm|--remove" -d "remove session with session list"
+                cli_helper -o "--host|host|hostname|h" -d "detach all session"
                 return 0
                 ;;
             *)
@@ -1321,7 +1328,7 @@ function session
                 fi
             fi
         done
-    elif [ "${var_action}" = "deatach-all" ]
+    elif [ "${var_action}" = "detach-all" ]
     then
         echo "${var_action} all session"
 
@@ -1331,6 +1338,18 @@ function session
             then
                 echo "Detach ${each_session}"
                 eval ${var_cmd[@]} -S ${HS_TMP_SESSION_PATH}/${each_session} detach-client -s "${each_session}"
+            fi
+        done
+    elif [ "${var_action}" = "detach" ]
+    then
+        echo "${var_action} ${var_taget_session}"
+
+        for each_session in $(session ls | cut -d ":" -f 1)
+        do
+            if [ "${each_session}" = "${var_taget_session}" ]
+            then
+                echo "Detach ${var_taget_session}"
+                eval ${var_cmd[@]} -S ${HS_TMP_SESSION_PATH}/${var_taget_session} detach-client -s "${var_taget_session}"
             fi
         done
     fi
@@ -2137,6 +2156,133 @@ function ginfo()
 
 
 }
+function grun()
+{
+    local var_action='info'
+    local var_cpath=$(pwd)
+    local var_remote=""
+    local var_branch=""
+    local var_url=""
+    local var_patch_file=""
+    local flag_isgit='n'
+
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -b|--branch|branch)
+                var_action='branch'
+                ;;
+            -r|--reset|reset)
+                var_action='reset'
+                ;;
+            -p|--pull|pull)
+                var_action='pull'
+                ;;
+            -t|--track|track)
+                var_action='track'
+                ;;
+            -f|--fetch|fetch)
+                var_action='fetch'
+                ;;
+            -g|--generate-patch|generate-patch)
+                var_action='patch'
+                ;;
+            -a|--apply-patch|apply-patch)
+                var_action='apply'
+                var_patch_file=$2
+                shift 1
+                ;;
+            -h|--help)
+                cli_helper -c "grun" -cd "git run"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "grun [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-b|--branch|branch" -d "Create Branch name with remote branch"
+                cli_helper -o "-r|--reset|reset" -d "Reset to remote tracking branch"
+                cli_helper -o "-p|--pull|pull" -d "Pull remote tracking branch"
+                cli_helper -o "-t|--track|track" -d "Tracking to remote branch"
+                cli_helper -o "-f|--fetch|fetch" -d "Fetch remote tracking branch"
+                # cli_helper -o "-g|--generate-patch|generate-patch" -d "Generate patch of HEAD commit"
+                # cli_helper -o "-a|--apply-patch|apply-patch" -d "Apply patch"
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                # var_action='info'
+                break
+                ;;
+        esac
+        shift 1
+    done
+
+    if froot -f -m '.git' > /dev/null
+    then
+        flag_isgit='y'
+    fi
+
+    if [ "${flag_isgit}" = 'y' ]
+    then
+        var_remote="$(ginfo --remote)"
+        var_branch="$(ginfo --branch)"
+        var_url="$(git remote get-url ${var_remote})"
+    else
+        echo "It's not an git project"
+        return 1
+    fi
+
+    local tmp_cmd=""
+    if [ "${var_action}" = "reset" ]
+    then
+        tmp_cmd="git reset --hard ${var_remote}/${var_branch}"
+    elif [ "${var_action}" = "branch" ]
+    then
+        tmp_cmd="git checkout -b ${var_branch}"
+    elif [ "${var_action}" = "pull" ]
+    then
+        tmp_cmd="git pull ${var_remote} ${var_branch}"
+    elif [ "${var_action}" = "track" ]
+    then
+        tmp_cmd="git branch --set-upstream-to=${var_remote}/${var_branch} ${current_branch}"
+    elif [ "${var_action}" = "fetch" ]
+    then
+        tmp_cmd="git fetch  ${var_remote} ${var_branch}"
+    elif [ "${var_action}" = "patch" ]
+    then
+        tmp_cmd="git format-patch -n 1 HEAD"
+    elif [ "${var_action}" = "apply" ]
+    then
+        tmp_cmd="git am --directory=./ ${var_patch_file}"
+    elif [ "${var_action}" = "info" ]
+    then
+        echo "Remote: \"${var_remote}\""
+        echo "Branch: \"${var_branch}\""
+        echo "URL   : \"${var_url}\""
+        echo "---- Clone ----"
+        echo "> git clone ${var_url} -b ${var_branch}"
+        echo "---- Reset Online ----"
+        echo "> git reset --hard ${var_remote}/${var_branch}"
+        echo "---- Pull Online Branch----"
+        echo "> git pull ${var_remote} ${var_branch}"
+        echo "---- track Online Branch ----"
+        echo "> git branch --set-upstream-to=${var_remote}/${var_branch} ${current_branch} "
+        echo "---- Patches ----"
+        echo "Generate Patch: git format-patch -n <num_of_patchs> <commit>"
+        echo "Apply Patch   : git am --directory=<path_to_your_patch_root> <path_to_your_patch>"
+        echo "---- Others ----"
+        echo "Fetch online commit: git fetch --all"
+        echo "Get Info for First 1 Commit: git log --pretty='format:%p->%h %cn(%an) %s' -n 1"
+        echo "Get Info for First 1 Commit: git log --pretty='format:%cd %p->%h %cn(%an) %s' -n 1"
+        echo "Show all file status: git status --ignored all"
+        echo "Add all file with ignored file: git add -Avf"
+        echo "Clean out commit: git gc --prune=now --aggressive"
+        echo "Parse current path: git rev-parse --show-prefix"
+    fi
+    if test -n "${tmp_cmd}"
+    then
+        echo "${tmp_cmd}"
+        eval "${tmp_cmd}"
+    fi
+}
 function gfiles()
 {
     local var_cpath=$(pwd)
@@ -2543,6 +2689,61 @@ function rcheckoutByDate()
         echo repo forall -j $(nproc --all)  -c "pwd && git reset --hard \$(git rev-list -n 1 --first-parent --before=\"${checkout_date}\" \$(git rev-parse --abbrev-ref HEAD))"
     else
         repo forall -j $(nproc --all)  -c "pwd && git reset --hard \$(git rev-list -n 1 --first-parent --before=\"${checkout_date}\" \$(git rev-parse --abbrev-ref HEAD))"
+    fi
+}
+function proot()
+{
+    local var_action=''
+
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -r|--repo)
+                var_action='repo'
+                ;;
+            -g|--git)
+                var_action='git'
+                ;;
+            -o|--out)
+                var_action='out'
+                ;;
+            # -v|--verbose)
+            #     flag_verbose="y"
+            #     shift 1
+            #     ;;
+            -h|--help)
+                cli_helper -c "proot" -cd "proot function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "proot [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-r|--repo" -d "Goto dir with .repo located"
+                cli_helper -o "-g|--git" -d "Goto dir with .git located"
+                cli_helper -o "-o|--out" -d "Goto dir outside project"
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                echo "Wrong args, $@"
+                return -1
+                ;;
+        esac
+        shift 1
+    done
+    # alias proot="froot -m .git || froot -m .repo"
+    if [ "${var_action}" = "repo" ]
+    then
+        # echo "flag_repo: ${flag_repo}"
+        froot -m .repo
+    elif [ "${var_action}" = "git" ]
+    then
+        # echo "flag_git: ${flag_git}"
+        froot -m .git
+    elif [ "${var_action}" = "out" ]
+    then
+
+        cd $(froot -f -m .repo || froot -f -m .git)/..
+    else
+        froot -m .repo || froot -m .git
     fi
 }
 ########################################################

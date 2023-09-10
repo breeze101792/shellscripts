@@ -125,7 +125,7 @@ function hs_motd()
 {
     # ps -Aeo pid,cmd | grep "^${PPID}"
     local var_msg=("")
-    local var_distro=$(cat /etc/os-release | grep "^ID=" | cut -d "=" -f 2 )
+    local var_distro=$(cat /etc/os-release | grep "^ID=" | cut -d "=" -f 2| sed "s/\"//g")
     local var_logo=""
     local var_info_len=0
 
@@ -135,7 +135,6 @@ function hs_motd()
     local var_other=()
 
     local tmp_pname="$(ps -Ao pid,fname 2> /dev/null |grep "${PPID}" |grep -v "grep" | sed 's/[[:space:]]\+/ /g' | cut -d ' ' -f 3)"
-
 
     var_msg+=$(printf "%- 16s: %s" "OS" "$(cat /etc/os-release | grep "^NAME=" | cut -d "\"" -f 2 )")
     var_msg+=$(printf "%- 16s: %s" "Hostname" "$(cat /etc/hostname)")
@@ -152,7 +151,8 @@ function hs_motd()
     # var_msg+=$(printf "%- 16s: %s" "DE" "GNOME")
     command -v pacman > /dev/null && var_msg+=$(printf "%- 16s: %s" "Packages" "$(pacman -Q | wc -l)")
 
-    if [ "${var_distro}" = "arch" ] || [ "${var_distro}" = "Manjaro ARM" ] || [ "${var_distro}" = "Manjaro" ]
+    echo ${var_distro}
+    if [ "${var_distro}" = "arch" ] || [ "${var_distro}" = "manjaro-arm" ] || [ "${var_distro}" = "manjaro" ]
     then
         local var_color=$(echo -e "\033[38;2;23;147;209m")
         local var_clr_reset=$(echo -e "\e[0m")

@@ -5,6 +5,7 @@ function lxide()
     local cpath=$(pwd)
     local arch=arm
     local target_dirs=("block" "certs" "crypto" "fs" "include" "init" "ipc" "kernel" "lib" "mm" "net" "security" "virt")
+    local drv_dirs=()
 
     while [[ "$#" != 0 ]]
     do
@@ -28,8 +29,16 @@ function lxide()
         esac
         shift 1
     done
+
+    if [ "${arch}" = "x86" ]
+    then
+        echo "arch: ${arch}"
+        drv_dirs+=("drivers/pci")
+    fi
+
     proot
     target_dirs+=("arch/${arch}/")
+    target_dirs+=(${drv_dirs[@]})
     pvinit ${target_dirs[@]} $@
     cd ${cpath}
 }
