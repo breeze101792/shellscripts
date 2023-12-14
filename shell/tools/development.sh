@@ -1419,6 +1419,10 @@ function erun()
             -d|--debug)
                 flag_analize_fail="y"
                 ;;
+            -l|--list-log)
+                cat ${log_path}/erun_history.log
+                return 0
+                ;;
             -h|--help)
                 cli_helper -c "erun"
                 cli_helper -t "SYNOPSIS"
@@ -1692,6 +1696,7 @@ function fcd()
     local cpath=$(pwd)
     local depth=99
     local target_folder=""
+    local var_action="search"
 
     while [[ "$#" != 0 ]]
     do
@@ -1700,13 +1705,21 @@ function fcd()
                 depth=$2
                 shift 1
                 ;;
+            -l|--latest)
+                var_action="latest"
+                ;;
             -m|--max|m)
                 depth=99
                 ;;
             -h|--help)
-                echo "fast cd|fcd"
-                printlc -cp false -d "->" "-d|--depth" "Depth: default is 3"
-                printlc -cp false -d "->" "-m|--max|m" "Depth: Do max search, depth is 6"
+                cli_helper -c "fcd" -cd "fcd function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "fcd [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-d|--depth" -d "Depth: default is 3"
+                cli_helper -o "-m|--max|m" -d "Depth: Do max search, depth is 6"
+                cli_helper -o "-l|--latest" -d "Get in to latest modify folder"
+                cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;
 
@@ -1718,71 +1731,82 @@ function fcd()
     done
     # echo "Fast cd to ${target_folder}"
 
-    if [[ ${depth} > 0 ]]
+
+    if [ "${var_action}" = "latest" ]
     then
-        # echo "Finding in Layer 0"
-        test -d ${target_folder} && cd ${target_folder} && return 0
+        # echo "var_action: ${var_action}"
+        local tmp_latest_dir=$(ls --sort="time" -d */| head -n 1)
+        test -d ${tmp_latest_dir} && cd ${tmp_latest_dir} && return 0
+    elif [ "${var_action}" = "search" ]
+    then
+        # echo "var_action: ${var_action}"
+        if [[ ${depth} > 0 ]]
+        then
+            # echo "Finding in Layer 0"
+            test -d ${target_folder} && cd ${target_folder} && return 0
+        fi
+
+        if [[ ${depth} > 1 ]]
+        then
+            # echo "Finding in Layer 1"
+            if ls * | grep "^${target_folder}$"
+            then
+                test -d */${target_folder} && cd */${target_folder} && return 0
+                return 1
+            fi
+        fi
+
+        if [[ ${depth} > 2 ]]
+        then
+            # echo "Finding in Layer 2"
+            if ls */* | grep "^${target_folder}$"
+            then
+                test -d */*/${target_folder} && cd */*/${target_folder} && return 0
+                return 1
+            fi
+        fi
+
+        if [[ ${depth} > 3 ]]
+        then
+            # echo "Finding in Layer 3"
+            if ls */*/* | grep "^${target_folder}$"
+            then
+                test -d */*/*/${target_folder} && cd */*/*/${target_folder} && return 0
+                return 1
+            fi
+        fi
+
+        if [[ ${depth} > 4 ]]
+        then
+            # echo "Finding in Layer 4"
+            if ls */*/*/* | grep "^${target_folder}$"
+            then
+                test -d */*/*/*/${target_folder} && cd */*/*/*/${target_folder} && return 0
+                return 1
+            fi
+        fi
+        ####
+
+        if [[ ${depth} > 5 ]]
+        then
+            # echo "Finding in Layer 5"
+            if ls */*/*/*/* | grep "^${target_folder}$"
+            then
+                test -d */*/*/*/*/${target_folder} && cd */*/*/*/*/${target_folder} && return 0
+                return 1
+            fi
+        fi
+        if [[ ${depth} > 6 ]]
+        then
+            # echo "Finding in Layer 6"
+            if ls */*/*/*/*/* | grep "^${target_folder}$"
+            then
+                test -d */*/*/*/*/*/${target_folder} && cd */*/*/*/*/*/${target_folder} && return 0
+                return 1
+            fi
+        fi
     fi
 
-    if [[ ${depth} > 1 ]]
-    then
-        # echo "Finding in Layer 1"
-        if ls * | grep "^${target_folder}$"
-        then
-            test -d */${target_folder} && cd */${target_folder} && return 0
-            return 1
-        fi
-    fi
-
-    if [[ ${depth} > 2 ]]
-    then
-        # echo "Finding in Layer 2"
-        if ls */* | grep "^${target_folder}$"
-        then
-            test -d */*/${target_folder} && cd */*/${target_folder} && return 0
-            return 1
-        fi
-    fi
-
-    if [[ ${depth} > 3 ]]
-    then
-        # echo "Finding in Layer 3"
-        if ls */*/* | grep "^${target_folder}$"
-        then
-            test -d */*/*/${target_folder} && cd */*/*/${target_folder} && return 0
-            return 1
-        fi
-    fi
-
-    if [[ ${depth} > 4 ]]
-    then
-        # echo "Finding in Layer 4"
-        if ls */*/*/* | grep "^${target_folder}$"
-        then
-            test -d */*/*/*/${target_folder} && cd */*/*/*/${target_folder} && return 0
-            return 1
-        fi
-    fi
-    ####
-
-    if [[ ${depth} > 5 ]]
-    then
-        # echo "Finding in Layer 5"
-        if ls */*/*/*/* | grep "^${target_folder}$"
-        then
-            test -d */*/*/*/*/${target_folder} && cd */*/*/*/*/${target_folder} && return 0
-            return 1
-        fi
-    fi
-    if [[ ${depth} > 6 ]]
-    then
-        # echo "Finding in Layer 6"
-        if ls */*/*/*/*/* | grep "^${target_folder}$"
-        then
-            test -d */*/*/*/*/*/${target_folder} && cd */*/*/*/*/*/${target_folder} && return 0
-            return 1
-        fi
-    fi
     return 1
 }
 ########################################################
@@ -2172,6 +2196,9 @@ function grun()
             -b|--branch|branch)
                 var_action='branch'
                 ;;
+            -c|--checkout|checkout)
+                var_action='checkout'
+                ;;
             -r|--reset|reset)
                 var_action='reset'
                 ;;
@@ -2183,6 +2210,9 @@ function grun()
                 ;;
             -f|--fetch|fetch)
                 var_action='fetch'
+                ;;
+            -C|--clean|clean)
+                var_action='clean'
                 ;;
             -g|--generate-patch|generate-patch)
                 var_action='patch'
@@ -2198,10 +2228,12 @@ function grun()
                 cli_helper -d "grun [Options] [Value]"
                 cli_helper -t "Options"
                 cli_helper -o "-b|--branch|branch" -d "Create Branch name with remote branch"
+                cli_helper -o "-c|--checkout|checkout" -d "Checkout Branch name with remote branch"
                 cli_helper -o "-r|--reset|reset" -d "Reset to remote tracking branch"
                 cli_helper -o "-p|--pull|pull" -d "Pull remote tracking branch"
                 cli_helper -o "-t|--track|track" -d "Tracking to remote branch"
                 cli_helper -o "-f|--fetch|fetch" -d "Fetch remote tracking branch"
+                cli_helper -o "-C|--clean|clean" -d "Clean garbage"
                 # cli_helper -o "-g|--generate-patch|generate-patch" -d "Generate patch of HEAD commit"
                 # cli_helper -o "-a|--apply-patch|apply-patch" -d "Apply patch"
                 cli_helper -o "-h|--help" -d "Print help function "
@@ -2237,6 +2269,9 @@ function grun()
     elif [ "${var_action}" = "branch" ]
     then
         tmp_cmd="git checkout -b ${var_branch}"
+    elif [ "${var_action}" = "branch" ]
+    then
+        tmp_cmd="git checkout ${var_branch}"
     elif [ "${var_action}" = "pull" ]
     then
         tmp_cmd="git pull ${var_remote} ${var_branch}"
@@ -2246,6 +2281,9 @@ function grun()
     elif [ "${var_action}" = "fetch" ]
     then
         tmp_cmd="git fetch  ${var_remote} ${var_branch}"
+    elif [ "${var_action}" = "clean" ]
+    then
+        tmp_cmd="git gc --prune=now --aggressive"
     elif [ "${var_action}" = "patch" ]
     then
         tmp_cmd="git format-patch -n 1 HEAD"

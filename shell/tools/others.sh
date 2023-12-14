@@ -496,6 +496,11 @@ function xkeyrate()
                 cli_helper -t "Options"
                 cli_helper -o "-l|--level" -d "specify keyboard rate level "
                 cli_helper -o "-h|--help" -d "Print help function "
+                cli_helper -t "Options"
+                cli_helper -d "level 0: rate 256 72"
+                cli_helper -d "level 1: rate 200 64"
+                cli_helper -d "level 2: rate 192 64"
+                cli_helper -d "level 3: rate 160 64"
                 return 0
                 ;;
             *)
