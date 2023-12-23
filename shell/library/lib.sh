@@ -1,3 +1,4 @@
+#/bin/bash
 ########################################################
 ########################################################
 #####                                              #####
@@ -215,7 +216,8 @@ function droot()
     fi
 
     [ "${flag_verbose}" = "y" ] && echo "goto ${target_path}"
-    if [ "${flag_fake}" = "y" ] 
+
+    if [ "${flag_fake}" = "y" ]
     then
         echo "${target_path}"
     else
@@ -295,7 +297,7 @@ function froot()
     fi
 
     [ "${flag_verbose}" = "y" ] && echo "goto $target_path"
-    if [ "${flag_fake}" = "y" ] 
+    if [ "${flag_fake}" = "y" ]
     then
         echo "${target_path}"
     else
@@ -554,4 +556,106 @@ function elapse()
     local mm=$((${diff_time} / 60 % 60))
     local ss=$((${diff_time} % 60 + 0))
     echo "${dd}d:${hh}h:${mm}m:${ss}s"
+}
+function srm()
+{
+    local var_cmd=(/bin/rm)
+    local var_opt=()
+    local var_file_list=()
+    local flag_warning=false
+    local flag_dry_run=false
+
+    local var_block_list=()
+    local var_warn_list=()
+    var_block_list+=("/")
+    var_block_list+=("/usr")
+    var_block_list+=("/boot")
+    var_block_list+=("/etc")
+
+    var_warn_list+=("$(realpath ~)")
+
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            --dry)
+                flag_dry_run=true
+                ;;
+            -h|--help)
+                cli_helper -c "srm" -cd "safe remove function, sanity check before remove, and block danger operation"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "srm [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "--dry" -d "Fake run."
+                cli_helper -o "-h|--help" -d "Print help function, please use 'man rm' for rm help"
+                return 0
+                ;;
+            ~|.|..|~/|./|../)
+                echo "Symbol(~/./..) path is forbinden in srm. Path: \"$1\""
+                return 1
+                ;;
+            -*|--*)
+                var_opt+=($1)
+                ;;
+            *)
+                tmp_file=$(realpath "$1")
+                var_file_list+=("${tmp_file}")
+                ;;
+        esac
+        shift 1
+    done
+
+    # checkinf file in the every list
+    for each_file in ${var_file_list[@]}
+    do
+        # block list
+        for each_block in ${var_block_list[@]}
+        do
+            var_tmp_pattern=$(dirname "${each_file}")
+            echo "Check Rule:${each_block}, ${var_tmp_pattern}"
+
+            if [ "${each_block}" = "${var_tmp_pattern}" ] || [ "${each_block}" = "${each_file}" ]
+            then
+                echo "Blocked path matched. Rule:${each_block}, Target:${each_file}"
+                return 1
+            fi
+        done
+
+        # warning list
+        for each_warn in ${var_warn_list[@]}
+        do
+            var_tmp_pattern=$(dirname "${each_file}")
+            # echo "Check Rule:${each_warn}, ${var_tmp_pattern}"
+
+            if [ "${each_warn}" = "${var_tmp_pattern}" ] || [ "${each_warn}" = "${each_file}" ]
+            then
+                echo "Warning path matched. Rule:${each_warn}, Target:${each_file}"
+                flag_warning=true
+            fi
+        done
+    done
+
+    if $flag_warning
+    then
+        local var_ans
+        printf "Warning path detected, proceed removing? (y/n). "
+        read var_ans
+        if [ "$var_ans" != "y" ]
+        then
+            echo "Stop removing files."
+            return 0
+        fi
+    fi
+
+    # var_cmd+=(${var_opt[@]} ${var_file_list[@]})
+    if [ "${flag_dry_run}" = false ]
+    then
+        for each_file in ${var_file_list[@]}
+        do
+            # echo "${var_cmd[@]} ${var_opt[@]} \"${each_file}\""
+            eval "${var_cmd[@]} ${var_opt[@]} \"${each_file}\""
+        done
+    else
+        echo srm: ${var_cmd[@]} ${var_opt[@]} ${var_file_list[@]}
+    fi
+    return $?
 }

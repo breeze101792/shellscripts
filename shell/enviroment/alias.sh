@@ -55,3 +55,8 @@ alias glog="git log --graph --abbrev-commit --decorate --format=format:'%C(bold 
 alias nlfsgit="GIT_LFS_SKIP_SMUDGE=1 git "
 
 alias mdebug="sdebug --device /dev/ttyUSB1"
+
+########################################################
+#####    Safe commands                             #####
+########################################################
+alias rm=srm
