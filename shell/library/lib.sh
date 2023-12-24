@@ -611,7 +611,7 @@ function srm()
         for each_block in ${var_block_list[@]}
         do
             var_tmp_pattern=$(dirname "${each_file}")
-            echo "Check Rule:${each_block}, ${var_tmp_pattern}"
+            # echo "Check Rule:${each_block}, ${var_tmp_pattern}"
 
             if [ "${each_block}" = "${var_tmp_pattern}" ] || [ "${each_block}" = "${each_file}" ]
             then

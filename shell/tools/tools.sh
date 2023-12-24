@@ -12,36 +12,10 @@
 ########################################################
 function purify()
 {
-    while [[ "$#" != 0 ]]
-    do
-        case $1 in
-            -h|--help)
-                cli_helper -c "purify" -cd "purify, remove color code, for text stream"
-                cli_helper -t "SYNOPSIS"
-                cli_helper -d "purify [Options] [Value]"
-                # cli_helper -t "Options"
-                # cli_helper -o "-f|--file" -d "get stream from file"
-                return 0
-                ;;
-            *)
-                break
-                ;;
-        esac
-        shift 1
-    done
-
-    sed -r "s/\x1B\[([0-9]{1,3}(;[0-9]{1,2})?)?[mGK]//g"
-}
-function tpurify()
-{
-    local var_action=''
+    local var_action='stdin'
     local var_input_file=''
-    if [[ "$#" = "0" ]]
-    then
-        echo "Not option found"
-        tpurify -h
-        return 1
-    fi
+    local var_rename_target=''
+
     while [[ "$#" != 0 ]]
     do
         case $1 in
@@ -53,15 +27,19 @@ function tpurify()
                 var_input_file="${2}"
                 shift 1
                 ;;
-            -o|--output)
+            -n|--purify-name)
+                var_rename_target="$2"
+                var_action="rename"
+                shift 1
                 ;;
             -h|--help)
-                cli_helper -c "tpurify" -cd "tpurify function"
+                cli_helper -c "purify" -cd "purify function"
                 cli_helper -t "SYNOPSIS"
-                cli_helper -d "tpurify [Options] [Value]"
+                cli_helper -d "purify [Options] [Value]"
                 cli_helper -t "Options"
+                cli_helper -o "-n|--purify-name" -d "rename file & remove special symbol"
                 cli_helper -o "-f|--file" -d "get stream from file"
-                cli_helper -o "-s|--stdin" -d "get stream from stdin"
+                cli_helper -o "-s|--stdin" -d "get stream from stdin, default"
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;
@@ -73,14 +51,33 @@ function tpurify()
         shift 1
     done
 
-    echo "Purify on ${var_action}"
+    # echo "Purify on ${var_action}"
     if [ ${var_action} = "stdin" ]
     then
         # get things from std stream
         sed -r "s/\x1B\[[0-9]{0,3}(;[0-9]{1,3}){0,2}[a-zA-Z]//g" | sed -r "s/\r//g"
     elif [ ${var_action} = "file" ]
     then
-        cat ${var_input_file} | sed -r "s/\x1B\[[0-9]{0,3}(;[0-9]{1,3}){0,2}[a-zA-Z]//g" | sed -r "s/\r//g"
+        local tmp_output_file="purify_$(basename ${var_input_file})"
+        if test -f "${tmp_output_file}"
+        then
+            echo "File already exist. ${tmp_output_file}"
+            return 0
+        else
+            cat ${var_input_file} | sed -r "s/\x1B\[[0-9]{0,3}(;[0-9]{1,3}){0,2}[a-zA-Z]//g" | sed -r "s/\r//g" > ${tmp_output_file}
+        fi
+    elif [ "${var_action}" = "rename" ]
+    then
+        local tmp_taget_name=$(echo "${var_rename_target}"| rev | cut -d '/' -f 1| rev)
+        tmp_taget_name=$(echo "${tmp_taget_name}" | sed "s/ /_/g")
+        tmp_taget_name=$(echo "${tmp_taget_name}" | sed -r "s/\[[] ,@=+-~\]/_/g")
+        tmp_taget_name=$(echo "${tmp_taget_name}" | sed -r "s/\[_\]\+/_/g")
+        tmp_taget_name=$(echo "${tmp_taget_name}" | sed -r "s/^_//g")
+        tmp_taget_name=$(echo "${tmp_taget_name}" | sed -r "s/_$//g")
+
+        echo "mv ${var_rename_target} ${tmp_taget_name}" >> rename.list
+        mv "${var_rename_target}" "${tmp_taget_name}"
+        echo "Find new file: ${var_rename_target}/${tmp_taget_name}"
     fi
 }
 
@@ -318,7 +315,7 @@ function clip()
                 | sed 's/%2/$(clip -b 2 -g )/g' \
                 | sed 's/%3/$(clip -b 3 -g )/g' \
                 | sed 's/%4/$(clip -b 4 -g )/g' \
-                | sed 's/%5/$(clip -b 5 -g )/g' 
+                | sed 's/%5/$(clip -b 5 -g )/g'
                 )
                 excute_cmd=$( eval echo ${excute_cmd})
                 # echo ${excute_cmd}
@@ -1025,7 +1022,7 @@ function read_key()
     # /usr/include/linux/input-event-codes.h
     read -n ${var_count} var_input
     # printf ${var_input} | xxd | cut -d " " -f 2-7
-    printf "\nvar: \$\'\\\x%s\'\n" $(printf ${var_input} | xxd | cut -d " " -f 2-7) 
+    printf "\nvar: \$\'\\\x%s\'\n" $(printf ${var_input} | xxd | cut -d " " -f 2-7)
 }
 function xkey()
 {
