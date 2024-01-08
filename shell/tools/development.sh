@@ -2730,7 +2730,7 @@ function rprun()
 
     if [ ${flag_sync} = true ]
     then
-        tmp_cmd="drun repo sync -v -j${var_jobs} -c --no-tags --no-clone-bundle"
+        tmp_cmd="repo sync -v -j${var_jobs} -c --no-tags --no-clone-bundle"
         echo "${tmp_cmd}"
         eval "${tmp_cmd}"
     fi

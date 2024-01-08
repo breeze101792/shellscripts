@@ -257,7 +257,7 @@ function set_working_path()
     case $1 in
         -s|--set-current-path)
             local var_tmp_path="$(hs_varconfig -g ${HS_VAR_CURRENT_DIR})"
-            if [ -d "${PWD}" ] && [ "${var_tmp_path}" != ${PWD} ]
+            if [ -d "${PWD}" ] && [ "${var_tmp_path}" != "${PWD}" ]
             then
                 hs_varconfig -s "${HS_VAR_CURRENT_DIR}" "$(pwd)"
             fi

@@ -10,8 +10,8 @@
 #####    Compatibility                             #####
 ########################################################
 
-alias ecd="ecd"
-alias mark_build="mbuild "
+# alias ecd="ecd"
+# alias mark_build="mbuild "
 
 ########################################################
 #####    Library                                   #####
@@ -19,14 +19,19 @@ alias mark_build="mbuild "
 if [ $HS_ENV_OS = "bsd" ]
 then
     alias ls='ls --color=auto '
-    alias l='ls -a --color'
-    alias lt='ls -a --color -t'
+elif [ "${HS_PLATFORM_WSL}" = "y" ]
+then
+    alias ls='ls --color=never --group-directories-first -X'
 else
     alias ls='ls --color=auto --group-directories-first -X '
-    alias l='ls -a --color=auto'
-    alias lt='ls -a --color=auto -t'
 fi
+
+alias l='ls -a '
+alias lt='ls -a -t '
+alias lc='ls -a --color=always'
+
 alias ll='l -lh'
+alias llc='ls -lh --color=always'
 alias llt='ll -t'
 alias lld='ll -al $@| grep "^d"'
 
@@ -59,4 +64,7 @@ alias mdebug="sdebug --device /dev/ttyUSB1"
 ########################################################
 #####    Safe commands                             #####
 ########################################################
-alias rm=srm
+if [ "${HS_CONFIG_SAFE_COMMAND_REPLACEMENT}" = "y" ]
+then
+    alias rm=srm
+fi
