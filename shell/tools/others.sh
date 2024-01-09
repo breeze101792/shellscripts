@@ -567,6 +567,8 @@ function audio_default()
                 cli_helper -c "audio_default" -cd "audio_default function"
                 cli_helper -t "SYNOPSIS"
                 cli_helper -d "audio_default [Options] [Value]"
+                cli_helper -d "Please alose make sure that pulseaudio has been started."
+                cli_helper -d "Note. pulseaudio --start"
                 cli_helper -t "Options"
                 cli_helper -o "-l|--list" -d "list audio devices"
                 cli_helper -o "-d|--dev" -d "set default device with idx"
