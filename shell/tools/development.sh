@@ -2240,7 +2240,7 @@ function grun()
                 return 0
                 ;;
             *)
-                # var_action='info'
+                var_action="$1"
                 break
                 ;;
         esac
@@ -2669,14 +2669,91 @@ function rpath()
         echo "Please specify mainfest file path"
     fi
 }
-function rreset()
+function rprun()
 {
-    local var_jobs="64"
-    repo forall -j ${var_jobs} -vc "git reset --hard HEAD"
-    repo forall -j ${var_jobs} -vc "git clean -fd"
-    repo sync  -j ${var_jobs}
+    local var_cpath=$(pwd)
+    local var_jobs="16"
+
+    local var_remote=""
+    local var_branch=""
+    local var_url=""
+    local var_patch_file=""
+
+    local flag_isrepo='n'
+    local flag_info=false
+    local flag_sync=false
+    local flag_reset=false
+
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -s|--sync|sync)
+                flag_sync=true
+                ;;
+            -r|--reset|reset)
+                flag_reset=true
+                ;;
+            -h|--help)
+                cli_helper -c "grun" -cd "git run"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "grun [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-s|--sync|sync" -d "Sync one repo only"
+                cli_helper -o "-r|--reset|reset" -d "reset repo & clean out files"
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                echo "Unknown Options"
+                return 1
+                ;;
+        esac
+        shift 1
+    done
+
+    if froot -f -m '.repo' > /dev/null
+    then
+        flag_isrepo='y'
+    else
+        echo "Not a repo project."
+        return 1
+    fi
+
+    local tmp_cmd=""
+
+    if [ ${flag_reset} = true ]
+    then
+        tmp_cmd="repo forall -v -j ${var_jobs} -c 'git reset --hard HEAD; git clean -fd'"
+        echo "${tmp_cmd}"
+        eval "${tmp_cmd}"
+    fi
+
+    if [ ${flag_sync} = true ]
+    then
+        tmp_cmd="drun repo sync -v -j${var_jobs} -c --no-tags --no-clone-bundle"
+        echo "${tmp_cmd}"
+        eval "${tmp_cmd}"
+    fi
+
+    if [ ${flag_info} = true ]
+    then
+        echo "Usefull repo commands"
+    fi
+
+    # if test -n "${tmp_cmd}"
+    # then
+    #     echo "${tmp_cmd}"
+    #     eval "${tmp_cmd}"
+    # fi
 }
-function rcheckoutByDate()
+# function rpreset()
+# {
+#     local var_jobs="64"
+#     repo forall -j ${var_jobs} -vc "git reset --hard HEAD"
+#     repo forall -j ${var_jobs} -vc "git clean -fd"
+#     repo sync  -j ${var_jobs}
+# }
+function rpcheckoutByDate()
 {
     local cpath="$(pwd)"
     local checkout_date=""
@@ -2686,7 +2763,7 @@ function rcheckoutByDate()
     if [[ "$#" = "0" ]]
     then
         echo "Date not found."
-        echo "ex. rcheckoutByDate \"2020-07-22 02:00\""
+        echo "ex. rpcheckoutByDate \"2020-07-22 02:00\""
         return 0
     fi
     while [[ "$#" != 0 ]]
@@ -2700,14 +2777,14 @@ function rcheckoutByDate()
                 flag_fake=y
                 ;;
             -h|--help)
-                cli_helper -c "rcheckoutByDate" -cd "rcheckoutByDate stand for repo checkout"
+                cli_helper -c "rpcheckoutByDate" -cd "rpcheckoutByDate stand for repo checkout"
                 cli_helper -t "SYNOPSIS"
-                cli_helper -d "rcheckoutByDate [Options] [Value]"
+                cli_helper -d "rpcheckoutByDate [Options] [Value]"
                 cli_helper -t "Options"
                 cli_helper -o "-d|--date|date" -d "Specify date for commit"
                 cli_helper -o "-f|--fake|fake" -d "Fake run"
                 cli_helper -t "Example"
-                cli_helper -d "rcheckoutByDate -d 2020-07-22 02:00"
+                cli_helper -d "rpcheckoutByDate -d 2020-07-22 02:00"
                 return 0
                 ;;
             *)
