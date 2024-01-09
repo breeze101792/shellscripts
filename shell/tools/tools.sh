@@ -70,14 +70,17 @@ function purify()
     then
         local tmp_taget_name=$(echo "${var_rename_target}"| rev | cut -d '/' -f 1| rev)
         tmp_taget_name=$(echo "${tmp_taget_name}" | sed "s/ /_/g")
-        tmp_taget_name=$(echo "${tmp_taget_name}" | sed -r "s/\[[] ,@=+-~\]/_/g")
+        # tmp_taget_name=$(echo "${tmp_taget_name}" | sed -r "s/\[[] ,@=+-~\]/_/g")
+        # tmp_taget_name=$(echo "${tmp_taget_name}" | sed -re "s/[() ,@=+~-]/_/g")
+        tmp_taget_name=$(echo "${tmp_taget_name}" | sed -r "s/[^0-9a-zA-Z.]/_/g")
         tmp_taget_name=$(echo "${tmp_taget_name}" | sed -r "s/\[_\]\+/_/g")
         tmp_taget_name=$(echo "${tmp_taget_name}" | sed -r "s/^_//g")
         tmp_taget_name=$(echo "${tmp_taget_name}" | sed -r "s/_$//g")
+        tmp_taget_name=$(echo "${tmp_taget_name}" | tr -s '_')
 
         echo "mv ${var_rename_target} ${tmp_taget_name}" >> rename.list
         mv "${var_rename_target}" "${tmp_taget_name}"
-        echo "Find new file: ${var_rename_target}/${tmp_taget_name}"
+        echo "Find new file: \"${var_rename_target}\" -> \"${tmp_taget_name}\""
     fi
 }
 

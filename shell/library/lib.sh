@@ -564,6 +564,8 @@ function srm()
     local var_file_list=()
     local flag_warning=false
     local flag_dry_run=false
+    local flag_trash=false
+    local var_trash_path="${HOME}/.trash/trash_$(tstamp)"
 
     local var_block_list=()
     local var_warn_list=()
@@ -577,6 +579,9 @@ function srm()
     while [[ "$#" != 0 ]]
     do
         case $1 in
+            --trash)
+                flag_trash=true
+                ;;
             --dry)
                 flag_dry_run=true
                 ;;
@@ -586,6 +591,7 @@ function srm()
                 cli_helper -d "srm [Options] [Value]"
                 cli_helper -t "Options"
                 cli_helper -o "--dry" -d "Fake run."
+                cli_helper -o "--trash" -d "Move to ~/.trash insdead."
                 cli_helper -o "-h|--help" -d "Print help function, please use 'man rm' for rm help"
                 return 0
                 ;;
@@ -597,8 +603,7 @@ function srm()
                 var_opt+=($1)
                 ;;
             *)
-                tmp_file=$(realpath "$1")
-                var_file_list+=("${tmp_file}")
+                var_file_list+=("${1}")
                 ;;
         esac
         shift 1
@@ -652,7 +657,15 @@ function srm()
         for each_file in ${var_file_list[@]}
         do
             # echo "${var_cmd[@]} ${var_opt[@]} \"${each_file}\""
-            eval "${var_cmd[@]} ${var_opt[@]} \"${each_file}\""
+            if [ "${flag_trash}" = true ]
+            then
+                test -d ${var_trash_path} || mkdir -p ${var_trash_path}
+                # Trash mode
+                eval "mv \"${each_file}\" \"${var_trash_path}\""
+                echo "Files: ${each_file}" >> ${var_trash_path}/info.log
+            else
+                eval "${var_cmd[@]} ${var_opt[@]} \"${each_file}\""
+            fi
         done
     else
         echo srm: ${var_cmd[@]} ${var_opt[@]} ${var_file_list[@]}
