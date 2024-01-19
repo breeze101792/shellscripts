@@ -269,7 +269,7 @@ function fInitialize()
     echo -en "\e[?25l"
     # fMainMenu
 }
-function fEntry()
+function fEntryLoop()
 {
     # fPrintHeader ${FUNCNAME[0]}
     local var_input=""
@@ -411,7 +411,7 @@ function fMain()
     fMenu_AddEntry 'date' date
     fMenu_AddEntry 'About' fMenu_About
     fMenu_AddEntry 'Exit' fFinalize
-    fEntry
+    fEntryLoop
     fUtil_ClearScreen
 }
 
