@@ -280,29 +280,32 @@ function doloop()
     do
         local tmp_cmd=$(printf "$(echo ${var_cmd} | sed 's/%p/%s/g' )" "${each_input}")
         local tmp_buf=("")
-        tmp_buf+=("[${var_idx}@$(tstamp)]:\"${each_input}\":\"${tmp_cmd}\"\n")
-        tmp_buf+=("===========================================\n")
-        # bash -c "${var_cmd} ${each_input}"
-        tmp_buf+=($(eval ${tmp_cmd} 2>&1))
-        result=$?
-        tmp_buf+=("\n")
-        tmp_buf+=("Return Value: ${result}\n")
-        tmp_buf+=("===========================================\n")
 
         if [ "${flag_clean_on_start}" = "y" ]
         then
-            clear
+            tmp_buf+=("[${var_idx}@$(tstamp)]:\"${each_input}\":\"${tmp_cmd}\"\n")
+            tmp_buf+=("===========================================\n")
+            # bash -c "${var_cmd} ${each_input}"
+            tmp_buf+=($(eval ${tmp_cmd} 2>&1))
+            result=$?
+            tmp_buf+=("\n")
+            tmp_buf+=("Return Value: ${result}\n")
+            tmp_buf+=("===========================================\n")
+
+            if [ "${flag_clean_on_start}" = "y" ]
+            then
+                clear
+            fi
+            echo -e "${tmp_buf[@]}"
+        else
+            echo "[${var_idx}@$(tstamp)]:\"${each_input}\":\"${tmp_cmd}\""
+            echo "==========================================="
+            # bash -c "${var_cmd} ${each_input}"
+            eval "${tmp_cmd}"
+            result=$?
+            echo "Return Value: ${result}"
+            echo "==========================================="
         fi
-        echo -e "${tmp_buf[@]}"
-
-        # echo "[${var_idx}@$(tstamp)]:\"${each_input}\":\"${tmp_cmd}\""
-        # echo "==========================================="
-        # # bash -c "${var_cmd} ${each_input}"
-        # eval "${tmp_cmd}"
-        # result=$?
-        # echo "Return Value: ${result}"
-        # echo "==========================================="
-
 
         if [ "${var_terminate_condiction}" = "fail" ] && [ "${result}" != "0" ]
         then
