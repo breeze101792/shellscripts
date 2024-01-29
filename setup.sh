@@ -192,7 +192,7 @@ function setup_config()
     echo "########################################################" >> ${local_config_path}
     echo "#####    Path Setting Zone                         #####" >> ${local_config_path}
     echo "########################################################" >> ${local_config_path}
-    cat ${HS_SCRIPT_PATH}/shell/enviroment/config.sh | grep test |grep HS_PATH | sed "s/^.*&/#/g" >> ${local_config_path}
+    cat ${HS_SCRIPT_PATH}/shell/enviroment/config.sh | grep test |grep HS_PATH | grep -v "ECD" | sed "s/^.*&/#/g" >> ${local_config_path}
     echo "########################################################" >> ${local_config_path}
     echo "#####    Platform Setting Zone                     #####" >> ${local_config_path}
     echo "########################################################" >> ${local_config_path}
@@ -200,7 +200,11 @@ function setup_config()
     echo "########################################################" >> ${local_config_path}
     echo "#####    VARs Zone                                 #####" >> ${local_config_path}
     echo "########################################################" >> ${local_config_path}
-    cat ${HS_SCRIPT_PATH}/shell/enviroment/config.sh | grep test |grep HS_VAR | sed "s/^.*&/#/g" >> ${local_config_path}
+    cat ${HS_SCRIPT_PATH}/shell/enviroment/config.sh | grep test |grep HS_VAR | grep -v "ECD" | sed "s/^.*&/#/g" >> ${local_config_path}
+    echo "########################################################" >> ${local_config_path}
+    echo "#####    Shortcut Path                             #####" >> ${local_config_path}
+    echo "########################################################" >> ${local_config_path}
+    cat ${HS_SCRIPT_PATH}/shell/enviroment/config.sh | grep test | grep "ECD" | sed "s/^.*&/#/g" >> ${local_config_path}
 
     cat ${local_config_path}
 }

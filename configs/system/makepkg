@@ -1,7 +1,7 @@
-DEST dir
-xz compress --thread=4
-build flags -o3
-mutltithread download
+# DEST dir
+# xz compress --thread=4
+# build flags -o3
+# mutltithread download
 DLAGENTS=('ftp::/usr/bin/aria2c -s8 %u -o %o'
           'http::/usr/bin/aria2c -s8 %u -o %o'
           'https::/usr/bin/aria2c -s8 %u -o %o'

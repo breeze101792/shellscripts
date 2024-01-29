@@ -905,6 +905,33 @@ function extract()
 }
 function tstamp()
 {
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            # -a|--append)
+            #     cmd_args+=("${2}")
+            #     shift 1
+            #     ;;
+            # -v|--verbose)
+            #     flag_verbose="y"
+            #     shift 1
+            #     ;;
+            -h|--help)
+                cli_helper -c "tstamp" -cd "tstamp function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "tstamp [Options] [Value]"
+                cli_helper -d "Default use 'date +%Y%m%d_%H%M%S'"
+                cli_helper -t "Options"
+                # cli_helper -o "-a|--append" -d "append file extension on search"
+                # cli_helper -o "-v|--verbose" -d "Verbose print "
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                ;;
+        esac
+        shift 1
+    done
     date +%Y%m%d_%H%M%S
 }
 function synctime()
