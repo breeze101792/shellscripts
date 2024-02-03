@@ -151,7 +151,6 @@ function hs_motd()
     # var_msg+=$(printf "%- 16s: %s" "DE" "GNOME")
     command -v pacman > /dev/null && var_msg+=$(printf "%- 16s: %s" "Packages" "$(pacman -Q | wc -l)")
 
-    echo ${var_distro}
     if [ "${var_distro}" = "arch" ] || [ "${var_distro}" = "manjaro-arm" ] || [ "${var_distro}" = "manjaro" ]
     then
         local var_color=$(echo -e "\033[38;2;23;147;209m")
