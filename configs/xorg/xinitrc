@@ -1,0 +1,4 @@
+# xrandr --dpi 140
+xset r rate 256 72
+xrdb /home/shaowu/.Xresources
+exec i3

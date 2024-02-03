@@ -5,17 +5,17 @@
 
 ## FM Vars Options
 ###########################################################
-VAR_TERM_SCROLL_CURSOR=0
-VAR_TERM_TAB_LINE_CNT=1
-VAR_TERM_STATUS_LINE_CNT=2
-VAR_TERM_LINE_CNT=0
-VAR_TERM_COLUMN_CNT=0
+export VAR_TERM_SCROLL_CURSOR=0
+export VAR_TERM_TAB_LINE_CNT=1
+export VAR_TERM_STATUS_LINE_CNT=2
+export VAR_TERM_LINE_CNT=0
+export VAR_TERM_COLUMN_CNT=0
 
-VAR_TERM_STATUS_DEBUG=""
-VAR_TERM_CONTENT_MAX_CNT=0
-VAR_TERM_CONTENT_SCROLL=0
+export VAR_TERM_STATUS_DEBUG=""
+export VAR_TERM_CONTENT_MAX_CNT=0
+export VAR_TERM_CONTENT_SCROLL=0
 
-VAR_DIR_LIST_CNT=0
+export VAR_DIR_LIST_CNT=0
 
 ## Default Options
 ###########################################################
@@ -69,23 +69,23 @@ export HSFM_CD_FILE=~/.hsfm_d
 # Trash Directory
 # Default: '${XDG_DATA_HOME}/hsfm/trash'
 #          If not using XDG, '${XDG_DATA_HOME}/hsfm/trash' is used.
-export HSFM_TRASH=~/.local/share/hsfm/trash
+export HSFM_TRASH="${HOME}/.trash"
 
 # Trash Command
 # Default: 'mv'
 #          Define a custom program to use to trash files.
 #          The program will be passed the list of selected files
 #          and directories.
-export HSFM_TRASH_CMD="mv"
+export HSFM_TRASH_CMD=""
 
 # Favourites (Bookmarks) (keys 1-9) (dir or file)
 export HSFM_FAV1=~
 export HSFM_FAV2=~/tools
-export HSFM_FAV3=~/projects
-export HSFM_FAV4=~/workspace
-export HSFM_FAV5=
+export HSFM_FAV3=~/lab
+export HSFM_FAV4=/etc
+export HSFM_FAV5=~/workspace
 export HSFM_FAV6=
-export HSFM_FAV7=
+export HSFM_FAV7=~/downloads
 export HSFM_FAV8=~/media
 export HSFM_FAV9=
 
@@ -234,6 +234,18 @@ get_term_size() {
     # ((VAR_TERM_CONTENT_MAX_CNT=VAR_TERM_LINE_CNT-3))
     ((VAR_TERM_CONTENT_MAX_CNT=VAR_TERM_LINE_CNT-VAR_TERM_TAB_LINE_CNT-VAR_TERM_STATUS_LINE_CNT))
 }
+resize_term_win()
+{
+    get_term_size
+    redraw
+    # print size to prevent buffering
+    cmd_handler "log" "Window resized"
+}
+exit_term()
+{
+    reset_terminal
+}
+
 ###########################################################
 ## Drawing Functions
 ###########################################################
@@ -281,9 +293,8 @@ draw_dir() {
 
     # If current dir is somewhere in the middle, center VAR_TERM_CONTENT_SCROLL position.
     else
-        exit 1
-        ((scroll_start=VAR_TERM_CONTENT_SCROLL-VAR_TERM_CONTENT_MAX_CNT/2))
-        ((scroll_new_pos=VAR_TERM_CONTENT_MAX_CNT/2+1))
+        ((scroll_start=VAR_TERM_CONTENT_SCROLL-VAR_TERM_CONTENT_MAX_CNT/2 + 1))
+        ((scroll_new_pos=VAR_TERM_CONTENT_MAX_CNT/2 - 1))
         # ((scroll_end=scroll_start+VAR_TERM_CONTENT_MAX_CNT))
     fi
 
@@ -306,8 +317,6 @@ draw_dir() {
     printf '\e[%sH' "$(($scroll_new_pos+1+VAR_TERM_TAB_LINE_CNT))"
     # printf '\e[%sH' "$((${scroll_new_pos} + ${VAR_TERM_TAB_LINE_CNT}))"
     ((VAR_TERM_SCROLL_CURSOR=scroll_new_pos))
-    # VAR_TERM_STATUS_DEBUG="xDIR_CNT:${VAR_DIR_LIST_CNT}-TERM_CONT_CNT:${VAR_TERM_CONTENT_MAX_CNT}-SCROLL_STAR:${scroll_start}-SCROLL_END${scroll_end}-SCROLL_NEW:${scroll_new_pos}-Y:${VAR_TERM_SCROLL_CURSOR}"
-    # status_line
 }
 tab_line() {
     # Status_line to print when files are marked for operation.
@@ -342,11 +351,34 @@ tab_line() {
 status_line() {
     # Status_line to print when files are marked for operation.
     local mark_ui="[${#marked_files[@]}] selected (${file_program[*]}) [p] ->"
+    local var_left=""
+    local var_left_cnt=""
+    local var_right=""
+    local var_right_cnt=""
+    local var_spacing=""
+    local var_content_cnt=""
 
     # Escape the directory string.
     # Remove all non-printable characters.
     PWD_escaped=${PWD//[^[:print:]]/^[}
 
+    ## Update content
+    var_left="($((VAR_TERM_CONTENT_SCROLL + 1))/$((VAR_DIR_LIST_CNT + 1))) "
+    var_left+="${marked_files[*]:+${mark_ui}}"
+    var_left+="${1:-${PWD_escaped:-/}}"
+
+    # var_right="$(date '+%Y/%m/%d %H:%M:%S')"
+    var_right="$(date '+%Y/%m/%d')"
+
+    ## calc spacing
+    var_left_cnt="${#var_left}"
+    var_right_cnt="${#var_right}"
+    ((var_content_cnt=VAR_TERM_COLUMN_CNT-var_left_cnt-var_right_cnt))
+    [[ ${var_content_cnt} < 0 ]] && ((${var_content_cnt}=0))
+    # cmd_handler "log" "test-> ${var_content_cnt}/$VAR_TERM_COLUMN_CNT"
+    var_spacing=$(printf "% ${var_content_cnt}s" "")
+
+    ## Update content
     # '\e7':       Save cursor position.
     #              This is more widely supported than '\e[s'.
     # '\e[%sH':    Move cursor to bottom of the terminal.
@@ -359,14 +391,25 @@ status_line() {
     # '\e[H\e[K':  Clear line below status_line.
     # '\e8':       Restore cursor position.
     #              This is more widely supported than '\e[u'.
-    printf '\e7\e[%sH\e[%s;%sm%*s\r%s %s%s\e[m\e[%sH\e[K\e8' \
+
+    # printf '\e7\e[%sH\e[%s;%sm%*s\r%s %s%s\e[m\e[%sH\e[K\e8' \
+    #        "$((VAR_TERM_LINE_CNT-1))" \
+    #        "${HSFM_COLOR_STATUS_FG:-30}" \
+    #        "${HSFM_COLOR_STATUS_BG:-41}" \
+    #        "$VAR_TERM_COLUMN_CNT" "" \
+    #        "($((VAR_TERM_CONTENT_SCROLL + 1))/$((VAR_DIR_LIST_CNT + 1)))" \
+    #        "${marked_files[*]:+${mark_ui}}" \
+    #        "${1:-${PWD_escaped:-/}}" \
+    #        "$VAR_TERM_LINE_CNT"
+
+    printf "\e7\e[%sH\e[%s;%sm%*s\r%s%s%s\e[m\e[%sH\e[K\e8" \
            "$((VAR_TERM_LINE_CNT-1))" \
            "${HSFM_COLOR_STATUS_FG:-30}" \
            "${HSFM_COLOR_STATUS_BG:-41}" \
            "$VAR_TERM_COLUMN_CNT" "" \
-           "($((VAR_TERM_CONTENT_SCROLL + 1))/$((VAR_DIR_LIST_CNT + 1)))" \
-           "${marked_files[*]:+${mark_ui}}" \
-           "${1:-${PWD_escaped:-/}}" \
+           "${var_left}" \
+           "${var_spacing}" \
+           "${var_right}" \
            "$VAR_TERM_LINE_CNT"
 }
 
@@ -676,7 +719,8 @@ fKeyHandler() {
 
         # Search.
         ${HSFM_KEY_SEARCH:=/})
-            cmd_line "/" "search"
+            # cmd_line "/" "search"
+            cmd_handler "search" "${list[VAR_TERM_CONTENT_SCROLL]##*/}"
 
             # If the search came up empty, redraw the current dir.
             if [[ -z ${list[*]} ]]; then
@@ -724,16 +768,17 @@ fKeyHandler() {
         ${HSFM_KEY_PASTE:=p})
             [[ ${marked_files[*]} ]] && {
                 [[ ! -w $PWD ]] && {
-                    cmd_line "warn: no write access to dir."
+                    # cmd_line "warn: no write access to dir."
+                    cmd_handler "log" "warn: no write access to dir."
                     return
                 }
 
                 # Clear the screen to make room for a prompt if needed.
-                clear_screen
-                reset_terminal
+                # clear_screen
+                # reset_terminal
 
                 stty echo
-                printf '\e[1mhsfm\e[m: %s\n' "Running ${file_program[0]}"
+                # printf '\e[1mhsfm\e[m: %s\n' "Running ${file_program[0]}"
                 "${file_program[@]}" "${marked_files[@]}" .
                 stty -echo
 
@@ -753,67 +798,15 @@ fKeyHandler() {
 
         # open file with command
         ${HSFM_KEY_OPEN_CMD:=:})
-            cmd_line ":" "${list[VAR_TERM_CONTENT_SCROLL]##*/}"
-        ;;
-
-        # Rename list item.
-        ${HSFM_KEY_RENAME:=r})
-            [[ ! -e ${list[VAR_TERM_CONTENT_SCROLL]} ]] &&
-                return
-
-            cmd_line "rename ${list[VAR_TERM_CONTENT_SCROLL]##*/}: "
-
-            [[ $cmd_reply ]] &&
-                if [[ -e $cmd_reply ]]; then
-                    cmd_line "warn: '$cmd_reply' already exists."
-
-                elif [[ -w ${list[VAR_TERM_CONTENT_SCROLL]} ]]; then
-                    mv "${list[VAR_TERM_CONTENT_SCROLL]}" "${PWD}/${cmd_reply}"
-                    redraw full
-
-                else
-                    cmd_line "warn: no write access to file."
-                fi
-        ;;
-
-        # Create a directory.
-        ${HSFM_KEY_MKDIR:=n})
-            cmd_line "mkdir: " "dirs"
-
-            [[ $cmd_reply ]] &&
-                if [[ -e $cmd_reply ]]; then
-                    cmd_line "warn: '$cmd_reply' already exists."
-
-                elif [[ -w $PWD ]]; then
-                    mkdir -p "${PWD}/${cmd_reply}"
-                    redraw full
-
-                else
-                    cmd_line "warn: no write access to dir."
-                fi
-        ;;
-
-        # Create a file.
-        ${HSFM_KEY_MKFILE:=f})
-            cmd_line "mkfile: "
-
-            [[ $cmd_reply ]] &&
-                if [[ -e $cmd_reply ]]; then
-                    cmd_line "warn: '$cmd_reply' already exists."
-
-                elif [[ -w $PWD ]]; then
-                    : > "$cmd_reply"
-                    redraw full
-
-                else
-                    cmd_line "warn: no write access to dir."
-                fi
+            # cmd_line ":" "${list[VAR_TERM_CONTENT_SCROLL]##*/}"
+            cmd_handler "shell" "${list[VAR_TERM_CONTENT_SCROLL]##*/}"
         ;;
 
         # Show file attributes.
         ${HSFM_KEY_ATTRIBUTES:=x})
             [[ -e "${list[VAR_TERM_CONTENT_SCROLL]}" ]] && {
                 clear_screen
+                # tab_line
                 status_line "${list[VAR_TERM_CONTENT_SCROLL]}"
                 "${HSFM_STAT_CMD:-stat}" "${list[VAR_TERM_CONTENT_SCROLL]}"
                 read -ern 1
@@ -829,25 +822,6 @@ fKeyHandler() {
             read -ern 1
             redraw
         ;;
-
-
-        # Toggle executable flag.
-        # ${HSFM_KEY_EXECUTABLE:=X})
-        #     [[ -f ${list[VAR_TERM_CONTENT_SCROLL]} && -w ${list[VAR_TERM_CONTENT_SCROLL]} ]] && {
-        #         if [[ -x ${list[VAR_TERM_CONTENT_SCROLL]} ]]; then
-        #             chmod -x "${list[VAR_TERM_CONTENT_SCROLL]}"
-        #             status_line "Unset executable."
-        #         else
-        #             chmod +x "${list[VAR_TERM_CONTENT_SCROLL]}"
-        #             status_line "Set executable."
-        #         fi
-        #     }
-        # ;;
-
-        # Show image in terminal.
-        # ${HSFM_KEY_IMAGE:=i})
-        #     draw_img
-        # ;;
 
         # Go to dir.
         ${HSFM_KEY_GO_DIR:=g})
@@ -895,19 +869,18 @@ fKeyHandler() {
         # Don't allow user to redefine 'q' so a bad keybinding doesn't
         # remove the option to quit.
         q)
-            : "${HSFM_CD_FILE:=${XDG_CACHE_HOME:=${HOME}/.cache}/hsfm/.hsfm_d}"
-
-            [[ -w $HSFM_CD_FILE ]] &&
-                rm "$HSFM_CD_FILE"
-
-            [[ ${HSFM_CD_ON_EXIT:=1} == 1 ]] &&
-                printf '%s\n' "$PWD" > "$HSFM_CD_FILE"
-
-            exit
+        cmd_handler "exit"
+            # : "${HSFM_CD_FILE:=${XDG_CACHE_HOME:=${HOME}/.cache}/hsfm/.hsfm_d}"
+            #
+            # [[ -w $HSFM_CD_FILE ]] &&
+            #     rm "$HSFM_CD_FILE"
+            #
+            # [[ ${HSFM_CD_ON_EXIT:=1} == 1 ]] &&
+            #     printf '%s\n' "$PWD" > "$HSFM_CD_FILE"
+            #
+            # exit
         ;;
     esac
-    # VAR_TERM_STATUS_DEBUG="DIR_CNT:${VAR_DIR_LIST_CNT}-TERM_CONT_CNT:${VAR_TERM_CONTENT_MAX_CNT}-SCROLL_STAR:${scroll_start}-SCROLL_END${scroll_end}-SCROLL_NEW:${scroll_new_pos}-Y:${VAR_TERM_SCROLL_CURSOR}"
-    # status_line
 }
 
 get_mime_type() {
@@ -918,6 +891,288 @@ get_mime_type() {
 ###########################################################
 ## Open Functions
 ###########################################################
+cmd_handler()
+{
+    ## Pre settings.
+    ################################################################
+    # new functon for handle all commands
+    printf '\e7\e[%sH\e[?25h' "$VAR_TERM_LINE_CNT"
+
+    ## Main handler
+    ################################################################
+    case ${1} in
+        "log")
+            shift 1
+            cmd_log "$@"
+            ;;
+        "shell")
+            cmd_line_interact "${HSFM_KEY_OPEN_CMD}" "shell" "${list[VAR_TERM_CONTENT_SCROLL]##*/}"
+            ;;
+        "search")
+            cmd_line_interact "${HSFM_KEY_SEARCH}" "search"
+            ;;
+        "exit")
+            cmd_exit
+            ;;
+    esac
+
+    ## Post settings.
+    ################################################################
+    # Unset tab completion variables since we're done.
+    # unset comp c
+
+    # '\e[2K':   Clear the entire cmd_line on finish.
+    # '\e[?25l': Hide the cursor.
+    # '\e8':     Restore cursor position.
+    # printf '\e[2K\e[?25l\e8'
+    printf '\e[?25l\e8'
+
+    # we don't need redraw after commands running
+    # this will be clear after redraw
+    # redraw
+
+}
+cmd_line_interact() {
+    # Write to the command_line (under status_line).
+    cmd_list=("redraw" "search" "mkdir" "mkfile" "touch" "open" "exit" "rename" "more" "help")
+    cmd_prefix=${1}
+    cmd_function=${2:""}
+    cmd_file=${3:""}
+    cmd_reply=""
+
+    # '\r\e[K': Redraw the read prompt on every keypress.
+    #           This is mimicking what happens normally.
+    while IFS= read -rsn 1 -p $'\r\e[K'"${cmd_prefix}${cmd_reply}" read_reply; do
+        case $read_reply in
+            # Backspace.
+            $'\177'|$'\b')
+                cmd_reply=${cmd_reply%?}
+
+                # Clear tab-completion.
+                unset comp c
+            ;;
+
+            # Tab.
+            $'\t')
+                comp_glob="$cmd_reply*"
+
+                # Pass the argument dirs to limit completion to directories.
+                # [[ $2 == dirs ]] &&
+                #     comp_glob="$cmd_reply*/"
+
+                # Generate a completion list once.
+                # [[ -z ${comp[0]} ]] &&
+                #     IFS=$'\n' read -d "" -ra comp < <(compgen -G "$comp_glob")
+                    # IFS=$'\n' read -d "" -ra comp < <(compgen -G -W "redraw search" "$comp_glob")
+                if [[ -z ${comp[0]} ]]
+                then
+                    # IFS=$'\n' read -d "" -ra globpat < <(compgen -G "$comp_glob")
+                    IFS=$'\n' read -d "" -ra wordlist < <(compgen -W "${cmd_list[*]}" ${cmd_reply})
+                    # comp=$globpat
+                    comp+=$wordlist
+                fi
+
+                # On each tab press, cycle through the completion list.
+                [[ -n ${comp[c]} ]] && {
+                    cmd_reply=${comp[c]}
+                    ((c=c >= ${#comp[@]}-1 ? 0 : ++c))
+                }
+            ;;
+
+            # Escape / Custom 'no' value (used as a replacement for '-n 1').
+            $'\e'|${3:-null})
+                read "${read_flags[@]}" -rsn 2
+                cmd_reply=
+                cmd_log ${cmd_reply}
+                break
+            ;;
+
+            # Enter/Return.
+            "")
+                [[ ${cmd_function} != shell ]] && {
+                    # # Unset tab completion variables since we're done.
+                    # unset comp c
+                    # return
+                    break
+                }
+
+                tmp_command=$(echo ${cmd_reply} | tr -s ' ' |sed 's/^ //g' | cut -d ' ' -f 1)
+                tmp_args=$(echo ${cmd_reply} | tr -s ' ' |sed 's/^ //g' | cut -d ' ' -f 2-)
+                # printf "\r\e[2K%s" ${tmp_command}
+                case ${tmp_command} in
+                    "echo")
+                        # printf "\r\e[2K%s"
+                        cmd_log "${tmp_args}"
+                        ;;
+                    "search")
+                        cmd_search "${tmp_args}"
+                        # search_end_early=1
+                        ;;
+                    "rename")
+                        cmd_rename "${tmp_args}"
+                        ;;
+                    "mkdir")
+                        cmd_mkdir "${tmp_args}"
+                        ;;
+                    "mkfile"|"touch")
+                        cmd_mkfile "${tmp_args}"
+                        ;;
+                    "vim")
+                        cmd_vim "${cmd_file}"
+                        ;;
+                    "exit")
+                        cmd_exit
+                        ;;
+                    "open")
+                        open "${tmp_args}"
+                        ;;
+                    "help")
+                        cmd_help
+                        ;;
+                    *)
+                    # cmd_handler "log"
+                    # printf '\r\e[%sH\e[?25h%s' "$VAR_TERM_LINE_CNT" "Unknown commands.${tmp_command}: ${tmp_args}"
+                    cmd_log "Unknown commands: ${tmp_command} ${tmp_args}"
+                    ;;
+                esac
+
+                # [[ $1 == :  ]] && {
+                #     nohup "${cmd_reply}" "$2" &>/dev/null &
+                # }
+
+                break
+            ;;
+
+            # Custom 'yes' value (used as a replacement for '-n 1').
+            ${2:-null})
+                cmd_reply=$read_reply
+                break
+            ;;
+
+            # Replace '~' with '$HOME'.
+            "~")
+                cmd_reply+=$HOME
+            ;;
+
+            # Anything else, add it to read reply.
+            *)
+                cmd_reply+=$read_reply
+
+                # Clear tab-completion.
+                unset comp c
+            ;;
+        esac
+
+        [[ ${cmd_function} == "search" ]] && {
+            cmd_search "${cmd_reply}"
+        }
+
+    done
+
+    # Unset tab completion variables since we're done.
+    unset comp c
+}
+cmd_log()
+{
+    printf '\r\e[%sH\e[?25h\e[2K%s' "$VAR_TERM_LINE_CNT" "$@"
+}
+cmd_search()
+{
+    var_pattern="$*"
+    # Search on keypress if search passed as an argument.
+    # '\e[?25l': Hide the cursor.
+    printf '\e[?25l'
+
+    # Use a greedy glob to search.
+    list=("$PWD"/*"$var_pattern"*)
+    ((VAR_DIR_LIST_CNT=${#list[@]}-1))
+
+    # Draw the search results on screen.
+    VAR_TERM_CONTENT_SCROLL=0
+    redraw
+
+    # '\e[%sH':  Move cursor back to cmd-line.
+    # '\e[?25h': Unhide the cursor.
+    printf '\e[%sH\e[?25h' "$VAR_TERM_LINE_CNT"
+}
+cmd_rename()
+{
+    local var_new_name="$@"
+    if [[ -e $var_new_name ]]; then
+        cmd_handler "log" "warn: '$var_new_name' already exists."
+
+    elif [[ -w ${list[VAR_TERM_CONTENT_SCROLL]} ]]; then
+        mv "${list[VAR_TERM_CONTENT_SCROLL]}" "${PWD}/${var_new_name}"
+        redraw full
+    else
+        cmd_handler "log" "warn: no write access to file."
+    fi
+}
+cmd_mkdir()
+{
+    local var_dir_name="$@"
+    if [[ -e $var_dir_name ]]; then
+        cmd_log "warn: '$var_dir_name' already exists."
+
+    elif [[ -w $PWD ]]; then
+        mkdir -p "${PWD}/${var_dir_name}"
+        redraw full
+
+    else
+        cmd_log "warn: no write access to dir."
+    fi
+}
+cmd_mkfile()
+{
+    local var_dir_name="$@"
+    if [[ -e $var_dir_name ]]; then
+        cmd_log "warn: '$var_dir_name' already exists."
+
+    elif [[ -w $PWD ]]; then
+        : > "$var_dir_name"
+        redraw full
+
+    else
+        cmd_log "warn: no write access to dir."
+    fi
+}
+cmd_vim()
+{
+    local var_file="$@"
+    if [[ -f $var_file ]]; then
+        clear_screen
+        reset_terminal
+
+        vim ${var_file}
+
+        setup_terminal
+        redraw
+    else
+        cmd_log "warn: '$var_file' not opened"
+    fi
+}
+cmd_help()
+{
+    clear_screen
+    reset_terminal
+    fHelp
+    read p
+    setup_terminal
+    redraw
+}
+cmd_exit()
+{
+    : "${HSFM_CD_FILE:=${XDG_CACHE_HOME:=${HOME}/.cache}/hsfm/.hsfm_d}"
+
+    [[ -w $HSFM_CD_FILE ]] &&
+        rm "$HSFM_CD_FILE"
+
+    [[ ${HSFM_CD_ON_EXIT:=1} == 1 ]] &&
+        printf '%s\n' "$PWD" > "$HSFM_CD_FILE"
+
+    exit 0
+}
+
 cmd_line() {
     # Write to the command_line (under status_line).
     cmd_reply=
@@ -1357,10 +1612,12 @@ function fmain() {
     shopt -s nocaseglob nullglob
 
     # Trap the exit signal (we need to reset the terminal to a useable state.)
-    trap 'reset_terminal' EXIT
+    # trap 'reset_terminal' EXIT
+    trap "trap - SIGTERM && reset_terminal &&kill -- -$$" SIGINT SIGTERM EXIT
 
     # Trap the window resize signal (handle window resize events).
-    trap 'get_term_size; redraw' WINCH
+    trap 'resize_term_win' WINCH
+
 
     get_os
     get_term_size
