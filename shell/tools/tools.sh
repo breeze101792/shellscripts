@@ -515,6 +515,7 @@ function filesync()
 
     # Pre set
     var_exclude_list+=("--exclude='*.swp'")
+    var_exclude_list+=("--exclude='.git*'")
     var_exclude_list+=("--exclude='.git'")
     var_exclude_list+=("--exclude='.repo'")
 
