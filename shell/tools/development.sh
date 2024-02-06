@@ -1176,7 +1176,15 @@ function session
                 break
                 ;;
             --host|host|hostname|h)
-                local var_hostname="$(hostname)"
+		local var_hostname=""
+                if command -v hostname
+		then
+			var_hostname="$(hostname)"
+		elif test -f "/etc/hostname"
+		then
+			var_hostname="$(cat /etc/hostname)"
+		fi
+
                 local tmp_name=$(session ls |grep "${var_hostname}" | cut -d ':' -f 1| tr -d  ' ')
                 if [ "${tmp_name}" != "" ]
                 then
