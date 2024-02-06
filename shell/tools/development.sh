@@ -2683,6 +2683,7 @@ function rprun()
     local flag_info=false
     local flag_sync=false
     local flag_reset=false
+    local flag_status=false
 
     while [[ "$#" != 0 ]]
     do
@@ -2693,12 +2694,16 @@ function rprun()
             -r|--reset|reset)
                 flag_reset=true
                 ;;
+            --status|status)
+                flag_status=true
+                ;;
             -h|--help)
                 cli_helper -c "grun" -cd "git run"
                 cli_helper -t "SYNOPSIS"
                 cli_helper -d "grun [Options] [Value]"
                 cli_helper -t "Options"
                 cli_helper -o "-s|--sync|sync" -d "Sync one repo only"
+                cli_helper -o "--status|status" -d "Show status info"
                 cli_helper -o "-r|--reset|reset" -d "reset repo & clean out files"
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
@@ -2731,6 +2736,13 @@ function rprun()
     if [ ${flag_sync} = true ]
     then
         tmp_cmd="repo sync -v -j${var_jobs} -c --no-tags --no-clone-bundle"
+        echo "${tmp_cmd}"
+        eval "${tmp_cmd}"
+    fi
+
+    if [ ${flag_status} = true ]
+    then
+        tmp_cmd="repo forall -v  -c 'git log --pretty='format:%p->%h %cn(%an) %s' -n 1'"
         echo "${tmp_cmd}"
         eval "${tmp_cmd}"
     fi
@@ -3018,12 +3030,11 @@ function pyenv()
                 cli_helper -o "-a|--active|a" -d "active Pyenv"
                 cli_helper -o "-d|--deactivate|d" -d "deactivate Pyenv"
                 cli_helper -o "-u|--update|u" -d "update pip"
-                cli_helper -o "-p|--path" -d "setting pyen path"
+                cli_helper -o "-p|--path" -d "setting pyen path, default path:${HS_PATH_PYTHEN_ENV}"
                 cli_helper -o "--pip|pip" -d "Do pip install with trust host"
                 cli_helper -o "-h|--help" -d "Print help function "
                 cli_helper -t "Note."
                 cli_helper -d "pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org [Pkg]"
-
                 return 0
                 ;;
             *)

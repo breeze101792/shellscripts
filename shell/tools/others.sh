@@ -28,11 +28,16 @@ function wifi()
                 var_dev="${2}"
                 shift 1
                 ;;
-            -s|--scan)
+            -s|--scan|scan)
                 var_cmd="${var_utility} -i ${var_dev} scan"
                 echo ${var_cmd}
                 eval ${var_cmd}
                 var_cmd="${var_utility} -i ${var_dev} scan_result"
+                echo ${var_cmd}
+                eval ${var_cmd}
+                ;;
+            --status|status)
+                var_cmd="sudo iwconfig ${var_dev}"
                 echo ${var_cmd}
                 eval ${var_cmd}
                 ;;
