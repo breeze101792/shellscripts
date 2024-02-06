@@ -5,7 +5,7 @@
 export VAR_SCRIPT_NAME="$(basename ${BASH_SOURCE[0]%=.})"
 export VAR_CPU_CNT=$(nproc --all)
 
-export VAR_PKG_LIST=("build-essential")
+export VAR_PKG_LIST=("")
 
 ###########################################################
 ## Options
@@ -80,28 +80,55 @@ function fexample()
     fPrintHeader ${FUNCNAME[0]}
 
 }
+function fpacman_init()
+{
+    fPrintHeader ${FUNCNAME[0]}
+    pacman-key --init
+    pacman-key --populate
+    pacman -Sy archlinux-keyring
+
+}
+function flocalegen()
+{
+    fPrintHeader ${FUNCNAME[0]}
+    sudo sed -i "s/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/g"
+    sudo locale.gen
+}
 function fpkg_basic()
 {
     fPrintHeader ${FUNCNAME[0]}
-    VAR_PKG_LIST+=("bc")
-    VAR_PKG_LIST+=("nmap")
+    VAR_PKG_LIST+=("sudo")
+    VAR_PKG_LIST+=("vim")
+    VAR_PKG_LIST+=("tmux")
+    VAR_PKG_LIST+=("openssh")
+    VAR_PKG_LIST+=("zsh")
+
+    VAR_PKG_LIST+=("base-devl")
     VAR_PKG_LIST+=("bc")
     VAR_PKG_LIST+=("dhcpcd")
-    VAR_PKG_LIST+=("openssh-server")
-    VAR_PKG_LIST+=("openssh")
+    VAR_PKG_LIST+=("git")
+    VAR_PKG_LIST+=("pkgfile")
+    VAR_PKG_LIST+=("screen")
 }
 function fpkg_dev()
 {
-    # VAR_PKG_LIST+=("python")
+    VAR_PKG_LIST+=("python")
+    VAR_PKG_LIST+=("rustup")
     VAR_PKG_LIST+=("cscope")
-    VAR_PKG_LIST+=("universal-ctags")
+    VAR_PKG_LIST+=("ctags")
     VAR_PKG_LIST+=("virtualenv")
 }
 function fpkg_tools()
 {
+    # VAR_PKG_LIST+=("cppcheck")
+    VAR_PKG_LIST+=("aria2")
+    VAR_PKG_LIST+=("cscope")
+    VAR_PKG_LIST+=("ctags")
+    VAR_PKG_LIST+=("gzip")
+    VAR_PKG_LIST+=("inetutils")
     VAR_PKG_LIST+=("nmap")
     VAR_PKG_LIST+=("p7zip-full")
-    VAR_PKG_LIST+=("bpzip2")
+    VAR_PKG_LIST+=("wget")
 }
 function fpkg_install()
 {
@@ -129,9 +156,9 @@ function fpkg_install()
             ;;
     esac
     echo "Update pkg list"
-    sudo apt update
+    sudo pacman -Syy
     echo "Install following pkgs: ${VAR_PKG_LIST[@]}"
-    sudo apt install ${VAR_PKG_LIST[@]}
+    sudo pacman S ${VAR_PKG_LIST[@]}
 }
 ## Main Functions
 ###########################################################

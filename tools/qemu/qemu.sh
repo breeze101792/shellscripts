@@ -239,7 +239,8 @@ function fConfigGraphic()
 
     if [ "${G_MONITOR_TYPE}" == "spice" ]
     then
-        QEMU_GRAPHIC+=("-spice port=5900,addr=127.0.0.1,disable-ticketing")
+        # QEMU_GRAPHIC+=("-spice port=5900,addr=127.0.0.1,disable-ticketing")
+        QEMU_GRAPHIC+=("-spice port=5900,addr=127.0.0.1,disable-ticketing=on")
     elif [ "${G_MONITOR_TYPE}" == "sdl" ]
     then
         QEMU_GRAPHIC+=("-display sdl,gl=on")
