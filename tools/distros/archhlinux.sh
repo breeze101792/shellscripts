@@ -103,7 +103,6 @@ function fpkg_basic()
     VAR_PKG_LIST+=("openssh")
     VAR_PKG_LIST+=("zsh")
 
-    VAR_PKG_LIST+=("base-devl")
     VAR_PKG_LIST+=("bc")
     VAR_PKG_LIST+=("dhcpcd")
     VAR_PKG_LIST+=("git")
@@ -112,11 +111,14 @@ function fpkg_basic()
 }
 function fpkg_dev()
 {
+    VAR_PKG_LIST+=("base-devel")
+    VAR_PKG_LIST+=("devtools")
     VAR_PKG_LIST+=("python")
     VAR_PKG_LIST+=("rustup")
     VAR_PKG_LIST+=("cscope")
     VAR_PKG_LIST+=("ctags")
-    VAR_PKG_LIST+=("virtualenv")
+    VAR_PKG_LIST+=("qemu-base")
+    VAR_PKG_LIST+=("python-virtualenv")
 }
 function fpkg_tools()
 {
@@ -127,8 +129,12 @@ function fpkg_tools()
     VAR_PKG_LIST+=("gzip")
     VAR_PKG_LIST+=("inetutils")
     VAR_PKG_LIST+=("nmap")
-    VAR_PKG_LIST+=("p7zip-full")
+    VAR_PKG_LIST+=("p7zip")
     VAR_PKG_LIST+=("wget")
+}
+function fpkg_gui()
+{
+    VAR_PKG_LIST+=("qemu-full")
 }
 function fpkg_install()
 {
@@ -158,7 +164,7 @@ function fpkg_install()
     echo "Update pkg list"
     sudo pacman -Syy
     echo "Install following pkgs: ${VAR_PKG_LIST[@]}"
-    sudo pacman S ${VAR_PKG_LIST[@]}
+    sudo pacman -S ${VAR_PKG_LIST[@]}
 }
 ## Main Functions
 ###########################################################
