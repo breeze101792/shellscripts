@@ -80,15 +80,21 @@ function fexample()
     fPrintHeader ${FUNCNAME[0]}
 
 }
+function fapt_init()
+{
+    fPrintHeader ${FUNCNAME[0]}
+    sudo apt install ca-certificates
+
+}
 function fpkg_basic()
 {
     fPrintHeader ${FUNCNAME[0]}
     VAR_PKG_LIST+=("bc")
     VAR_PKG_LIST+=("nmap")
     VAR_PKG_LIST+=("bc")
-    VAR_PKG_LIST+=("dhcpcd")
+    # VAR_PKG_LIST+=("dhcpcd")
+    VAR_PKG_LIST+=("dhcpcd5")
     VAR_PKG_LIST+=("openssh-server")
-    VAR_PKG_LIST+=("openssh")
 }
 function fpkg_dev()
 {

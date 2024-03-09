@@ -1062,6 +1062,7 @@ function xtools()
     do
         case $1 in
             -ds|--disable-sleep)
+                echo "Set xorg screen saver off"
                 xset s off
                 xset -dpms
                 xset s noblank
