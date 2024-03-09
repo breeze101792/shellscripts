@@ -5,4 +5,6 @@ Host example
     Compression yes
     ForwardAgent yes
     ForwardX11 yes
+    ConnectTimeout 2
+    ConnectionAttempts 5
 

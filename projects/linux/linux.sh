@@ -1,3 +1,4 @@
+#!/bin/bash
 hs_print "Source Linux(lx,ub) project"
 alias lcd="lxcd "
 function lxide()

@@ -1,5 +1,13 @@
 #!/bin/bash
 ###########################################################
+## DEF
+###########################################################
+export DEF_COLOR_RED='\033[0;31m'
+export DEF_COLOR_YELLOW='\033[0;33m'
+export DEF_COLOR_GREEN='\033[0;32m'
+export DEF_COLOR_NORMAL='\033[0m'
+
+###########################################################
 ## Vars
 ###########################################################
 export VAR_SCRIPT_NAME="$(basename ${BASH_SOURCE[0]%=.})"
@@ -68,6 +76,46 @@ fInfo()
     printf "###########################################################\n"
     printf "##    %s\t: %- 16s\n" "Verbose" "${OPTION_VERBOSE}"
     printf "###########################################################\n"
+}
+fSleepSeconds()
+{
+    local var_sleep_cnt=0
+    if [ $# = 1 ]
+    then
+        var_sleep_cnt=${1}
+    else
+        return -1
+    fi
+    # only sleep for seconds
+    for each_idx in $(seq 1 $var_sleep_cnt)
+    do
+        printf "\rSleeping (%d/%d)" ${each_idx} ${var_sleep_cnt}
+        sleep 1
+    done;
+    printf "\nwakeup from sleep(${var_sleep_cnt})\n"
+    return 1
+}
+fEval()
+{
+    local var_commands=0
+    if [[ $# = 1 ]]
+    then
+        var_commands=${1}
+    elif [[ $# > 1 ]]
+    then
+        if [[ "${1}" = "-s" ]]
+        then
+            shift 1
+            var_commands="sudo ${@}"
+        else
+            var_commands=${@}
+        fi
+    else
+        return -1
+    fi
+    echo -e "Executing: ${DEF_COLOR_YELLOW}${var_commands}${DEF_COLOR_NORMAL} "
+    ${var_commands}
+    return $?
 }
 ###########################################################
 ## Functions

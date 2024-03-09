@@ -1,3 +1,4 @@
+#!/bin/bash
 ########################################################
 ########################################################
 #####                                              #####
@@ -18,7 +19,7 @@ function pvupdate()
     local var_tags_file="tags"
     local var_cscope_file="cscope.db"
     local var_cctree_file="cctree.db"
-    local var_tmp_folder='tmp_db'
+    local var_tmp_folder="tmp_db_$(tstamp)"
     local flag_error_happen='y'
 
     local flag_system_include='n'
@@ -138,8 +139,11 @@ function pvinit()
     local flag_append=n
     local flag_header=n
 
+    # path_exclude+=("-not -path '*/.repo/*'")
+    # ignore all hiden files
+    path_exclude+=("-not -path '*/.*'")
+
     file_exclude+=("-iname '*.pyc'")
-    path_exclude+=("-not -path '*/.repo/*'")
 
     file_ext+=("-iname '*.c'")
     file_ext+=("-o -iname '*.cc'")
@@ -152,6 +156,7 @@ function pvinit()
     file_ext+=("-o -iname '*.h++'")
     file_ext+=("-o -iname '*.hxx'")
     file_ext+=("-o -iname '*.hpp'")
+    file_ext+=("-o -iname '*.iig'")
 
     file_ext+=("-o -iname '*.java'")
 
@@ -260,19 +265,19 @@ function pvinit()
             echo -e "${each_path}"
             continue
         else
-            local tmp_path=$(realpath ${each_path})
+            local tmp_path=$(realpath "${each_path}")
 
             ## Searcing srouce file
             printc -c green "Searching folder: "
             echo -e "$tmp_path"
-            find_cmd="find ${tmp_path} \( -type f ${file_ext[@]} \) -not \( ${file_exclude[@]} \) ${path_exclude[@]} | xargs realpath >> \"${var_list_file}\""
+            find_cmd="find ${tmp_path} \( -type f ${file_ext[@]} \) -not \( ${file_exclude[@]} \) ${path_exclude[@]} | xargs realpath -q >> \"${var_list_file}\""
             echo ${find_cmd}
             eval "${find_cmd}"
 
             ## Search inlcude
             if [ "${flag_header}" = "y" ]
             then
-                find_cmd="find ${tmp_path} \( -type d ${header_rule[@]} \) ${path_exclude[@]} | xargs realpath >> \"${var_list_header_file}\""
+                find_cmd="find ${tmp_path} \( -type d ${header_rule[@]} \) ${path_exclude[@]} | xargs realpath -q >> \"${var_list_header_file}\""
                 echo ${find_cmd}
                 eval "${find_cmd}"
             fi
@@ -323,6 +328,8 @@ function pvim()
     local var_cctree_file="cctree.db"
     local var_config_file="proj.vim"
 
+    local var_vim_distro="${HS_VAR_VIM}"
+
     while [[ "$#" != 0 ]]
     do
         case $1 in
@@ -335,6 +342,9 @@ function pvim()
                 ;;
             -m|--map)
                 flag_cctree=y
+                ;;
+            -l|--lite)
+                cmd_args+=("-u $HS_PATH_IDE/tools/vimlite.vim")
                 ;;
             -t|--time)
                 flag_time=y
@@ -387,6 +397,10 @@ function pvim()
                 fi
                 shift 1
                 ;;
+            -d|--distro)
+                var_vim_distro="${2}"
+                shift 1
+                ;;
             -h|--help)
                 cli_helper -c "pvim"
                 cli_helper -d "pvim [Options] [File]"
@@ -394,6 +408,7 @@ function pvim()
                 cli_helper -d "pvim [Options] [File]"
                 cli_helper -t "Options"
                 cli_helper -o "-m|--map" -d "Load cctree in vim"
+                cli_helper -o "-d|--distro" -d "select vim runtint, default use ${HS_VAR_VIM}."
                 cli_helper -o "-p|--pure-mode" -d "Load withouth ide file"
                 cli_helper -o "--buffer-file|buffer|buf" -d "Open file with hs var(${HS_VAR_LOGFILE})"
                 cli_helper -o "-t|--time" -d "Enable startup debug mode"
@@ -457,13 +472,14 @@ function pvim()
 
     if [ "${flag_cctree}" = "y" ] && test -f "${var_cctree_file}"
     then
+        echo "Don't forget to use cctreeupdate"
         export VIDE_SH_CCTREE_DB=$(realpath ${var_cctree_file})
         # printf "Project %- 6s: %s\n" "CCTree" "${VIDE_SH_CCTREE_DB}"
     fi
 
     cd $cpath
-    eval ${HS_VAR_VIM} ${cmd_args[@]} ${vim_args[@]}
-    echo "Launching: ${HS_VAR_VIM} ${cmd_args[@]} ${vim_args[@]}"
+    eval ${var_vim_distro} ${cmd_args[@]} ${vim_args[@]}
+    echo "Launching: ${var_vim_distro} ${cmd_args[@]} ${vim_args[@]}"
     # unset var
     unset VIDE_SH_PROJ_DATA_PATH
     unset VIDE_SH_TAGS_DB
@@ -949,8 +965,8 @@ function banlys
         # echo "---- Android log analysis"
         section_title="Android log analysis"
         # local total_line=$(wc -l ${var_logfile} | cut -d " " -f1 )
-        # cat ${var_logfile} | purify | grep -B ${total_line} "error.*generated" | tac | grep -B ${total_line} "generated.$" | tac | mark_build
-        line_buf=$(cat -n ${var_logfile} | purify | grep "error.*generated\|^FAILED:" | mark_build)
+        # cat ${var_logfile} | purify | grep -B ${total_line} "error.*generated" | tac | grep -B ${total_line} "generated.$" | tac | mbuild
+        line_buf=$(cat -n ${var_logfile} | purify | grep "error.*generated\|^FAILED:" | mbuild)
         test -n "${line_buf}" && tmp_buf+=${line_buf}${var_next_line}
 
         if test -n "${tmp_buf}"
@@ -966,7 +982,7 @@ function banlys
         tmp_buf=''
         # echo "---- Make log analysis"
         section_title="Make log analysis"
-        line_buf=$(cat -n ${var_logfile} | purify | grep "make.*Error\|Makefile.*\*\*\*" | mark_build)
+        line_buf=$(cat -n ${var_logfile} | purify | grep "make.*Error\|Makefile.*\*\*\*" | mbuild)
         test -n "${line_buf}" && tmp_buf+=${line_buf}${var_next_line}
 
         if test -n "${tmp_buf}"
@@ -1109,11 +1125,13 @@ function banlys
 ########################################################
 function session
 {
-    local var_taget_session=""
+    local var_taget_socket=""
     local var_action=""
     local var_remove_list=()
     local var_cmd=('tmux')
     local flag_multiple_instance=y
+
+    local var_taget_name=""
 
     if [ ! -d ${HS_TMP_SESSION_PATH} ]
     then
@@ -1122,7 +1140,7 @@ function session
 
     if [[ "$#" = "0" ]]
     then
-        # var_taget_session="Tmp Session"
+        # var_taget_socket="Tmp Session"
         session ls
         return
     fi
@@ -1134,46 +1152,71 @@ function session
                 ;;
             -l|--list|ls)
                 var_action="list"
-                break
                 ;;
             -L|--real-list)
                 var_action="real-list"
-                break
                 ;;
             -p|--purge)
                 var_action="purge"
-                break
                 ;;
             -rm|--remove|rm)
                 var_action="remove"
                 shift 1
                 var_remove_list+=(${@})
-                break
                 ;;
             -a|--attach|a)
-                var_taget_session=${2}
                 var_action="attach"
-                break
+                if (( "$#" >= "2" ))
+                then
+                    if ! [[ $2 =~ \-.* ]]
+                    then
+                        var_taget_socket=${2}
+                        shift 1
+                    fi
+                fi
                 ;;
             -ao|--attach-only|ao)
-                var_taget_session=${2}
                 var_action="attach-only"
-                break
+                if (( "$#" >= "2" ))
+                then
+                    if ! [[ $2 =~ \-.* ]]
+                    then
+                        var_taget_socket=${2}
+                        shift 1
+                    fi
+                fi
                 ;;
             -c|--create|c)
-                var_taget_session=${2}
                 var_action="create"
-                break
+                if (( "$#" >= "2" ))
+                then
+                    if ! [[ $2 =~ \-.* ]]
+                    then
+                        var_taget_socket=${2}
+                        shift 1
+                    fi
+                fi
                 ;;
             -da|--detach-all|da)
                 var_action="detach-all"
-                break
                 ;;
             -d|--detach|d)
                 var_action="detach"
-                var_taget_session=${2}
+                if (( "$#" >= "2" ))
+                then
+                    if ! [[ $2 =~ \-.* ]]
+                    then
+                        var_taget_socket=${2}
+                        shift 1
+                    fi
+                fi
+                # echo  $var_taget_socket
+                # return 1
+                ;;
+            -t|---target-name)
+                var_taget_name=${2}
+                # echo "target: var_taget_name:$var_taget_name"
                 shift 1
-                break
                 ;;
             --host|host|hostname|h)
                 local var_hostname="$(hostname)"
@@ -1181,12 +1224,11 @@ function session
                 if [ "${tmp_name}" != "" ]
                 then
                     var_action="attach"
-                    var_taget_session=${tmp_name}
+                    var_taget_socket=${tmp_name}
                 else
                     var_action="create"
-                    var_taget_session=${var_hostname}
+                    var_taget_socket=${var_hostname}
                 fi
-                break
                 ;;
             -h|--help)
                 cli_helper -c "session" -cd "session is an independ instance of tmux"
@@ -1200,6 +1242,7 @@ function session
                 cli_helper -o "-c|--create" -d "create session with session name"
                 cli_helper -o "-da|--detach-all" -d "detach all session"
                 cli_helper -o "-d|--detach" -d "detach session"
+                cli_helper -o "-t|--target-name" -d "specify session name"
                 cli_helper -o "-h|--help" -d "Print help function "
                 cli_helper -o "-l|--list" -d "list session"
                 cli_helper -o "-p|--purge" -d "purge socket"
@@ -1208,14 +1251,15 @@ function session
                 return 0
                 ;;
             *)
+                echo "Auto detect."
                 local tmp_name=$(session ls |grep "${1}" | cut -d ':' -f 1 | tr -d ' ')
                 if [ "${tmp_name}" != "" ]
                 then
                     var_action="attach-only"
-                    var_taget_session=${tmp_name}
+                    var_taget_socket=${tmp_name}
                 else
                     var_action="create"
-                    var_taget_session=${1}
+                    var_taget_socket=${1}
                 fi
                 break
                 ;;
@@ -1226,36 +1270,45 @@ function session
     # -S socket path
     # -L socket name(default socket path)
     # ${var_cmd[@]} -S test new -s sharedsession
+    if test -z "${var_taget_name}"
+    then
+        # echo "Assign var_taget_name"
+        var_taget_name="${var_taget_socket}"
+    fi
+
+    # echo "${var_action} session: ${var_taget_name}@${var_taget_socket}"
 
     if [ "${var_action}" = "attach" ]
     then
-        echo "${var_action} session: ${var_taget_session}"
-        retitle ${var_taget_session}
-        if [ "${flag_multiple_instance}" = "y" ] && [ -n "${var_taget_session}" ]
+        echo "${var_action} session: ${var_taget_name}@${var_taget_socket}"
+        retitle ${var_taget_socket}
+        if [ "${flag_multiple_instance}" = "y" ] && [ -n "${var_taget_socket}" ]
         then
-            var_cmd+=("-S ${HS_TMP_SESSION_PATH}/${var_taget_session}")
+            var_cmd+=("-S ${HS_TMP_SESSION_PATH}/${var_taget_socket}")
         fi
-        eval ${var_cmd[@]} a -dt ${var_taget_session}
+        eval ${var_cmd[@]} a -dt ${var_taget_name}
     elif [ "${var_action}" = "attach-only" ]
     then
-        echo "${var_action} session: ${var_taget_session}"
-        retitle ${var_taget_session}
-        echo ${var_cmd[@]} a -t ${var_taget_session}
-        if [ "${flag_multiple_instance}" = "y" ] && [ -n "${var_taget_session}" ]
+        echo "${var_action} session: ${var_taget_name}@${var_taget_socket}"
+        retitle ${var_taget_socket}
+        echo ${var_cmd[@]} a -t ${var_taget_name}
+        if [ "${flag_multiple_instance}" = "y" ] && [ -n "${var_taget_socket}" ]
         then
-            var_cmd+=("-S ${HS_TMP_SESSION_PATH}/${var_taget_session}")
+            var_cmd+=("-S ${HS_TMP_SESSION_PATH}/${var_taget_socket}")
         fi
-        eval ${var_cmd[@]} a -t ${var_taget_session}
+        eval ${var_cmd[@]} a -t ${var_taget_name}
     elif [ "${var_action}" = "create" ]
     then
-        echo "${var_action} session: ${var_taget_session}"
-        retitle ${var_taget_session}
-        # echo pureshell "export TERM='xterm-256color' && ${var_cmd[@]} -u -2 new -s ${var_taget_session}"
-        if [ "${flag_multiple_instance}" = "y" ] && [ -n "${var_taget_session}" ]
+        echo "${var_action} session: ${var_taget_socket}"
+        retitle ${var_taget_socket}
+        # echo pureshell "export TERM='xterm-256color' && ${var_cmd[@]} -u -2 new -s ${var_taget_socket}"
+        if [ "${flag_multiple_instance}" = "y" ] && [ -n "${var_taget_socket}" ]
         then
-            var_cmd+=("-S ${HS_TMP_SESSION_PATH}/${var_taget_session}")
+            var_cmd+=("-S ${HS_TMP_SESSION_PATH}/${var_taget_socket}")
         fi
-        pureshell "export TERM='xterm-256color' && ${var_cmd[@]} -u -2 new -s ${var_taget_session}"
+        # NOTE, don't carete session with names
+        var_taget_name="${var_taget_socket}"
+        pureshell "export TERM='xterm-256color' && ${var_cmd[@]} -u -2 new -s ${var_taget_name}"
     elif [ "${var_action}" = "list" ]
     then
         echo "${var_action} session:"
@@ -1311,6 +1364,21 @@ function session
                 rm ${HS_TMP_SESSION_PATH}/${each_session}
             fi
         done
+
+        echo "Kill Orphan process:"
+        for each_socket in $(ps -eo pid,command | grep tmux | tr -s " "  | sed "s/^ //g"  |cut -d " " -f 4 | sort |uniq)
+        do
+            if ! test -S ${each_socket}
+            then
+
+                for each_process in $(ps -eo pid,command | grep "/home/shaun/.cache/hs_temp/session/test"| grep tmux | tr -s " " | sed -s "s/^ //g" | cut -d " " -f 1)
+                do
+                    echo kill -9 ${each_process}
+                    kill -9 ${each_process}
+                done
+            fi
+        done
+
     elif [ "${var_action}" = "remove" ]
     then
         echo "${var_action} session: ${var_remove_list}"
@@ -1342,14 +1410,14 @@ function session
         done
     elif [ "${var_action}" = "detach" ]
     then
-        echo "${var_action} ${var_taget_session}"
+        echo "${var_action} ${var_taget_name}@${var_taget_socket}"
 
         for each_session in $(session ls | cut -d ":" -f 1)
         do
-            if [ "${each_session}" = "${var_taget_session}" ]
+            if [ "${each_session}" = "${var_taget_socket}" ]
             then
-                echo "Detach ${var_taget_session}"
-                eval ${var_cmd[@]} -S ${HS_TMP_SESSION_PATH}/${var_taget_session} detach-client -s "${var_taget_session}"
+                echo "Detach ${var_taget_name}"
+                eval ${var_cmd[@]} -S ${HS_TMP_SESSION_PATH}/${var_taget_socket} detach-client -s "${var_taget_name}"
             fi
         done
     fi
@@ -1357,14 +1425,15 @@ function session
     # Remove session socket if it exit
     if [ "${var_action}" = "create" ] || [ "${var_action}" = "attach" ] || [ "${var_action}" = "attach-only" ]
     then
-        if [ "${var_taget_session}" != "" ] && ! session ls |grep ${var_taget_session} && test -S ${HS_TMP_SESSION_PATH}/${var_taget_session}
+        if [ "${var_taget_socket}" != "" ] && ! session ls |grep ${var_taget_socket} && test -S ${HS_TMP_SESSION_PATH}/${var_taget_socket}
         then
-            echo "Remove session ${var_taget_session}"
-            rm ${HS_TMP_SESSION_PATH}/${var_taget_session}
+            # FIXME, It's remvoe change session, And cause memory leak.
+            echo "Remove session ${var_taget_socket}"
+            rm ${HS_TMP_SESSION_PATH}/${var_taget_socket}
         fi
     fi
 
-    # ${var_cmd[@]} a -t ${var_taget_session} || ${var_cmd[@]} new -s ${var_taget_session}
+    # ${var_cmd[@]} a -t ${var_taget_socket} || ${var_cmd[@]} new -s ${var_taget_socket}
 }
 function sanity_check()
 {
@@ -1451,7 +1520,7 @@ function erun()
     echo "Start cmd: $(printc -c yellow ${excute_cmd})"
     # print "$(printlc -lw 32 -cw 0 -d " " "Start Jobs at ${start_time}" "")" | mark -s green "#"
     echo "$(printlc -lw 32 -cw 0 -d " " "Start Jobs at ${start_time}" "")" | mark -s green "#"
-    # mark_build "${excute_cmd}"
+    # mbuild "${excute_cmd}"
     if [ -n "${HS_PATH_LOG}" ] && [ "${flag_log_enable}" = "y" ]
     then
         if [ ! -d "${log_path}" ]
