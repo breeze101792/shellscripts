@@ -1055,6 +1055,40 @@ function read_key()
     # printf ${var_input} | xxd | cut -d " " -f 2-7
     printf "\nvar: \$\'\\\x%s\'\n" $(printf ${var_input} | xxd | cut -d " " -f 2-7)
 }
+function xtools()
+{
+
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -ds|--disable-sleep)
+                xset s off
+                xset -dpms
+                xset s noblank
+                ;;
+            -v|--verbose)
+                flag_verbose="y"
+                shift 1
+                ;;
+            -h|--help)
+                cli_helper -c "xtools" -cd "xtools function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "xtools [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-a|--append" -d "append file extension on search"
+                cli_helper -o "-v|--verbose" -d "Verbose print "
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                echo "Wrong args, $@"
+                return -1
+                ;;
+        esac
+        shift 1
+    done
+
+}
 function xkey()
 {
     local var_skey_prefix="sudo ydotool "
