@@ -20,6 +20,17 @@ function tmp1()
     while [[ "$#" != 0 ]]
     do
         case $1 in
+            -o|--options)
+                if (( "$#" >= "2" ))
+                then
+                    if ! [[ $2 =~ \-.* ]]
+                    then
+                        # not start with -
+                        cmd_args+=("${2}")
+                        shift 1
+                    fi
+                fi
+                ;;
             -a|--append)
                 cmd_args+=("${2}")
                 shift 1

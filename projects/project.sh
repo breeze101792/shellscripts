@@ -1,6 +1,7 @@
-test -z  "${HS_PROJ_ANDROID}" && export HS_PROJ_ANDROID=y
-test -z  "${HS_PROJ_LINUX}" && export HS_PROJ_LINUX=y
-test -z  "${HS_PROJ_FPGA}" && export HS_PROJ_FPGA=y
+testnset -e -v HS_PROJ_ANDROID -c y
+testnset -e -v HS_PROJ_LINUX   -c y
+testnset -e -v HS_PROJ_FPGA    -c y
+testnset -e -v HS_PROJ_ZERO    -c y
 
 if [ "${HS_PROJ_ANDROID}" = "y" ]
 then
@@ -15,4 +16,9 @@ fi
 if [ "${HS_PROJ_FPGA}" = "y" ]
 then
     source ${HS_PATH_LIB}/projects/fpga/fpga.sh
+fi
+
+if [ "${HS_PROJ_ZERO}" = "y" ]
+then
+    source ${HS_PATH_LIB}/projects/zero/zero.sh
 fi

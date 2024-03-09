@@ -117,8 +117,8 @@ export LANG="en_US.utf8"
 # export PATH=$PATH:$HOME/bin/
 
 ## Default Editor  ##
-export EDITOR=vim
-export VISUAL=vim
+export EDITOR=${HS_VAR_VIM}
+export VISUAL=${HS_VAR_VIM}
 
 # source other files
 # source-file /path/to/tmux.conf.common

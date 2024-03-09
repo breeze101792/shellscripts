@@ -13,7 +13,7 @@
 # It's for bash
 if [ ${HSL_SHELL} = "bash" ]
 then
-    echo "Shell : ${HSL_SHELL}"
+    # echo "Shell : ${HSL_SHELL}"
     # Use GNU ls colors when tab-completing files
     set colored-stats on
 
@@ -26,7 +26,7 @@ then
     export PS1="[\u@\h][\d \A]\\$ "
 elif [ ${HSL_SHELL} = "zsh" ]
 then
-    echo "Shell : ${HSL_SHELL}"
+    # echo "Shell : ${HSL_SHELL}"
     PROMPT="[%n@%m][%D %T][%?][%d] $ "
 else
     echo "Shell : ${HSL_SHELL}"
@@ -40,10 +40,18 @@ esac
 ################################################################
 ####    Alias
 ################################################################
-alias ll="ls -al"
-alias llc="ls -al --color"
-alias grep="grep --line-buffered"
-alias sgrep='grep --line-buffered -rnIi  '
+alias l='ls -a '
+alias lt='ls -a -t '
+alias lc='ls -a --color=always'
+
+alias ll='l -lh'
+alias llc='ls -lh --color=always'
+alias llt='ll -t'
+alias lld='ll -al $@| grep "^d"'
+
+alias cgrep='grep --color=always '
+alias sgrep='grep -rnIi  '
+alias scgrep='grep --color=always -rnIi  '
 
 ################################################################
 ####    Function
@@ -223,21 +231,21 @@ mark()
 if test -f "${HSL_WORK_PATH}/work.sh"
 then
     source ${HSL_WORK_PATH}/work.sh
-    echo "Work script ${HSL_WORK_PATH}/work.sh"
-else
-    echo "Work script not found. ${HSL_WORK_PATH}/work.sh"
+#     echo "Work script ${HSL_WORK_PATH}/work.sh"
+# else
+#     echo "Work script not found. ${HSL_WORK_PATH}/work.sh"
 fi
 
 if test -d "${HSL_WORK_PATH}/scripts"
 then
     epath "${HSL_WORK_PATH}/scripts"
-else
-    echo "Execute script folder not found. ${HSL_WORK_PATH}/scripts.sh"
+# else
+#     echo "Execute script folder not found. ${HSL_WORK_PATH}/scripts.sh"
 fi
 
 if test -d "${HSL_WORK_PATH}/bin"
 then
     epath "${HSL_WORK_PATH}/bin"
-else
-    echo "Binary folder not found. ${HSL_WORK_PATH}"
+# else
+#     echo "Binary folder not found. ${HSL_WORK_PATH}"
 fi

@@ -541,7 +541,7 @@ function filesync()
                 shift 1
                 ;;
             -e|--exclude)
-                var_exclude_list+=("${2}")
+                var_exclude_list+=("--exclude='${2}'")
                 shift 1
                 ;;
             -f|--fake)
