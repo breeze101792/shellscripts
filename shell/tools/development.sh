@@ -52,6 +52,7 @@ function pvupdate()
         esac
         shift 1
     done
+    var_cscope_cmd+=("-U")
 
     if [ "${flag_system_include}" = "n" ]
     then
@@ -104,13 +105,14 @@ function pvupdate()
     then
         cp -rf ${var_tmp_folder}/${var_tags_file} .
         cp -rf ${var_tmp_folder}/*.db .
+        cp -rf ${var_tmp_folder}/${var_cscope_file}* .
         echo "Tag generate successfully."
     else
         ls ${var_tmp_folder}
         echo "Fail to generate tag"
-        test -f ${var_tags_file} || echo 'Update ctags' && cp ${var_tmp_folder}/${var_tags_file}
-        test -f ${var_cscope_file} || echo 'Update cscope' && cp ${var_tmp_folder}/${var_cscope_file}
-        test -f ${var_cctree_file} || echo 'Update cctree' && cp ${var_tmp_folder}/${var_cctree_file}
+        test -f ${var_tags_file} || echo 'Update ctags' && cp -f ${var_tmp_folder}/${var_tags_file} ${var_tmp_folder}
+        test -f ${var_cscope_file} || echo 'Update cscope' && cp -f ${var_tmp_folder}/${var_cscope_file}* ${var_tmp_folder}
+        test -f ${var_cctree_file} || echo 'Update cctree' && cp -f ${var_tmp_folder}/${var_cctree_file} ${var_tmp_folder}
     fi
 
     rm -rf ${var_tmp_folder} 2> /dev/null
