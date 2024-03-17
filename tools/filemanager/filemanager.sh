@@ -553,6 +553,10 @@ mark() {
 
     status_line
 }
+get_selection() {
+
+    list+=("$item")
+}
 read_dir() {
     # Read a directory to an array and sort it directories first.
     local dirs
@@ -612,15 +616,24 @@ fKeyHandler() {
     }
 
     case ${special_key:-$1} in
+        # '' is what bash sees when the enter/return key is pressed.
+        ${HSFM_KEY_CHILD3:=""})
+            open "${list[VAR_TERM_CONTENT_SCROLL]}"
+        ;;
         # Open list item.
         # 'C' is what bash sees when the right arrow is pressed
         # ('\e[C' or '\eOC').
-        # '' is what bash sees when the enter/return key is pressed.
         ${HSFM_KEY_CHILD1:=l}|\
         ${HSFM_KEY_CHILD2:=$'\e[C'}|\
-        ${HSFM_KEY_CHILD3:=""}|\
         ${HSFM_KEY_CHILD4:=$'\eOC'})
-            open "${list[VAR_TERM_CONTENT_SCROLL]}"
+            # only check if it's directory.
+            if test -d "${list[VAR_TERM_CONTENT_SCROLL]##*/}"
+            then
+                open "${list[VAR_TERM_CONTENT_SCROLL]}"
+            else
+                # cmd_handler "log" $(file "${list[VAR_TERM_CONTENT_SCROLL]}" | tail -n 1)
+                cmd_handler "log" "File type: $(file "${list[VAR_TERM_CONTENT_SCROLL]}" | tail -n 1 | cut -d ':' -f2)"
+            fi
         ;;
 
         # Go to the parent directory.
@@ -820,11 +833,7 @@ fKeyHandler() {
 
         # Show help info.
         ${HSFM_KEY_HELP:=H})
-            clear_screen
-            status_line "Help info"
-            fHelp
-            read -ern 1
-            redraw
+            cmd_handler "help" "${list[VAR_TERM_CONTENT_SCROLL]##*/}"
         ;;
 
         # Go to dir.
@@ -914,6 +923,9 @@ cmd_handler()
             ;;
         "search")
             cmd_line_interact "${HSFM_KEY_SEARCH}" "search"
+            ;;
+        "help")
+            cmd_help "$@"
             ;;
         "exit")
             cmd_exit
@@ -1031,7 +1043,7 @@ cmd_line_interact() {
                         open "${tmp_args}"
                         ;;
                     "help")
-                        cmd_help
+                        cmd_help "${tmp_args}"
                         ;;
                     *)
                     # cmd_handler "log"
@@ -1158,10 +1170,9 @@ cmd_vim()
 cmd_help()
 {
     clear_screen
-    reset_terminal
-    fHelp
-    read p
-    setup_terminal
+    status_line "Help info"
+    fHelp $@
+    read -ern 1
     redraw
 }
 cmd_exit()
@@ -1516,8 +1527,8 @@ get_ls_colors() {
     export "${ls_cols[@]}" &>/dev/null
 }
 
-fHelp() {
-    echo "Help Info\n"
+fHelp_keymap() {
+    printf "Help Info\n"
     printf "\n%s\n" "## Help operations."
     printf "% -32s: %s\n"  "HSFM_KEY_HELP"                  ${HSFM_KEY_HELP}
     printf "% -32s: %s\n"  "HSFM_KEY_CHILD1"                ${HSFM_KEY_CHILD1}
@@ -1562,6 +1573,18 @@ fHelp() {
     printf "% -32s: %s\n"  "HSFM_KEY_ATTRIBUTES"            ${HSFM_KEY_ATTRIBUTES}
     printf "% -32s: %s\n"  "HSFM_KEY_EXECUTABLE"            ${HSFM_KEY_EXECUTABLE}
     printf "% -32s: %s\n"  "HSFM_KEY_HIDDEN"                ${HSFM_KEY_HIDDEN}
+}
+fHelp() {
+    local help_type=$1
+    if [ "${help_type}" = "key" ] || [ "${help_type}" = "map" ]
+    then
+        fHelp_keymap $@
+    else
+        printf "Help Info\n"
+        printf "Supported Commands: %s\n" "${cmd_list[@]}"
+    fi
+
+    printf "Press any key to continue..."
 }
 
 ## Main Function
