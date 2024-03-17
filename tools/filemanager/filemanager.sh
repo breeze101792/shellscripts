@@ -558,6 +558,8 @@ read_dir() {
     local dirs
     local files
     local item_index
+    list=()
+    # NOTE. Clear list & use it directly to avoid list index issue on BSD
 
     # Set window name.
     printf '\e]2;hsfm: %s\e'\\ "$PWD"
@@ -568,18 +570,20 @@ read_dir() {
     for item in "$PWD"/*; do
         if [[ -d $item ]]; then
             dirs+=("$item")
+            list+=("$item")
 
             # Find the position of the child directory in the
             # parent directory list.
             [[ $item == "$OLDPWD" ]] &&
                 ((previous_index=item_index))
             ((item_index++))
-        else
+        elif [[ -f $item ]]; then
             files+=("$item")
+            list+=("$item")
         fi
     done
 
-    list=("${dirs[@]}" "${files[@]}")
+    # list=("${dirs[@]}" "${files[@]}")
 
     # Indicate that the directory is empty.
     [[ -z ${list[0]} ]] &&
