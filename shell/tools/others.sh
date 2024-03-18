@@ -10,6 +10,17 @@
 ########################################################
 #####    Usefull Function                          #####
 ########################################################
+function zerowifi()
+{
+    local var_wifi_name="SiPhone"
+    while ! wifi -s | grep ${var_wifi_name}
+    do
+        echo "Wait for scan."
+        sleep 1
+    done
+
+    sudo nmcli dev wifi connect ${var_wifi_name}
+}
 function wifi()
 {
     # local var_utility='sudo wpa_cli'

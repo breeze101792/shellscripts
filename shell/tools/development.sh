@@ -494,7 +494,7 @@ function pvim()
 
     if [ "${flag_time}" = "y" ]
     then
-        tail -n 1 startup_${var_timestamp}.log
+        grep "STARTED" startup_${var_timestamp}.log
     fi
 }
 ########################################################
@@ -953,6 +953,11 @@ function banlys
         esac
         shift 1
     done
+
+    if [ "${var_logfile}" = "" ] && test -f "build.log"
+    then
+        var_logfile="build.log"
+    fi
 
     if [ "${flag_edit}" = "y" ]
     then
@@ -1963,6 +1968,10 @@ function gforall()
                 var_target_cmd="git log --pretty='format:%cd %p->%h %cn(%an) %s' -n 1"
                 break
                 ;;
+            --disable-filemode)
+                var_target_cmd="git config core.fileMode false"
+                break
+                ;;
             status)
                 var_target_cmd="git status"
                 break
@@ -1973,6 +1982,7 @@ function gforall()
                 cli_helper -d "gforall [Options] [Value]"
                 cli_helper -t "Options"
                 cli_helper -o "-l|--log" -d "Print first commit"
+                cli_helper -o "--disable-filemode" -d "Disable file mode"
                 cli_helper -o "status" -d "git status"
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
@@ -2247,6 +2257,8 @@ function ginfo()
         echo "---- Patches ----"
         echo "Generate Patch: git format-patch -n <num_of_patchs> <commit>"
         echo "Apply Patch   : git am --directory=<path_to_your_patch_root> <path_to_your_patch>"
+        echo "---- Config ----"
+        echo "git config core.fileMode false"
         echo "---- Others ----"
         echo "Fetch online commit: git fetch --all"
         echo "Get Info for First 1 Commit: git log --pretty='format:%p->%h %cn(%an) %s' -n 1"
@@ -3065,7 +3077,7 @@ function hex2bin()
 ########################################################
 #####    Pythen                                    #####
 ########################################################
-function pyenv()
+function pyvenv()
 {
     local var_target_path="${HS_PATH_PYTHEN_ENV}"
     local var_action=""
@@ -3100,14 +3112,14 @@ function pyenv()
                 shift 1
                 ;;
             -h|--help)
-                cli_helper -c "pyenv" -cd "pyenv function"
+                cli_helper -c "pyvenv" -cd "pyvenv function"
                 cli_helper -t "SYNOPSIS"
-                cli_helper -d "pyenv [Options] [Value]"
+                cli_helper -d "pyvenv [Options] [Value]"
                 cli_helper -d "default path will set to HS_PATH_PYTHEN_ENV"
                 cli_helper -t "Options"
-                cli_helper -o "-c|--create|c" -d "create Pyenv"
-                cli_helper -o "-a|--active|a" -d "active Pyenv"
-                cli_helper -o "-d|--deactivate|d" -d "deactivate Pyenv"
+                cli_helper -o "-c|--create|c" -d "create Pyvenv"
+                cli_helper -o "-a|--active|a" -d "active Pyvenv"
+                cli_helper -o "-d|--deactivate|d" -d "deactivate Pyvenv"
                 cli_helper -o "-u|--update|u" -d "update pip"
                 cli_helper -o "-p|--path" -d "setting pyen path, default path:${HS_PATH_PYTHEN_ENV}"
                 cli_helper -o "--pip|pip" -d "Do pip install with trust host"
