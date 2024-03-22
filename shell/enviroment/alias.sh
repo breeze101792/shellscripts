@@ -39,9 +39,9 @@ alias cgrep='grep --color=always '
 alias sgrep='grep -rnIi  '
 alias scgrep='grep --color=always -rnIi  '
 
-alias nvim='TERM=xterm-256color && nvim '
-alias vim='TERM=xterm-256color && vim '
-alias vi='TERM=xterm-256color && vim -m '
+# alias nvim='TERM=xterm-256color && nvim '
+# alias vim='TERM=xterm-256color && vim '
+# alias vi='TERM=xterm-256color && vim -m '
 alias pnvim='pvim -d nvim '
 
 ########################################################

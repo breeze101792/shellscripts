@@ -1130,19 +1130,20 @@ function banlys
 ########################################################
 #####    Exc Enhance                               #####
 ########################################################
-function session
+function session()
 {
     local var_taget_socket=""
     local var_action=""
     local var_remove_list=()
     local var_cmd=('tmux')
     local flag_multiple_instance=y
+    local var_session_tmp=${HS_TMP_SESSION_PATH}/$(hostname)
 
     local var_taget_name=""
 
-    if [ ! -d ${HS_TMP_SESSION_PATH} ]
+    if [ ! -d ${var_session_tmp} ]
     then
-        mkdir -p ${HS_TMP_SESSION_PATH}
+        mkdir -p ${var_session_tmp}
     fi
 
     if [[ "$#" = "0" ]]
@@ -1226,14 +1227,14 @@ function session
                 shift 1
                 ;;
             --host|host|hostname|h)
-		local var_hostname=""
+                local var_hostname=""
                 if command -v hostname
-		then
-			var_hostname="$(hostname)"
-		elif test -f "/etc/hostname"
-		then
-			var_hostname="$(cat /etc/hostname)"
-		fi
+                then
+                    var_hostname="$(hostname)"
+                elif test -f "/etc/hostname"
+                then
+                    var_hostname="$(cat /etc/hostname)"
+                fi
 
                 local tmp_name=$(session ls |grep "${var_hostname}" | cut -d ':' -f 1| tr -d  ' ')
                 if [ "${tmp_name}" != "" ]
@@ -1281,6 +1282,14 @@ function session
         esac
         shift 1
     done
+    if [ "$var_action" = "create" ] || [ "$var_action" = "attach" ] || [ "$var_action" = "attach-only" ]
+    then
+        if test -n "${TMUX}"
+        then
+            echo "Don't do tmux inside tmux."
+            return 1
+        fi
+    fi
     ## Run with independ instance
     # -S socket path
     # -L socket name(default socket path)
@@ -1299,7 +1308,7 @@ function session
         retitle ${var_taget_socket}
         if [ "${flag_multiple_instance}" = "y" ] && [ -n "${var_taget_socket}" ]
         then
-            var_cmd+=("-S ${HS_TMP_SESSION_PATH}/${var_taget_socket}")
+            var_cmd+=("-S ${var_session_tmp}/${var_taget_socket}")
         fi
         eval ${var_cmd[@]} a -dt ${var_taget_name}
     elif [ "${var_action}" = "attach-only" ]
@@ -1309,7 +1318,7 @@ function session
         echo ${var_cmd[@]} a -t ${var_taget_name}
         if [ "${flag_multiple_instance}" = "y" ] && [ -n "${var_taget_socket}" ]
         then
-            var_cmd+=("-S ${HS_TMP_SESSION_PATH}/${var_taget_socket}")
+            var_cmd+=("-S ${var_session_tmp}/${var_taget_socket}")
         fi
         eval ${var_cmd[@]} a -t ${var_taget_name}
     elif [ "${var_action}" = "create" ]
@@ -1319,7 +1328,7 @@ function session
         # echo pureshell "export TERM='xterm-256color' && ${var_cmd[@]} -u -2 new -s ${var_taget_socket}"
         if [ "${flag_multiple_instance}" = "y" ] && [ -n "${var_taget_socket}" ]
         then
-            var_cmd+=("-S ${HS_TMP_SESSION_PATH}/${var_taget_socket}")
+            var_cmd+=("-S ${var_session_tmp}/${var_taget_socket}")
         fi
         # NOTE, don't carete session with names
         var_taget_name="${var_taget_socket}"
@@ -1327,20 +1336,20 @@ function session
     elif [ "${var_action}" = "list" ]
     then
         echo "${var_action} session:"
-        # for each_session in $(ls ${HS_TMP_SESSION_PATH})
+        # for each_session in $(ls ${var_session_tmp})
         # do
         #     printf "${each_session}\n"
         # done
 
         if [ "${flag_multiple_instance}" = "y" ]
         then
-            for each_session in $(ls ${HS_TMP_SESSION_PATH})
+            for each_session in $(ls ${var_session_tmp})
             do
                 # ps -ef |grep 'tmux\|session' |grep "\/$each_session "
                 if ps -ef |grep 'tmux\|session' | grep "/$each_session " > /dev/null
                 then
                     # printf "${each_session}: On\n"
-                    eval ${var_cmd[@]} -S ${HS_TMP_SESSION_PATH}/${each_session} ls
+                    eval ${var_cmd[@]} -S ${var_session_tmp}/${each_session} ls
                 fi
             done
         else
@@ -1354,13 +1363,13 @@ function session
     elif [ "${var_action}" = "real-list" ]
     then
         echo "${var_action} session by ps:"
-        for each_session in $(ls ${HS_TMP_SESSION_PATH})
+        for each_session in $(ls ${var_session_tmp})
         do
             # ps -ef |grep 'tmux\|session' |grep "\/$each_session "
             if ps -ef |grep 'tmux\|session' | grep "/$each_session " > /dev/null
             then
                 # printf "${each_session}: On\n"
-                eval ${var_cmd[@]} -S ${HS_TMP_SESSION_PATH}/${each_session} ls
+                eval ${var_cmd[@]} -S ${var_session_tmp}/${each_session} ls
             else
                 printf "${each_session}: Off\n" | mark -s yellow ${each_session}
             fi
@@ -1368,7 +1377,7 @@ function session
     elif [ "${var_action}" = "purge" ]
     then
         echo "${var_action} session by ps:"
-        for each_session in $(ls ${HS_TMP_SESSION_PATH})
+        for each_session in $(ls ${var_session_tmp})
         do
             # ps -ef |grep 'tmux\|session' |grep "\/$each_session "
             if ps -ef |grep 'tmux\|session' | grep "/$each_session " > /dev/null
@@ -1376,7 +1385,7 @@ function session
                 printf "Session on : ${each_session}\n"
             else
                 printf "Remove : ${each_session}\n" | mark -s yellow ${each_session}
-                rm ${HS_TMP_SESSION_PATH}/${each_session}
+                rm ${var_session_tmp}/${each_session}
             fi
         done
 
@@ -1402,10 +1411,10 @@ function session
             if [ "${each_session}" != "" ]
             then
                 echo "Remove ${each_session}"
-                eval ${var_cmd[@]} -S ${HS_TMP_SESSION_PATH}/${each_session} kill-session -t "${each_session}"
+                eval ${var_cmd[@]} -S ${var_session_tmp}/${each_session} kill-session -t "${each_session}"
                 if [[ ${?} = 0 ]]
                 then
-                    rm ${HS_TMP_SESSION_PATH}/${each_session}
+                    rm ${var_session_tmp}/${each_session}
                 else
                     echo "Remove session fail: ${each_session}"
                 fi
@@ -1420,7 +1429,7 @@ function session
             if [ "${each_session}" != "" ]
             then
                 echo "Detach ${each_session}"
-                eval ${var_cmd[@]} -S ${HS_TMP_SESSION_PATH}/${each_session} detach-client -s "${each_session}"
+                eval ${var_cmd[@]} -S ${var_session_tmp}/${each_session} detach-client -s "${each_session}"
             fi
         done
     elif [ "${var_action}" = "detach" ]
@@ -1432,7 +1441,7 @@ function session
             if [ "${each_session}" = "${var_taget_socket}" ]
             then
                 echo "Detach ${var_taget_name}"
-                eval ${var_cmd[@]} -S ${HS_TMP_SESSION_PATH}/${var_taget_socket} detach-client -s "${var_taget_name}"
+                eval ${var_cmd[@]} -S ${var_session_tmp}/${var_taget_socket} detach-client -s "${var_taget_name}"
             fi
         done
     fi
@@ -1440,11 +1449,11 @@ function session
     # Remove session socket if it exit
     if [ "${var_action}" = "create" ] || [ "${var_action}" = "attach" ] || [ "${var_action}" = "attach-only" ]
     then
-        if [ "${var_taget_socket}" != "" ] && ! session ls |grep ${var_taget_socket} && test -S ${HS_TMP_SESSION_PATH}/${var_taget_socket}
+        if [ "${var_taget_socket}" != "" ] && ! session ls |grep ${var_taget_socket} && test -S ${var_session_tmp}/${var_taget_socket}
         then
             # FIXME, It's remvoe change session, And cause memory leak.
             echo "Remove session ${var_taget_socket}"
-            rm ${HS_TMP_SESSION_PATH}/${var_taget_socket}
+            rm ${var_session_tmp}/${var_taget_socket}
         fi
     fi
 

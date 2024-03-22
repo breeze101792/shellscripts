@@ -100,25 +100,3 @@ test -z "${HS_VAR_LOGFILE}" && export HS_VAR_LOGFILE="LOGFILE"
 export HS_TMP_SESSION_PATH="${HS_PATH_TMP}/session"
 export HS_TMP_FILE_CONFIG="${HS_PATH_TMP}/hs_config"
 # export HS_FILE_CONFIG="${HOME}/.cache/hs_config"
-
-########################################################
-########################################################
-#####                                              #####
-#####    Others Settings                           #####
-#####                                              #####
-########################################################
-########################################################
-
-# Terminal configs
-export TERM="xterm-256color"
-export LANG="en_US.utf8"
-
-## home user bin to PATH ##
-# export PATH=$PATH:$HOME/bin/
-
-## Default Editor  ##
-export EDITOR=${HS_VAR_VIM}
-export VISUAL=${HS_VAR_VIM}
-
-# source other files
-# source-file /path/to/tmux.conf.common

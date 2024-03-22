@@ -470,12 +470,17 @@ function hs_main
     then
         export HS_ENV_SHELL="bash"
         hs_source ${HS_PATH_LIB}/shell/core/bash.sh
-    else
+    elif [ "${HS_ENV_SHELL}" = "bash" ]
+    then
         export HS_ENV_SHELL="zsh"
+        hs_source ${HS_PATH_LIB}/shell/core/zsh.sh
+    else
+        export HS_ENV_SHELL="sh"
         hs_source ${HS_PATH_LIB}/shell/core/zsh.sh
     fi
     hs_print "Version: $HS_ENV_VER"
     hs_source ${HS_PATH_LIB}/shell/enviroment/platform.sh
+    hs_source ${HS_PATH_LIB}/shell/enviroment/enviroment.sh
     hs_source ${HS_PATH_LIB}/shell/enviroment/alias.sh
     hs_source ${HS_PATH_LIB}/shell/library/lib.sh
     hs_source ${HS_PATH_LIB}/shell/library/cli.sh
