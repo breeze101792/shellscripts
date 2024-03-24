@@ -39,16 +39,20 @@ alias cgrep='grep --color=always '
 alias sgrep='grep -rnIi  '
 alias scgrep='grep --color=always -rnIi  '
 
+# Don't use this line, now we auto detect it.
 # alias nvim='TERM=xterm-256color && nvim '
 # alias vim='TERM=xterm-256color && vim '
 # alias vi='TERM=xterm-256color && vim -m '
 alias pnvim='pvim -d nvim '
 
+alias clips="clip -s "
+alias clipx="clip -x "
+
 ########################################################
 #####    Tools                                     #####
 ########################################################
-alias clips="clip -s "
-alias clipx="clip -x "
+alias fm="${HS_PATH_LIB}/tools/filemanager/filemanager.sh"
+alias bashtop="${HS_PATH_LIB}/tools/bashtop/bashtop"
 
 ########################################################
 #####    Dev                                       #####

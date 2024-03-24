@@ -80,13 +80,18 @@ function fexample()
     fPrintHeader ${FUNCNAME[0]}
 
 }
+function finit()
+{
+    flocalegen
+    fpacman_init
+}
 function fpacman_init()
 {
     fPrintHeader ${FUNCNAME[0]}
+    # before starting download pkgs, do init for getting keys
     pacman-key --init
     pacman-key --populate
     pacman -Sy archlinux-keyring
-
 }
 function flocalegen()
 {
@@ -100,10 +105,10 @@ function fpkg_basic()
     VAR_PKG_LIST+=("sudo")
     VAR_PKG_LIST+=("vim")
     VAR_PKG_LIST+=("tmux")
-    VAR_PKG_LIST+=("openssh")
     VAR_PKG_LIST+=("zsh")
 
     VAR_PKG_LIST+=("bc")
+    VAR_PKG_LIST+=("openssh")
     VAR_PKG_LIST+=("dhcpcd")
     VAR_PKG_LIST+=("git")
     VAR_PKG_LIST+=("pkgfile")
@@ -115,10 +120,13 @@ function fpkg_dev()
     VAR_PKG_LIST+=("devtools")
     VAR_PKG_LIST+=("python")
     VAR_PKG_LIST+=("rustup")
+    VAR_PKG_LIST+=("nvim")
     VAR_PKG_LIST+=("cscope")
     VAR_PKG_LIST+=("ctags")
     VAR_PKG_LIST+=("qemu-base")
     VAR_PKG_LIST+=("python-virtualenv")
+    VAR_PKG_LIST+=("clang")
+    VAR_PKG_LIST+=("clangd")
 }
 function fpkg_tools()
 {
@@ -131,6 +139,24 @@ function fpkg_tools()
     VAR_PKG_LIST+=("nmap")
     VAR_PKG_LIST+=("p7zip")
     VAR_PKG_LIST+=("wget")
+}
+function fpkg_wifi()
+{
+    # link wpa_supplicant-wlan0.conf to /etc/wpa_supplicant/
+    VAR_PKG_LIST+=("wpa_supplicant")
+    # systemctl enable wpa_supplicant@wlan0.service
+    # the create /etc/systemd/network/25-wlan.network
+}
+function fpkg_overlayfs()
+{
+    echo "download this from github"
+    echo "https://github.com/hilderingt/archlinux-overlayroot"
+}
+function fpkg_uboot()
+{
+    VAR_PKG_LIST+=("swig")
+    VAR_PKG_LIST+=("aarch64-linux-gnu-gcc")
+    VAR_PKG_LIST+=("python-pyelftools")
 }
 function fpkg_gui()
 {

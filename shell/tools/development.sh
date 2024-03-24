@@ -538,7 +538,7 @@ function sdebug()
                 cli_helper -d "sdebug [Options] [Device]"
                 cli_helper -t "Options"
                 cli_helper -o "-d|--device" -d "Set device"
-                cli_helper -o "-b|--baud-rate" -d "Set Baud Rate"
+                cli_helper -o "-b|--baud-rate" -d "Set Baud Rate, Other: 115200, 1500000"
                 cli_helper -o "-s|--session-name" -d "Set Session Name"
                 cli_helper -o "-p|--prefix" -d "Add prefix before program, usually use sudo"
                 cli_helper -o "-h|--help" -d "Print help function "
@@ -1488,6 +1488,7 @@ function erun()
     local history_file="${log_path}/erun_history.log"
     local log_file="${log_path}/logfile_$(tstamp).log"
 
+    local flag_sudo="n"
     local flag_log_enable="y"
     local flag_color_enable="n"
     local flag_send_mail="n"
@@ -1497,8 +1498,11 @@ function erun()
     while [[ "$#" != 0 ]]
     do
         case $1 in
-            -s|--Source-HS)
+            -sh|--Source-HS)
                 local excute_cmd="source $HOME/tools/shellscripts/source.sh -p=$HOME/tools/shellscripts -s=${HS_ENV_SHELL} --change-shell-path=n --silence=y && "
+                ;;
+            -s|--sudo)
+                flag_sudo="y"
                 ;;
             -L|--no-log)
                 flag_log_enable="n"
@@ -1521,7 +1525,8 @@ function erun()
                 cli_helper -t "SYNOPSIS"
                 cli_helper -d "erun [Options] [Command]"
                 cli_helper -t "Options"
-                cli_helper -o "-s|--Source-HS" -d "Source HS config"
+                cli_helper -o "-sh|--Source-HS" -d "Source HS config"
+                cli_helper -o "-s|--sudo" -d "sudo excute"
                 cli_helper -o "-L|--no-log" -d "Run with record log"
                 cli_helper -o "-c|--color" -d "Enable Color"
                 cli_helper -o "-m|--mail" -d "Send mail after command is finished"
@@ -1538,6 +1543,11 @@ function erun()
         esac
         shift 1
     done
+    # preproccess
+    if [ "${flag_sudo}" = "y" ]
+    then
+        excute_cmd="sudo ${excute_cmd}"
+    fi
 
     # local start_time=$(date "+%Y-%m-%d_%H:%M:%S")
     local start_time=$(date)
