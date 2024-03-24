@@ -3151,7 +3151,8 @@ function pyvenv()
     elif [ "${var_action}" = "update" ]
     then
         python -m pip install --upgrade pip
-        pip list --outdated --format=freeze | grep -v '^\-e' | cut -d = -f 1 | xargs -n1 pip install -U
+        # pip list --outdated --format=freeze | grep -v '^\-e' | cut -d = -f 1 | xargs -n1 pip install -U
+        pip3 list --outdated | cut -d " " -f 1 | grep -v "Package\|-" | xargs pip install -U
     elif [ "${var_action}" = "create" ]
     then
         if [ -d ${var_target_path} ]
