@@ -53,7 +53,7 @@ test -z "${HS_PLATFORM_WSL}" && export HS_PLATFORM_WSL=n
 #####                                              #####
 ########################################################
 ########################################################
-# export HS_PATH_LIB=$
+# HS_PATH_LIB already setting on source.sh
 test -z "${HS_PATH_DOWNLOAD}" && export HS_PATH_DOWNLOAD="${HOME}/downloads"
 test -z "${HS_PATH_DOCUMENT}" && export HS_PATH_DOCUMENT="${HOME}/documents"
 test -z "${HS_PATH_MEDIA}" && export HS_PATH_MEDIA="${HOME}/media"
