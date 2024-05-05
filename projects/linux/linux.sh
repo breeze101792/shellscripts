@@ -236,3 +236,18 @@ function lxmsg()
     # echo ${var_prefix_cmd} ${var_options[@]}
     ${var_prefix_cmd} ${var_options[@]}
 }
+function lxheader_extract()
+{
+    local var_main_version="5.15"
+    local var_full_version="5.15.0-25"
+    local cpath=$(pwd)
+
+    mkdir tmp_header
+    cd tmp_header
+    cp -rf /lib/modules/${var_full_version}-generic .
+    cp -rf /usr/src/linux-headers-${var_full_version}-generic .
+    cp -rf /usr/src/linux-hwe-${var_main_version}-headers-${var_full_version} .
+
+    tar -cvjf linux_module_build_$var_full_version.tbz2 *
+
+}

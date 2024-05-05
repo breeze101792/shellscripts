@@ -992,6 +992,9 @@ function user_mount()
     local uid=$(id -u)
     local gid=$(id -g)
 
+    local var_mount_path='/mnt/tmp'
+    local var_sshfs_options=("-o allow_other,default_permissions,uid=${uid},gid=${gid}")
+
     local target_dev=""
     local target_dir="/mnt/tmp"
     while [[ "$#" != 0 ]]
@@ -1007,8 +1010,16 @@ function user_mount()
                 ;;
             -h|--help)
                 echo "user_mount"
-                printlc -cp false -d "->" "-p|--path" "Mount point"
-                printlc -cp false -d "->" "-d|--device" "Mount device"
+
+                cli_helper -c "user_mount" -cd "user_mount function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "user_mount [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-p|--path" -d "Mount point"
+                cli_helper -o "-d|--device" -d "Mount device"
+                # cli_helper -o "-a|--append" -d "append file extension on search"
+                # cli_helper -o "-v|--verbose" -d "Verbose print "
+                cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;
 

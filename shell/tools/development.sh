@@ -1067,7 +1067,7 @@ function banlys
         # echo "---- C/Cpp error"
         section_title="C/Cpp error"
         tmp_pattern="error:"
-        line_buf=$(cat -n ${var_logfile} | purify | grep "${tmp_pattern}" | mark -s red "${tmp_pattern}")
+        line_buf=$(cat -n ${var_logfile} | purify | grep -B 1 "${tmp_pattern}" | mark -s red "${tmp_pattern}")
         test -n "${line_buf}" && tmp_buf+=${line_buf}${var_next_line}
 
         if test -n "${tmp_buf}"
@@ -2841,13 +2841,15 @@ function rprun()
         tmp_cmd="repo forall -v -j ${var_jobs} -c 'git reset --hard HEAD; git clean -fd'"
         echo "${tmp_cmd}"
         eval "${tmp_cmd}"
+        error_check
     fi
 
     if [ ${flag_sync} = true ]
     then
-        tmp_cmd="repo sync -v -j${var_jobs} -c --no-tags --no-clone-bundle"
+        tmp_cmd="repo sync -j${var_jobs} -c --no-tags --no-clone-bundle"
         echo "${tmp_cmd}"
         eval "${tmp_cmd}"
+        error_check
     fi
 
     if [ ${flag_status} = true ]
@@ -2855,6 +2857,7 @@ function rprun()
         tmp_cmd="repo forall -v  -c 'git log --pretty='format:%p->%h %cn(%an) %s' -n 1'"
         echo "${tmp_cmd}"
         eval "${tmp_cmd}"
+        error_check
     fi
 
     if [ ${flag_info} = true ]
