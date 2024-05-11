@@ -139,6 +139,55 @@ function fpkg_install()
     echo "Install following pkgs: ${VAR_PKG_LIST[@]}"
     sudo apt install ${VAR_PKG_LIST[@]}
 }
+function fdev_install()
+{
+    local var_pkg_type=$1
+    fPrintHeader ${FUNCNAME[0]}
+
+    case ${var_pkg_type} in
+        "wpa")
+            fpkg_dev_wpa_supplicant
+            ;;
+        "module")
+            fpkg_dev_linux_module
+            ;;
+        "all")
+            fpkg_dev_linux_module
+            fpkg_dev_wpa_supplicant
+            ;;
+        *)
+            echo "Wrong args, $@"
+            return -1
+            ;;
+    esac
+    # echo "Update pkg list"
+    # sudo apt update
+    # echo "Install following pkgs: ${VAR_PKG_LIST[@]}"
+    # sudo apt install ${VAR_PKG_LIST[@]}
+}
+function fpkg_dev_wpa_supplicant()
+{
+    # install library once
+    VAR_PKG_LIST+=("install")
+    VAR_PKG_LIST+=("libdbus-1-dev")
+    VAR_PKG_LIST+=("libnl-genl-3-dev")
+    VAR_PKG_LIST+=("libnl-route-3-dev")
+    VAR_PKG_LIST+=("libssl-dev")
+}
+function fpkg_dev_linux_module()
+{
+    # install wireless module dev
+    VAR_PKG_LIST+=("g++ bison flex autoconf")
+    VAR_PKG_LIST+=("gcc")
+    VAR_PKG_LIST+=("libdbus-1-dev")
+    VAR_PKG_LIST+=("libnl-3-dev")
+    VAR_PKG_LIST+=("libnl-genl-3-dev")
+    VAR_PKG_LIST+=("libnl-route-3-dev")
+    VAR_PKG_LIST+=("libssl-dev")
+    VAR_PKG_LIST+=("make")
+    VAR_PKG_LIST+=("net-tools")
+    VAR_PKG_LIST+=("pkg-config")
+}
 ## Main Functions
 ###########################################################
 function fMain()
@@ -147,6 +196,7 @@ function fMain()
     local flag_verbose=false
     local flag_pkg_install=false
     local var_pkg_type=""
+    local var_dev_type=""
 
     while [[ $# != 0 ]]
     do
@@ -156,6 +206,11 @@ function fMain()
                 flag_verbose=true
                 ;;
             -p|--pkg)
+                flag_pkg_install=true
+                var_pkg_type=$2
+                shift 1
+                ;;
+            -d|--dev)
                 flag_pkg_install=true
                 var_pkg_type=$2
                 shift 1

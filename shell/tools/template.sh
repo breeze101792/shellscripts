@@ -12,6 +12,7 @@ function tmp1()
     local cmd_args="echo 'Template Function'"
     local flag_verbose="n"
     local flag_echo="y"
+    local var_path=""
 
     if [[ "$#" = "0" ]]
     then
@@ -28,6 +29,21 @@ function tmp1()
                         # not start with -
                         cmd_args+=("${2}")
                         shift 1
+                    else
+                        echo "Not accepting options start with -. $1 $2"
+                    fi
+                fi
+                ;;
+            -p|--path)
+                if (( "$#" >= "2" ))
+                then
+                    if test -d "${2}"
+                    then
+                        # not start with -
+                        var_path="${2}"
+                        shift 1
+                    else
+                        echo "Path not found. $2"
                     fi
                 fi
                 ;;

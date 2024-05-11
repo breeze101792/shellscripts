@@ -445,8 +445,8 @@ function bkfile()
 }
 function rln()
 {
-    local var_args=('-f')
-    local flag_mode="hard"
+    local var_args=('')
+    local flag_mode="soft"
 
     while [[ "$#" != 0 ]]
     do
@@ -468,6 +468,7 @@ function rln()
                 return 0
                 ;;
             *)
+                var_args+=($1)
                 break
                 # echo "Wrong args, %@"
                 # return -1
@@ -486,6 +487,57 @@ function rln()
     # echo "Do: ln ${var_args[@]} $(echo $1) $2"
     echo "ln ${var_args[@]} $(realpath $1) $2"
     ln ${var_args[@]} $(realpath $1) $2
+}
+function hstemp()
+{
+    local var_temp_file=""
+    local var_target_file="./"
+    local var_cmd=""
+
+    # default file.
+    var_temp_file="${HS_PATH_LIB}/tools/template/template_lite.sh"
+
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -l|--lite)
+                var_temp_file="${HS_PATH_LIB}/tools/template/template_lite.sh"
+                ;;
+            -f|--full)
+                var_temp_file="${HS_PATH_LIB}/tools/template/template_lite.sh"
+                ;;
+            -t|--target)
+                if (( "$#" >= "2" ))
+                then
+                    if ! [[ $2 =~ \-.* ]]
+                    then
+                        # not start with -
+                        var_target_file="$2"
+                        shift 1
+                    fi
+                fi
+                ;;
+            -h|--help)
+                cli_helper -c "hstemp" -cd "hstemp function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "hstemp [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-l|--lite" -d "Copy template lite file"
+                cli_helper -o "-f|--full" -d "Copy template full file, default copy this one."
+                cli_helper -o "-t|--target" -d "Copy template file to target folder/name, default copy to the current folder."
+                cli_helper -o "-v|--verbose" -d "Verbose print "
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                break;
+                ;;
+        esac
+        shift 1
+    done
+
+    var_cmd=("cp" "${var_temp_file}" "${var_target_file}")
+    erun --eval ${var_cmd}
 }
 function retitle()
 {

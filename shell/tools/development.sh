@@ -1067,7 +1067,7 @@ function banlys
         # echo "---- C/Cpp error"
         section_title="C/Cpp error"
         tmp_pattern="error:"
-        line_buf=$(cat -n ${var_logfile} | purify | grep "${tmp_pattern}" | mark -s red "${tmp_pattern}")
+        line_buf=$(cat -n ${var_logfile} | purify | grep -B 1 "${tmp_pattern}" | mark -s red "${tmp_pattern}")
         test -n "${line_buf}" && tmp_buf+=${line_buf}${var_next_line}
 
         if test -n "${tmp_buf}"
@@ -1489,6 +1489,7 @@ function erun()
     local log_file="${log_path}/logfile_$(tstamp).log"
 
     local flag_sudo="n"
+    local flag_lite="n"
     local flag_log_enable="y"
     local flag_color_enable="n"
     local flag_send_mail="n"
@@ -1499,10 +1500,14 @@ function erun()
     do
         case $1 in
             -sh|--Source-HS)
-                local excute_cmd="source $HOME/tools/shellscripts/source.sh -p=$HOME/tools/shellscripts -s=${HS_ENV_SHELL} --change-shell-path=n --silence=y && "
+                local excute_cmd="source ${HS_PATH_LIB}/source.sh -p=${HS_PATH_LIB} -s=${HS_ENV_SHELL} --change-shell-path=n --silence=y && "
                 ;;
             -s|--sudo)
                 flag_sudo="y"
+                ;;
+            -e|--eval)
+                flag_lite="y"
+                flag_log_enable="n"
                 ;;
             -L|--no-log)
                 flag_log_enable="n"
@@ -1527,7 +1532,8 @@ function erun()
                 cli_helper -t "Options"
                 cli_helper -o "-sh|--Source-HS" -d "Source HS config"
                 cli_helper -o "-s|--sudo" -d "sudo excute"
-                cli_helper -o "-L|--no-log" -d "Run with record log"
+                cli_helper -o "-e|--eval" -d "an alternative eval"
+                cli_helper -o "-L|--no-log" -d "Run without record log"
                 cli_helper -o "-c|--color" -d "Enable Color"
                 cli_helper -o "-m|--mail" -d "Send mail after command is finished"
                 cli_helper -o "-d|--debug" -d "use banlys to debug"
@@ -1551,11 +1557,14 @@ function erun()
 
     # local start_time=$(date "+%Y-%m-%d_%H:%M:%S")
     local start_time=$(date)
-    echo "Start cmd: $(printc -c yellow ${excute_cmd})"
+    echo "Evaluating: $(printc -c yellow ${excute_cmd})"
     # print "$(printlc -lw 32 -cw 0 -d " " "Start Jobs at ${start_time}" "")" | mark -s green "#"
-    echo "$(printlc -lw 32 -cw 0 -d " " "Start Jobs at ${start_time}" "")" | mark -s green "#"
+    if [ "${flag_lite}" = "n" ]
+    then
+        echo "$(printlc -lw 32 -cw 0 -d " " "Start Jobs at ${start_time}" "")" | mark -s green "#"
+    fi
     # mbuild "${excute_cmd}"
-    if [ -n "${HS_PATH_LOG}" ] && [ "${flag_log_enable}" = "y" ]
+    if [ -n "${HS_PATH_LOG}" ] && [ "${flag_log_enable}" = "y" ] && [ "${flag_lite}" = "n" ]
     then
         if [ ! -d "${log_path}" ]
         then
@@ -1576,31 +1585,35 @@ function erun()
     #     echo "An Error occur, return:${var_ret}" | mark -s red Error
     # fi
     # local end_time=$(date "+%Y-%m-%d_%H:%M:%S")
-    local end_time=$(date)
-    # echo $(elapse "${start_time}" "${end_time}")
-    printt "$(printlc -lw 50 -cw 0 -d " " "Job Finished" "")\n$(printlc -lw 14 -cw 36 "Start" "${start_time}")\n$(printlc -lw 14 -cw 36  "End" "${end_time}")\n$(printlc -lw 14 -cw 36  "Elapse" "$(elapse "${start_time}" "${end_time}")")" | mark -s green "#"
-    if [ ${var_ret} != 0 ]
+    #
+    if [ "${flag_lite}" = "n" ]
     then
-        # echo "An Error occur, return:${var_ret}" | mark -s red Error
-        echo "Fail to finished cmd, Return (${var_ret}): $(printc -c yellow ${excute_cmd})"| mark -s red 'Fail'
-        if [ "${flag_analize_fail}" = 'y' ]
+        local end_time=$(date)
+        # echo $(elapse "${start_time}" "${end_time}")
+        printt "$(printlc -lw 50 -cw 0 -d " " "Job Finished" "")\n$(printlc -lw 14 -cw 36 "Start" "${start_time}")\n$(printlc -lw 14 -cw 36  "End" "${end_time}")\n$(printlc -lw 14 -cw 36  "Elapse" "$(elapse "${start_time}" "${end_time}")")" | mark -s green "#"
+        if [ ${var_ret} != 0 ]
         then
-            banlys -a -d ${log_file}
+            # echo "An Error occur, return:${var_ret}" | mark -s red Error
+            echo "Fail to finished cmd, Return (${var_ret}): $(printc -c yellow ${excute_cmd})"| mark -s red 'Fail'
+            if [ "${flag_analize_fail}" = 'y' ]
+            then
+                banlys -a -d ${log_file}
+            else
+                echo "Note. You could use 'banlys buf' to analyze error."
+            fi
         else
-            echo "Note. You could use 'banlys buf' to analyze error."
+            echo "Finished cmd: $(printc -c yellow ${excute_cmd})"
         fi
-    else
-        echo "Finished cmd: $(printc -c yellow ${excute_cmd})"
-    fi
 
-    if [ "${flag_send_mail}" = "y" ]
-    then
-        printf 'Command finished: %s\nCommand Log: %s\n Return: %d\n' "${excute_cmd}" "${log_file}" | mail -s "[Notify][ERUN] Command finished" ${HS_ENV_MAIL} ${var_ret}
-    fi
+        if [ "${flag_send_mail}" = "y" ]
+        then
+            printf 'Command finished: %s\nCommand Log: %s\n Return: %d\n' "${excute_cmd}" "${log_file}" | mail -s "[Notify][ERUN] Command finished" ${HS_ENV_MAIL} ${var_ret}
+        fi
 
-    if [ "${fun_ret}" != '0' ]
-    then
-        sanity_check
+        if [ "${fun_ret}" != '0' ]
+        then
+            sanity_check
+        fi
     fi
     return ${var_ret}
 }
@@ -2841,13 +2854,15 @@ function rprun()
         tmp_cmd="repo forall -v -j ${var_jobs} -c 'git reset --hard HEAD; git clean -fd'"
         echo "${tmp_cmd}"
         eval "${tmp_cmd}"
+        error_check
     fi
 
     if [ ${flag_sync} = true ]
     then
-        tmp_cmd="repo sync -v -j${var_jobs} -c --no-tags --no-clone-bundle"
+        tmp_cmd="repo sync -j${var_jobs} -c --no-tags --no-clone-bundle"
         echo "${tmp_cmd}"
         eval "${tmp_cmd}"
+        error_check
     fi
 
     if [ ${flag_status} = true ]
@@ -2855,6 +2870,7 @@ function rprun()
         tmp_cmd="repo forall -v  -c 'git log --pretty='format:%p->%h %cn(%an) %s' -n 1'"
         echo "${tmp_cmd}"
         eval "${tmp_cmd}"
+        error_check
     fi
 
     if [ ${flag_info} = true ]

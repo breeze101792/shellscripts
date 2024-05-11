@@ -2,11 +2,14 @@
 ################################################################
 ####    Env
 ################################################################
-[ -z ${HOME} ] && export HOME=/
+[ -z ${HOME} ] && test -d ~ && export HOME=$(realpath ~)
+[ -z ${HOME} ] && test -d ~ && export HOME=/
 
 [ -z ${HSL_SHELL} ] && export HSL_SHELL=sh
-[ -z ${HSL_ROOT_PATH} ] && export HSL_ROOT_PATH=$(realpath ${HOME}/tools/hslite)
-[ -z ${HSL_WORK_PATH} ] && export HSL_WORK_PATH=$(realpath ${HSL_ROOT_PATH})
+[ -z ${HSL_ROOT_PATH} ] && test -d ${HOME}/tools && export HSL_ROOT_PATH=$(realpath ${HOME}/tools/)
+[ -z ${HSL_ROOT_PATH} ] && test -d ${HOME}/ && export HSL_ROOT_PATH=$(realpath ${HOME}/)
+[ -z ${HSL_WORK_PATH} ] && test -d ${HSL_WORK_PATH}/work && export HSL_WORK_PATH=$(realpath ${HSL_ROOT_PATH}/work/)
+[ -z ${HSL_WORK_PATH} ] && test -d ${HSL_WORK_PATH} && export HSL_WORK_PATH=$(realpath ${HSL_ROOT_PATH})
 ################################################################
 ####    Settings
 ################################################################
@@ -28,8 +31,8 @@ elif [ ${HSL_SHELL} = "zsh" ]
 then
     # echo "Shell : ${HSL_SHELL}"
     PROMPT="[%n@%m][%D %T][%?][%d] $ "
-else
-    echo "Shell : ${HSL_SHELL}"
+# else
+#     echo "Shell : ${HSL_SHELL}"
 fi
 
 # set a fancy prompt (non-color, unless we know we "want" color)
@@ -227,25 +230,27 @@ mark()
 ################################################################
 ####    Post Setting
 ################################################################
-
-if test -f "${HSL_WORK_PATH}/work.sh"
+if test -n "${HSL_WORK_PATH}"
 then
-    source ${HSL_WORK_PATH}/work.sh
-#     echo "Work script ${HSL_WORK_PATH}/work.sh"
-# else
-#     echo "Work script not found. ${HSL_WORK_PATH}/work.sh"
-fi
+    if test -f "${HSL_WORK_PATH}/work.sh"
+    then
+        source ${HSL_WORK_PATH}/work.sh
+        #     echo "Work script ${HSL_WORK_PATH}/work.sh"
+        # else
+        #     echo "Work script not found. ${HSL_WORK_PATH}/work.sh"
+    fi
 
-if test -d "${HSL_WORK_PATH}/scripts"
-then
-    epath "${HSL_WORK_PATH}/scripts"
-# else
-#     echo "Execute script folder not found. ${HSL_WORK_PATH}/scripts.sh"
-fi
+    if test -d "${HSL_WORK_PATH}/scripts"
+    then
+        epath "${HSL_WORK_PATH}/scripts"
+        # else
+        #     echo "Execute script folder not found. ${HSL_WORK_PATH}/scripts.sh"
+    fi
 
-if test -d "${HSL_WORK_PATH}/bin"
-then
-    epath "${HSL_WORK_PATH}/bin"
-# else
-#     echo "Binary folder not found. ${HSL_WORK_PATH}"
+    if test -d "${HSL_WORK_PATH}/bin"
+    then
+        epath "${HSL_WORK_PATH}/bin"
+        # else
+        #     echo "Binary folder not found. ${HSL_WORK_PATH}"
+    fi
 fi
