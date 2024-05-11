@@ -510,6 +510,17 @@ function sinfo()
     fi
 
 }
+function xcaffine()
+{
+    xset -dpms
+    xset s off # if you also want to disable the screen saver
+
+    if false
+    then
+        # You could also customize your Standby, Suspend and Off times with something like:
+        xset dpms 200 300 400
+    fi
+}
 function xkeyrate()
 {
     local var_level=2
