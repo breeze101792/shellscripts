@@ -20,6 +20,9 @@ function zerowifi()
     done
 
     sudo nmcli dev wifi connect ${var_wifi_name}
+
+    sudo ip route del default dev eth0
+    sudo ip route del default dev eth0
 }
 function wifi()
 {

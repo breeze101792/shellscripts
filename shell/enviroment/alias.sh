@@ -58,10 +58,8 @@ alias bashtop="${HS_PATH_LIB}/tools/bashtop/bashtop"
 #####    Dev                                       #####
 ########################################################
 # git alias ##
-alias glog2="git log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) %C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(bold yellow)%d%C(reset)' --all"
 alias gstatus='git status -uno '
 alias gdiff='git diff --check --no-ext-diff'
-alias glog="git log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold cyan)%aD%C(reset) %C(bold green)(%ar)%C(reset)%C(bold yellow)%d%C(reset)%n''          %C(white)%s%C(reset) %C(dim white)- %an%C(reset)' --all"
 #alias lg="git $lg1"
 alias nlfsgit="GIT_LFS_SKIP_SMUDGE=1 git "
 
@@ -74,3 +72,7 @@ if [ "${HS_CONFIG_SAFE_COMMAND_REPLACEMENT}" = "y" ]
 then
     alias rm=srm
 fi
+
+#####    For update alias
+########################################################
+unalias glog 2> /dev/null

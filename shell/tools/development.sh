@@ -1997,7 +1997,7 @@ function gforall()
     do
         case $1 in
             -l|--log)
-                var_target_cmd="git log --pretty='format:%cd %p->%h %cn(%an) %s' -n 1"
+                var_target_cmd="git log --pretty='format:%cd(%cr) %p->%h %cn(%an) %s' -n 1"
                 break
                 ;;
             --disable-filemode)
@@ -2443,6 +2443,55 @@ function grun()
         echo "${tmp_cmd}"
         eval "${tmp_cmd}"
     fi
+}
+
+function glog()
+{
+    local var_git_log_cmd=""
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -1)
+                var_git_log_cmd="git log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold cyan)%aD%C(reset) %C(bold green)(%ar)%C(reset)%C(bold yellow)%d%C(reset)%n''          %C(white)%s%C(reset) %C(dim white)- %an%C(reset)' --all"
+                # var_git_log_cmd="git log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold cyan)%cD%C(reset) %C(bold green)(%cr)%C(reset)%C(bold yellow)%d%C(reset)%n''          %C(white)%s%C(reset) %C(dim white)- %an%C(reset)' --all"
+                ;;
+            -2)
+                var_git_log_cmd="git log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) %C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(bold yellow)%d%C(reset)' --all"
+                ;;
+            -a|--append)
+                cmd_args+=("${2}")
+                shift 1
+                ;;
+            -v|--verbose)
+                flag_verbose="y"
+                shift 1
+                ;;
+            -h|--help)
+                cli_helper -c "template" -cd "template function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "template [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-1" -d "format 1"
+                cli_helper -o "-2" -d "format 2"
+                cli_helper -o "-a|--append" -d "append file extension on search"
+                cli_helper -o "-v|--verbose" -d "Verbose print "
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                echo "Wrong args, $@"
+                return -1
+                ;;
+        esac
+        shift 1
+    done
+    if test -z "${var_git_log_cmd}"
+    then
+        var_git_log_cmd="git log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold cyan)%cD%C(reset) %C(bold green)(%cr)%C(reset)%C(bold yellow)%d%C(reset)%n''          %C(white)%s%C(reset) %C(dim white)- %an%C(reset)' --all"
+    fi
+
+    echo ${var_git_log_cmd}
+    eval ${var_git_log_cmd}
 }
 function gfiles()
 {
