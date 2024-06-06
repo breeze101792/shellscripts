@@ -338,6 +338,22 @@ function pvim()
             -p|--pure-mode)
                 cmd_args+=("-u NONE")
                 ;;
+            -s|--session)
+                if [[ "$#" > 1 ]]
+                then
+                    tmp_var=$2
+                    if [ "${tmp_var}" = "def" ] || [ "${tmp_var}" = "default" ] ||
+                        [ "${tmp_var}" = "as" ] || [ "${tmp_var}" = "autosave" ]
+                    then
+                        export VIDE_SH_SESSION_RESTORE=$2
+                        shift 1
+                    else
+                        export VIDE_SH_SESSION_RESTORE='autosave'
+                    fi
+                else
+                    export VIDE_SH_SESSION_RESTORE='autosave'
+                fi
+                ;;
             -e|--extra-command)
                 cmd_args+=("$2")
                 shift 1
@@ -410,6 +426,7 @@ function pvim()
                 cli_helper -d "pvim [Options] [File]"
                 cli_helper -t "Options"
                 cli_helper -o "-m|--map" -d "Load cctree in vim"
+                cli_helper -o "-s|--session" -d "Restore session"
                 cli_helper -o "-d|--distro" -d "select vim runtint, default use ${HS_VAR_VIM}."
                 cli_helper -o "-p|--pure-mode" -d "Load withouth ide file"
                 cli_helper -o "--buffer-file|buffer|buf" -d "Open file with hs var(${HS_VAR_LOGFILE})"
@@ -448,7 +465,6 @@ function pvim()
     cd ${var_proj_folder}
 
     export VIDE_SH_PROJ_DATA_PATH=$(realpath ${var_proj_folder})
-    printf "Project %- 6s: %s\n" "Path" "${VIDE_SH_PROJ_DATA_PATH}"
 
     if test -f "${var_tags_file}"
     then
@@ -481,9 +497,11 @@ function pvim()
 
     cd $cpath
     eval ${var_vim_distro} ${cmd_args[@]} ${vim_args[@]}
-    echo "Launching: ${var_vim_distro} ${cmd_args[@]} ${vim_args[@]}"
+    printf "Launching %s: %s\n" "${VIDE_SH_PROJ_DATA_PATH}" "${var_vim_distro} ${cmd_args[@]} ${vim_args[@]}"
+
     # unset var
     unset VIDE_SH_PROJ_DATA_PATH
+    unset VIDE_SH_SESSION_RESTORE
     unset VIDE_SH_TAGS_DB
     unset VIDE_SH_CSCOPE_DB
     unset VIDE_SH_CCTREE_DB

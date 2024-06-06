@@ -170,7 +170,7 @@ function droot()
                 flag_fake="y"
                 ;;
             -h|--help)
-                echo "froot"
+                echo "droot"
                 printlc -cp false -d "->" "-c|--case" "Ignore case"
                 printlc -cp false -d "->" "-m|--full-match" "full pattern match"
                 printlc -cp false -d "->" "-f|--fake" "return target path"

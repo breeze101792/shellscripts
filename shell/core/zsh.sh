@@ -192,6 +192,8 @@ alias -g .....='../../../..'
 alias -g ......='../../../../..'
 alias -g .......='../../../../../..'
 alias -g ........='../../../../../../..'
+alias -g .........='../../../../../../../..'
+alias -g ..........='../../../../../../../../..'
 
 #alias btspeaker='cat /home/shaowu/.usr/script/speaker_connect.bt | bluetoothctl'
 # command
