@@ -1154,6 +1154,7 @@ function session()
     local var_action=""
     local var_remove_list=()
     local var_cmd=('tmux')
+    local var_config_file=""
     local flag_multiple_instance=y
     local var_session_tmp=${HS_TMP_SESSION_PATH}/$(hostname)
 
@@ -1244,9 +1245,19 @@ function session()
                 # echo "target: var_taget_name:$var_taget_name"
                 shift 1
                 ;;
+            -f|--file)
+                if test -f ${2}
+                then
+                    var_cmd+=("-f ${2}")
+                else
+                    echo "Config file not found. $2"
+                    return 1
+                fi
+                shift 1
+                ;;
             --host|host|hostname|h)
                 local var_hostname=""
-                if command -v hostname
+                if command -v hostname 2>&1 > /dev/null
                 then
                     var_hostname="$(hostname)"
                 elif test -f "/etc/hostname"
@@ -1281,6 +1292,7 @@ function session()
                 cli_helper -o "-l|--list" -d "list session"
                 cli_helper -o "-p|--purge" -d "purge socket"
                 cli_helper -o "-rm|--remove" -d "remove session with session list"
+                cli_helper -o "-f|--file" -d "Specify config file"
                 cli_helper -o "--host|host|hostname|h" -d "detach all session"
                 return 0
                 ;;
@@ -1641,10 +1653,27 @@ function xcd()
     local cpath=$(pwd)
     local target_path=""
     local sub_folder=""
+    local var_action="cd"
+    local var_arg=""
+    local var_path=""
 
     while [[ "$#" != 0 ]]
     do
         case $1 in
+            -a|--add)
+                var_action="add"
+                var_arg=${2}
+                if test -e "${3}"
+                then
+                    # var_path=$(realpath ${3})
+                    var_path=${3}
+                else
+                    # echo "Not folder found"
+                    return 0
+                fi
+                # shift 2
+                break
+                ;;
             -s|--hs-script|hs)
                 target_path=${HS_PATH_LIB}
                 ;;
@@ -1803,25 +1832,55 @@ function xcd()
     #     test -z tmp_clip && target_path="${tmp_clip}"
     # fi
 
-    if [ -d "${target_path}" ]
+    if [ "${var_action}" = "add" ]
     then
-        echo goto ${target_path} | mark -s green ${target_path}
-        eval "cd ${target_path}"
-        if [ -d "${sub_folder}" ]
-        then
-            echo goto ${sub_folder} | mark -s green ${sub_folder}
-            eval "cd ${sub_folder}"
-        fi
-        ls
-        return 0
-    elif [ ! -z "${target_path}" ]
-    then
-        echo "Can't find ${target_path}"
-        cd ${cpath}
-        return 1
+        local var_cnt=0
+
+        while [ ${var_cnt} -lt 20 ]
+        do
+            local tmp_name=$(echo "HS_VAR_ECD_NAME_$var_cnt")
+            local tmp_path=$(echo HS_PATH_ECD_${var_cnt})
+
+            local tmp_cmd='test "${var_arg}" = "$'${tmp_name}'" '
+            if eval "${tmp_cmd}"
+            then
+                # echo "Same pattern"
+                break
+            fi
+
+            local tmp_cmd='test -z $'${tmp_name}
+            if eval "${tmp_cmd}"
+            then
+                export ${tmp_name}="${var_arg}"
+                export ${tmp_path}="${var_path}"
+                export var_cnt=$((${var_cnt} + 1))
+                break
+            fi
+            export var_cnt=$((${var_cnt} + 1))
+        done
     else
-        echo "target path is empty"
+        if [ -d "${target_path}" ]
+        then
+            echo goto ${target_path} | mark -s green ${target_path}
+            eval "cd ${target_path}"
+            if [ -d "${sub_folder}" ]
+            then
+                echo goto ${sub_folder} | mark -s green ${sub_folder}
+                eval "cd ${sub_folder}"
+            fi
+            ls
+            return 0
+        elif [ ! -z "${target_path}" ]
+        then
+            echo "Can't find ${target_path}"
+            cd ${cpath}
+            return 1
+        else
+            echo "target path is empty"
+        fi
+
     fi
+
 
 }
 function fcd()

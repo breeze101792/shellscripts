@@ -11,7 +11,16 @@
 # Vars
 export HS_ENV_VER=0.3.0
 export HS_ENV_TITLE="DO IT NOW"
-test -z "${HS_ENV_OS}" && export HS_ENV_OS="linux"
+
+# test -z "${HS_ENV_OS}" && export HS_ENV_OS="linux"
+case "$(uname -s)" in
+    Linux*)     HS_ENV_OS="LINUX";;
+    Darwin*)    HS_ENV_OS="DARWIN";;
+    CYGWIN*)    HS_ENV_OS="CYGWIN";;
+    MINGW*)     HS_ENV_OS="MINGW";;
+    MSYS_NT*)   HS_ENV_OS="GIT";;
+    *)          HS_ENV_OS="UNKNOWN:$(uname -s)"
+esac
 
 test -z "${HS_ENV_SHELL}" && export HS_ENV_SHELL=""
 test -z "${HS_ENV_SILENCE}" && export HS_ENV_SILENCE=n
@@ -71,11 +80,13 @@ test -z "${HS_PATH_LOCAL_USR}" && export HS_PATH_LOCAL_USR="${HOME}/.usr"
 
 test -z "${HS_PATH_PYTHEN_ENV}" && export HS_PATH_PYTHEN_ENV="${HOME}/env/pyenv"
 # ECD
+# export HS_VAR_ECD_CNT=2
 test -z "${HS_VAR_ECD_NAME_0}" && export HS_VAR_ECD_NAME_0="@(tmp|t)"
 test -z "${HS_PATH_ECD_0}" && export HS_PATH_ECD_0="/tmp"
 test -z "${HS_VAR_ECD_NAME_1}" && export HS_VAR_ECD_NAME_1="h"
 test -z "${HS_PATH_ECD_1}" && export HS_PATH_ECD_1="${HOME}"
-
+# Add more commands
+# addecd "tmp" "/tmp"
 ########################################################
 ########################################################
 #####                                              #####

@@ -646,7 +646,9 @@ function filesync()
     # --whole-file, -W  copy files whole (w/o delta-xfer algorithm)
 
     # rsync -avhW --no-compress --exclude='*.git*' --exclude='*.repo*' --progress --omit-dir-times ${var_src_path}/* ${var_dst_path}
-    var_excute_cmd+=("-avhW" "--no-compress" "--progress" "--omit-dir-times" )
+    var_excute_cmd+=("-avhW" "--progress" "--omit-dir-times" )
+    # var_excute_cmd+=("--no-compress")
+    var_excute_cmd+=("--compress --compress-choice=lz4")
 
     if [ "${flag_ssh}" = 'y' ]
     then

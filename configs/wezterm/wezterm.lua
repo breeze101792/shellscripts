@@ -26,7 +26,12 @@ config.use_fancy_tab_bar = false
 config.window_decorations = "INTEGRATED_BUTTONS|RESIZE"
 config.integrated_title_button_color = "Auto"
 
+-- Performance settings
+-- config.front_end = "OpenGL"
+config.front_end = "WebGpu"
+
 -- Lab
+-- OpenGL/WebGpu/Software
 
 -- Key Mapping
 ----------------------------------------------------------------

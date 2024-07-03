@@ -360,3 +360,33 @@ function hsconfig()
         shift 1
     done
 }
+function xcdadd()
+{
+    local var_cnt=0
+    local var_arg=$1
+    local var_path=$2
+
+    while [ ${var_cnt} -lt 20 ]
+    do
+        local tmp_name=$(echo "HS_VAR_ECD_NAME_$var_cnt")
+        local tmp_path=$(echo HS_PATH_ECD_${var_cnt})
+
+        local tmp_cmd='test "${var_arg}" = "$'${tmp_name}'" '
+        if eval "${tmp_cmd}"
+        then
+            # echo "Same pattern"
+            break
+        fi
+
+        local tmp_cmd='test -z $'${tmp_name}
+        if eval "${tmp_cmd}"
+        then
+            # echo ${tmp_name}"->"${${tmp_name}}
+            export ${tmp_name}="${var_arg}"
+            export ${tmp_path}="${var_path}"
+            export var_cnt=$((${var_cnt} + 1))
+            break
+        fi
+        export var_cnt=$((${var_cnt} + 1))
+    done
+}
