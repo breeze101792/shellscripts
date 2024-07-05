@@ -68,4 +68,20 @@ function zero_info()
         shift 1
     done
 }
+function zero_wifi()
+{
+    local var_wifi_name="SiPhone"
+    local var_cnt=0
+    while ! wifi -s | grep ${var_wifi_name}
+    do
+        printf "\r[% 6s] Wait for scan." "${var_cnt}"
+        var_cnt=$((${var_cnt}+1))
+        sleep 1
+    done
+    printf "\r[% 6s] %s Connected for scan." "${var_cnt}" "${var_wifi_name}"
+
+    sudo nmcli dev wifi connect ${var_wifi_name}
+
+    watch -n 3 sudo ip route del default dev eth0
+}
 

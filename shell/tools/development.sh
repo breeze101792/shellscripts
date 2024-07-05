@@ -1887,9 +1887,11 @@ function fcd()
 {
 
     local cpath=$(pwd)
-    local depth=99
+    local depth=5
     local target_folder=""
     local var_action="search"
+    local flag_verbose=false
+    local flag_fast_hit=false
 
     while [[ "$#" != 0 ]]
     do
@@ -1898,19 +1900,22 @@ function fcd()
                 depth=$2
                 shift 1
                 ;;
+            -f|--fast-hit)
+                flag_fast_hit=true
+                ;;
             -l|--latest)
                 var_action="latest"
                 ;;
-            -m|--max|m)
-                depth=99
+            -v|--verbose)
+                flag_verbose=true
                 ;;
             -h|--help)
                 cli_helper -c "fcd" -cd "fcd function"
                 cli_helper -t "SYNOPSIS"
                 cli_helper -d "fcd [Options] [Value]"
                 cli_helper -t "Options"
-                cli_helper -o "-d|--depth" -d "Depth: default is 3"
-                cli_helper -o "-m|--max|m" -d "Depth: Do max search, depth is 6"
+                cli_helper -o "-f|--fast-hit" -d "Fast hit"
+                cli_helper -o "-d|--depth" -d "Depth: default is 5"
                 cli_helper -o "-l|--latest" -d "Get in to latest modify folder"
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
@@ -1922,8 +1927,6 @@ function fcd()
         esac
         shift 1
     done
-    # echo "Fast cd to ${target_folder}"
-
 
     if [ "${var_action}" = "latest" ]
     then
@@ -1932,6 +1935,87 @@ function fcd()
         test -d ${tmp_latest_dir} && cd ${tmp_latest_dir} && return 0
     elif [ "${var_action}" = "search" ]
     then
+        local tmp_real_pattern="*/*"
+        local canditate_path=""
+        local tmp_canditate_folder=""
+
+        # echo "var_action: ${var_action}"
+        if [[ ${depth} > 0 ]]
+        then
+            [ ${flag_verbose} = true ] && echo "Finding in Layer 0"
+            # test -d ${target_folder} && cd ${target_folder} && return 0
+            test -d ${target_folder} && tmp_canditate_folder=("$(realpath ${target_folder})")
+        fi
+
+        for each_depth in $(seq 1 ${depth})
+        do
+            [ ${flag_verbose} = true ] && echo "Finding in Layer ${each_depth}"
+            # eval "realpath ${tmp_real_pattern}"
+            [ ${flag_verbose} = true ] && echo Finding: $(eval "realpath ${tmp_real_pattern}" | grep "/${target_folder}$")
+            for each_path in $(eval "realpath ${tmp_real_pattern}"  2> /dev/null | grep "/${target_folder}$")
+            do
+                # echo "each path:${each_path}"
+                if test -d "${each_path}"
+                then
+                    if test -z "${tmp_canditate_folder}"
+                    then
+                        tmp_canditate_folder=("${each_path}")
+                    else
+                        tmp_canditate_folder+=("${each_path}")
+                    fi
+                fi
+            done
+            if [ ${flag_fast_hit} = true ] && [ "${#tmp_canditate_folder[@]}" -gt "1" ]
+            then
+                [ ${flag_verbose} = true ] && echo "Fast hit ${each_depth}"
+                break
+            fi
+            tmp_real_pattern=${tmp_real_pattern}"/*"
+        done
+
+        if [[ "${#tmp_canditate_folder[@]}" = "1" ]]
+        then
+            # cd ${tmp_canditate_folder[0]}
+            if test -d "${tmp_canditate_folder[0]}"
+            then
+                canditate_path=${tmp_canditate_folder[0]}
+            elif test -d "${tmp_canditate_folder[1]}"
+            then
+                canditate_path=${tmp_canditate_folder[1]}
+            fi
+        elif [[ "${#tmp_canditate_folder[@]}" > "1" ]]
+        then
+            # echo for each_idx in seq 0 ${#tmp_canditate_folder[@]}
+            for each_idx in $(seq 0 ${#tmp_canditate_folder[@]})
+            do
+                if test -d "${tmp_canditate_folder[${each_idx}]}"
+                then
+                    echo "[${each_idx}]:${tmp_canditate_folder[${each_idx}]}"
+                fi
+            done
+
+            printf "Please select path(default 1):"
+            read tmp_ans
+
+            if test -n "${tmp_ans}"
+            then
+                # echo ${tmp_canditate_folder[${tmp_ans}]}
+                # cd ${tmp_canditate_folder[${tmp_ans}]}
+                canditate_path=${tmp_canditate_folder[${tmp_ans}]}
+            else
+                canditate_path=${tmp_canditate_folder[1]}
+            fi
+        fi
+
+        [ ${flag_verbose} = true ] && echo "Canditate_path: ${canditate_path}->${tmp_canditate_folder[@]}"
+        # echo "${canditate_path}"
+        if test -d "${canditate_path}"
+        then
+            cd "${canditate_path}" && return 0
+            return 1
+        fi
+        return 1
+    else
         # echo "var_action: ${var_action}"
         if [[ ${depth} > 0 ]]
         then

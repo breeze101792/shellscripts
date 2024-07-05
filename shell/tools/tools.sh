@@ -15,6 +15,15 @@ function purify()
     local var_action='stdin'
     local var_input_file=''
     local var_rename_target=''
+    local flag_trim=false
+    local flag_verbose=false
+    local flag_rename_all=false
+    local flag_replace=false
+    local flag_purify=true
+
+    local var_trim_method="middle"
+    local var_replace_src=""
+    local var_replace_dst=""
 
     while [[ "$#" != 0 ]]
     do
@@ -27,19 +36,78 @@ function purify()
                 var_input_file="${2}"
                 shift 1
                 ;;
+            -t|--trim)
+                flag_trim=true
+                if (( "$#" >= "2" ))
+                then
+                    if [ ${2} = "middle" ] || [ ${2} = "m" ]
+                    then
+                        var_trim_method="middle"
+                        shift 1
+                    elif [ ${2} = "front" ] || [ ${2} = "f" ]
+                    then
+                        var_trim_method="front"
+                        shift 1
+                    elif [ ${2} = "rear" ] || [ ${2} = "r" ]
+                    then
+                        var_trim_method="rear"
+                        shift 1
+                    fi
+                fi
+                ;;
+            -r|--replace)
+                flag_replace=true
+                if (( "$#" >= "2" ))
+                then
+                    if ! [[ $2 =~ \-.* ]]
+                    then
+                        # not start with -
+                        var_replace_src="${2}"
+                        var_replace_dst=""
+                        shift 1
+                    fi
+                elif (( "$#" >= "3" ))
+                then
+                    if ! [[ $2 =~ \-.* ]] && ! [[ $3 =~ \-.* ]]
+                    then
+                        # not start with -
+                        var_replace_src="${2}"
+                        var_replace_dst="${3}"
+                        shift 2
+                    elif ! [[ $2 =~ \-.* ]]
+                    then
+                        # not start with -
+                        var_replace_src="${2}"
+                        var_replace_dst=""
+                        shift 1
+                    fi
+                fi
+                ;;
+            -a|--purify-all)
+                var_action="rename"
+                # var_action="rename-all"
+                flag_rename_all=true
+                ;;
             -n|--purify-name)
                 var_rename_target="$2"
                 var_action="rename"
                 shift 1
+                ;;
+            -v|--verbose)
+                flag_verbose=true
                 ;;
             -h|--help)
                 cli_helper -c "purify" -cd "purify function"
                 cli_helper -t "SYNOPSIS"
                 cli_helper -d "purify [Options] [Value]"
                 cli_helper -t "Options"
+                cli_helper -o "-a|--purify-all" -d "rename all file found on current folder."
                 cli_helper -o "-n|--purify-name" -d "rename file & remove special symbol"
+                cli_helper -o "-t|--trim" -d "trim file name if too long"
+                cli_helper -o "-r|--replace" -d "Replease src to dst, exp, -r src dst"
                 cli_helper -o "-f|--file" -d "get stream from file"
                 cli_helper -o "-s|--stdin" -d "get stream from stdin, default"
+                cli_helper -o "-v|--verbose" -d "Print verbose info"
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;
@@ -68,19 +136,92 @@ function purify()
         fi
     elif [ "${var_action}" = "rename" ]
     then
-        local tmp_taget_name=$(echo "${var_rename_target}"| rev | cut -d '/' -f 1| rev)
-        tmp_taget_name=$(echo "${tmp_taget_name}" | sed "s/ /_/g")
-        # tmp_taget_name=$(echo "${tmp_taget_name}" | sed -r "s/\[[] ,@=+-~\]/_/g")
-        # tmp_taget_name=$(echo "${tmp_taget_name}" | sed -re "s/[() ,@=+~-]/_/g")
-        tmp_taget_name=$(echo "${tmp_taget_name}" | sed -r "s/[^0-9a-zA-Z.]/_/g")
-        tmp_taget_name=$(echo "${tmp_taget_name}" | sed -r "s/\[_\]\+/_/g")
-        tmp_taget_name=$(echo "${tmp_taget_name}" | sed -r "s/^_//g")
-        tmp_taget_name=$(echo "${tmp_taget_name}" | sed -r "s/_$//g")
-        tmp_taget_name=$(echo "${tmp_taget_name}" | tr -s '_')
 
-        echo "mv ${var_rename_target} ${tmp_taget_name}" >> rename.list
-        mv "${var_rename_target}" "${tmp_taget_name}"
-        echo "Find new file: \"${var_rename_target}\" -> \"${tmp_taget_name}\""
+        # local tmp_cmd_list=""
+        file_list=()
+        if [ -e "${var_rename_target}" ]
+        then
+            file_list=($(printf "%s\n" ${var_rename_target}))
+            # tmp_cmd_list="printf '%s\n' '${var_rename_target}'"
+        fi
+
+        if [ "${flag_rename_all}" = true ]
+        then
+            file_list=($(printf "%s\n" *))
+            # tmp_cmd_list="printf '%s\n' *"
+        fi
+
+        IFS=$'\n' file_list=(${file_list[@]})
+
+        # for each_file in $(eval ${tmp_cmd_list})
+        for each_file in ${file_list[@]}
+        do
+            [ ${flag_verbose} = true ] && echo echo "Each File: '${each_file}'"
+            if ! test -e "${each_file}"
+            then
+                continue
+            fi
+
+            local tmp_taget_name=$(echo "${each_file}"| rev | cut -d '/' -f 1| rev)
+
+            # escap
+            if [ ${flag_purify} = true ]
+            then
+                tmp_taget_name=$(echo "${tmp_taget_name}" | sed "s/ /_/g")
+                tmp_taget_name=$(echo "${tmp_taget_name}" | sed -r "s/[^0-9a-zA-Z.]/_/g")
+                tmp_taget_name=$(echo "${tmp_taget_name}" | sed -r "s/\[_\]\+/_/g")
+                tmp_taget_name=$(echo "${tmp_taget_name}" | sed -r "s/^_//g")
+                tmp_taget_name=$(echo "${tmp_taget_name}" | sed -r "s/_$//g")
+                tmp_taget_name=$(echo "${tmp_taget_name}" | tr -s '_')
+            fi
+
+            if [ ${flag_replace} = true ] && echo ${tmp_taget_name} |grep "${var_replace_src}" 2>&1 > /dev/null
+            then
+                [ ${flag_verbose} = true ] && echo "Replace '${var_replace_src}' => '${var_replace_dst}'"
+                tmp_taget_name=$(echo  ${tmp_taget_name} | sed "s/${var_replace_src}/${var_replace_dst}/g")
+            fi
+
+            if [ ${flag_trim} = true ]
+            then
+                [ ${flag_verbose} = true ] && echo "Trim: ${flag_trim}"
+
+                if [[ ${#tmp_taget_name} -gt 72 ]]
+                then
+                    if [ ${var_trim_method} = "middle" ]
+                    then
+                        tmp_taget_name=${tmp_taget_name:0:32}_xx_${tmp_taget_name:$((${#tmp_taget_name} - 32)):32}
+                    elif [ ${var_trim_method} = "front" ]
+                    then
+                        tmp_taget_name=xx_${tmp_taget_name:$((${#tmp_taget_name} - 64)):64}
+                    elif [ ${var_trim_method} = "rear" ]
+                    then
+                        tmp_taget_name=${tmp_taget_name:0:64}_xx$(echo ${tmp_taget_name:$((${#tmp_taget_name} - 5)):5} | sed 's/.*\./\./g')
+                    else
+                        tmp_taget_name=${tmp_taget_name:0:32}_xx_${tmp_taget_name:$((${#tmp_taget_name} - 32)):32}
+                    fi
+                fi
+            fi
+            if [ ${tmp_taget_name} = ${each_file} ]
+            then
+                [ ${flag_verbose} = true ] && echo "Ignore file: \"${each_file}\""
+                continue
+            fi
+
+            if test -e "${tmp_taget_name}"
+            then
+                echo "File(${tmp_taget_name}) already exist, change name."
+                tmp_taget_name=dup_${tmp_taget_name}
+                if test -e "${tmp_taget_name}"
+                then
+                    echo "File already exist, change rename fail."
+                    continue
+                fi
+            fi
+
+            echo "mv ${each_file} ${tmp_taget_name}" >> rename.list
+            mv "${each_file}" "${tmp_taget_name}"
+            echo "Find new file: \"${each_file}\" -> \"${tmp_taget_name}\""
+        done
     fi
 }
 
@@ -648,7 +789,9 @@ function filesync()
     # rsync -avhW --no-compress --exclude='*.git*' --exclude='*.repo*' --progress --omit-dir-times ${var_src_path}/* ${var_dst_path}
     var_excute_cmd+=("-avhW" "--progress" "--omit-dir-times" )
     # var_excute_cmd+=("--no-compress")
-    var_excute_cmd+=("--compress --compress-choice=lz4")
+    var_excute_cmd+=("--compress")
+    # NOTE. Not every version support compress choice
+    # var_excute_cmd+=("--compress-choice=lz4")
 
     if [ "${flag_ssh}" = 'y' ]
     then
@@ -1076,6 +1219,118 @@ function fakeshell()
     while printf "FShell:${PWD}>" && read cmd
     do
         eval "${frontcmd} ${cmd} ${rearcmd}"
+    done
+}
+function doloop()
+{
+    local var_list_cmd=""
+    local var_cmd=""
+    local var_interval="1"
+    local var_terminate_condiction='default'
+    local flag_clean_on_start='y'
+
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -c|--cmd)
+                var_cmd="${2}"
+                shift 1
+                ;;
+            -l|--list)
+                var_list_cmd="${2}"
+                shift 1
+                ;;
+            -n|--number)
+                var_list_cmd="seq 0 ${2}"
+                shift 1
+                ;;
+            -i|--interval)
+                var_interval="${2}"
+                shift 1
+                ;;
+            -t|--terminate)
+                var_terminate_condiction="${2}"
+                shift 1
+                ;;
+            -nc|--no-clear)
+                flag_clean_on_start="n"
+                ;;
+            -e|--extension)
+                var_list_cmd="ls *.${2}"
+                ;;
+            # -v|--verbose)
+            #     flag_verbose="y"
+            #     shift 1
+            #     ;;
+            -h|--help)
+                cli_helper -c "doloop" -cd "doloop function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "doloop [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-c|--cmd" -d "do command with %p do replace by list item"
+                cli_helper -o "-l|--list" -d "generate list command"
+                cli_helper -o "-n|--number" -d "generate number seq command(Start from 0), accept one number input"
+                cli_helper -o "-i|--interval" -d "Specify running interval, default is 0.5 seconds"
+                cli_helper -o "-t|--terminate" -d "Specify terminate condiction, default/fail/success"
+                cli_helper -o "-nc|--no-clear" -d "No clear screen in each start"
+                cli_helper -o "-h|--help" -d "Print help function "
+                cli_helper -t "Buildin List"
+                cli_helper -o "-e|--extension" -d "generate list with provided file exetension."
+                return 0
+                ;;
+            *)
+                if [ -z "${var_cmd}" ]
+                then
+                    var_cmd="${@}"
+                fi
+                break
+                ;;
+        esac
+        shift 1
+    done
+    if [ -z "${var_list_cmd}" ]
+    then
+        var_list_cmd="seq 0 1000"
+        flag_fail_on_terminate='y'
+    fi
+
+    if [ -z "${var_cmd}" ] && [ -z "${var_list_cmd}" ]
+    then
+        echo "Not command found. cmd:${var_cmd}, list:${var_list_cmd}"
+        return 1
+    fi
+
+    local var_idx=0
+    for each_input in $(eval ${var_list_cmd})
+    do
+        local tmp_cmd=$(printf "$(echo ${var_cmd} | sed 's/%p/%s/g' )" "${each_input}")
+        local tmp_buf=""
+
+        tmp_buf+="[${var_idx}@$(tstamp)]:\"${each_input}\":\"${tmp_cmd}\"\n"
+        tmp_buf+="===========================================\n"
+        # bash -c "${var_cmd} ${each_input}"
+        tmp_buf+=$(eval ${tmp_cmd} 2>&1)
+        result=$?
+        tmp_buf+="\n"
+        tmp_buf+="Return Value: ${result}\n"
+        tmp_buf+="===========================================\n"
+
+        if [ "${flag_clean_on_start}" = "y" ]
+        then
+            clear
+        fi
+        echo -e "${tmp_buf[@]}"
+
+        if [ "${var_terminate_condiction}" = "fail" ] && [ "${result}" != "0" ]
+        then
+            echo "Command fail at \"${each_input}\":\"${tmp_cmd}\""
+            return ${result}
+        elif [ "${var_terminate_condiction}" = "success" ] && [ "${result}" = "0" ]
+        then
+            echo "Command success at \"${each_input}\":\"${tmp_cmd}\""
+            return ${result}
+        fi
+        sleep ${var_interval}
     done
 }
 function read_key()
