@@ -1481,7 +1481,7 @@ function session()
     then
         if [ "${var_taget_socket}" != "" ] && ! session ls |grep ${var_taget_socket} && test -S ${var_session_tmp}/${var_taget_socket}
         then
-            # FIXME, It's remvoe change session, And cause memory leak.
+            # FIXME, It will remvoe change session, And cause memory leak.
             echo "Remove session ${var_taget_socket}"
             rm ${var_session_tmp}/${var_taget_socket}
         fi
