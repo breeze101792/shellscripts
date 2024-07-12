@@ -127,7 +127,7 @@ function fpkg_dev()
     VAR_PKG_LIST+=("qemu-base")
     VAR_PKG_LIST+=("python-virtualenv")
     VAR_PKG_LIST+=("clang")
-    VAR_PKG_LIST+=("clang")
+    VAR_PKG_LIST+=("android-tools")
 }
 function fpkg_tools()
 {

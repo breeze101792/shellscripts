@@ -512,14 +512,66 @@ function sinfo()
 }
 function xcaffine()
 {
-    xset -dpms
-    xset s off # if you also want to disable the screen saver
+    local var_action=""
 
-    if false
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -d|--disable)
+                var_action="off"
+                ;;
+            -e|--enable)
+                var_action="on"
+                ;;
+            -s|--show)
+                var_action="show"
+                ;;
+            -v|--verbose)
+                flag_verbose="y"
+                shift 1
+                ;;
+            -h|--help)
+                cli_helper -c "xcaffine" -cd "xcaffine function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "xcaffine [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-d|--disable" -d "disable caffine"
+                cli_helper -o "-e|--enable" -d "enable caffine"
+                cli_helper -o "-s|--show" -d "show xset settings"
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                echo "Wrong args, $@"
+                return -1
+                ;;
+        esac
+        shift 1
+    done
+
+    if [ "${var_action}" = "on" ]
     then
+        echo "var_action: ${var_action}"
+        xset -dpms
+        # if you also want to disable the screen saver
+        xset s off
+
         # You could also customize your Standby, Suspend and Off times with something like:
-        xset dpms 200 300 400
+        xset dpms 0 0 0
+    elif [ "${var_action}" = "off" ]
+    then
+        echo "var_action: ${var_action}"
+        xset +dpms
+        xset s on # if you also want to disable the screen saver
+
+        # You could also customize your Standby, Suspend and Off times with something like:
+        xset dpms 900 3600 4000
+    elif [ "${var_action}" = "show" ]
+    then
+        echo "var_action: ${var_action}"
+        xset q
     fi
+
 }
 function xkeyrate()
 {

@@ -2,8 +2,9 @@
 # xz compress --thread=4
 # build flags -o3
 # mutltithread download
-DLAGENTS=('ftp::/usr/bin/aria2c -s8 %u -o %o'
-          'http::/usr/bin/aria2c -s8 %u -o %o'
-          'https::/usr/bin/aria2c -s8 %u -o %o'
-          'rsync::/usr/bin/rsync -z %u %o'
-          'scp::/usr/bin/scp -C %u %o')
+DLAGENTS=('file::/usr/bin/aria2c -s8 %u -o %o'
+		'ftp::/usr/bin/aria2c -s8 %u -o %o'
+		'http::/usr/bin/aria2c -s8 %u -o %o'
+		'https::/usr/bin/aria2c -s8 %u -o %o'
+		'rsync::/usr/bin/rsync -z %u %o'
+		'scp::/usr/bin/scp -C %u %o')
