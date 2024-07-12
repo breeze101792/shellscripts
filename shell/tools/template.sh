@@ -10,8 +10,8 @@ function tmp1()
 {
     local file_ext=()
     local cmd_args="echo 'Template Function'"
-    local flag_verbose="n"
-    local flag_echo="y"
+    local flag_verbose=false
+    local flag_echo=false
     local var_path=""
 
     if [[ "$#" = "0" ]]
@@ -52,7 +52,7 @@ function tmp1()
                 shift 1
                 ;;
             -v|--verbose)
-                flag_verbose="y"
+                flag_verbose=true
                 shift 1
                 ;;
             -h|--help)
@@ -72,8 +72,9 @@ function tmp1()
         esac
         shift 1
     done
-    if [ "${flag_echo}" = "y" ]
+    if [ ${flag_echo} = true ]
     then
+        [ ${flag_verbose} = true ] && echo "do echo"
         eval "${cmd_args[@]}"
     fi
 }

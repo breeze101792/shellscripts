@@ -40,6 +40,11 @@ case "$TERM" in
     xterm-color|*-256color) color_prompt=yes;;
 esac
 
+# Overridge lang settings
+export LANG=en_US.UTF-8
+export LANGUAGE=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+
 ################################################################
 ####    Alias
 ################################################################
@@ -226,6 +231,82 @@ mark()
     # echo $ccred$hi_word$ccend
     # $@ 2>&1 | sed -E -e "s%${hi_word}%${color_array[$clr_idx]}&${ccend}%ig"
     sed -u -E -e "s%${hi_word}%${ccstart}&${ccend}%ig"
+}
+function session()
+{
+    local var_taget_socket=""
+    local var_action=""
+    local var_remove_list=()
+    local var_cmd=('tmux')
+
+    local var_taget_name=""
+
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -S|--socket)
+                var_cmd+=("-S ${2}")
+                shift 1
+                ;;
+            -f|--file)
+                if test -f ${2}
+                then
+                    var_cmd+=("-f ${2}")
+                else
+                    echo "Config file not found. $2"
+                    return 1
+                fi
+                shift 1
+                ;;
+            --host|host|hostname|h)
+                local var_hostname=""
+                if command -v hostname 2>&1 > /dev/null
+                then
+                    var_hostname="$(hostname)"
+                elif test -f "/etc/hostname"
+                then
+                    var_hostname="$(cat /etc/hostname)"
+                fi
+
+                local tmp_name=$(session ls |grep "${var_hostname}" | cut -d ':' -f 1| tr -d  ' ')
+                if [ "${tmp_name}" != "" ]
+                then
+                    var_action="attach"
+                    var_taget_name=${tmp_name}
+                else
+                    var_action="create"
+                    var_taget_name=${var_hostname}
+                fi
+                ;;
+            -h|--help)
+                cli_helper -c "session" -cd "session lite is an independ instance of tmux"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "session [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-f|--file" -d "Specify config file"
+                cli_helper -o "-S|--socket" -d "Specify socket file"
+                cli_helper -o "--host|host|hostname|h" -d "detach all session"
+                return 0
+                ;;
+            *)
+                var_cmd+=($*)
+                break
+                ;;
+        esac
+        shift 1
+    done
+
+    if [ "${var_action}" = "attach" ]
+    then
+        var_cmd+=(" a -t ${var_taget_name}")
+    elif [ "${var_action}" = "create" ]
+    then
+        var_cmd+=(" -u -2 new -s ${var_taget_name}")
+    fi
+
+    echo "export TERM='xterm-256color' && ${var_cmd[@]}"
+    eval "export TERM='xterm-256color' && ${var_cmd[@]}"
+
 }
 ################################################################
 ####    Post Setting

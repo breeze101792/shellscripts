@@ -170,7 +170,7 @@ function droot()
                 flag_fake="y"
                 ;;
             -h|--help)
-                echo "froot"
+                echo "droot"
                 printlc -cp false -d "->" "-c|--case" "Ignore case"
                 printlc -cp false -d "->" "-m|--full-match" "full pattern match"
                 printlc -cp false -d "->" "-f|--fake" "return target path"
@@ -566,13 +566,16 @@ function srm()
     local flag_dry_run=false
     local flag_trash=false
     local var_trash_path="${HOME}/.trash/trash_$(tstamp)"
+    local flag_verbose=false
 
     local var_block_list=()
     local var_warn_list=()
+
     var_block_list+=("/")
     var_block_list+=("/usr")
     var_block_list+=("/boot")
     var_block_list+=("/etc")
+    var_block_list+=("/var")
 
     var_warn_list+=("$(realpath ~)")
 
@@ -585,6 +588,10 @@ function srm()
             --dry)
                 flag_dry_run=true
                 ;;
+            -v|--verbose)
+                flag_verbose=true
+                shift 1
+                ;;
             -h|--help)
                 cli_helper -c "srm" -cd "safe remove function, sanity check before remove, and block danger operation"
                 cli_helper -t "SYNOPSIS"
@@ -592,6 +599,7 @@ function srm()
                 cli_helper -t "Options"
                 cli_helper -o "--dry" -d "Fake run."
                 cli_helper -o "--trash" -d "Move to ~/.trash insdead."
+                cli_helper -o "-v|--verbose" -d "Verbose print "
                 cli_helper -o "-h|--help" -d "Print help function, please use 'man rm' for rm help"
                 return 0
                 ;;
@@ -603,18 +611,21 @@ function srm()
                 var_opt+=($1)
                 ;;
             *)
-                var_file_list+=("${1}")
+                var_file_list+=("$(realpath -s ${1})")
                 ;;
         esac
         shift 1
     done
 
+    # [ ${flag_verbose} = true ] && echo "All files: ${var_file_list[@]}"
     # checkinf file in the every list
     for each_file in ${var_file_list[@]}
     do
+        [ ${flag_verbose} = true ] && echo "Each file: ${each_file}"
         # block list
         for each_block in ${var_block_list[@]}
         do
+            [ ${flag_verbose} = true ] && echo "Checking blocking rule file: ${each_block}"
             var_tmp_pattern=$(dirname "${each_file}")
             # echo "Check Rule:${each_block}, ${var_tmp_pattern}"
 
@@ -628,6 +639,7 @@ function srm()
         # warning list
         for each_warn in ${var_warn_list[@]}
         do
+            [ ${flag_verbose} = true ] && echo "Checking warning rule file: ${each_warn}"
             var_tmp_pattern=$(dirname "${each_file}")
             # echo "Check Rule:${each_warn}, ${var_tmp_pattern}"
 

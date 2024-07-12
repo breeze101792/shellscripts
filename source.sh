@@ -419,6 +419,11 @@ function hs_main
     else
         export HS_PATH_LIB=${flag_env_lib_path}
     fi
+
+    ## Start core.sh
+    hs_source ${HS_PATH_LIB}/shell/core/core.sh
+
+    ## Start configs
     if [ -f ${var_user_config} ]
     then
         source ${var_user_config}
@@ -430,16 +435,16 @@ function hs_main
         source $HOME/.hsconfig
     fi
     source ${HS_PATH_LIB}/shell/enviroment/config.sh
+    ##########################################
+    # setup custom configs
+    ##########################################
 
     # silence mode in subshell
     if [[ "${SHLVL}" > "1" ]]
     then
         HS_ENV_SILENCE="y"
     fi
-    ##########################################
-    # setup custom configs
-    ##########################################
-    hs_source ${HS_PATH_LIB}/shell/core/common.sh
+
     if [ "${flag_env_shell}" != "" ]
     then
         export HS_ENV_SHELL=${flag_env_shell}
@@ -468,15 +473,13 @@ function hs_main
     ##########################################
     if [ "${HS_ENV_SHELL}" = "bash" ]
     then
-        export HS_ENV_SHELL="bash"
         hs_source ${HS_PATH_LIB}/shell/core/bash.sh
-    elif [ "${HS_ENV_SHELL}" = "bash" ]
+    elif [ "${HS_ENV_SHELL}" = "zsh" ]
     then
-        export HS_ENV_SHELL="zsh"
         hs_source ${HS_PATH_LIB}/shell/core/zsh.sh
     else
         export HS_ENV_SHELL="sh"
-        hs_source ${HS_PATH_LIB}/shell/core/zsh.sh
+        hs_source ${HS_PATH_LIB}/shell/core/bash.sh
     fi
     hs_print "Version: $HS_ENV_VER"
     hs_source ${HS_PATH_LIB}/shell/enviroment/platform.sh
@@ -496,7 +499,7 @@ function hs_main
     ##########################################
     if [ "${HS_ENV_SHELL}" = "bash" ] && [ "${HS_CONFIG_FUNCTION_EXPORT}" = "y" ]
     then
-        export_sh_func ${HS_PATH_LIB}/shell/core/common.sh
+        export_sh_func ${HS_PATH_LIB}/shell/core/core.sh
         export_sh_func ${HS_PATH_LIB}/shell/library/lib.sh
         export_sh_func ${HS_PATH_LIB}/shell/library/cli.sh
         export_sh_func ${HS_PATH_LIB}/shell/tools/tools.sh

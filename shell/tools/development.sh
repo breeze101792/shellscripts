@@ -338,6 +338,22 @@ function pvim()
             -p|--pure-mode)
                 cmd_args+=("-u NONE")
                 ;;
+            -s|--session)
+                if [[ "$#" > 1 ]]
+                then
+                    tmp_var=$2
+                    if [ "${tmp_var}" = "def" ] || [ "${tmp_var}" = "default" ] ||
+                        [ "${tmp_var}" = "as" ] || [ "${tmp_var}" = "autosave" ]
+                    then
+                        export VIDE_SH_SESSION_RESTORE=$2
+                        shift 1
+                    else
+                        export VIDE_SH_SESSION_RESTORE='autosave'
+                    fi
+                else
+                    export VIDE_SH_SESSION_RESTORE='autosave'
+                fi
+                ;;
             -e|--extra-command)
                 cmd_args+=("$2")
                 shift 1
@@ -410,6 +426,7 @@ function pvim()
                 cli_helper -d "pvim [Options] [File]"
                 cli_helper -t "Options"
                 cli_helper -o "-m|--map" -d "Load cctree in vim"
+                cli_helper -o "-s|--session" -d "Restore session"
                 cli_helper -o "-d|--distro" -d "select vim runtint, default use ${HS_VAR_VIM}."
                 cli_helper -o "-p|--pure-mode" -d "Load withouth ide file"
                 cli_helper -o "--buffer-file|buffer|buf" -d "Open file with hs var(${HS_VAR_LOGFILE})"
@@ -448,7 +465,6 @@ function pvim()
     cd ${var_proj_folder}
 
     export VIDE_SH_PROJ_DATA_PATH=$(realpath ${var_proj_folder})
-    printf "Project %- 6s: %s\n" "Path" "${VIDE_SH_PROJ_DATA_PATH}"
 
     if test -f "${var_tags_file}"
     then
@@ -481,9 +497,11 @@ function pvim()
 
     cd $cpath
     eval ${var_vim_distro} ${cmd_args[@]} ${vim_args[@]}
-    echo "Launching: ${var_vim_distro} ${cmd_args[@]} ${vim_args[@]}"
+    printf "Launching %s: %s\n" "${VIDE_SH_PROJ_DATA_PATH}" "${var_vim_distro} ${cmd_args[@]} ${vim_args[@]}"
+
     # unset var
     unset VIDE_SH_PROJ_DATA_PATH
+    unset VIDE_SH_SESSION_RESTORE
     unset VIDE_SH_TAGS_DB
     unset VIDE_SH_CSCOPE_DB
     unset VIDE_SH_CCTREE_DB
@@ -1136,6 +1154,7 @@ function session()
     local var_action=""
     local var_remove_list=()
     local var_cmd=('tmux')
+    local var_config_file=""
     local flag_multiple_instance=y
     local var_session_tmp=${HS_TMP_SESSION_PATH}/$(hostname)
 
@@ -1226,9 +1245,19 @@ function session()
                 # echo "target: var_taget_name:$var_taget_name"
                 shift 1
                 ;;
+            -f|--file)
+                if test -f ${2}
+                then
+                    var_cmd+=("-f ${2}")
+                else
+                    echo "Config file not found. $2"
+                    return 1
+                fi
+                shift 1
+                ;;
             --host|host|hostname|h)
                 local var_hostname=""
-                if command -v hostname
+                if command -v hostname 2>&1 > /dev/null
                 then
                     var_hostname="$(hostname)"
                 elif test -f "/etc/hostname"
@@ -1263,6 +1292,7 @@ function session()
                 cli_helper -o "-l|--list" -d "list session"
                 cli_helper -o "-p|--purge" -d "purge socket"
                 cli_helper -o "-rm|--remove" -d "remove session with session list"
+                cli_helper -o "-f|--file" -d "Specify config file"
                 cli_helper -o "--host|host|hostname|h" -d "detach all session"
                 return 0
                 ;;
@@ -1451,7 +1481,7 @@ function session()
     then
         if [ "${var_taget_socket}" != "" ] && ! session ls |grep ${var_taget_socket} && test -S ${var_session_tmp}/${var_taget_socket}
         then
-            # FIXME, It's remvoe change session, And cause memory leak.
+            # FIXME, It will remvoe change session, And cause memory leak.
             echo "Remove session ${var_taget_socket}"
             rm ${var_session_tmp}/${var_taget_socket}
         fi
@@ -1623,10 +1653,27 @@ function xcd()
     local cpath=$(pwd)
     local target_path=""
     local sub_folder=""
+    local var_action="cd"
+    local var_arg=""
+    local var_path=""
 
     while [[ "$#" != 0 ]]
     do
         case $1 in
+            -a|--add)
+                var_action="add"
+                var_arg=${2}
+                if test -e "${3}"
+                then
+                    # var_path=$(realpath ${3})
+                    var_path=${3}
+                else
+                    # echo "Not folder found"
+                    return 0
+                fi
+                # shift 2
+                break
+                ;;
             -s|--hs-script|hs)
                 target_path=${HS_PATH_LIB}
                 ;;
@@ -1785,34 +1832,66 @@ function xcd()
     #     test -z tmp_clip && target_path="${tmp_clip}"
     # fi
 
-    if [ -d "${target_path}" ]
+    if [ "${var_action}" = "add" ]
     then
-        echo goto ${target_path} | mark -s green ${target_path}
-        eval "cd ${target_path}"
-        if [ -d "${sub_folder}" ]
-        then
-            echo goto ${sub_folder} | mark -s green ${sub_folder}
-            eval "cd ${sub_folder}"
-        fi
-        ls
-        return 0
-    elif [ ! -z "${target_path}" ]
-    then
-        echo "Can't find ${target_path}"
-        cd ${cpath}
-        return 1
+        local var_cnt=0
+
+        while [ ${var_cnt} -lt 20 ]
+        do
+            local tmp_name=$(echo "HS_VAR_ECD_NAME_$var_cnt")
+            local tmp_path=$(echo HS_PATH_ECD_${var_cnt})
+
+            local tmp_cmd='test "${var_arg}" = "$'${tmp_name}'" '
+            if eval "${tmp_cmd}"
+            then
+                # echo "Same pattern"
+                break
+            fi
+
+            local tmp_cmd='test -z $'${tmp_name}
+            if eval "${tmp_cmd}"
+            then
+                export ${tmp_name}="${var_arg}"
+                export ${tmp_path}="${var_path}"
+                export var_cnt=$((${var_cnt} + 1))
+                break
+            fi
+            export var_cnt=$((${var_cnt} + 1))
+        done
     else
-        echo "target path is empty"
+        if [ -d "${target_path}" ]
+        then
+            echo goto ${target_path} | mark -s green ${target_path}
+            eval "cd ${target_path}"
+            if [ -d "${sub_folder}" ]
+            then
+                echo goto ${sub_folder} | mark -s green ${sub_folder}
+                eval "cd ${sub_folder}"
+            fi
+            ls
+            return 0
+        elif [ ! -z "${target_path}" ]
+        then
+            echo "Can't find ${target_path}"
+            cd ${cpath}
+            return 1
+        else
+            echo "target path is empty"
+        fi
+
     fi
+
 
 }
 function fcd()
 {
 
     local cpath=$(pwd)
-    local depth=99
+    local depth=5
     local target_folder=""
     local var_action="search"
+    local flag_verbose=false
+    local flag_fast_hit=false
 
     while [[ "$#" != 0 ]]
     do
@@ -1821,19 +1900,22 @@ function fcd()
                 depth=$2
                 shift 1
                 ;;
+            -f|--fast-hit)
+                flag_fast_hit=true
+                ;;
             -l|--latest)
                 var_action="latest"
                 ;;
-            -m|--max|m)
-                depth=99
+            -v|--verbose)
+                flag_verbose=true
                 ;;
             -h|--help)
                 cli_helper -c "fcd" -cd "fcd function"
                 cli_helper -t "SYNOPSIS"
                 cli_helper -d "fcd [Options] [Value]"
                 cli_helper -t "Options"
-                cli_helper -o "-d|--depth" -d "Depth: default is 3"
-                cli_helper -o "-m|--max|m" -d "Depth: Do max search, depth is 6"
+                cli_helper -o "-f|--fast-hit" -d "Fast hit"
+                cli_helper -o "-d|--depth" -d "Depth: default is 5"
                 cli_helper -o "-l|--latest" -d "Get in to latest modify folder"
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
@@ -1845,8 +1927,6 @@ function fcd()
         esac
         shift 1
     done
-    # echo "Fast cd to ${target_folder}"
-
 
     if [ "${var_action}" = "latest" ]
     then
@@ -1855,6 +1935,87 @@ function fcd()
         test -d ${tmp_latest_dir} && cd ${tmp_latest_dir} && return 0
     elif [ "${var_action}" = "search" ]
     then
+        local tmp_real_pattern="*/*"
+        local canditate_path=""
+        local tmp_canditate_folder=""
+
+        # echo "var_action: ${var_action}"
+        if [[ ${depth} > 0 ]]
+        then
+            [ ${flag_verbose} = true ] && echo "Finding in Layer 0"
+            # test -d ${target_folder} && cd ${target_folder} && return 0
+            test -d ${target_folder} && tmp_canditate_folder=("$(realpath ${target_folder})")
+        fi
+
+        for each_depth in $(seq 1 ${depth})
+        do
+            [ ${flag_verbose} = true ] && echo "Finding in Layer ${each_depth}"
+            # eval "realpath ${tmp_real_pattern}"
+            [ ${flag_verbose} = true ] && echo Finding: $(eval "realpath ${tmp_real_pattern}" | grep "/${target_folder}$")
+            for each_path in $(eval "realpath ${tmp_real_pattern}"  2> /dev/null | grep "/${target_folder}$")
+            do
+                # echo "each path:${each_path}"
+                if test -d "${each_path}"
+                then
+                    if test -z "${tmp_canditate_folder}"
+                    then
+                        tmp_canditate_folder=("${each_path}")
+                    else
+                        tmp_canditate_folder+=("${each_path}")
+                    fi
+                fi
+            done
+            if [ ${flag_fast_hit} = true ] && [ "${#tmp_canditate_folder[@]}" -gt "1" ]
+            then
+                [ ${flag_verbose} = true ] && echo "Fast hit ${each_depth}"
+                break
+            fi
+            tmp_real_pattern=${tmp_real_pattern}"/*"
+        done
+
+        if [[ "${#tmp_canditate_folder[@]}" = "1" ]]
+        then
+            # cd ${tmp_canditate_folder[0]}
+            if test -d "${tmp_canditate_folder[0]}"
+            then
+                canditate_path=${tmp_canditate_folder[0]}
+            elif test -d "${tmp_canditate_folder[1]}"
+            then
+                canditate_path=${tmp_canditate_folder[1]}
+            fi
+        elif [[ "${#tmp_canditate_folder[@]}" > "1" ]]
+        then
+            # echo for each_idx in seq 0 ${#tmp_canditate_folder[@]}
+            for each_idx in $(seq 0 ${#tmp_canditate_folder[@]})
+            do
+                if test -d "${tmp_canditate_folder[${each_idx}]}"
+                then
+                    echo "[${each_idx}]:${tmp_canditate_folder[${each_idx}]}"
+                fi
+            done
+
+            printf "Please select path(default 1):"
+            read tmp_ans
+
+            if test -n "${tmp_ans}"
+            then
+                # echo ${tmp_canditate_folder[${tmp_ans}]}
+                # cd ${tmp_canditate_folder[${tmp_ans}]}
+                canditate_path=${tmp_canditate_folder[${tmp_ans}]}
+            else
+                canditate_path=${tmp_canditate_folder[1]}
+            fi
+        fi
+
+        [ ${flag_verbose} = true ] && echo "Canditate_path: ${canditate_path}->${tmp_canditate_folder[@]}"
+        # echo "${canditate_path}"
+        if test -d "${canditate_path}"
+        then
+            cd "${canditate_path}" && return 0
+            return 1
+        fi
+        return 1
+    else
         # echo "var_action: ${var_action}"
         if [[ ${depth} > 0 ]]
         then
@@ -1997,7 +2158,7 @@ function gforall()
     do
         case $1 in
             -l|--log)
-                var_target_cmd="git log --pretty='format:%cd %p->%h %cn(%an) %s' -n 1"
+                var_target_cmd="git log --pretty='format:%cd(%cr) %p->%h %cn(%an) %s' -n 1"
                 break
                 ;;
             --disable-filemode)
@@ -2443,6 +2604,55 @@ function grun()
         echo "${tmp_cmd}"
         eval "${tmp_cmd}"
     fi
+}
+
+function glog()
+{
+    local var_git_log_cmd=""
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -1)
+                var_git_log_cmd="git log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold cyan)%aD%C(reset) %C(bold green)(%ar)%C(reset)%C(bold yellow)%d%C(reset)%n''          %C(white)%s%C(reset) %C(dim white)- %an%C(reset)' --all"
+                # var_git_log_cmd="git log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold cyan)%cD%C(reset) %C(bold green)(%cr)%C(reset)%C(bold yellow)%d%C(reset)%n''          %C(white)%s%C(reset) %C(dim white)- %an%C(reset)' --all"
+                ;;
+            -2)
+                var_git_log_cmd="git log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) %C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(bold yellow)%d%C(reset)' --all"
+                ;;
+            -a|--append)
+                cmd_args+=("${2}")
+                shift 1
+                ;;
+            -v|--verbose)
+                flag_verbose="y"
+                shift 1
+                ;;
+            -h|--help)
+                cli_helper -c "template" -cd "template function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "template [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-1" -d "format 1"
+                cli_helper -o "-2" -d "format 2"
+                cli_helper -o "-a|--append" -d "append file extension on search"
+                cli_helper -o "-v|--verbose" -d "Verbose print "
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                echo "Wrong args, $@"
+                return -1
+                ;;
+        esac
+        shift 1
+    done
+    if test -z "${var_git_log_cmd}"
+    then
+        var_git_log_cmd="git log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold cyan)%cD%C(reset) %C(bold green)(%cr)%C(reset)%C(bold yellow)%d%C(reset)%n''          %C(white)%s%C(reset) %C(dim white)- %an%C(reset)' --all"
+    fi
+
+    echo ${var_git_log_cmd}
+    eval ${var_git_log_cmd}
 }
 function gfiles()
 {

@@ -8,6 +8,7 @@
 
 ## Terminal Session configs
 ########################################################
+export LANGUAGE=en_US.UTF-8
 export LANG="en_US.utf8"
 if true
 then

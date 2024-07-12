@@ -75,4 +75,10 @@ set colored-stats on
 set editing-mode vi
 set keymap vi
 
+## Shaun Config
+################################################################
+# On some build server, it will not exit by ctrl-d. so use this to override original settings
+# if shopt -q login_shell; then IGNOREEOF=0; else IGNOREEOF=10; fi
+if shopt -q login_shell; then IGNOREEOF=0; fi
+
 shell_setup bash
