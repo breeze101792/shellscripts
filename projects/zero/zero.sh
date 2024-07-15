@@ -85,3 +85,27 @@ function zero_wifi()
     watch -n 3 sudo ip route del default dev eth0
 }
 
+function zero_swapon()
+{
+    local var_mount_point=/mnt/usb
+    local var_devices=/dev/sda1
+    if ! test -e "${var_devices}"
+    then
+        echo "Devices not found. ${var_devices}"
+        return 1
+    fi
+
+    if test -f ${var_mount_point}/swap
+    then
+        sudo mount /dev/sda1 ${var_mount_point}/
+        sudo systemctl daemon-reload
+    fi
+
+    if test -f ${var_mount_point}/swap
+    then
+        sudo swapon ${var_mount_point}/swap
+        echo "Do swap on."
+    else
+        echo "Swap on fail."
+    fi
+}
