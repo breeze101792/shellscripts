@@ -1290,7 +1290,7 @@ function doloop()
     done
     if [ -z "${var_list_cmd}" ]
     then
-        var_list_cmd="seq 0 1000"
+        var_list_cmd="seq 0 86400"
         flag_fail_on_terminate='y'
     fi
 
