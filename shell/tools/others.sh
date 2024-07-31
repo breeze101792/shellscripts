@@ -97,7 +97,7 @@ function wifi()
                 cli_helper -o "-h|--help" -d "Print help function "
 
                 cli_helper -t "Wpa Commands"
-                cli_helper -d "sudo wpa_supplicant -B -Dnl80211 -i wlan0 -dddd -c /proj/mtk19320/workspace/config/wpa_supplicant.conf -f ./wpa_supplicant.log"
+                cli_helper -d "sudo wpa_supplicant -B -Dnl80211 -i wlan0 -dddd -c /path/to/your/wpa_supplicant.conf -f ./wpa_supplicant.log"
                 return 0
                 ;;
             *)
@@ -915,6 +915,158 @@ function user_mount()
         shift 1
     done
     sudo mount -o uid=${uid},gid=${gid} ${target_dev} ${target_dir}
+}
+function cifs_mount()
+{
+    local uid=$(id -u)
+    local gid=$(id -g)
+
+    local var_user="$(whoami)"
+    local var_password=''
+    local var_domain="WORKGROUP"
+    local var_mount_path='/mnt/tmp'
+    local var_server_path=''
+
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -s|--server-path)
+                var_server_path=${2}
+                shift 1
+                ;;
+            -m|--mount-path)
+                var_mount_path=${2}
+                shift 1
+                ;;
+            -u|--user)
+                var_user=${2}
+                shift 1
+                ;;
+            -p|--password)
+                var_password=${2}
+                shift 1
+                ;;
+            -d|--domain)
+                var_domain=${2}
+                shift 1
+                ;;
+            -h|--help)
+                cli_helper -c "template" -cd "template function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "template [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-s|--server-path" -d "Specify server path."
+                cli_helper -o "-m|--mount-path" -d "Specify mount path."
+                cli_helper -o "-u|--user" -d "Specify user name."
+                cli_helper -o "-p|--password" -d "Specify user password."
+                cli_helper -o "-d|--domain" -d "Specify user domain."
+                cli_helper -o "-v|--verbose" -d "Verbose print "
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                echo "Wrong args, $@"
+                return -1
+                ;;
+        esac
+        shift 1
+    done
+
+    if test -z ${var_password}
+    then
+        echo 'Enter Cifs Password'
+        read -s var_password
+    fi
+
+    local var_cifs_options="-o uid=${uid},gid=${gid},password=${var_password},username=$var_user,domain=$var_domain,vers=2.1,nounix,noserverino,forceuid,forcegid"
+
+    ##################################
+
+    if ! test -d ${var_mount_path}
+    then
+        sudo mkdir ${var_mount_path}
+    else
+        sudo umount -l ${var_mount_path}
+    fi
+
+    echo "sudo mount.cifs ${var_server_path} ${var_mount_path} ${var_cifs_options}"
+    eval "sudo mount.cifs ${var_server_path} ${var_mount_path} ${var_cifs_options}"
+}
+
+function sshfs_mount()
+{
+    local uid=$(id -u)
+    local gid=$(id -g)
+
+    local var_mount_path='/mnt/tmp'
+    local var_server_name=''
+    local var_port="22"
+    local var_remote_path=""
+
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -s|--server-name)
+                var_server_name=${2}
+                shift 1
+                ;;
+            -P|--Port)
+                var_port=${2}
+                shift 1
+                ;;
+            -r|--remote-path)
+                var_remote_path=${2}
+                shift 1
+                ;;
+            -m|--mount-path)
+                var_mount_path=${2}
+                shift 1
+                ;;
+            # -u|--user)
+            #     var_user=${2}
+            #     shift 1
+            #     ;;
+            # -p|--password)
+            #     var_password=${2}
+            #     shift 1
+            #     ;;
+            -h|--help)
+                cli_helper -c "template" -cd "template function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "template [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-s|--server-name" -d "Specify server name."
+                cli_helper -o "-P|--port" -d "Specify server port."
+                cli_helper -o "-r|--remote-path" -d "Specify remote path."
+                cli_helper -o "-m|--mount-path" -d "Specify mount path."
+                # cli_helper -o "-u|--user" -d "Specify user name."
+                # cli_helper -o "-p|--password" -d "Specify user password."
+                # cli_helper -o "-d|--domain" -d "Specify user domain."
+                cli_helper -o "-v|--verbose" -d "Verbose print "
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                echo "Wrong args, $@"
+                return -1
+                ;;
+        esac
+        shift 1
+    done
+
+    local var_sshfs_options=("-o allow_other,default_permissions,uid=${uid},gid=${gid}")
+
+    ##################################
+
+    if ! test -d ${var_mount_path}
+    then
+        mkdir ${var_mount_path}
+    else
+        fusermount -u -z ${var_mount_path}
+    fi
+
+    echo "sshfs ${var_sshfs_options},ro ${var_server_name}:${var_remote_path} ${var_mount_path} -p ${var_port}"
+    sshfs ${var_sshfs_options},ro ${var_server_name}:${var_remote_path} ${var_mount_path} -p ${var_port}
 }
 function join_by()
 {

@@ -644,8 +644,11 @@ function hstemp()
             -l|--lite)
                 var_temp_file="${HS_PATH_LIB}/tools/template/template_lite.sh"
                 ;;
+            -w|--work)
+                var_temp_file="${HS_PATH_LIB}/tools/template/template_work.sh"
+                ;;
             -f|--full)
-                var_temp_file="${HS_PATH_LIB}/tools/template/template_lite.sh"
+                var_temp_file="${HS_PATH_LIB}/tools/template/template.sh"
                 ;;
             -t|--target)
                 if (( "$#" >= "2" ))
