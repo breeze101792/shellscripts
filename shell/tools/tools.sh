@@ -681,7 +681,7 @@ function hstemp()
     done
 
     var_cmd=("cp" "${var_temp_file}" "${var_target_file}")
-    erun --eval ${var_cmd}
+    erun --eval ${var_cmd[@]}
 }
 function retitle()
 {

@@ -872,49 +872,58 @@ function link_folders()
 }
 function user_mount()
 {
-    # user_mount /dev/sda1 /mnt/tmp
     local uid=$(id -u)
     local gid=$(id -g)
 
     local var_mount_path='/mnt/tmp'
-    local var_sshfs_options=("-o allow_other,default_permissions,uid=${uid},gid=${gid}")
+    local var_device_path=''
 
-    local target_dev=""
-    local target_dir="/mnt/tmp"
     while [[ "$#" != 0 ]]
     do
         case $1 in
-            -p|--path)
-                target_dir=$2
+            -d|--dev-path)
+                var_device_path=${2}
                 shift 1
                 ;;
-            -d|--device)
-                target_dev=$2
+            -m|--mount-path)
+                var_mount_path=${2}
                 shift 1
                 ;;
             -h|--help)
-                echo "user_mount"
-
-                cli_helper -c "user_mount" -cd "user_mount function"
+                cli_helper -c "template" -cd "template function"
                 cli_helper -t "SYNOPSIS"
-                cli_helper -d "user_mount [Options] [Value]"
+                cli_helper -d "template [Options] [Value]"
                 cli_helper -t "Options"
-                cli_helper -o "-p|--path" -d "Mount point"
-                cli_helper -o "-d|--device" -d "Mount device"
-                # cli_helper -o "-a|--append" -d "append file extension on search"
-                # cli_helper -o "-v|--verbose" -d "Verbose print "
+                cli_helper -o "-d|--device-path" -d "Specify device path."
+                cli_helper -o "-m|--mount-path" -d "Specify mount path."
+                cli_helper -o "-v|--verbose" -d "Verbose print "
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;
-
             *)
-                local excute_cmd="${excute_cmd}$@"
-                break
+                echo "Wrong args, $@"
+                return -1
                 ;;
         esac
         shift 1
     done
-    sudo mount -o uid=${uid},gid=${gid} ${target_dev} ${target_dir}
+
+    local var_mount_options="-o uid=${uid},gid=${gid}"
+
+    ##################################
+
+    if ! test -d ${var_mount_path}
+    then
+        sudo mkdir ${var_mount_path}
+    fi
+
+    if mountpoint ${var_mount_path} |grep -v not
+    then
+        sudo umount -l ${var_mount_path}
+    fi
+
+    echo "sudo mount ${var_mount_options} ${var_device_path} ${var_mount_path} "
+    eval "sudo mount ${var_mount_options} ${var_device_path} ${var_mount_path} "
 }
 function cifs_mount()
 {
@@ -985,7 +994,10 @@ function cifs_mount()
     if ! test -d ${var_mount_path}
     then
         sudo mkdir ${var_mount_path}
-    else
+    fi
+
+    if mountpoint ${var_mount_path} |grep -v not
+    then
         sudo umount -l ${var_mount_path}
     fi
 
@@ -1061,7 +1073,10 @@ function sshfs_mount()
     if ! test -d ${var_mount_path}
     then
         mkdir ${var_mount_path}
-    else
+    fi
+
+    if mountpoint ${var_mount_path} |grep -v not
+    then
         fusermount -u -z ${var_mount_path}
     fi
 
