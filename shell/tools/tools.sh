@@ -644,8 +644,11 @@ function hstemp()
             -l|--lite)
                 var_temp_file="${HS_PATH_LIB}/tools/template/template_lite.sh"
                 ;;
+            -w|--work)
+                var_temp_file="${HS_PATH_LIB}/tools/template/template_work.sh"
+                ;;
             -f|--full)
-                var_temp_file="${HS_PATH_LIB}/tools/template/template_lite.sh"
+                var_temp_file="${HS_PATH_LIB}/tools/template/template.sh"
                 ;;
             -t|--target)
                 if (( "$#" >= "2" ))
@@ -678,7 +681,7 @@ function hstemp()
     done
 
     var_cmd=("cp" "${var_temp_file}" "${var_target_file}")
-    erun --eval ${var_cmd}
+    erun --eval ${var_cmd[@]}
 }
 function retitle()
 {
