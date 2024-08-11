@@ -1,0 +1,10 @@
+Please use following command to create user.
+```
+sudo smbpasswd -a shaowu
+```
+
+Install vfs module for fruit extension
+```
+apt-get install samba-vfs-modules
+apt-get install samba-vfs-modules-extra
+```
