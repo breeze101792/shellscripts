@@ -137,7 +137,12 @@ function hs_motd()
     local tmp_pname="$(ps -Ao pid,fname 2> /dev/null |grep "${PPID}" |grep -v "grep" | sed 's/[[:space:]]\+/ /g' | cut -d ' ' -f 3)"
 
     var_msg+=$(printf "%- 16s: %s" "OS" "$(cat /etc/os-release | grep "^NAME=" | cut -d "\"" -f 2 )")
-    var_msg+=$(printf "%- 16s: %s" "Hostname" "$(cat /etc/hostname)")
+    if test -f /etc/hostname
+    then
+        var_msg+=$(printf "%- 16s: %s" "Hostname" "$(cat /etc/hostname)")
+    else
+        var_msg+=$(printf "%- 16s: %s" "Hostname" "$(hostname)")
+    fi
     var_msg+=$(printf "%- 16s: %s" "Kernel Version" "$(uname -r)")
     var_msg+=$(printf "%- 16s: %s" "CPU" "$(cat /proc/cpuinfo | grep 'model name' | head -n 1 | cut -d ':' -f 2 | sed 's/^\s//g')")
     var_tmp_msg=$(lspci 2> /dev/null |grep VGA | cut -d ':' -f 3 | sed 's/^\s//g')
@@ -314,7 +319,7 @@ function hs_print()
     #     echo -E "hs> $@"
     # fi
 }
-function refresh
+function reload
 {
     local cpath="${PWD}"
     cd
@@ -322,6 +327,7 @@ function refresh
     source ${HS_PATH_LIB}/source.sh -p=${HS_PATH_LIB} -s=${HS_ENV_SHELL} -S=${HS_ENV_SILENCE} --refresh
     cd "${cpath}"
 }
+alias refresh=reload
 
 function hs_main
 {
