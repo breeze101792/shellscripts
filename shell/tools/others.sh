@@ -1014,6 +1014,7 @@ function sshfs_mount()
     local var_server_name=''
     local var_port="22"
     local var_remote_path=""
+    local var_permission="rw"
 
     while [[ "$#" != 0 ]]
     do
@@ -1034,6 +1035,12 @@ function sshfs_mount()
                 var_mount_path=${2}
                 shift 1
                 ;;
+            -R|--read-only)
+                var_permission="ro"
+                ;;
+            # -W|--Write)
+            #     var_permission="rw"
+            #     ;;
             # -u|--user)
             #     var_user=${2}
             #     shift 1
@@ -1054,6 +1061,8 @@ function sshfs_mount()
                 # cli_helper -o "-u|--user" -d "Specify user name."
                 # cli_helper -o "-p|--password" -d "Specify user password."
                 # cli_helper -o "-d|--domain" -d "Specify user domain."
+                cli_helper -o "-R|--read-only" -d "Read only."
+                # cli_helper -o "-W|--Write" -d "Write permission."
                 cli_helper -o "-v|--verbose" -d "Verbose print "
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
@@ -1066,7 +1075,7 @@ function sshfs_mount()
         shift 1
     done
 
-    local var_sshfs_options=("-o allow_other,default_permissions,uid=${uid},gid=${gid}")
+    local var_sshfs_options=("-o allow_other,default_permissions,uid=${uid},gid=${gid},${var_permission}")
 
     ##################################
 
@@ -1080,9 +1089,9 @@ function sshfs_mount()
         fusermount -u -z ${var_mount_path}
     fi
 
-    echo "sshfs ${var_sshfs_options},ro ${var_server_name}:${var_remote_path} ${var_mount_path} -p ${var_port}"
-    sshfs ${var_sshfs_options},ro ${var_server_name}:${var_remote_path} ${var_mount_path} -p ${var_port}
-}
+    echo "sshfs ${var_sshfs_options} ${var_server_name}:${var_remote_path} ${var_mount_path} -p ${var_port}"
+    sshfs ${var_sshfs_options} ${var_server_name}:${var_remote_path} ${var_mount_path} -p ${var_port}
+} 
 function join_by()
 {
     local IFS="$1"; shift; echo "$*";
