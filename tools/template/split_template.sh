@@ -12,7 +12,8 @@ export DEF_COLOR_NORMAL='\033[0m'
 ###########################################################
 export VAR_SCRIPT_NAME="$(basename ${BASH_SOURCE[0]%=.})"
 export VAR_CPU_CNT=$(nproc --all)
-export VAR_TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+
+export VAR_COMMAND_LIST=()
 
 ###########################################################
 ## Options
@@ -127,6 +128,28 @@ function fexample()
     fPrintHeader ${FUNCNAME[0]}
 
 }
+function fTmuxRun()
+{
+    fPrintHeader ${FUNCNAME[0]}
+
+    local start_window_idx="2"
+    local start_pannel_idx="1"
+    local session_name="xtmux"
+
+    # Start a new tmux session
+    tmux new-session -d -s ${session_name}
+
+    for each_cmd in "${VAR_COMMAND_LIST[@]}"
+    do
+        tmux send-keys "eval ${each_cmd}" C-m
+        tmux split-window -h
+    done
+
+    # Change layout
+    tmux select-layout tiled
+    # Attach to the tmux session
+    tmux attach -t ${session_name}
+}
 ## Main Functions
 ###########################################################
 function fMain()
@@ -138,6 +161,20 @@ function fMain()
     do
         case $1 in
             # Options
+            -c|--command)
+                local tmp_command=""
+                while (( "$#" >= "2" ))
+                do
+                    if ! [[ $2 =~ \-.* ]]
+                    then
+                        tmp_command="${tmp_command} $2"
+                        shift 1
+                    else
+                        break
+                    fi
+                done
+                VAR_COMMAND_LIST+=("${tmp_command}")
+                ;;
             -v|--verbose)
                 flag_verbose=true
                 ;;
@@ -160,6 +197,7 @@ function fMain()
         OPTION_VERBOSE=y
         fInfo; fErrControl ${FUNCNAME[0]} ${LINENO}
     fi
+    fTmuxRun ; fErrControl ${FUNCNAME[0]} ${LINENO}
 }
 
 fMain $@

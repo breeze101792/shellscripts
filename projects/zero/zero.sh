@@ -81,8 +81,10 @@ function zero_wifi()
     printf "\r[% 6s] %s Connected for scan." "${var_cnt}" "${var_wifi_name}"
 
     sudo nmcli dev wifi connect ${var_wifi_name}
+    # local default_route=$(ip route|grep wlan0 |grep default|head -n 1| sed 's/metric [[:digit:]]\+/metric 50/g')
+    # sudo ip route add ${default_route}
 
-    watch -n 3 sudo ip route del default dev eth0
+    # watch -n 3 sudo ip route del default dev eth0
 }
 
 function zero_swapon()

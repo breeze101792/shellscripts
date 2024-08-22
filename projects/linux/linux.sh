@@ -40,7 +40,7 @@ function lxide()
     proot
     target_dirs+=("arch/${arch}/")
     target_dirs+=(${drv_dirs[@]})
-    pvinit ${target_dirs[@]} $@
+    xim init ${target_dirs[@]} $@
     cd ${cpath}
 }
 function lxcd()

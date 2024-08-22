@@ -21,7 +21,8 @@ export OPTION_VERBOSE=false
 ###########################################################
 ## Path
 ###########################################################
-export PATH_ROOT="$(realpath $(dirname ${BASH_SOURCE[0]}))"
+export SCRIPT_ROOT="$(realpath $(dirname ${BASH_SOURCE[0]}))"
+export PATH_ROOT="$(pwd)"
 
 ###########################################################
 ## Utils Functions
