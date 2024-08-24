@@ -119,6 +119,32 @@ fEval()
     ${var_commands}
     return $?
 }
+fAskInput()
+{
+    local var_default_value=""
+    local var_msg="value"
+    if [[ $# = 1 ]]
+    then
+        var_default_value=${1}
+    elif [[ $# > 1 ]]
+    then
+        var_default_value=${1}
+        var_msg=${2}
+    else
+        return -1
+    fi
+
+    printf "Please enter for ${var_msg}(Default ${var_default_value}):" 1>&2
+    read tmp_input
+    if test -n "${tmp_input}"
+    then
+        echo "${tmp_input}"
+    elif test -n "${var_default_value}"
+    then
+        echo "${var_default_value}"
+    fi
+    return 0
+}
 ###########################################################
 ## Functions
 ###########################################################

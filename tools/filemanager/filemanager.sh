@@ -6,8 +6,8 @@
 ## FM Vars Options
 ###########################################################
 export VAR_TERM_SCROLL_CURSOR=0
-export VAR_TERM_TAB_LINE_CNT=1
 export VAR_TERM_STATUS_LINE_CNT=2
+export VAR_TERM_TAB_LINE_HEIGHT=1
 export VAR_TERM_LINE_CNT=0
 export VAR_TERM_COLUMN_CNT=0
 
@@ -16,7 +16,10 @@ export VAR_TERM_CONTENT_MAX_CNT=0
 export VAR_TERM_CONTENT_SCROLL=0
 
 export VAR_DIR_LIST_CNT=0
+export VAR_DIR_FILE_LIST=()
 
+export VAR_TERM_TAB_LINE_IDX=1
+export VAR_TERM_TAB_LINE_LIST
 ## Default Options
 ###########################################################
 # Use LS_COLORS to color hsfm.
@@ -35,6 +38,9 @@ export HSFM_COLOR_DIR=32
 
 # Selection color [0\-9] (copied/moved files)
 export HSFM_COLOR_SELECTION=34
+
+export HSFM_COLOR_TAB_SELECTION_FG=97
+export HSFM_COLOR_TAB_SELECTION_BG=100
 
 # Cursor color [0\-9]
 # export HSFM_COL4=1
@@ -142,10 +148,15 @@ export HSFM_KEY_TO_TOP="g"
 export HSFM_KEY_TO_BOTTOM="G"
 
 # Go to dirs.
-export HSFM_KEY_GO_DIR="t"
+export HSFM_KEY_GO_DIR="T"
 export HSFM_KEY_OPEN_CMD=":"
 export HSFM_KEY_GO_HOME="~"
 export HSFM_KEY_GO_TRASH="z"
+
+# Tab Ops
+export HSFM_KEY_GO_PREVIOUS_TAB=$'\x08'
+export HSFM_KEY_GO_NEXT_TAB=$'\x0c'
+export HSFM_KEY_OPEN_TAB='t'
 
 ### File operations.
 
@@ -222,7 +233,7 @@ clear_screen() {
     # printf '\e[%sH\e[9999C\e[1J%b\e[1;%sr' \
     #        "$((VAR_TERM_LINE_CNT-2))" "${TMUX:+\e[2J}" "$VAR_TERM_CONTENT_MAX_CNT"
     printf '\e[%sH\e[9999C\e[1J%b\e[1;%sr' \
-        "$((VAR_TERM_LINE_CNT))" "${TMUX:+\e[2J}" "$(($VAR_TERM_CONTENT_MAX_CNT+$VAR_TERM_TAB_LINE_CNT))"
+        "$((VAR_TERM_LINE_CNT))" "${TMUX:+\e[2J}" "$(($VAR_TERM_CONTENT_MAX_CNT+$VAR_TERM_TAB_LINE_HEIGHT))"
 }
 
 get_term_size() {
@@ -232,14 +243,14 @@ get_term_size() {
 
     # Max list items that fit in the VAR_TERM_CONTENT_SCROLL area.
     # ((VAR_TERM_CONTENT_MAX_CNT=VAR_TERM_LINE_CNT-3))
-    ((VAR_TERM_CONTENT_MAX_CNT=VAR_TERM_LINE_CNT-VAR_TERM_TAB_LINE_CNT-VAR_TERM_STATUS_LINE_CNT))
+    ((VAR_TERM_CONTENT_MAX_CNT=VAR_TERM_LINE_CNT-VAR_TERM_TAB_LINE_HEIGHT-VAR_TERM_STATUS_LINE_CNT))
 }
 resize_term_win()
 {
     get_term_size
     redraw
     # print size to prevent buffering
-    cmd_handler "log" "Window resized"
+    command_handler "log" "Window resized"
 }
 exit_term()
 {
@@ -258,9 +269,9 @@ redraw() {
     }
 
     clear_screen
-    draw_dir
-    tab_line
     status_line
+    tab_line
+    draw_dir
 }
 draw_dir() {
     # Print the max directory items that fit in the VAR_TERM_CONTENT_SCROLL area.
@@ -283,7 +294,7 @@ draw_dir() {
     if ((VAR_DIR_LIST_CNT < VAR_TERM_CONTENT_MAX_CNT || VAR_TERM_CONTENT_SCROLL < VAR_TERM_CONTENT_MAX_CNT/2)); then
         ((scroll_start=0))
         ((scroll_new_pos=VAR_TERM_CONTENT_SCROLL))
-        # ((scroll_end=VAR_TERM_CONTENT_MAX_CNT-VAR_TERM_TAB_LINE_CNT))
+        # ((scroll_end=VAR_TERM_CONTENT_MAX_CNT-VAR_TERM_TAB_LINE_HEIGHT))
 
     # If current dir is near the end of the list, keep VAR_TERM_CONTENT_SCROLL position.
     elif ((VAR_DIR_LIST_CNT - VAR_TERM_CONTENT_SCROLL < VAR_TERM_CONTENT_MAX_CNT/2)); then
@@ -300,7 +311,7 @@ draw_dir() {
 
     # Reset cursor position.
     # printf '\e[H'
-    printf '\e[%sH' "$((1 + ${VAR_TERM_TAB_LINE_CNT}))"
+    printf '\e[%sH' "$((1 + ${VAR_TERM_TAB_LINE_HEIGHT}))"
 
     for ((i=0;i<=scroll_len;i++)); {
         # Don't print one too many newlines.
@@ -310,17 +321,36 @@ draw_dir() {
         print_line "$((scroll_start + i))"
         # printf "$i"
     }
+    printf '%s' "$(($scroll_new_pos+1+VAR_TERM_TAB_LINE_HEIGHT))"
 
     # Move the cursor to its new position if it changed.
     # If the variable 'scroll_new_pos' is empty, the cursor
     # is moved to line '0'.
-    printf '\e[%sH' "$(($scroll_new_pos+1+VAR_TERM_TAB_LINE_CNT))"
-    # printf '\e[%sH' "$((${scroll_new_pos} + ${VAR_TERM_TAB_LINE_CNT}))"
+    printf '\e[%sH' "$(($scroll_new_pos+1+VAR_TERM_TAB_LINE_HEIGHT))"
+    # printf '\e[%sH' "$((${scroll_new_pos} + ${VAR_TERM_TAB_LINE_HEIGHT}))"
     ((VAR_TERM_SCROLL_CURSOR=scroll_new_pos))
 }
 tab_line() {
     # Status_line to print when files are marked for operation.
     local mark_ui="[${#marked_files[@]}] selected (${file_program[*]}) [p] ->"
+    local tab_list_buf=""
+    local tab_list_pre_buf=""
+    local tab_list_post_buf=""
+    VAR_TERM_TAB_LINE_LIST[${VAR_TERM_TAB_LINE_IDX}]="$(realpath .)"
+
+    for each_idx in $(seq 1 ${#VAR_TERM_TAB_LINE_LIST[@]})
+    do
+        if [ "${VAR_TERM_TAB_LINE_IDX}" = "${each_idx}" ]
+        then
+            tab_list_buf=${tab_list_buf}"*${each_idx}: $(basename ${VAR_TERM_TAB_LINE_LIST[${each_idx}]})"
+
+        elif [[ "${VAR_TERM_TAB_LINE_IDX}" -gt "${each_idx}" ]]
+        then
+            tab_list_pre_buf=${tab_list_pre_buf}"${each_idx}: $(basename ${VAR_TERM_TAB_LINE_LIST[${each_idx}]})|"
+        else
+            tab_list_post_buf=${tab_list_post_buf}"${each_idx}: $(basename ${VAR_TERM_TAB_LINE_LIST[${each_idx}]})|"
+        fi
+    done
 
     # Escape the directory string.
     # Remove all non-printable characters.
@@ -340,13 +370,19 @@ tab_line() {
     # '\e8':       Restore cursor position.
     #              This is more widely supported than '\e[u'.
     # printf '\e7\e[%sH\e[%s;%sm%*s\r%s %s%s\e[m\e[%sH\e[K\e8' \
-    printf '\e7\e[%sH\e[%s;%sm%*s\r%s %s\e[m\e8' \
+    printf '\e7\e[%sH\e[%s;%sm%*s\rFM %s\e[%s;%sm%s\e[%s;%sm%s\e[m\e8' \
            "$((0))" \
-           "${HSFM_COLOR_STATUS_FG:-30}" \
-           "${HSFM_COLOR_STATUS_BG:-41}" \
+           "${HSFM_COLOR_STATUS_FG}" \
+           "${HSFM_COLOR_STATUS_BG}" \
            "$VAR_TERM_COLUMN_CNT" "" \
-           "FM" \
-           "|${1:-${PWD_escaped:-/}}|"
+           "|${tab_list_pre_buf}" \
+           "${HSFM_COLOR_TAB_SELECTION_FG}" \
+           "${HSFM_COLOR_TAB_SELECTION_BG}" \
+           "${tab_list_buf}" \
+           "${HSFM_COLOR_STATUS_FG}" \
+           "${HSFM_COLOR_STATUS_BG}" \
+           "|${tab_list_post_buf}"
+           # "|${1:-${PWD_escaped:-/}}|${tab_list_buf[@]}"
 }
 status_line() {
     # Status_line to print when files are marked for operation.
@@ -375,7 +411,7 @@ status_line() {
     var_right_cnt="${#var_right}"
     ((var_content_cnt=VAR_TERM_COLUMN_CNT-var_left_cnt-var_right_cnt))
     [[ ${var_content_cnt} < 0 ]] && ((${var_content_cnt}=0))
-    # cmd_handler "log" "test-> ${var_content_cnt}/$VAR_TERM_COLUMN_CNT"
+    # command_handler "log" "test-> ${var_content_cnt}/$VAR_TERM_COLUMN_CNT"
     var_spacing=$(printf "% ${var_content_cnt}s" "")
 
     ## Update content
@@ -414,47 +450,50 @@ status_line() {
 }
 
 print_line() {
-    # Format the list item and print it.
-    local file_name=${list[$1]##*/}
+
+    # If the dir item doesn't exist, end here.
+    if [[ -z ${VAR_DIR_FILE_LIST[$1]} ]]; then
+        return
+    fi
+
+    # Format the VAR_DIR_FILE_LIST item and print it.
+    local file_name=${VAR_DIR_FILE_LIST[$1]##*/}
     local file_ext=${file_name##*.}
     local format
     local suffix
-
-    # If the dir item doesn't exist, end here.
-    if [[ -z ${list[$1]} ]]; then
-        return
+    # local file_info="$(ls -al $PWD | grep ${file_name}\$ | sed 's/ [^ ]\+$//')"
 
     # Directory.
-    elif [[ -d ${list[$1]} ]]; then
+    if [[ -d ${VAR_DIR_FILE_LIST[$1]} ]]; then
         format+=\\e[${di:-1;${HSFM_COLOR_DIR:-32}}m
         suffix+=/
 
     # Block special file.
-    elif [[ -b ${list[$1]} ]]; then
+    elif [[ -b ${VAR_DIR_FILE_LIST[$1]} ]]; then
         format+=\\e[${bd:-40;33;01}m
 
     # Character special file.
-    elif [[ -c ${list[$1]} ]]; then
+    elif [[ -c ${VAR_DIR_FILE_LIST[$1]} ]]; then
         format+=\\e[${cd:-40;33;01}m
 
     # Executable file.
-    elif [[ -x ${list[$1]} ]]; then
+    elif [[ -x ${VAR_DIR_FILE_LIST[$1]} ]]; then
         format+=\\e[${ex:-01;32}m
 
     # Symbolic Link (broken).
-    elif [[ -h ${list[$1]} && ! -e ${list[$1]} ]]; then
+    elif [[ -h ${VAR_DIR_FILE_LIST[$1]} && ! -e ${VAR_DIR_FILE_LIST[$1]} ]]; then
         format+=\\e[${mi:-01;31;7}m
 
     # Symbolic Link.
-    elif [[ -h ${list[$1]} ]]; then
+    elif [[ -h ${VAR_DIR_FILE_LIST[$1]} ]]; then
         format+=\\e[${ln:-01;36}m
 
     # Fifo file.
-    elif [[ -p ${list[$1]} ]]; then
+    elif [[ -p ${VAR_DIR_FILE_LIST[$1]} ]]; then
         format+=\\e[${pi:-40;33}m
 
     # Socket file.
-    elif [[ -S ${list[$1]} ]]; then
+    elif [[ -S ${VAR_DIR_FILE_LIST[$1]} ]]; then
         format+=\\e[${so:-01;35}m
 
     # Color files that end in a pattern as defined in LS_COLORS.
@@ -479,12 +518,12 @@ print_line() {
         format+=\\e[${fi:-37}m
     fi
 
-    # If the list item is under the cursor.
+    # If the VAR_DIR_FILE_LIST item is under the cursor.
     (($1 == VAR_TERM_CONTENT_SCROLL)) &&
         format+="\\e[1;${HSFM_COLOR_CURSOR:-36};7m"
 
-    # If the list item is marked for operation.
-    [[ ${marked_files[$1]} == "${list[$1]:-null}" ]] && {
+    # If the VAR_DIR_FILE_LIST item is marked for operation.
+    [[ ${marked_files[$1]} == "${VAR_DIR_FILE_LIST[$1]:-null}" ]] && {
         format+=\\e[${HSFM_COLOR_SELECTION:-31}m${mark_pre}
         suffix+=${mark_post}
     }
@@ -493,12 +532,9 @@ print_line() {
     # Remove all non-printable characters.
     file_name=${file_name//[^[:print:]]/^[}
 
-    # printf '\r%b%s\e[m\e[K\r' \
-    #     "$1: ${file_pre}${format}" \
-    #     "${file_name}${suffix}${file_post}"
     printf '\r%b%s\e[m\e[K\r' \
         " ${file_pre}${format}" \
-        "${file_name}${suffix}${file_post}"
+        "${file_info} ${file_name}${suffix}${file_post}"
 }
 
 mark() {
@@ -509,12 +545,12 @@ mark() {
         marked_files=()
 
     # Don't allow the user to mark the empty directory list item.
-    [[ ${list[0]} == empty && -z ${list[1]} ]] &&
+    [[ ${VAR_DIR_FILE_LIST[0]} == empty && -z ${VAR_DIR_FILE_LIST[1]} ]] &&
         return
 
     if [[ $1 == all ]]; then
-        if ((${#marked_files[@]} != ${#list[@]})); then
-            marked_files=("${list[@]}")
+        if ((${#marked_files[@]} != ${#VAR_DIR_FILE_LIST[@]})); then
+            marked_files=("${VAR_DIR_FILE_LIST[@]}")
             mark_dir=$PWD
         else
             marked_files=()
@@ -522,11 +558,11 @@ mark() {
 
         redraw
     else
-        if [[ ${marked_files[$1]} == "${list[$1]}" ]]; then
+        if [[ ${marked_files[$1]} == "${VAR_DIR_FILE_LIST[$1]}" ]]; then
             unset 'marked_files[VAR_TERM_CONTENT_SCROLL]'
 
         else
-            marked_files[$1]="${list[$1]}"
+            marked_files[$1]="${VAR_DIR_FILE_LIST[$1]}"
             mark_dir=$PWD
         fi
 
@@ -555,15 +591,15 @@ mark() {
 }
 get_selection() {
 
-    list+=("$item")
+    VAR_DIR_FILE_LIST+=("$item")
 }
 read_dir() {
     # Read a directory to an array and sort it directories first.
     local dirs
     local files
     local item_index
-    list=()
-    # NOTE. Clear list & use it directly to avoid list index issue on BSD
+    VAR_DIR_FILE_LIST=()
+    # NOTE. Clear VAR_DIR_FILE_LIST & use it directly to avoid VAR_DIR_FILE_LIST index issue on BSD
 
     # Set window name.
     printf '\e]2;hsfm: %s\e'\\ "$PWD"
@@ -571,32 +607,39 @@ read_dir() {
     # If '$PWD' is '/', unset it to avoid '//'.
     [[ $PWD == / ]] && PWD=
 
+    # for some reason, we should sort in seperate loop.
+    # sort for dir first
     for item in "$PWD"/*; do
         if [[ -d $item ]]; then
             dirs+=("$item")
-            list+=("$item")
+            VAR_DIR_FILE_LIST+=("$item")
 
             # Find the position of the child directory in the
             # parent directory list.
             [[ $item == "$OLDPWD" ]] &&
                 ((previous_index=item_index))
             ((item_index++))
-        elif [[ -f $item ]]; then
-            files+=("$item")
-            list+=("$item")
         fi
     done
 
-    # list=("${dirs[@]}" "${files[@]}")
+    for item in "$PWD"/*; do
+        if [[ -f $item ]]; then
+            files+=("$item")
+            VAR_DIR_FILE_LIST+=("$item")
+        fi
+    done
+
+    # sort for dir first
+    # VAR_DIR_FILE_LIST=("${dirs[@]}" "${files[@]}")
 
     # Indicate that the directory is empty.
-    [[ -z ${list[0]} ]] &&
-        list[0]=empty
+    [[ -z ${VAR_DIR_FILE_LIST[0]} ]] &&
+        VAR_DIR_FILE_LIST[0]=empty
 
-    ((VAR_DIR_LIST_CNT=${#list[@]}-1))
+    ((VAR_DIR_LIST_CNT=${#VAR_DIR_FILE_LIST[@]}-1))
 
-    # Save the original dir in a second list as a backup.
-    cur_list=("${list[@]}")
+    # Save the original dir in a second VAR_DIR_FILE_LIST as a backup.
+    cur_list=("${VAR_DIR_FILE_LIST[@]}")
 }
 
 ###########################################################
@@ -618,21 +661,21 @@ fKeyHandler() {
     case ${special_key:-$1} in
         # '' is what bash sees when the enter/return key is pressed.
         ${HSFM_KEY_CHILD3:=""})
-            open "${list[VAR_TERM_CONTENT_SCROLL]}"
+            open "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL]}"
         ;;
-        # Open list item.
+        # Open VAR_DIR_FILE_LIST item.
         # 'C' is what bash sees when the right arrow is pressed
         # ('\e[C' or '\eOC').
         ${HSFM_KEY_CHILD1:=l}|\
         ${HSFM_KEY_CHILD2:=$'\e[C'}|\
         ${HSFM_KEY_CHILD4:=$'\eOC'})
             # only check if it's directory.
-            if test -d "${list[VAR_TERM_CONTENT_SCROLL]##*/}"
+            if test -d "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL]##*/}"
             then
-                open "${list[VAR_TERM_CONTENT_SCROLL]}"
+                open "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL]}"
             else
-                # cmd_handler "log" $(file "${list[VAR_TERM_CONTENT_SCROLL]}" | tail -n 1)
-                cmd_handler "log" "File type: $(file "${list[VAR_TERM_CONTENT_SCROLL]}" | tail -n 1 | cut -d ':' -f2)"
+                # command_handler "log" $(file "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL]}" | tail -n 1)
+                command_handler "log" "File type: $(file "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL]}" | tail -n 1 | cut -d ':' -f2)"
             fi
         ;;
 
@@ -664,9 +707,11 @@ fKeyHandler() {
         ${HSFM_KEY_SCROLL_DOWN2:=$'\e[B'}|\
         ${HSFM_KEY_SCROLL_DOWN3:=$'\eOB'})
             ((VAR_TERM_CONTENT_SCROLL < VAR_DIR_LIST_CNT)) && {
+
                 ((VAR_TERM_CONTENT_SCROLL++))
 
-                if ((VAR_TERM_SCROLL_CURSOR + 1 < VAR_TERM_CONTENT_MAX_CNT)); then
+                if ((VAR_TERM_SCROLL_CURSOR + 1 < VAR_TERM_CONTENT_MAX_CNT))
+                then
                     ((VAR_TERM_SCROLL_CURSOR++))
                 else
                 # elif ((VAR_TERM_SCROLL_CURSOR + 1 == VAR_TERM_CONTENT_MAX_CNT)); then
@@ -676,7 +721,7 @@ fKeyHandler() {
 
                 print_line "$((VAR_TERM_CONTENT_SCROLL-1))"
                 printf '\n'
-                print_line "$VAR_TERM_CONTENT_SCROLL"
+                print_line "${VAR_TERM_CONTENT_SCROLL}"
                 tab_line
                 status_line
             }
@@ -724,6 +769,48 @@ fKeyHandler() {
             }
         ;;
 
+        # Tab selcet
+        ${HSFM_KEY_GO_PREVIOUS_TAB})
+            if [[ ${#VAR_TERM_TAB_LINE_LIST[@]} -eq 1 ]] ||
+                [[ ${VAR_TERM_TAB_LINE_IDX} -eq 1 ]]
+            then
+                command_handler "log" "PREVIOUS_TAB ignored."
+                return
+            else
+                VAR_TERM_TAB_LINE_LIST[${VAR_TERM_TAB_LINE_IDX}]="$(realpath .)"
+                VAR_TERM_TAB_LINE_IDX=$(($VAR_TERM_TAB_LINE_IDX - 1))
+                cd ${VAR_TERM_TAB_LINE_LIST[${VAR_TERM_TAB_LINE_IDX}]}
+                redraw full
+                command_handler "log" "HSFM_KEY_GO_PREVIOUS_TAB."
+            fi
+        ;;
+
+        ${HSFM_KEY_GO_NEXT_TAB})
+            if [[ ${#VAR_TERM_TAB_LINE_LIST[@]} -eq 1 ]] ||
+                [[ ${VAR_TERM_TAB_LINE_IDX} -eq ${#VAR_TERM_TAB_LINE_LIST[@]} ]]
+            then
+                command_handler "log" "NEXT_TAB ignored."
+                return
+            else
+                VAR_TERM_TAB_LINE_LIST[${VAR_TERM_TAB_LINE_IDX}]="$(realpath .)"
+                VAR_TERM_TAB_LINE_IDX=$(($VAR_TERM_TAB_LINE_IDX + 1))
+                cd ${VAR_TERM_TAB_LINE_LIST[${VAR_TERM_TAB_LINE_IDX}]}
+                redraw full
+                command_handler "log" "${#VAR_TERM_TAB_LINE_LIST}/${#VAR_TERM_TAB_LINE_LIST}"
+            fi
+        ;;
+        ${HSFM_KEY_OPEN_TAB})
+            VAR_TERM_TAB_LINE_LIST[${VAR_TERM_TAB_LINE_IDX}]="$(realpath .)"
+            VAR_TERM_TAB_LINE_IDX=$((${#VAR_TERM_TAB_LINE_LIST[@]} + 1))
+            if test -d "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL]}"
+            then
+                cd "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL]}"
+            fi
+            VAR_TERM_TAB_LINE_LIST[${VAR_TERM_TAB_LINE_IDX}]="$(realpath .)"
+            redraw full
+            command_handler "log" "HSFM_KEY_OPEN_TAB."$(get_selection)
+        ;;
+
         # Show hidden files.
         ${HSFM_KEY_HIDDEN:=.})
             # 'a=a>0?0:++a': Toggle between both values of 'shopt_flags'.
@@ -737,12 +824,12 @@ fKeyHandler() {
         # Search.
         ${HSFM_KEY_SEARCH:=/})
             # cmd_line "/" "search"
-            cmd_handler "search" "${list[VAR_TERM_CONTENT_SCROLL]##*/}"
+            command_handler "search" "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL]##*/}"
 
             # If the search came up empty, redraw the current dir.
-            if [[ -z ${list[*]} ]]; then
-                list=("${cur_list[@]}")
-                ((VAR_DIR_LIST_CNT=${#list[@]}-1))
+            if [[ -z ${VAR_DIR_FILE_LIST[*]} ]]; then
+                VAR_DIR_FILE_LIST=("${cur_list[@]}")
+                ((VAR_DIR_LIST_CNT=${#VAR_DIR_FILE_LIST[@]}-1))
                 redraw
                 search=
             else
@@ -752,15 +839,16 @@ fKeyHandler() {
 
         # Spawn a shell.
         ${HSFM_KEY_SHELL:=!})
-            reset_terminal
-
-            # Make hsfm aware of how many times it is nested.
-            export HSFM_LEVEL
-            ((HSFM_LEVEL++))
-
-            cd "$PWD" && "$SHELL"
-            setup_terminal
-            redraw full
+            cmd_shell
+            # reset_terminal
+            #
+            # # Make hsfm aware of how many times it is nested.
+            # export HSFM_LEVEL
+            # ((HSFM_LEVEL++))
+            #
+            # cd "$PWD" && "$SHELL"
+            # setup_terminal
+            # redraw full
         ;;
 
         # Mark files for operation.
@@ -786,7 +874,7 @@ fKeyHandler() {
             [[ ${marked_files[*]} ]] && {
                 [[ ! -w $PWD ]] && {
                     # cmd_line "warn: no write access to dir."
-                    cmd_handler "log" "warn: no write access to dir."
+                    command_handler "log" "warn: no write access to dir."
                     return
                 }
 
@@ -815,17 +903,18 @@ fKeyHandler() {
 
         # open file with command
         ${HSFM_KEY_OPEN_CMD:=:})
-            # cmd_line ":" "${list[VAR_TERM_CONTENT_SCROLL]##*/}"
-            cmd_handler "shell" "${list[VAR_TERM_CONTENT_SCROLL]##*/}"
+            # cmd_line ":" "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL]##*/}"
+            # FIXME, if command change cursor pos, it will be resotre to wier position
+            command_handler "shell" "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL]##*/}"
         ;;
 
         # Show file attributes.
         ${HSFM_KEY_ATTRIBUTES:=x})
-            [[ -e "${list[VAR_TERM_CONTENT_SCROLL]}" ]] && {
+            [[ -e "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL]}" ]] && {
                 clear_screen
                 # tab_line
-                status_line "${list[VAR_TERM_CONTENT_SCROLL]}"
-                "${HSFM_STAT_CMD:-stat}" "${list[VAR_TERM_CONTENT_SCROLL]}"
+                status_line "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL]}"
+                "${HSFM_STAT_CMD:-stat}" "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL]}"
                 read -ern 1
                 redraw
             }
@@ -833,7 +922,7 @@ fKeyHandler() {
 
         # Show help info.
         ${HSFM_KEY_HELP:=H})
-            cmd_handler "help" "${list[VAR_TERM_CONTENT_SCROLL]##*/}"
+            command_handler "help" "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL]##*/}"
         ;;
 
         # Go to dir.
@@ -882,7 +971,7 @@ fKeyHandler() {
         # Don't allow user to redefine 'q' so a bad keybinding doesn't
         # remove the option to quit.
         q)
-        cmd_handler "exit"
+        command_handler "exit"
             # : "${HSFM_CD_FILE:=${XDG_CACHE_HOME:=${HOME}/.cache}/hsfm/.hsfm_d}"
             #
             # [[ -w $HSFM_CD_FILE ]] &&
@@ -904,7 +993,7 @@ get_mime_type() {
 ###########################################################
 ## Open Functions
 ###########################################################
-cmd_handler()
+command_handler()
 {
     ## Pre settings.
     ################################################################
@@ -919,10 +1008,10 @@ cmd_handler()
             cmd_log "$@"
             ;;
         "shell")
-            cmd_line_interact "${HSFM_KEY_OPEN_CMD}" "shell" "${list[VAR_TERM_CONTENT_SCROLL]##*/}"
+            command_line_interact "${HSFM_KEY_OPEN_CMD}" "shell" "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL]##*/}"
             ;;
         "search")
-            cmd_line_interact "${HSFM_KEY_SEARCH}" "search"
+            command_line_interact "${HSFM_KEY_SEARCH}" "search"
             ;;
         "help")
             cmd_help "$@"
@@ -948,9 +1037,9 @@ cmd_handler()
     # redraw
 
 }
-cmd_line_interact() {
+command_line_interact() {
     # Write to the command_line (under status_line).
-    cmd_list=("redraw" "search" "mkdir" "mkfile" "touch" "open" "exit" "rename" "more" "help")
+    cmd_list=("redraw" "search" "mkdir" "mkfile" "touch" "open" "exit" "rename" "more" "help" "info")
     cmd_prefix=${1}
     cmd_function=${2:""}
     cmd_file=${3:""}
@@ -1016,39 +1105,25 @@ cmd_line_interact() {
                 tmp_args=$(echo ${cmd_reply} | tr -s ' ' |sed 's/^ //g' | cut -d ' ' -f 2-)
                 # printf "\r\e[2K%s" ${tmp_command}
                 case ${tmp_command} in
+                    "vim")
+                        cmd_vim "${cmd_file}"
+                        ;;
                     "echo")
                         # printf "\r\e[2K%s"
                         cmd_log "${tmp_args}"
                         ;;
-                    "search")
-                        cmd_search "${tmp_args}"
-                        # search_end_early=1
-                        ;;
-                    "rename")
-                        cmd_rename "${tmp_args}"
-                        ;;
-                    "mkdir")
-                        cmd_mkdir "${tmp_args}"
-                        ;;
                     "mkfile"|"touch")
                         cmd_mkfile "${tmp_args}"
                         ;;
-                    "vim")
-                        cmd_vim "${cmd_file}"
-                        ;;
-                    "exit")
-                        cmd_exit
+                    "file"|"info")
+                        cmd_stat "${cmd_file}"
                         ;;
                     "open")
                         open "${tmp_args}"
                         ;;
-                    "help")
-                        cmd_help "${tmp_args}"
-                        ;;
                     *)
-                    # cmd_handler "log"
-                    # printf '\r\e[%sH\e[?25h%s' "$VAR_TERM_LINE_CNT" "Unknown commands.${tmp_command}: ${tmp_args}"
-                    cmd_log "Unknown commands: ${tmp_command} ${tmp_args}"
+                    # cmd_log "Unknown commands: ${tmp_command} ${tmp_args}"
+                    cmd_${tmp_command} ${tmp_args}
                     ;;
                 esac
 
@@ -1100,8 +1175,8 @@ cmd_search()
     printf '\e[?25l'
 
     # Use a greedy glob to search.
-    list=("$PWD"/*"$var_pattern"*)
-    ((VAR_DIR_LIST_CNT=${#list[@]}-1))
+    VAR_DIR_FILE_LIST=("$PWD"/*"$var_pattern"*)
+    ((VAR_DIR_LIST_CNT=${#VAR_DIR_FILE_LIST[@]}-1))
 
     # Draw the search results on screen.
     VAR_TERM_CONTENT_SCROLL=0
@@ -1115,13 +1190,13 @@ cmd_rename()
 {
     local var_new_name="$@"
     if [[ -e $var_new_name ]]; then
-        cmd_handler "log" "warn: '$var_new_name' already exists."
+        command_handler "log" "warn: '$var_new_name' already exists."
 
-    elif [[ -w ${list[VAR_TERM_CONTENT_SCROLL]} ]]; then
-        mv "${list[VAR_TERM_CONTENT_SCROLL]}" "${PWD}/${var_new_name}"
+    elif [[ -w ${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL]} ]]; then
+        mv "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL]}" "${PWD}/${var_new_name}"
         redraw full
     else
-        cmd_handler "log" "warn: no write access to file."
+        command_handler "log" "warn: no write access to file."
     fi
 }
 cmd_mkdir()
@@ -1167,10 +1242,49 @@ cmd_vim()
         cmd_log "warn: '$var_file' not opened"
     fi
 }
+cmd_shell()
+{
+    local var_file="$@"
+
+    clear_screen
+    reset_terminal
+
+    bash
+
+    setup_terminal
+    redraw
+}
+cmd_stat()
+{
+    clear_screen
+    tab_line
+    status_line "File info"
+    printf "\n"
+    # fHelp $@
+    stat $@
+    read -ern 1
+    redraw
+}
+cmd_cd()
+{
+    if test -d $@
+    then
+        # clear_screen
+        status_line "Change dir to: $@"
+        # cd $@
+        open "$@"
+        # redraw full
+        # backup cursor
+        # NOTE. It's a patch for storing cursor position, cuse command_handler will restore it.
+        printf '\e7'
+    fi
+}
 cmd_help()
 {
     clear_screen
+    tab_line
     status_line "Help info"
+    printf "\n"
     fHelp $@
     read -ern 1
     redraw
@@ -1239,11 +1353,11 @@ cmd_line() {
             "")
                 # If there's only one search result and its a directory,
                 # enter it on one enter keypress.
-                [[ $2 == search && -d ${list[0]} ]] && ((VAR_DIR_LIST_CNT == 0)) && {
+                [[ $2 == search && -d ${VAR_DIR_FILE_LIST[0]} ]] && ((VAR_DIR_LIST_CNT == 0)) && {
                     # '\e[?25l': Hide the cursor.
                     printf '\e[?25l'
 
-                    open "${list[0]}"
+                    open "${VAR_DIR_FILE_LIST[0]}"
                     search_end_early=1
 
                     # Unset tab completion variables since we're done.
@@ -1284,8 +1398,8 @@ cmd_line() {
             printf '\e[?25l'
 
             # Use a greedy glob to search.
-            list=("$PWD"/*"$cmd_reply"*)
-            ((VAR_DIR_LIST_CNT=${#list[@]}-1))
+            VAR_DIR_FILE_LIST=("$PWD"/*"$cmd_reply"*)
+            ((VAR_DIR_LIST_CNT=${#VAR_DIR_FILE_LIST[@]}-1))
 
             # Draw the search results on screen.
             VAR_TERM_CONTENT_SCROLL=0
@@ -1528,51 +1642,69 @@ get_ls_colors() {
 }
 
 fHelp_keymap() {
-    printf "Help Info\n"
-    printf "\n%s\n" "## Help operations."
-    printf "% -32s: %s\n"  "HSFM_KEY_HELP"                  ${HSFM_KEY_HELP}
-    printf "% -32s: %s\n"  "HSFM_KEY_CHILD1"                ${HSFM_KEY_CHILD1}
-    printf "% -32s: %s\n"  "HSFM_KEY_CHILD2"                ${HSFM_KEY_CHILD2}
-    printf "% -32s: %s\n"  "HSFM_KEY_CHILD3"                ${HSFM_KEY_CHILD3}
-    printf "% -32s: %s\n"  "HSFM_KEY_PARENT1"               ${HSFM_KEY_PARENT1}
-    printf "% -32s: %s\n"  "HSFM_KEY_PARENT2"               ${HSFM_KEY_PARENT2}
-    printf "% -32s: %s\n"  "HSFM_KEY_PARENT3"               ${HSFM_KEY_PARENT3}
-    printf "% -32s: %s\n"  "HSFM_KEY_PARENT4"               ${HSFM_KEY_PARENT4}
-    printf "% -32s: %s\n"  "HSFM_KEY_PREVIOUS"              ${HSFM_KEY_PREVIOUS}
-    printf "% -32s: %s\n"  "HSFM_KEY_SEARCH"                ${HSFM_KEY_SEARCH}
-    printf "% -32s: %s\n"  "HSFM_KEY_SHELL"                 ${HSFM_KEY_SHELL}
-    printf "% -32s: %s\n"  "HSFM_KEY_SCROLL_DOWN1"          ${HSFM_KEY_SCROLL_DOWN1}
-    printf "% -32s: %s\n"  "HSFM_KEY_SCROLL_DOWN2"          ${HSFM_KEY_SCROLL_DOWN2}
-    printf "% -32s: %s\n"  "HSFM_KEY_SCROLL_UP1"            ${HSFM_KEY_SCROLL_UP1}
-    printf "% -32s: %s\n"  "HSFM_KEY_SCROLL_UP2"            ${HSFM_KEY_SCROLL_UP2}
-    printf "% -32s: %s\n"  "HSFM_KEY_TO_TOP"                ${HSFM_KEY_TO_TOP}
-    printf "% -32s: %s\n"  "HSFM_KEY_TO_BOTTOM"             ${HSFM_KEY_TO_BOTTOM}
-    printf "% -32s: %s\n"  "HSFM_KEY_GO_DIR"                ${HSFM_KEY_GO_DIR}
-    printf "% -32s: %s\n"  "HSFM_KEY_GO_HOME"               ${HSFM_KEY_GO_HOME}
-    printf "% -32s: %s\n"  "HSFM_KEY_GO_TRASH"              ${HSFM_KEY_GO_TRASH}
-    printf "% -32s: %s\n"  "HSFM_KEY_OPEN_CMD"              ${HSFM_KEY_OPEN_CMD}
+    printf "[KeyMap]\n"
+    if false
+    then
+        printf "    % -32s: %s\n"  "HSFM_KEY_CHILD1"                ${HSFM_KEY_CHILD1}
+        printf "    % -32s: %s\n"  "HSFM_KEY_CHILD2"                ${HSFM_KEY_CHILD2}
+        printf "    % -32s: %s\n"  "HSFM_KEY_CHILD3"                ${HSFM_KEY_CHILD3}
+        printf "    % -32s: %s\n"  "HSFM_KEY_PARENT1"               ${HSFM_KEY_PARENT1}
+        printf "    % -32s: %s\n"  "HSFM_KEY_PARENT2"               ${HSFM_KEY_PARENT2}
+        printf "    % -32s: %s\n"  "HSFM_KEY_PARENT3"               ${HSFM_KEY_PARENT3}
+        printf "    % -32s: %s\n"  "HSFM_KEY_PARENT4"               ${HSFM_KEY_PARENT4}
+        printf "    % -32s: %s\n"  "HSFM_KEY_SCROLL_DOWN1"          ${HSFM_KEY_SCROLL_DOWN1}
+        printf "    % -32s: %s\n"  "HSFM_KEY_SCROLL_DOWN2"          ${HSFM_KEY_SCROLL_DOWN2}
+        printf "    % -32s: %s\n"  "HSFM_KEY_SCROLL_UP1"            ${HSFM_KEY_SCROLL_UP1}
+        printf "    % -32s: %s\n"  "HSFM_KEY_SCROLL_UP2"            ${HSFM_KEY_SCROLL_UP2}
+    fi
+
+    printf "\n%s\n" "## Shortcut operations."
+    printf "    % -32s: %s\n"  "HSFM_KEY_TO_TOP"                ${HSFM_KEY_TO_TOP}
+    printf "    % -32s: %s\n"  "HSFM_KEY_TO_BOTTOM"             ${HSFM_KEY_TO_BOTTOM}
+    printf "    % -32s: %s\n"  "HSFM_KEY_GO_DIR"                ${HSFM_KEY_GO_DIR}
+    printf "    % -32s: %s\n"  "HSFM_KEY_GO_HOME"               ${HSFM_KEY_GO_HOME}
+    printf "    % -32s: %s\n"  "HSFM_KEY_GO_TRASH"              ${HSFM_KEY_GO_TRASH}
+    printf "    % -32s: %s\n"  "HSFM_KEY_PREVIOUS"              ${HSFM_KEY_PREVIOUS}
+    printf "    % -32s: %s\n"  "HSFM_KEY_SEARCH"                ${HSFM_KEY_SEARCH}
+    printf "    % -32s: %s\n"  "HSFM_KEY_SHELL"                 ${HSFM_KEY_SHELL}
+    printf "    % -32s: %s\n"  "HSFM_KEY_OPEN_CMD"              ${HSFM_KEY_OPEN_CMD}
+    printf "    % -32s: %s\n"  "HSFM_KEY_HELP"                  ${HSFM_KEY_HELP}
 
     printf "\n%s\n" "## File operations."
-    printf "% -32s: %s\n"  "HSFM_KEY_YANK"                  ${HSFM_KEY_YANK}
-    printf "% -32s: %s\n"  "HSFM_KEY_MOVE"                  ${HSFM_KEY_MOVE}
-    printf "% -32s: %s\n"  "HSFM_KEY_TRASH"                 ${HSFM_KEY_TRASH}
-    printf "% -32s: %s\n"  "HSFM_KEY_LINK"                  ${HSFM_KEY_LINK}
-    printf "% -32s: %s\n"  "HSFM_KEY_BULK_RENAME"           ${HSFM_KEY_BULK_RENAME}
-    printf "% -32s: %s\n"  "HSFM_KEY_YANK_ALL"              ${HSFM_KEY_YANK_ALL}
-    printf "% -32s: %s\n"  "HSFM_KEY_MOVE_ALL"              ${HSFM_KEY_MOVE_ALL}
-    printf "% -32s: %s\n"  "HSFM_KEY_TRASH_ALL"             ${HSFM_KEY_TRASH_ALL}
-    printf "% -32s: %s\n"  "HSFM_KEY_LINK_ALL"              ${HSFM_KEY_LINK_ALL}
-    printf "% -32s: %s\n"  "HSFM_KEY_BULK_RENAME_ALL"       ${HSFM_KEY_BULK_RENAME_ALL}
-    printf "% -32s: %s\n"  "HSFM_KEY_PASTE"                 ${HSFM_KEY_PASTE}
-    printf "% -32s: %s\n"  "HSFM_KEY_CLEAR"                 ${HSFM_KEY_CLEAR}
-    printf "% -32s: %s\n"  "HSFM_KEY_RENAME"                ${HSFM_KEY_RENAME}
-    printf "% -32s: %s\n"  "HSFM_KEY_MKDIR"                 ${HSFM_KEY_MKDIR}
-    printf "% -32s: %s\n"  "HSFM_KEY_MKFILE"                ${HSFM_KEY_MKFILE}
+    printf "    % -32s: %s\n"  "HSFM_KEY_YANK"                  ${HSFM_KEY_YANK}
+    printf "    % -32s: %s\n"  "HSFM_KEY_MOVE"                  ${HSFM_KEY_MOVE}
+    printf "    % -32s: %s\n"  "HSFM_KEY_TRASH"                 ${HSFM_KEY_TRASH}
+    printf "    % -32s: %s\n"  "HSFM_KEY_LINK"                  ${HSFM_KEY_LINK}
+    printf "    % -32s: %s\n"  "HSFM_KEY_BULK_RENAME"           ${HSFM_KEY_BULK_RENAME}
+    printf "    % -32s: %s\n"  "HSFM_KEY_YANK_ALL"              ${HSFM_KEY_YANK_ALL}
+    printf "    % -32s: %s\n"  "HSFM_KEY_MOVE_ALL"              ${HSFM_KEY_MOVE_ALL}
+    printf "    % -32s: %s\n"  "HSFM_KEY_TRASH_ALL"             ${HSFM_KEY_TRASH_ALL}
+    printf "    % -32s: %s\n"  "HSFM_KEY_LINK_ALL"              ${HSFM_KEY_LINK_ALL}
+    printf "    % -32s: %s\n"  "HSFM_KEY_BULK_RENAME_ALL"       ${HSFM_KEY_BULK_RENAME_ALL}
+    printf "    % -32s: %s\n"  "HSFM_KEY_PASTE"                 ${HSFM_KEY_PASTE}
+    printf "    % -32s: %s\n"  "HSFM_KEY_CLEAR"                 ${HSFM_KEY_CLEAR}
+    printf "    % -32s: %s\n"  "HSFM_KEY_RENAME"                ${HSFM_KEY_RENAME}
+    printf "    % -32s: %s\n"  "HSFM_KEY_MKDIR"                 ${HSFM_KEY_MKDIR}
+    printf "    % -32s: %s\n"  "HSFM_KEY_MKFILE"                ${HSFM_KEY_MKFILE}
 
     printf "\n%s\n" "## Miscellaneous"
-    printf "% -32s: %s\n"  "HSFM_KEY_ATTRIBUTES"            ${HSFM_KEY_ATTRIBUTES}
-    printf "% -32s: %s\n"  "HSFM_KEY_EXECUTABLE"            ${HSFM_KEY_EXECUTABLE}
-    printf "% -32s: %s\n"  "HSFM_KEY_HIDDEN"                ${HSFM_KEY_HIDDEN}
+    printf "    % -32s: %s\n"  "HSFM_KEY_ATTRIBUTES"            ${HSFM_KEY_ATTRIBUTES}
+    printf "    % -32s: %s\n"  "HSFM_KEY_EXECUTABLE"            ${HSFM_KEY_EXECUTABLE}
+    printf "    % -32s: %s\n"  "HSFM_KEY_HIDDEN"                ${HSFM_KEY_HIDDEN}
+}
+fHelp_commands() {
+    printf "Help Info\n"
+    printf "[Commands]\n"
+    printf "    % -16s: %s\n"  "redraw" "Commands."
+    printf "    % -16s: %s\n"  "search" "Commands."
+    printf "    % -16s: %s\n"  "mkdir " "Commands."
+    printf "    % -16s: %s\n"  "mkfile" "Commands."
+    printf "    % -16s: %s\n"  "touch " "Commands."
+    printf "    % -16s: %s\n"  "open  " "Commands."
+    printf "    % -16s: %s\n"  "exit  " "Commands."
+    printf "    % -16s: %s\n"  "rename" "Commands."
+    printf "    % -16s: %s\n"  "more  " "Commands."
+    printf "    % -16s: %s\n"  "help  " "Commands. Accept option for key/map"
 }
 fHelp() {
     local help_type=$1
@@ -1580,8 +1712,7 @@ fHelp() {
     then
         fHelp_keymap $@
     else
-        printf "Help Info\n"
-        printf "Supported Commands: %s\n" "${cmd_list[@]}"
+        fHelp_commands $@
     fi
 
     printf "Press any key to continue..."

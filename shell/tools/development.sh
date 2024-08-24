@@ -2586,6 +2586,87 @@ function rprun()
     #     eval "${tmp_cmd}"
     # fi
 }
+function rpcode()
+{
+    # local var_jobs=8
+    local var_tag_url=""
+    local flag_init=false
+    local flag_sync=false
+    local var_groups="default"
+
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -d|--download|down|download)
+                flag_init=true
+                flag_sync=true
+                ;;
+            -i|--init|init)
+                flag_init=true
+                ;;
+            -s|--sync|sync)
+                flag_sync=true
+                ;;
+            -u|--url)
+                var_tag_url=${2}
+                shift 1
+                ;;
+            -g|--group)
+                var_groups="$2"
+                shift 1
+                ;;
+            # -a|--append)
+            #     cmd_args+=("${2}")
+            #     shift 1
+            #     ;;
+            -h|--help)
+                cli_helper -c "template" -cd "template function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "template [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-d|--download" -d "Init/Sync repo"
+                cli_helper -o "-i|--init" -d "Init repo"
+                cli_helper -o "-s|--sync" -d "Sync repo"
+                cli_helper -o "-u|--url" -d "Input URL tag"
+                cli_helper -o "-g|--group" -d "Download with group"
+                # cli_helper -o "-a|--append" -d "append file extension on search"
+                # cli_helper -o "-v|--verbose" -d "Verbose print "
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                echo "Wrong args, $@"
+                return -1
+                ;;
+        esac
+        shift 1
+    done
+
+    var_tag_project="$(echo ${var_tag_url} | sed 's/\/+.*//g' | sed 's|plugins/gitiles/||g')"
+    var_tag_branch="$(echo ${var_tag_url} | sed 's/.*heads\///g' | cut -d '/' -f 1)"
+    var_tag_manifest="$(echo ${var_tag_url} | sed 's/.*heads\///g' | cut -d '/' -f 2-)"
+
+    # echo ${var_tag_project}
+    # echo ${var_tag_branch}
+    # echo ${var_tag_manifest}
+    if test -z "${var_tag_project}" || test -z "${var_tag_branch}" || test -z "${var_tag_manifest}"
+    then
+        echo "Parsing fail.Project: ${var_tag_project}, Branch: ${var_tag_branch}, Manifest: ${var_tag_manifest}"
+        return -1
+    fi
+
+    echo repo init -u ${var_tag_project} -b ${var_tag_branch} -m ${var_tag_manifest} -g ${var_groups}
+    if [ ${flag_init} = true ]
+    then
+        repo init -u ${var_tag_project} -b ${var_tag_branch} -m ${var_tag_manifest} -g ${var_groups}
+        echo "repo init -u ${var_tag_project} -b ${var_tag_branch} -m ${var_tag_manifest} -g ${var_groups}" >> .repo/repo_init.log
+    fi
+
+    if [ ${flag_sync} = true ]
+    then
+        rprun -s
+    fi
+}
 # function rpreset()
 # {
 #     local var_jobs="64"

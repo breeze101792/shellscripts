@@ -416,15 +416,6 @@ function clip()
             #     # get current dir
             #     hs_varconfig -g "${HS_VAR_CURRENT_DIR}"
             #     ;;
-            -ln|--link)
-                clip -b ${var_clipidx} -x 'ln -s $(realpath %p) ./'
-                ;;
-            -c|-cf|--copy-file)
-                clip -b ${var_clipidx} -x cp -r "%p" .
-                ;;
-            -ca|--copy-all)
-                clip -b ${var_clipidx} -x cp -r "%p/*" .
-                ;;
             -f|--fake-run)
                 flag_fake_run=true
                 ;;
@@ -474,6 +465,30 @@ function clip()
 
                 break
                 ;;
+            # commands
+            -cd)
+                local clip_buff="$(clip -b ${var_clipidx} -g )"
+                if test -d ${clip_buff}
+                then
+                    excute_cmd="cd ${clip_buff}"
+                elif test -f ${clip_buff}
+                then
+                    excute_cmd="cd $(dirname ${clip_buff})"
+                else
+                    echo "Path not found."
+                    return 1
+                fi
+                ${excute_cmd}
+                ;;
+            -ln|--link)
+                clip -b ${var_clipidx} -x 'ln -s $(realpath %p) ./'
+                ;;
+            -c|-cf|--copy-file)
+                clip -b ${var_clipidx} -x cp -r "%p" .
+                ;;
+            -ca|--copy-all)
+                clip -b ${var_clipidx} -x cp -r "%p/*" .
+                ;;
             -h|--help)
                 cli_helper -c "clip" -cd "clip function"
                 cli_helper -t "SYNOPSIS"
@@ -487,6 +502,7 @@ function clip()
                 # cli_helper -o "-d|--get-current-dir" -d "Get current dir vars, get current stored dir"
                 cli_helper -o "-c|-cf|--copy-file" -d "cp file to current folder"
                 cli_helper -o "-ca|--copy-all" -d "cp all file too current folder"
+                cli_helper -o "-cd" -d "Change to dir"
                 cli_helper -o "-ln|--link" -d "Link file to the current folder"
                 cli_helper -o "-f|--fake-run" -d "Do fake run on -x"
                 cli_helper -o "-x|--excute" -d "Excute command, replace %p with clip buffer."
