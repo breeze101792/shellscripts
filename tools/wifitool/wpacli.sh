@@ -14,8 +14,9 @@ export VAR_SCRIPT_NAME="$(basename ${BASH_SOURCE[0]%=.})"
 export VAR_CPU_CNT=$(nproc --all)
 export VAR_TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 export VAR_WLAN_IF=wlan0
+export VAR_WLAN_CURRENT_NETWORK_ID=""
 
-export VAR_TARGET_INFO=()
+# export VAR_TARGET_INFO=()
 
 # For wifi settings
 VAR_WLAN_TYPE="WPA_PSK"
@@ -24,7 +25,7 @@ VAR_WLAN_BSSID=""
 VAR_WLAN_USER=""
 VAR_WLAN_PASSWORD=""
 
-VAR_WLAN_METRIC=50
+VAR_WLAN_METRIC=""
 ###########################################################
 ## Options
 ###########################################################
@@ -187,7 +188,12 @@ function fWpaCli()
 }
 function fSetMetric()
 {
-    local var_metric=${VAR_WLAN_METRIC}
+    local var_metric=""
+    if [ $# -gt 0 ]
+    then
+        local var_metric=${1}
+    fi
+
     while true
     do
         if ip route|grep default |grep ${VAR_WLAN_IF}
@@ -236,8 +242,8 @@ function fScan()
             if  echo ${each_line[@]} | grep ${search_ssid} > /dev/null
             then
                 echo Found: ${each_line[@]}
-                VAR_TARGET_INFO=( ['bssid']="$(echo ${each_line[@]} | cut -d ' ' -f 1)" ['ssid']="$(echo ${each_line[@]} | cut -d ' ' -f 5)" )
-                echo ${VAR_TARGET_INFO['bssid']}
+                # VAR_TARGET_INFO=( ['bssid']="$(echo ${each_line[@]} | cut -d ' ' -f 1)" ['ssid']="$(echo ${each_line[@]} | cut -d ' ' -f 5)" )
+                echo "$(echo ${each_line[@]} | cut -d ' ' -f 1)"
                 return 1
             fi
         else
@@ -255,34 +261,36 @@ function fAddProfile_WPA_EAP()
     local var_ssid="${VAR_WLAN_SSID}"
     local var_bssid="${VAR_WLAN_BSSID}"
     local var_user="${VAR_WLAN_USER}"
-    local var_password=$(fAskInput ${VAR_WLAN_PASSWORD} "${var_ssid} password ")
+    local var_password=""
 
-    # local var_ssid="mtkinternet"
-    # local var_bssid="44:12:44:03:e1:c1"
-    # local var_user="mtk19320"
-    # local var_password=$(fAskInput '12345678' "${var_ssid} password ")
+    if test -z "${VAR_WLAN_PASSWORD}"
+    then
+        var_password=$(fAskInput ${VAR_WLAN_PASSWORD} "${var_ssid} password ")
+    else
+        var_password=${VAR_WLAN_PASSWORD}
+    fi
 
-    local var_network_id=$(sudo wpa_cli -i ${var_interface} add_network)
+    VAR_WLAN_CURRENT_NETWORK_ID=$(sudo wpa_cli -i ${var_interface} add_network)
 
     sudo wpa_cli -i ${var_interface}<<EOF
-set_network ${var_network_id} ssid "${var_ssid}"
-set_network ${var_network_id} key_mgmt WPA-EAP
-set_network ${var_network_id} eap PEAP
-set_network ${var_network_id} identity "${var_user}"
-set_network ${var_network_id} password "${var_password}"
-set_network ${var_network_id} phase2 "auth=MSCHAPV2"
+set_network ${VAR_WLAN_CURRENT_NETWORK_ID} ssid "${var_ssid}"
+set_network ${VAR_WLAN_CURRENT_NETWORK_ID} key_mgmt WPA-EAP
+set_network ${VAR_WLAN_CURRENT_NETWORK_ID} eap PEAP
+set_network ${VAR_WLAN_CURRENT_NETWORK_ID} identity "${var_user}"
+set_network ${VAR_WLAN_CURRENT_NETWORK_ID} password "${var_password}"
+set_network ${VAR_WLAN_CURRENT_NETWORK_ID} phase2 "auth=MSCHAPV2"
 quit
 EOF
     if test -n "${var_bssid}"
     then
         sudo wpa_cli -i ${var_interface}<<EOF
-set_network ${var_network_id} bssid ${var_bssid}
+set_network ${VAR_WLAN_CURRENT_NETWORK_ID} bssid ${var_bssid}
 quit
 EOF
     fi
 
     sudo wpa_cli -i ${var_interface}<<EOF
-enable_network ${var_network_id}
+enable_network ${VAR_WLAN_CURRENT_NETWORK_ID}
 quit
 EOF
 }
@@ -295,25 +303,25 @@ function fAddProfile_WPA_PSK()
     local var_bssid="${VAR_WLAN_BSSID}"
     local var_password=$(fAskInput ${VAR_WLAN_PASSWORD} "${var_ssid} password ")
 
-    local var_network_id=$(sudo wpa_cli -i ${var_interface} add_network)
+    VAR_WLAN_CURRENT_NETWORK_ID=$(sudo wpa_cli -i ${var_interface} add_network)
 
     sudo wpa_cli -i ${var_interface}<<EOF
-set_network ${var_network_id} ssid "${var_ssid}"
-set_network ${var_network_id} psk "${var_password}"
-enable_network ${var_network_id}
+set_network ${VAR_WLAN_CURRENT_NETWORK_ID} ssid "${var_ssid}"
+set_network ${VAR_WLAN_CURRENT_NETWORK_ID} psk "${var_password}"
+enable_network ${VAR_WLAN_CURRENT_NETWORK_ID}
 quit
 EOF
 
     if test -n "${var_bssid}"
     then
         sudo wpa_cli -i ${var_interface}<<EOF
-set_network ${var_network_id} bssid ${var_bssid}
+set_network ${VAR_WLAN_CURRENT_NETWORK_ID} bssid ${var_bssid}
 quit
 EOF
     fi
 
     sudo wpa_cli -i ${var_interface}<<EOF
-enable_network ${var_network_id}
+enable_network ${VAR_WLAN_CURRENT_NETWORK_ID}
 quit
 EOF
 
@@ -334,7 +342,7 @@ function fAddProfile()
             ;;
     esac
 }
-function fAdd()
+function fAll
 {
     fPrintHeader ${FUNCNAME[0]}
 
@@ -346,8 +354,14 @@ function fAdd()
     fi
     fAddProfile
 
+    fWpaCli enable_network ${VAR_WLAN_CURRENT_NETWORK_ID}
+
     sudo dhcpcd ${VAR_WLAN_IF}
-    fSetMetric
+
+    if test -n "${VAR_WLAN_METRIC}"
+    then
+        fSetMetric "${VAR_WLAN_METRIC}"
+    fi
 }
 ## Main Functions
 ###########################################################
@@ -358,7 +372,7 @@ function fMain()
     local var_search_ssid=""
     local var_action="scan"
 
-    local var_network_id=0
+    # local VAR_WLAN_CURRENT_NETWORK_ID=0
 
     while [[ $# != 0 ]]
     do
@@ -381,7 +395,7 @@ function fMain()
                 shift 1
                 ;;
             -m|--metric)
-                fSetMetric
+                fSetMetric $2
                 exit 0
                 ;;
             "all")
@@ -398,12 +412,12 @@ function fMain()
                 ;;
             "enable"|"e")
                 var_action="enable"
-                var_network_id=$2
+                VAR_WLAN_CURRENT_NETWORK_ID=$2
                 shift 1
                 ;;
             "remove"|"r")
                 var_action="remove"
-                var_network_id=$2
+                VAR_WLAN_CURRENT_NETWORK_ID=$2
                 shift 1
 
                 ;;
@@ -429,7 +443,7 @@ function fMain()
 
     case "${var_action}" in
         "all")
-            var_action="all"
+            fAll
             ;;
         "add")
             fScan ${VAR_WLAN_SSID}
@@ -447,10 +461,10 @@ function fMain()
             fWpaCli list_network
             ;;
         "enable")
-            fWpaCli enable_network ${var_network_id}
+            fWpaCli enable_network ${VAR_WLAN_CURRENT_NETWORK_ID}
             ;;
         "remove")
-            fWpaCli remove_network ${var_network_id}
+            fWpaCli remove_network ${VAR_WLAN_CURRENT_NETWORK_ID}
     esac
 }
 
