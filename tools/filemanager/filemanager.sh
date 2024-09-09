@@ -20,6 +20,11 @@ export VAR_DIR_FILE_LIST=()
 
 export VAR_TERM_TAB_LINE_IDX=1
 export VAR_TERM_TAB_LINE_LIST
+
+export VAR_TERM_FIND_PREVIOUS
+export VAR_TERM_MARKED_FILE_LIST=()
+export VAR_MARK_DIR=""
+
 ## Default Options
 ###########################################################
 # Use LS_COLORS to color hsfm.
@@ -282,12 +287,12 @@ draw_dir() {
 
     # When going up the directory tree, place the cursor on the position
     # of the previous directory.
-    ((find_previous == 1)) && {
+    ((VAR_TERM_FIND_PREVIOUS == 1)) && {
         ((scroll_start=previous_index))
         ((VAR_TERM_CONTENT_SCROLL=scroll_start))
 
         # Clear the directory history. We're here now.
-        find_previous=
+        VAR_TERM_FIND_PREVIOUS=
     }
 
     # If current dir is near the top of the list, keep VAR_TERM_CONTENT_SCROLL position.
@@ -321,7 +326,6 @@ draw_dir() {
         print_line "$((scroll_start + i))"
         # printf "$i"
     }
-    printf '%s' "$(($scroll_new_pos+1+VAR_TERM_TAB_LINE_HEIGHT))"
 
     # Move the cursor to its new position if it changed.
     # If the variable 'scroll_new_pos' is empty, the cursor
@@ -332,7 +336,7 @@ draw_dir() {
 }
 tab_line() {
     # Status_line to print when files are marked for operation.
-    local mark_ui="[${#marked_files[@]}] selected (${file_program[*]}) [p] ->"
+    local mark_ui="[${#VAR_TERM_MARKED_FILE_LIST[@]}] selected (${file_program[*]}) [p] ->"
     local tab_list_buf=""
     local tab_list_pre_buf=""
     local tab_list_post_buf=""
@@ -342,7 +346,7 @@ tab_line() {
     do
         if [ "${VAR_TERM_TAB_LINE_IDX}" = "${each_idx}" ]
         then
-            tab_list_buf=${tab_list_buf}"*${each_idx}: $(basename ${VAR_TERM_TAB_LINE_LIST[${each_idx}]})"
+            tab_list_buf=${tab_list_buf}"${each_idx}: $(basename ${VAR_TERM_TAB_LINE_LIST[${each_idx}]})"
 
         elif [[ "${VAR_TERM_TAB_LINE_IDX}" -gt "${each_idx}" ]]
         then
@@ -355,7 +359,7 @@ tab_line() {
     # Escape the directory string.
     # Remove all non-printable characters.
     # PWD_escaped=${PWD//[^[:print:]]/^[}
-    PWD_escaped=$(basename $(realpath .))
+    local var_pwd_escaped=$(basename $(realpath .))
 
     # '\e7':       Save cursor position.
     #              This is more widely supported than '\e[s'.
@@ -382,11 +386,11 @@ tab_line() {
            "${HSFM_COLOR_STATUS_FG}" \
            "${HSFM_COLOR_STATUS_BG}" \
            "|${tab_list_post_buf}"
-           # "|${1:-${PWD_escaped:-/}}|${tab_list_buf[@]}"
+           # "|${1:-${var_pwd_escaped:-/}}|${tab_list_buf[@]}"
 }
 status_line() {
     # Status_line to print when files are marked for operation.
-    local mark_ui="[${#marked_files[@]}] selected (${file_program[*]}) [p] ->"
+    local mark_ui="[${#VAR_TERM_MARKED_FILE_LIST[@]}] selected (${file_program[*]}) [p] ->"
     local var_left=""
     local var_left_cnt=""
     local var_right=""
@@ -396,12 +400,12 @@ status_line() {
 
     # Escape the directory string.
     # Remove all non-printable characters.
-    PWD_escaped=${PWD//[^[:print:]]/^[}
+    local var_pwd_escaped=${PWD//[^[:print:]]/^[}
 
     ## Update content
     var_left="($((VAR_TERM_CONTENT_SCROLL + 1))/$((VAR_DIR_LIST_CNT + 1))) "
-    var_left+="${marked_files[*]:+${mark_ui}}"
-    var_left+="${1:-${PWD_escaped:-/}}"
+    var_left+="${VAR_TERM_MARKED_FILE_LIST[*]:+${mark_ui}}"
+    var_left+="${1:-${var_pwd_escaped:-/}}"
 
     # var_right="$(date '+%Y/%m/%d %H:%M:%S')"
     var_right="$(date '+%Y/%m/%d')"
@@ -434,8 +438,8 @@ status_line() {
     #        "${HSFM_COLOR_STATUS_BG:-41}" \
     #        "$VAR_TERM_COLUMN_CNT" "" \
     #        "($((VAR_TERM_CONTENT_SCROLL + 1))/$((VAR_DIR_LIST_CNT + 1)))" \
-    #        "${marked_files[*]:+${mark_ui}}" \
-    #        "${1:-${PWD_escaped:-/}}" \
+    #        "${VAR_TERM_MARKED_FILE_LIST[*]:+${mark_ui}}" \
+    #        "${1:-${var_pwd_escaped:-/}}" \
     #        "$VAR_TERM_LINE_CNT"
 
     printf "\e7\e[%sH\e[%s;%sm%*s\r%s%s%s\e[m\e[%sH\e[K\e8" \
@@ -523,7 +527,7 @@ print_line() {
         format+="\\e[1;${HSFM_COLOR_CURSOR:-36};7m"
 
     # If the VAR_DIR_FILE_LIST item is marked for operation.
-    [[ ${marked_files[$1]} == "${VAR_DIR_FILE_LIST[$1]:-null}" ]] && {
+    [[ ${VAR_TERM_MARKED_FILE_LIST[$1]} == "${VAR_DIR_FILE_LIST[$1]:-null}" ]] && {
         format+=\\e[${HSFM_COLOR_SELECTION:-31}m${mark_pre}
         suffix+=${mark_post}
     }
@@ -541,29 +545,29 @@ mark() {
     # Mark file for operation.
     # If an item is marked in a second directory,
     # clear the marked files.
-    [[ $PWD != "$mark_dir" ]] &&
-        marked_files=()
+    [[ $PWD != "$VAR_MARK_DIR" ]] &&
+        VAR_TERM_MARKED_FILE_LIST=()
 
     # Don't allow the user to mark the empty directory list item.
     [[ ${VAR_DIR_FILE_LIST[0]} == empty && -z ${VAR_DIR_FILE_LIST[1]} ]] &&
         return
 
     if [[ $1 == all ]]; then
-        if ((${#marked_files[@]} != ${#VAR_DIR_FILE_LIST[@]})); then
-            marked_files=("${VAR_DIR_FILE_LIST[@]}")
-            mark_dir=$PWD
+        if ((${#VAR_TERM_MARKED_FILE_LIST[@]} != ${#VAR_DIR_FILE_LIST[@]})); then
+            VAR_TERM_MARKED_FILE_LIST=("${VAR_DIR_FILE_LIST[@]}")
+            VAR_MARK_DIR=$PWD
         else
-            marked_files=()
+            VAR_TERM_MARKED_FILE_LIST=()
         fi
 
         redraw
     else
-        if [[ ${marked_files[$1]} == "${VAR_DIR_FILE_LIST[$1]}" ]]; then
-            unset 'marked_files[VAR_TERM_CONTENT_SCROLL]'
+        if [[ ${VAR_TERM_MARKED_FILE_LIST[$1]} == "${VAR_DIR_FILE_LIST[$1]}" ]]; then
+            unset 'VAR_TERM_MARKED_FILE_LIST[VAR_TERM_CONTENT_SCROLL]'
 
         else
-            marked_files[$1]="${VAR_DIR_FILE_LIST[$1]}"
-            mark_dir=$PWD
+            VAR_TERM_MARKED_FILE_LIST[$1]="${VAR_DIR_FILE_LIST[$1]}"
+            VAR_MARK_DIR=$PWD
         fi
 
         # Clear line before changing it.
@@ -695,7 +699,7 @@ fKeyHandler() {
 
             # If '$PWD' is '/', do nothing.
             elif [[ $PWD && $PWD != / ]]; then
-                find_previous=1
+                VAR_TERM_FIND_PREVIOUS=1
                 open "${PWD%/*}"
             fi
         ;;
@@ -871,7 +875,7 @@ fKeyHandler() {
 
         # Do the file operation.
         ${HSFM_KEY_PASTE:=p})
-            [[ ${marked_files[*]} ]] && {
+            [[ ${VAR_TERM_MARKED_FILE_LIST[*]} ]] && {
                 [[ ! -w $PWD ]] && {
                     # cmd_line "warn: no write access to dir."
                     command_handler "log" "warn: no write access to dir."
@@ -884,10 +888,10 @@ fKeyHandler() {
 
                 stty echo
                 # printf '\e[1mhsfm\e[m: %s\n' "Running ${file_program[0]}"
-                "${file_program[@]}" "${marked_files[@]}" .
+                "${file_program[@]}" "${VAR_TERM_MARKED_FILE_LIST[@]}" .
                 stty -echo
 
-                marked_files=()
+                VAR_TERM_MARKED_FILE_LIST=()
                 setup_terminal
                 redraw full
             }
@@ -895,8 +899,8 @@ fKeyHandler() {
 
         # Clear all marked files.
         ${HSFM_KEY_CLEAR:=c})
-            [[ ${marked_files[*]} ]] && {
-                marked_files=()
+            [[ ${VAR_TERM_MARKED_FILE_LIST[*]} ]] && {
+                VAR_TERM_MARKED_FILE_LIST=()
                 redraw
             }
         ;;
@@ -1476,7 +1480,7 @@ function fopen_editor() {
 ###########################################################
 trash() {
     # Trash a file.
-    cmd_line "trash [${#marked_files[@]}] items? [y/n]: " y n
+    cmd_line "trash [${#VAR_TERM_MARKED_FILE_LIST[@]}] items? [y/n]: " y n
 
     [[ $cmd_reply != y ]] &&
         return
@@ -1504,17 +1508,17 @@ trash() {
 bulk_rename() {
     # Bulk rename files using '$EDITOR'.
     rename_file=${XDG_CACHE_HOME:=${HOME}/.cache}/hsfm/bulk_rename
-    marked_files=("${@:1:$#-1}")
+    VAR_TERM_MARKED_FILE_LIST=("${@:1:$#-1}")
 
     # Save marked files to a file and open them for editing.
-    printf '%s\n' "${marked_files[@]##*/}" > "$rename_file"
+    printf '%s\n' "${VAR_TERM_MARKED_FILE_LIST[@]##*/}" > "$rename_file"
     "${EDITOR:-vi}" "$rename_file"
 
     # Read the renamed files to an array.
     IFS=$'\n' read -d "" -ra changed_files < "$rename_file"
 
     # If the user deleted a line, stop here.
-    ((${#marked_files[@]} != ${#changed_files[@]})) && {
+    ((${#VAR_TERM_MARKED_FILE_LIST[@]} != ${#changed_files[@]})) && {
         rm "$rename_file"
         cmd_line "error: Line mismatch in rename file. Doing nothing."
         return
@@ -1525,10 +1529,10 @@ bulk_rename() {
         "# Clear the file to abort." > "$rename_file"
 
     # Construct the rename commands.
-    for ((i=0;i<${#marked_files[@]};i++)); {
-        [[ ${marked_files[i]} != "${PWD}/${changed_files[i]}" ]] && {
+    for ((i=0;i<${#VAR_TERM_MARKED_FILE_LIST[@]};i++)); {
+        [[ ${VAR_TERM_MARKED_FILE_LIST[i]} != "${PWD}/${changed_files[i]}" ]] && {
             printf 'mv -i -- %q %q\n' \
-                "${marked_files[i]}" "${PWD}/${changed_files[i]}"
+                "${VAR_TERM_MARKED_FILE_LIST[i]}" "${PWD}/${changed_files[i]}"
             local renamed=1
         }
     } >> "$rename_file"
