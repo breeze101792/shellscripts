@@ -2895,6 +2895,10 @@ function hex2bin()
 ########################################################
 #####    Pythen                                    #####
 ########################################################
+function pymodule()
+{
+    python -m $@
+}
 function pyvenv()
 {
     local var_target_path="${HS_PATH_PYTHEN_ENV}"
