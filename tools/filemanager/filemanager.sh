@@ -280,24 +280,31 @@ fterminal_exit()
 fterminal_redraw() {
     # Redraw the current window.
     # If 'full' is passed, re-fetch the directory list.
+    local tmp_buffer=""
     [[ $1 == full ]] && {
         fterminal_read_dir
         VAR_TERM_CONTENT_SCROLL_IDX=0
         VAR_TERM_SCROLL_CURSOR=0
+        if ${FLAG_TERM_DEBUG}
+        then
+            fterminal_clear
+        else
+            tmp_buffer+="$(fterminal_clear)"
+        fi
     }
 
+    # order is important, don't change it.
     if ${FLAG_TERM_DEBUG}
     then
-        fterminal_clear
-        fterminal_draw_status_line
-        fterminal_draw_tab_line
+        # fterminal_clear
         fterminal_draw_dir
+        fterminal_draw_tab_line
+        fterminal_draw_status_line
     else
-        local tmp_buffer=""
-        tmp_buffer+="$(fterminal_clear)"
-        tmp_buffer+="$(fterminal_draw_status_line)"
-        tmp_buffer+="$(fterminal_draw_tab_line)"
+        # tmp_buffer+="$(fterminal_clear)"
         tmp_buffer+="$(fterminal_draw_dir)"
+        tmp_buffer+="$(fterminal_draw_tab_line)"
+        tmp_buffer+="$(fterminal_draw_status_line)"
         printf "${tmp_buffer}"
     fi
 }
@@ -322,14 +329,17 @@ fterminal_draw_dir() {
     if ((VAR_TERM_DIR_LIST_CNT < VAR_TERM_CONTENT_MAX_CNT || VAR_TERM_CONTENT_SCROLL_IDX < VAR_TERM_CONTENT_MAX_CNT)); then
         ((var_scroll_start=0))
         ((var_scroll_new_cursor=VAR_TERM_CONTENT_SCROLL_IDX))
+        # flog_msg "1/$var_scroll_start/$var_scroll_new_cursor"
     elif ((VAR_TERM_CONTENT_SCROLL_IDX + VAR_TERM_CONTENT_MAX_CNT > VAR_TERM_DIR_LIST_CNT)); then
         # If the list is greater then win size, and in the last page
         ((var_scroll_start=VAR_TERM_DIR_LIST_CNT-VAR_TERM_CONTENT_MAX_CNT + 1))
         ((var_scroll_new_cursor=VAR_TERM_CONTENT_SCROLL_IDX - var_scroll_start))
+        # flog_msg "2/$var_scroll_start/$var_scroll_new_cursor"
     else
         # If in the midddle of the dir list.
         ((var_scroll_start=VAR_TERM_CONTENT_SCROLL_IDX-VAR_TERM_SCROLL_CURSOR))
         ((var_scroll_new_cursor=VAR_TERM_SCROLL_CURSOR))
+        # flog_msg "else/$var_scroll_start/$var_scroll_new_cursor"
     fi
 
     # Update Scroll index
@@ -370,13 +380,15 @@ fterminal_draw_tab_line() {
     do
         if [ "${VAR_TERM_TAB_LINE_IDX}" = "${each_idx}" ]
         then
-            var_tab_list_buf=${var_tab_list_buf}"${each_idx}: $(basename ${VAR_TERM_TAB_LINE_LIST[${each_idx}]})"
-
+            # var_tab_list_buf=${var_tab_list_buf}"${each_idx}: $(basename ${VAR_TERM_TAB_LINE_LIST[${each_idx}]})"
+            var_tab_list_buf=${var_tab_list_buf}"${each_idx}: ${VAR_TERM_TAB_LINE_LIST[${each_idx}]//[^[:print:]]/^[}"
         elif [[ "${VAR_TERM_TAB_LINE_IDX}" -gt "${each_idx}" ]]
         then
-            var_tab_list_pre_buf=${var_tab_list_pre_buf}"${each_idx}: $(basename ${VAR_TERM_TAB_LINE_LIST[${each_idx}]})|"
+            # var_tab_list_pre_buf=${var_tab_list_pre_buf}"${each_idx}: $(basename ${VAR_TERM_TAB_LINE_LIST[${each_idx}]})|"
+            var_tab_list_pre_buf=${var_tab_list_pre_buf}"${each_idx}: ${VAR_TERM_TAB_LINE_LIST[${each_idx}]//[^[:print:]]/^[}|"
         else
-            var_tab_list_post_buf=${var_tab_list_post_buf}"${each_idx}: $(basename ${VAR_TERM_TAB_LINE_LIST[${each_idx}]})|"
+            # var_tab_list_post_buf=${var_tab_list_post_buf}"${each_idx}: $(basename ${VAR_TERM_TAB_LINE_LIST[${each_idx}]})|"
+            var_tab_list_post_buf=${var_tab_list_post_buf}"${each_idx}: ${VAR_TERM_TAB_LINE_LIST[${each_idx}]//[^[:print:]]/^[}|"
         fi
     done
 
@@ -434,7 +446,7 @@ fterminal_draw_status_line() {
 
     # var_right="$(date '+%Y/%m/%d %H:%M:%S')"
     var_right+="($((VAR_TERM_CONTENT_SCROLL_IDX + 1))/$((VAR_TERM_DIR_LIST_CNT + 1))) "
-    var_right+="$(date '+%Y/%m/%d')"
+    # var_right+="$(date '+%Y/%m/%d')"
 
     ## calc spacing
     var_left_cnt="${#var_left}"
@@ -996,6 +1008,7 @@ fnormal_mode_handler() {
         # # Refresh current dir.
         ${HSFM_KEY_REFRESH:=r})
             fterminal_redraw
+            flog_msg "window refreshed."
         ;;
 
         # Directory favourites.
