@@ -1,52 +1,56 @@
 #!/usr/bin/env bash
 ###########################################################
-## Varis
+## Flags
 ###########################################################
+export FLAG_TERM_DEBUG=true
 
-## FM Vars Options
+## TERMINAL Vars Options
 ###########################################################
-# normal/visual
-export VAR_TERM_OPS_MODE='n'
+# Terminal Atrib
+export VAR_TERM_READ_FLAGS=()
 
-## FM Vars Options
-###########################################################
+## Terminal UI control
 export VAR_TERM_SCROLL_CURSOR=0
 export VAR_TERM_STATUS_LINE_CNT=2
 export VAR_TERM_TAB_LINE_HEIGHT=1
 export VAR_TERM_LINE_CNT=0
 export VAR_TERM_COLUMN_CNT=0
 
-export VAR_TERM_STATUS_DEBUG=""
 export VAR_TERM_CONTENT_MAX_CNT=0
 export VAR_TERM_CONTENT_SCROLL_IDX=0
 
-export VAR_DIR_LIST_CNT=0
-export VAR_DIR_FILE_LIST=()
+export VAR_TERM_DIR_LIST_CNT=0
+export VAR_TERM_DIR_FILE_LIST=()
 
+# Marks
+export VAR_TERM_FILE_PRE=""
+export VAR_TERM_FILE_POST=""
+export VAR_TERM_MARK_PRE=""
+export VAR_TERM_MARK_POST=""
+
+## Tab Line
 export VAR_TERM_TAB_LINE_IDX=1
 export VAR_TERM_TAB_LINE_LIST
-
+export VAR_TERM_TAB_LINE_BUFFER=""
+## Status Line
 export VAR_TERM_FIND_PREVIOUS
 export VAR_TERM_MARKED_FILE_LIST=()
-export VAR_MARK_DIR=""
+export VAR_TERM_MARK_DIR=""
 export VAR_TERM_SELECTION_FILE_LIST=()
-export VAR_FILE_PROGRAM=()
+export VAR_TERM_FILE_PROGRAM=()
+# Cmd line
+export VAR_TERM_CMD_INPUT_BUFFER=""
 
-export VAR_SEARCH_END_EARLY=0
+# Mode
+export VAR_TERM_VISUAL_START_IDX=0
+export VAR_TERM_OPS_MODE='n'
 
-export VAR_CMD_INPUT_BUFFER=""
+## Others
+export VAR_TERM_SEARCH_END_EARLY=0
+export VAR_TERM_FILE_PICKER=0
 
-export VAR_FILE_PRE=""
-export VAR_FILE_POST=""
-export VAR_MARK_PRE=""
-export VAR_MARK_POST=""
-
-export VAR_FILE_PICKER=0
-export VAR_READ_FLAGS=()
-
-export VAR_VISUAL_START_IDX=0
-
-## Default Options
+###########################################################
+## Default Options, for user to config
 ###########################################################
 # Use LS_COLORS to color hsfm.
 # (On by default if available)
@@ -137,9 +141,9 @@ export HSFM_MARK_FORMAT=" %f*"
 ###########################################################
 
 ### Moving around.
-
 # Show help info
 export HSFM_KEY_HELP="H"
+export HSFM_KEY_REFRESH="r"
 
 # Go to child directory.
 export HSFM_KEY_CHILD1="l"
@@ -198,9 +202,6 @@ export HSFM_KEY_YANK="y"
 export HSFM_KEY_CUT="m"
 export HSFM_KEY_TRASH="d"
 export HSFM_KEY_PASTE="p"
-
-# export HSFM_KEY_MKDIR="n"
-# export HSFM_KEY_MKFILE="f"
 
 # Mode switch
 export HSFM_KEY_VISUAL_SELECT="V"
@@ -285,10 +286,20 @@ fterminal_redraw() {
         VAR_TERM_SCROLL_CURSOR=0
     }
 
-    fterminal_clear
-    fterminal_draw_status_line
-    fterminal_draw_tab_line
-    fterminal_draw_dir
+    if ${FLAG_TERM_DEBUG}
+    then
+        fterminal_clear
+        fterminal_draw_status_line
+        fterminal_draw_tab_line
+        fterminal_draw_dir
+    else
+        local tmp_buffer=""
+        tmp_buffer+="$(fterminal_clear)"
+        tmp_buffer+="$(fterminal_draw_status_line)"
+        tmp_buffer+="$(fterminal_draw_tab_line)"
+        tmp_buffer+="$(fterminal_draw_dir)"
+        printf "${tmp_buffer}"
+    fi
 }
 fterminal_draw_dir() {
     # Print the max directory items that fit in the VAR_TERM_CONTENT_SCROLL_IDX area.
@@ -307,35 +318,17 @@ fterminal_draw_dir() {
         VAR_TERM_FIND_PREVIOUS=
     }
 
-    # # If current dir is near the top of the list, keep VAR_TERM_CONTENT_SCROLL_IDX position.
-    # if ((VAR_DIR_LIST_CNT < VAR_TERM_CONTENT_MAX_CNT || VAR_TERM_CONTENT_SCROLL_IDX < VAR_TERM_CONTENT_MAX_CNT/2)); then
-    #     ((var_scroll_start=0))
-    #     ((var_scroll_new_cursor=VAR_TERM_CONTENT_SCROLL_IDX))
-    #     # ((var_scroll_end=VAR_TERM_CONTENT_MAX_CNT-VAR_TERM_TAB_LINE_HEIGHT))
-    #
-    # # If current dir is near the end of the list, keep VAR_TERM_CONTENT_SCROLL_IDX position.
-    # elif ((VAR_DIR_LIST_CNT - VAR_TERM_CONTENT_SCROLL_IDX < VAR_TERM_CONTENT_MAX_CNT/2)); then
-    #     ((var_scroll_start=VAR_DIR_LIST_CNT-VAR_TERM_CONTENT_MAX_CNT + 1))
-    #     ((var_scroll_new_cursor=VAR_TERM_CONTENT_MAX_CNT - 1))
-    #     # ((var_scroll_end=VAR_DIR_LIST_CNT+1))
-    #
-    # # If current dir is somewhere in the middle, center VAR_TERM_CONTENT_SCROLL_IDX position.
-    # else
-    #     ((var_scroll_start=VAR_TERM_CONTENT_SCROLL_IDX-VAR_TERM_CONTENT_MAX_CNT/2 + 1))
-    #     ((var_scroll_new_cursor=VAR_TERM_CONTENT_MAX_CNT/2 - 1))
-    #     # ((var_scroll_end=var_scroll_start+VAR_TERM_CONTENT_MAX_CNT))
-    # fi
-
     # If the list in shorter then window, or the scroll idx == 0
-    if ((VAR_DIR_LIST_CNT < VAR_TERM_CONTENT_MAX_CNT || VAR_TERM_CONTENT_SCROLL_IDX < VAR_TERM_CONTENT_MAX_CNT)); then
+    if ((VAR_TERM_DIR_LIST_CNT < VAR_TERM_CONTENT_MAX_CNT || VAR_TERM_CONTENT_SCROLL_IDX < VAR_TERM_CONTENT_MAX_CNT)); then
         ((var_scroll_start=0))
         ((var_scroll_new_cursor=VAR_TERM_CONTENT_SCROLL_IDX))
-    elif ((VAR_TERM_CONTENT_SCROLL_IDX + VAR_TERM_CONTENT_MAX_CNT > VAR_DIR_LIST_CNT)); then
-        ((var_scroll_start=VAR_DIR_LIST_CNT-VAR_TERM_CONTENT_MAX_CNT + 1))
+    elif ((VAR_TERM_CONTENT_SCROLL_IDX + VAR_TERM_CONTENT_MAX_CNT > VAR_TERM_DIR_LIST_CNT)); then
+        # If the list is greater then win size, and in the last page
+        ((var_scroll_start=VAR_TERM_DIR_LIST_CNT-VAR_TERM_CONTENT_MAX_CNT + 1))
         ((var_scroll_new_cursor=VAR_TERM_CONTENT_SCROLL_IDX - var_scroll_start))
-    # If current dir is somewhere in the middle, center VAR_TERM_CONTENT_SCROLL_IDX position.
     else
-        ((var_scroll_start=VAR_TERM_CONTENT_SCROLL_IDX-VAR_TERM_CONTENT_MAX_CNT/2 + 1))
+        # If in the midddle of the dir list.
+        ((var_scroll_start=VAR_TERM_CONTENT_SCROLL_IDX-VAR_TERM_SCROLL_CURSOR))
         ((var_scroll_new_cursor=VAR_TERM_SCROLL_CURSOR))
     fi
 
@@ -351,7 +344,7 @@ fterminal_draw_dir() {
         ((i > 0)) &&
             printf '\n'
 
-        if [[ -z ${VAR_DIR_FILE_LIST[$((var_scroll_start + i))]} ]]; then
+        if [[ -z ${VAR_TERM_DIR_FILE_LIST[$((var_scroll_start + i))]} ]]; then
             break
         fi
 
@@ -371,9 +364,9 @@ fterminal_draw_tab_line() {
     local var_tab_list_buf=""
     local var_tab_list_pre_buf=""
     local var_tab_list_post_buf=""
-    VAR_TERM_TAB_LINE_LIST[${VAR_TERM_TAB_LINE_IDX}]="$(realpath .)"
+    VAR_TERM_TAB_LINE_LIST[${VAR_TERM_TAB_LINE_IDX}]="${PWD}"
 
-    for each_idx in $(seq 1 ${#VAR_TERM_TAB_LINE_LIST[@]})
+    for each_idx in "${!VAR_TERM_TAB_LINE_LIST[@]}"
     do
         if [ "${VAR_TERM_TAB_LINE_IDX}" = "${each_idx}" ]
         then
@@ -390,7 +383,7 @@ fterminal_draw_tab_line() {
     # Escape the directory string.
     # Remove all non-printable characters.
     # PWD_escaped=${PWD//[^[:print:]]/^[}
-    local var_pwd_escaped=$(basename $(realpath .))
+    local var_pwd_escaped=${PWD//[^[:print:]]/^[}
 
     # '\e7':       Save cursor position.
     #              This is more widely supported than '\e[s'.
@@ -440,7 +433,7 @@ fterminal_draw_status_line() {
     var_left+="${1:-${var_pwd_escaped:-/}}"
 
     # var_right="$(date '+%Y/%m/%d %H:%M:%S')"
-    var_right+="($((VAR_TERM_CONTENT_SCROLL_IDX + 1))/$((VAR_DIR_LIST_CNT + 1))) "
+    var_right+="($((VAR_TERM_CONTENT_SCROLL_IDX + 1))/$((VAR_TERM_DIR_LIST_CNT + 1))) "
     var_right+="$(date '+%Y/%m/%d')"
 
     ## calc spacing
@@ -470,7 +463,7 @@ fterminal_draw_status_line() {
     #        "${HSFM_COLOR_STATUS_FG:-30}" \
     #        "${HSFM_COLOR_STATUS_BG:-41}" \
     #        "$VAR_TERM_COLUMN_CNT" "" \
-    #        "($((VAR_TERM_CONTENT_SCROLL_IDX + 1))/$((VAR_DIR_LIST_CNT + 1)))" \
+    #        "($((VAR_TERM_CONTENT_SCROLL_IDX + 1))/$((VAR_TERM_DIR_LIST_CNT + 1)))" \
     #        "${VAR_TERM_MARKED_FILE_LIST[*]:+${var_mark_ui}}" \
     #        "${1:-${var_pwd_escaped:-/}}" \
     #        "$VAR_TERM_LINE_CNT"
@@ -489,48 +482,48 @@ fterminal_draw_status_line() {
 fterminal_draw_file_line() {
 
     # If the dir item doesn't exist, end here.
-    if [[ -z ${VAR_DIR_FILE_LIST[$1]} ]]; then
+    if [[ -z ${VAR_TERM_DIR_FILE_LIST[$1]} ]]; then
         return
     fi
 
-    # Format the VAR_DIR_FILE_LIST item and print it.
-    local var_file_name=${VAR_DIR_FILE_LIST[$1]##*/}
+    # Format the VAR_TERM_DIR_FILE_LIST item and print it.
+    local var_file_name=${VAR_TERM_DIR_FILE_LIST[$1]##*/}
     local var_file_ext=${var_file_name##*.}
     local var_format
     local var_suffix
     # local file_info="$(ls -al $PWD | grep ${var_file_name}\$ | sed 's/ [^ ]\+$//')"
 
     # Directory.
-    if [[ -d ${VAR_DIR_FILE_LIST[$1]} ]]; then
+    if [[ -d ${VAR_TERM_DIR_FILE_LIST[$1]} ]]; then
         var_format+=\\e[${di:-1;${HSFM_COLOR_DIR:-32}}m
         var_suffix+=/
 
     # Block special file.
-    elif [[ -b ${VAR_DIR_FILE_LIST[$1]} ]]; then
+    elif [[ -b ${VAR_TERM_DIR_FILE_LIST[$1]} ]]; then
         var_format+=\\e[${bd:-40;33;01}m
 
     # Character special file.
-    elif [[ -c ${VAR_DIR_FILE_LIST[$1]} ]]; then
+    elif [[ -c ${VAR_TERM_DIR_FILE_LIST[$1]} ]]; then
         var_format+=\\e[${cd:-40;33;01}m
 
     # Executable file.
-    elif [[ -x ${VAR_DIR_FILE_LIST[$1]} ]]; then
+    elif [[ -x ${VAR_TERM_DIR_FILE_LIST[$1]} ]]; then
         var_format+=\\e[${ex:-01;32}m
 
     # Symbolic Link (broken).
-    elif [[ -h ${VAR_DIR_FILE_LIST[$1]} && ! -e ${VAR_DIR_FILE_LIST[$1]} ]]; then
+    elif [[ -h ${VAR_TERM_DIR_FILE_LIST[$1]} && ! -e ${VAR_TERM_DIR_FILE_LIST[$1]} ]]; then
         var_format+=\\e[${mi:-01;31;7}m
 
     # Symbolic Link.
-    elif [[ -h ${VAR_DIR_FILE_LIST[$1]} ]]; then
+    elif [[ -h ${VAR_TERM_DIR_FILE_LIST[$1]} ]]; then
         var_format+=\\e[${ln:-01;36}m
 
     # Fifo file.
-    elif [[ -p ${VAR_DIR_FILE_LIST[$1]} ]]; then
+    elif [[ -p ${VAR_TERM_DIR_FILE_LIST[$1]} ]]; then
         var_format+=\\e[${pi:-40;33}m
 
     # Socket file.
-    elif [[ -S ${VAR_DIR_FILE_LIST[$1]} ]]; then
+    elif [[ -S ${VAR_TERM_DIR_FILE_LIST[$1]} ]]; then
         var_format+=\\e[${so:-01;35}m
 
     # Color files that end in a pattern as defined in LS_COLORS.
@@ -555,14 +548,14 @@ fterminal_draw_file_line() {
         var_format+=\\e[${fi:-37}m
     fi
 
-    # If the VAR_DIR_FILE_LIST item is under the cursor.
+    # If the VAR_TERM_DIR_FILE_LIST item is under the cursor.
     (($1 == VAR_TERM_CONTENT_SCROLL_IDX)) &&
         var_format+="\\e[1;${HSFM_COLOR_CURSOR:-36};7m"
 
-    # If the VAR_DIR_FILE_LIST item is marked for operation.
-    [[ ${VAR_TERM_MARKED_FILE_LIST[$1]} == "${VAR_DIR_FILE_LIST[$1]:-null}" ]] && {
-        var_format+=\\e[${HSFM_COLOR_SELECTION:-31}m${VAR_MARK_PRE}
-        var_suffix+=${VAR_MARK_POST}
+    # If the VAR_TERM_DIR_FILE_LIST item is marked for operation.
+    [[ ${VAR_TERM_MARKED_FILE_LIST[$1]} == "${VAR_TERM_DIR_FILE_LIST[$1]:-null}" ]] && {
+        var_format+=\\e[${HSFM_COLOR_SELECTION:-31}m${VAR_TERM_MARK_PRE}
+        var_suffix+=${VAR_TERM_MARK_POST}
     }
 
     # Escape the directory string.
@@ -570,37 +563,37 @@ fterminal_draw_file_line() {
     var_file_name=${var_file_name//[^[:print:]]/^[}
 
     printf '\r%b%s\e[m\e[K\r' \
-        " ${VAR_FILE_PRE}${var_format}" \
-        "${file_info} ${var_file_name}${var_suffix}${VAR_FILE_POST}"
+        " ${VAR_TERM_FILE_PRE}${var_format}" \
+        "${file_info} ${var_file_name}${var_suffix}${VAR_TERM_FILE_POST}"
 }
 
 fterminal_mark_toggle() {
     # Mark file for operation.
     # If an item is marked in a second directory,
     # clear the marked files.
-    [[ $PWD != "$VAR_MARK_DIR" ]] &&
+    [[ $PWD != "$VAR_TERM_MARK_DIR" ]] &&
         VAR_TERM_MARKED_FILE_LIST=()
 
     # Don't allow the user to mark the empty directory list item.
-    [[ ${VAR_DIR_FILE_LIST[0]} == empty && -z ${VAR_DIR_FILE_LIST[1]} ]] &&
+    [[ ${VAR_TERM_DIR_FILE_LIST[0]} == empty && -z ${VAR_TERM_DIR_FILE_LIST[1]} ]] &&
         return
 
     if [[ $1 == all ]]; then
-        if ((${#VAR_TERM_MARKED_FILE_LIST[@]} != ${#VAR_DIR_FILE_LIST[@]})); then
-            VAR_TERM_MARKED_FILE_LIST=("${VAR_DIR_FILE_LIST[@]}")
-            VAR_MARK_DIR=$PWD
+        if ((${#VAR_TERM_MARKED_FILE_LIST[@]} != ${#VAR_TERM_DIR_FILE_LIST[@]})); then
+            VAR_TERM_MARKED_FILE_LIST=("${VAR_TERM_DIR_FILE_LIST[@]}")
+            VAR_TERM_MARK_DIR=$PWD
         else
             VAR_TERM_MARKED_FILE_LIST=()
         fi
 
         fterminal_redraw
     else
-        if [[ ${VAR_TERM_MARKED_FILE_LIST[$1]} == "${VAR_DIR_FILE_LIST[$1]}" ]]; then
+        if [[ ${VAR_TERM_MARKED_FILE_LIST[$1]} == "${VAR_TERM_DIR_FILE_LIST[$1]}" ]]; then
             unset 'VAR_TERM_MARKED_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]'
 
         else
-            VAR_TERM_MARKED_FILE_LIST[$1]="${VAR_DIR_FILE_LIST[$1]}"
-            VAR_MARK_DIR=$PWD
+            VAR_TERM_MARKED_FILE_LIST[$1]="${VAR_TERM_DIR_FILE_LIST[$1]}"
+            VAR_TERM_MARK_DIR=$PWD
         fi
 
         # Clear line before changing it.
@@ -610,17 +603,17 @@ fterminal_mark_toggle() {
 
     # Find the program to use.
     # case "$2" in
-    #     ${HSFM_KEY_YANK:=y}|${HSFM_KEY_YANK_ALL:=Y}) VAR_FILE_PROGRAM=(cp -iR) ;;
-    #     ${HSFM_KEY_CUT:=m}|${HSFM_KEY_MOVE_ALL:=M}) VAR_FILE_PROGRAM=(mv -i)  ;;
-    #     ${HSFM_KEY_LINK:=s}|${HSFM_KEY_LINK_ALL:=S}) VAR_FILE_PROGRAM=(ln -s)  ;;
+    #     ${HSFM_KEY_YANK:=y}|${HSFM_KEY_YANK_ALL:=Y}) VAR_TERM_FILE_PROGRAM=(cp -iR) ;;
+    #     ${HSFM_KEY_CUT:=m}|${HSFM_KEY_MOVE_ALL:=M}) VAR_TERM_FILE_PROGRAM=(mv -i)  ;;
+    #     ${HSFM_KEY_LINK:=s}|${HSFM_KEY_LINK_ALL:=S}) VAR_TERM_FILE_PROGRAM=(ln -s)  ;;
     #
     #     # These are 'hsfm' functions.
     #     ${HSFM_KEY_TRASH:=d}|${HSFM_KEY_TRASH_ALL:=D})
-    #         VAR_FILE_PROGRAM=(fselect_remove)
+    #         VAR_TERM_FILE_PROGRAM=(fselect_remove)
     #     ;;
     #
     #     ${HSFM_KEY_BULK_RENAME:=b}|${HSFM_KEY_BULK_RENAME_ALL:=B})
-    #         VAR_FILE_PROGRAM=(fselect_rename)
+    #         VAR_TERM_FILE_PROGRAM=(fselect_rename)
     #     ;;
     # esac
 
@@ -633,17 +626,17 @@ fterminal_mark_add() {
     # Mark file for operation.
     # If an item is marked in a second directory,
     # clear the marked files.
-    [[ $PWD != "$VAR_MARK_DIR" ]] &&
+    [[ $PWD != "$VAR_TERM_MARK_DIR" ]] &&
         VAR_TERM_MARKED_FILE_LIST=()
 
     # Don't allow the user to mark the empty directory list item.
-    [[ ${VAR_DIR_FILE_LIST[0]} == empty && -z ${VAR_DIR_FILE_LIST[1]} ]] &&
+    [[ ${VAR_TERM_DIR_FILE_LIST[0]} == empty && -z ${VAR_TERM_DIR_FILE_LIST[1]} ]] &&
         return
 
     {
-        if [[ ${VAR_TERM_MARKED_FILE_LIST[$1]} != "${VAR_DIR_FILE_LIST[$1]}" ]]; then
-            VAR_TERM_MARKED_FILE_LIST[$1]="${VAR_DIR_FILE_LIST[$1]}"
-            VAR_MARK_DIR=$PWD
+        if [[ ${VAR_TERM_MARKED_FILE_LIST[$1]} != "${VAR_TERM_DIR_FILE_LIST[$1]}" ]]; then
+            VAR_TERM_MARKED_FILE_LIST[$1]="${VAR_TERM_DIR_FILE_LIST[$1]}"
+            VAR_TERM_MARK_DIR=$PWD
         fi
 
         # Clear line before changing it.
@@ -657,15 +650,15 @@ fterminal_mark_remove() {
     # Mark file for operation.
     # If an item is marked in a second directory,
     # clear the marked files.
-    [[ $PWD != "$VAR_MARK_DIR" ]] &&
+    [[ $PWD != "$VAR_TERM_MARK_DIR" ]] &&
         VAR_TERM_MARKED_FILE_LIST=()
 
     # Don't allow the user to mark the empty directory list item.
-    [[ ${VAR_DIR_FILE_LIST[0]} == empty && -z ${VAR_DIR_FILE_LIST[1]} ]] &&
+    [[ ${VAR_TERM_DIR_FILE_LIST[0]} == empty && -z ${VAR_TERM_DIR_FILE_LIST[1]} ]] &&
         return
 
     {
-        if [[ ${VAR_TERM_MARKED_FILE_LIST[$1]} == "${VAR_DIR_FILE_LIST[$1]}" ]]; then
+        if [[ ${VAR_TERM_MARKED_FILE_LIST[$1]} == "${VAR_TERM_DIR_FILE_LIST[$1]}" ]]; then
             unset 'VAR_TERM_MARKED_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]'
         fi
 
@@ -681,8 +674,8 @@ fterminal_read_dir() {
     local var_dirs
     local var_files
     local var_item_index
-    VAR_DIR_FILE_LIST=()
-    # NOTE. Clear VAR_DIR_FILE_LIST & use it directly to avoid VAR_DIR_FILE_LIST index issue on BSD
+    VAR_TERM_DIR_FILE_LIST=()
+    # NOTE. Clear VAR_TERM_DIR_FILE_LIST & use it directly to avoid VAR_TERM_DIR_FILE_LIST index issue on BSD
 
     # Set window name.
     printf '\e]2;hsfm: %s\e'\\ "$PWD"
@@ -695,7 +688,7 @@ fterminal_read_dir() {
     for item in "$PWD"/*; do
         if [[ -d $item ]]; then
             var_dirs+=("$item")
-            VAR_DIR_FILE_LIST+=("$item")
+            VAR_TERM_DIR_FILE_LIST+=("$item")
 
             # Find the position of the child directory in the
             # parent directory list.
@@ -708,21 +701,21 @@ fterminal_read_dir() {
     for item in "$PWD"/*; do
         if [[ -f $item ]]; then
             var_files+=("$item")
-            VAR_DIR_FILE_LIST+=("$item")
+            VAR_TERM_DIR_FILE_LIST+=("$item")
         fi
     done
 
     # sort for dir first
-    # VAR_DIR_FILE_LIST=("${var_dirs[@]}" "${var_files[@]}")
+    # VAR_TERM_DIR_FILE_LIST=("${var_dirs[@]}" "${var_files[@]}")
 
     # Indicate that the directory is empty.
-    [[ -z ${VAR_DIR_FILE_LIST[0]} ]] &&
-        VAR_DIR_FILE_LIST[0]=empty
+    [[ -z ${VAR_TERM_DIR_FILE_LIST[0]} ]] &&
+        VAR_TERM_DIR_FILE_LIST[0]=empty
 
-    ((VAR_DIR_LIST_CNT=${#VAR_DIR_FILE_LIST[@]}-1))
+    ((VAR_TERM_DIR_LIST_CNT=${#VAR_TERM_DIR_FILE_LIST[@]}-1))
 
-    # Save the original dir in a second VAR_DIR_FILE_LIST as a backup.
-    cur_list=("${VAR_DIR_FILE_LIST[@]}")
+    # Save the original dir in a second VAR_TERM_DIR_FILE_LIST as a backup.
+    cur_list=("${VAR_TERM_DIR_FILE_LIST[@]}")
 }
 
 ###########################################################
@@ -735,7 +728,7 @@ fmode_setup()
         'V'|'v')
             VAR_TERM_OPS_MODE='v'
             # setup visual mode
-            VAR_VISUAL_START_IDX=$VAR_TERM_CONTENT_SCROLL_IDX
+            VAR_TERM_VISUAL_START_IDX=$VAR_TERM_CONTENT_SCROLL_IDX
             fterminal_mark_add "$VAR_TERM_CONTENT_SCROLL_IDX"
             VAR_TERM_SELECTION_FILE_LIST=()
             ;;
@@ -754,11 +747,11 @@ fmode_setup()
 fnormal_mode_handler() {
     # Handle special key presses.
     [[ $1 == $'\e' ]] && {
-        read "${VAR_READ_FLAGS[@]}" -rsn 2
+        read "${VAR_TERM_READ_FLAGS[@]}" -rsn 2
 
         # Handle a normal escape key press.
         [[ ${1}${REPLY} == $'\e\e['* ]] &&
-            read "${VAR_READ_FLAGS[@]}" -rsn 1 _
+            read "${VAR_TERM_READ_FLAGS[@]}" -rsn 1 _
 
         local var_special_key=${1}${REPLY}
     }
@@ -766,7 +759,7 @@ fnormal_mode_handler() {
     case ${var_special_key:-$1} in
         # '' is what bash sees when the enter/return key is pressed.
         ${HSFM_KEY_CHILD3:=""})
-            fsys_open "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
+            fsys_open "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
         ;;
         ${HSFM_KEY_VISUAL_SELECT:="V"})
             fmode_setup "v"
@@ -776,19 +769,19 @@ fnormal_mode_handler() {
             fmode_setup "s"
             # fterminal_redraw
         ;;
-        # Open VAR_DIR_FILE_LIST item.
+        # Open VAR_TERM_DIR_FILE_LIST item.
         # 'C' is what bash sees when the right arrow is pressed
         # ('\e[C' or '\eOC').
         ${HSFM_KEY_CHILD1:=l}|\
         ${HSFM_KEY_CHILD2:=$'\e[C'}|\
         ${HSFM_KEY_CHILD4:=$'\eOC'})
             # only check if it's directory.
-            if test -d "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]##*/}"
+            if test -d "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]##*/}"
             then
-                fsys_open "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
+                fsys_open "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
             else
-                # flog_msg $(file "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" | tail -n 1)
-                flog_msg "File type: $(file "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" | tail -n 1 | cut -d ':' -f2)"
+                # flog_msg $(file "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" | tail -n 1)
+                flog_msg "File type: $(file "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" | tail -n 1 | cut -d ':' -f2)"
             fi
         ;;
 
@@ -803,7 +796,7 @@ fnormal_mode_handler() {
         ${HSFM_KEY_PARENT4:=$'\b'}|\
         ${HSFM_KEY_PARENT5:=$'\eOD'})
             # If a search was done, clear the results and open the current dir.
-            if ((VAR_SEARCH_MODE == 1 && VAR_SEARCH_END_EARLY != 1)); then
+            if ((VAR_SEARCH_MODE == 1 && VAR_TERM_SEARCH_END_EARLY != 1)); then
                 fsys_open "$PWD"
 
             # If '$PWD' is '/', do nothing.
@@ -819,7 +812,7 @@ fnormal_mode_handler() {
         ${HSFM_KEY_SCROLL_DOWN1:=j}|\
         ${HSFM_KEY_SCROLL_DOWN2:=$'\e[B'}|\
         ${HSFM_KEY_SCROLL_DOWN3:=$'\eOB'})
-            ((VAR_TERM_CONTENT_SCROLL_IDX < VAR_DIR_LIST_CNT)) && {
+            ((VAR_TERM_CONTENT_SCROLL_IDX < VAR_TERM_DIR_LIST_CNT)) && {
                 ((VAR_TERM_CONTENT_SCROLL_IDX++))
 
                 local tmp_print_buf=""
@@ -829,13 +822,12 @@ fnormal_mode_handler() {
                 if ((VAR_TERM_SCROLL_CURSOR + 1 < VAR_TERM_CONTENT_MAX_CNT))
                 then
                     ((VAR_TERM_SCROLL_CURSOR++))
-                # else
-                #     # FIXME, it's a patch to avoid glitch
-                #     # clear the first content line
-                #     # printf '\e7\e[2H\e[K\e8'
-                #
-                #     tmp_print_buf+="$(fterminal_draw_tab_line)"
-                #     tmp_print_buf+="\e[$((VAR_TERM_CONTENT_MAX_CNT + VAR_TERM_TAB_LINE_HEIGHT))H"
+                else
+                    # FIXME, it's a patch to avoid glitch
+                    # clear the first content line
+                    # printf '\e7\e[2H\e[K\e8'
+                    tmp_print_buf+="$(fterminal_draw_tab_line)"
+                    tmp_print_buf+="\e[$((VAR_TERM_CONTENT_MAX_CNT + VAR_TERM_TAB_LINE_HEIGHT))H"
                 fi
                 tmp_print_buf+="$(fterminal_draw_file_line $((VAR_TERM_CONTENT_SCROLL_IDX)))"
                 tmp_print_buf+="$(fterminal_draw_status_line)"
@@ -865,7 +857,7 @@ fnormal_mode_handler() {
                 fi
 
                 tmp_print_buf+="$(fterminal_draw_file_line $VAR_TERM_CONTENT_SCROLL_IDX)"
-                # fterminal_draw_tab_line
+                # tmp_print_buf+="$(fterminal_draw_tab_line)"
                 tmp_print_buf+="$(fterminal_draw_status_line)"
                 printf "${tmp_print_buf}"
             }
@@ -881,8 +873,8 @@ fnormal_mode_handler() {
 
         # Go to bottom.
         ${HSFM_KEY_TO_BOTTOM:=G})
-            ((VAR_TERM_CONTENT_SCROLL_IDX != VAR_DIR_LIST_CNT)) && {
-                ((VAR_TERM_CONTENT_SCROLL_IDX=VAR_DIR_LIST_CNT))
+            ((VAR_TERM_CONTENT_SCROLL_IDX != VAR_TERM_DIR_LIST_CNT)) && {
+                ((VAR_TERM_CONTENT_SCROLL_IDX=VAR_TERM_DIR_LIST_CNT))
                 fterminal_redraw
             }
         ;;
@@ -920,9 +912,9 @@ fnormal_mode_handler() {
         ${HSFM_KEY_OPEN_TAB})
             VAR_TERM_TAB_LINE_LIST[${VAR_TERM_TAB_LINE_IDX}]="$(realpath .)"
             VAR_TERM_TAB_LINE_IDX=$((${#VAR_TERM_TAB_LINE_LIST[@]} + 1))
-            if test -d "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
+            if test -d "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
             then
-                cd "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
+                cd "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
             fi
             VAR_TERM_TAB_LINE_LIST[${VAR_TERM_TAB_LINE_IDX}]="$(realpath .)"
             fterminal_redraw full
@@ -942,12 +934,12 @@ fnormal_mode_handler() {
         # Search.
         ${HSFM_KEY_SEARCH:=/})
             # cmd_line "/" "search"
-            fcommand_handler "search" "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]##*/}"
+            fcommand_handler "search" "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]##*/}"
 
             # If the search came up empty, fterminal_redraw the current dir.
-            if [[ -z ${VAR_DIR_FILE_LIST[*]} ]]; then
-                VAR_DIR_FILE_LIST=("${cur_list[@]}")
-                ((VAR_DIR_LIST_CNT=${#VAR_DIR_FILE_LIST[@]}-1))
+            if [[ -z ${VAR_TERM_DIR_FILE_LIST[*]} ]]; then
+                VAR_TERM_DIR_FILE_LIST=("${cur_list[@]}")
+                ((VAR_TERM_DIR_LIST_CNT=${#VAR_TERM_DIR_FILE_LIST[@]}-1))
                 fterminal_redraw
                 VAR_SEARCH_MODE=
             else
@@ -958,31 +950,22 @@ fnormal_mode_handler() {
         # Spawn a shell.
         ${HSFM_KEY_SHELL:=!})
             cmd_shell
-            # fterminal_reset
-            #
-            # # Make hsfm aware of how many times it is nested.
-            # export HSFM_LEVEL
-            # ((HSFM_LEVEL++))
-            #
-            # cd "$PWD" && "$SHELL"
-            # fterminal_setup
-            # fterminal_redraw full
         ;;
 
         # open file with command
         ${HSFM_KEY_OPEN_CMD:=:})
-            # cmd_line ":" "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]##*/}"
+            # cmd_line ":" "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]##*/}"
             # FIXME, if command change cursor pos, it will be resotre to wier position
-            fcommand_handler "command" "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]##*/}"
+            fcommand_handler "command" "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]##*/}"
         ;;
 
         # Show file attributes.
         ${HSFM_KEY_ATTRIBUTES:=x})
-            [[ -e "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" ]] && {
+            [[ -e "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" ]] && {
                 fterminal_clear
                 # fterminal_draw_tab_line
-                fterminal_draw_status_line "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
-                "${HSFM_STAT_CMD:-stat}" "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
+                fterminal_draw_status_line "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
+                "${HSFM_STAT_CMD:-stat}" "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
                 read -ern 1
                 fterminal_redraw
             }
@@ -990,7 +973,7 @@ fnormal_mode_handler() {
 
         # Show help info.
         ${HSFM_KEY_HELP:=H})
-            # fcommand_handler "help" "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]##*/}"
+            # fcommand_handler "help" "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]##*/}"
             cmd_help "$@"
         ;;
 
@@ -1011,9 +994,9 @@ fnormal_mode_handler() {
         ;;
 
         # # Refresh current dir.
-        # ${HSFM_KEY_REFRESH:=e})
-        #     fsys_open "$PWD"
-        # ;;
+        ${HSFM_KEY_REFRESH:=r})
+            fterminal_redraw
+        ;;
 
         # Directory favourites.
         [1-9])
@@ -1026,22 +1009,22 @@ fnormal_mode_handler() {
 
         # File operation
         ${HSFM_KEY_YANK:=y})
-            VAR_FILE_PROGRAM=(cp -iR)
-            VAR_TERM_SELECTION_FILE_LIST=("${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}")
+            VAR_TERM_FILE_PROGRAM=(cp -iR)
+            VAR_TERM_SELECTION_FILE_LIST=("${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}")
             fterminal_redraw
-            flog_msg "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]} yanked."
+            flog_msg "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]} yanked."
             ;;
         ${HSFM_KEY_CUT:=m})
-            VAR_FILE_PROGRAM=(mv -i)
-            VAR_TERM_SELECTION_FILE_LIST=("${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}")
+            VAR_TERM_FILE_PROGRAM=(mv -i)
+            VAR_TERM_SELECTION_FILE_LIST=("${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}")
             fterminal_redraw
-            flog_msg "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]} cuted."
+            flog_msg "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]} cuted."
             ;;
         ${HSFM_KEY_TRASH:=d})
-            VAR_FILE_PROGRAM=(fselect_remove)
-            VAR_TERM_SELECTION_FILE_LIST=("${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}")
+            VAR_TERM_FILE_PROGRAM=(fselect_remove)
+            VAR_TERM_SELECTION_FILE_LIST=("${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}")
             fselect_execute
-            # flog_msg "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]} removed."
+            # flog_msg "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]} removed."
             ;;
         ${HSFM_KEY_PASTE})
             fselect_execute
@@ -1067,11 +1050,11 @@ fnormal_mode_handler() {
 fvisual_mode_handler() {
     # Handle special key presses.
     [[ $1 == $'\e' ]] && {
-        read "${VAR_READ_FLAGS[@]}" -rsn 2
+        read "${VAR_TERM_READ_FLAGS[@]}" -rsn 2
 
         # Handle a normal escape key press.
         [[ ${1}${REPLY} == $'\e\e['* ]] &&
-            read "${VAR_READ_FLAGS[@]}" -rsn 1 _
+            read "${VAR_TERM_READ_FLAGS[@]}" -rsn 1 _
 
         local var_special_key=${1}${REPLY}
     }
@@ -1081,19 +1064,19 @@ fvisual_mode_handler() {
         ${HSFM_KEY_CHILD3:=""})
             fmode_setup "n"
         ;;
-        # Open VAR_DIR_FILE_LIST item.
+        # Open VAR_TERM_DIR_FILE_LIST item.
         # 'C' is what bash sees when the right arrow is pressed
         # ('\e[C' or '\eOC').
         ${HSFM_KEY_CHILD1:=l}|\
         ${HSFM_KEY_CHILD2:=$'\e[C'}|\
         ${HSFM_KEY_CHILD4:=$'\eOC'})
             # only check if it's directory.
-            if test -d "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]##*/}"
+            if test -d "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]##*/}"
             then
-                fsys_open "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
+                fsys_open "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
             else
-                # flog_msg $(file "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" | tail -n 1)
-                flog_msg "File type: $(file "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" | tail -n 1 | cut -d ':' -f2)"
+                # flog_msg $(file "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" | tail -n 1)
+                flog_msg "File type: $(file "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" | tail -n 1 | cut -d ':' -f2)"
             fi
         ;;
 
@@ -1108,7 +1091,7 @@ fvisual_mode_handler() {
         ${HSFM_KEY_PARENT4:=$'\b'}|\
         ${HSFM_KEY_PARENT5:=$'\eOD'})
             # If a search was done, clear the results and open the current dir.
-            if ((VAR_SEARCH_MODE == 1 && VAR_SEARCH_END_EARLY != 1)); then
+            if ((VAR_SEARCH_MODE == 1 && VAR_TERM_SEARCH_END_EARLY != 1)); then
                 fsys_open "$PWD"
 
             # If '$PWD' is '/', do nothing.
@@ -1124,8 +1107,8 @@ fvisual_mode_handler() {
         ${HSFM_KEY_SCROLL_DOWN1:=j}|\
         ${HSFM_KEY_SCROLL_DOWN2:=$'\e[B'}|\
         ${HSFM_KEY_SCROLL_DOWN3:=$'\eOB'})
-            ((VAR_TERM_CONTENT_SCROLL_IDX < VAR_DIR_LIST_CNT)) && {
-                if [[ $VAR_TERM_CONTENT_SCROLL_IDX -lt $VAR_VISUAL_START_IDX ]]
+            ((VAR_TERM_CONTENT_SCROLL_IDX < VAR_TERM_DIR_LIST_CNT)) && {
+                if [[ $VAR_TERM_CONTENT_SCROLL_IDX -lt $VAR_TERM_VISUAL_START_IDX ]]
                 then
                     fterminal_mark_remove "$VAR_TERM_CONTENT_SCROLL_IDX"
                 fi
@@ -1145,7 +1128,7 @@ fvisual_mode_handler() {
                 printf '\n'
                 fterminal_draw_file_line "${VAR_TERM_CONTENT_SCROLL_IDX}"
 
-                if [[ $VAR_TERM_CONTENT_SCROLL_IDX -gt $VAR_VISUAL_START_IDX ]]
+                if [[ $VAR_TERM_CONTENT_SCROLL_IDX -gt $VAR_TERM_VISUAL_START_IDX ]]
                 then
                     fterminal_mark_add "$VAR_TERM_CONTENT_SCROLL_IDX"
                 fi
@@ -1164,7 +1147,7 @@ fvisual_mode_handler() {
             # '\e[1L': Insert a line above the cursor.
             # '\e[A':  Move cursor up a line.
             ((VAR_TERM_CONTENT_SCROLL_IDX > 0)) && {
-                if [[ $VAR_TERM_CONTENT_SCROLL_IDX -gt $VAR_VISUAL_START_IDX ]]
+                if [[ $VAR_TERM_CONTENT_SCROLL_IDX -gt $VAR_TERM_VISUAL_START_IDX ]]
                 then
                     fterminal_mark_remove "$VAR_TERM_CONTENT_SCROLL_IDX"
                 fi
@@ -1180,7 +1163,7 @@ fvisual_mode_handler() {
                 fi
 
                 fterminal_draw_file_line "$VAR_TERM_CONTENT_SCROLL_IDX"
-                if [[ $VAR_TERM_CONTENT_SCROLL_IDX -lt $VAR_VISUAL_START_IDX ]]
+                if [[ $VAR_TERM_CONTENT_SCROLL_IDX -lt $VAR_TERM_VISUAL_START_IDX ]]
                 then
                     fterminal_mark_add "$VAR_TERM_CONTENT_SCROLL_IDX"
                 fi
@@ -1192,7 +1175,7 @@ fvisual_mode_handler() {
 
         # File operstions
         ${HSFM_KEY_YANK:=y})
-            VAR_FILE_PROGRAM=(cp -iR)
+            VAR_TERM_FILE_PROGRAM=(cp -iR)
             VAR_TERM_SELECTION_FILE_LIST=(${VAR_TERM_MARKED_FILE_LIST[@]})
 
             VAR_TERM_MARKED_FILE_LIST=()
@@ -1201,7 +1184,7 @@ fvisual_mode_handler() {
             flog_msg "${#VAR_TERM_SELECTION_FILE_LIST[@]} files yanked."
             ;;
         ${HSFM_KEY_CUT:=m})
-            VAR_FILE_PROGRAM=(mv -i)
+            VAR_TERM_FILE_PROGRAM=(mv -i)
             VAR_TERM_SELECTION_FILE_LIST=(${VAR_TERM_MARKED_FILE_LIST[@]})
 
             VAR_TERM_MARKED_FILE_LIST=()
@@ -1210,7 +1193,7 @@ fvisual_mode_handler() {
             flog_msg "${#VAR_TERM_SELECTION_FILE_LIST[@]} files cuted."
             ;;
         ${HSFM_KEY_TRASH:=d})
-            VAR_FILE_PROGRAM=(fselect_remove)
+            VAR_TERM_FILE_PROGRAM=(fselect_remove)
             VAR_TERM_SELECTION_FILE_LIST=(${VAR_TERM_MARKED_FILE_LIST[@]})
 
             VAR_TERM_MARKED_FILE_LIST=()
@@ -1225,11 +1208,11 @@ fvisual_mode_handler() {
 fselection_mode_handler() {
     # Handle special key presses.
     [[ $1 == $'\e' ]] && {
-        read "${VAR_READ_FLAGS[@]}" -rsn 2
+        read "${VAR_TERM_READ_FLAGS[@]}" -rsn 2
 
         # Handle a normal escape key press.
         [[ ${1}${REPLY} == $'\e\e['* ]] &&
-            read "${VAR_READ_FLAGS[@]}" -rsn 1 _
+            read "${VAR_TERM_READ_FLAGS[@]}" -rsn 1 _
 
         local var_special_key=${1}${REPLY}
     }
@@ -1239,19 +1222,19 @@ fselection_mode_handler() {
         ${HSFM_KEY_CHILD3:=""})
             fmode_setup "n"
         ;;
-        # Open VAR_DIR_FILE_LIST item.
+        # Open VAR_TERM_DIR_FILE_LIST item.
         # 'C' is what bash sees when the right arrow is pressed
         # ('\e[C' or '\eOC').
         ${HSFM_KEY_CHILD1:=l}|\
         ${HSFM_KEY_CHILD2:=$'\e[C'}|\
         ${HSFM_KEY_CHILD4:=$'\eOC'})
             # only check if it's directory.
-            if test -d "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]##*/}"
+            if test -d "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]##*/}"
             then
-                fsys_open "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
+                fsys_open "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
             else
-                # flog_msg $(file "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" | tail -n 1)
-                flog_msg "File type: $(file "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" | tail -n 1 | cut -d ':' -f2)"
+                # flog_msg $(file "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" | tail -n 1)
+                flog_msg "File type: $(file "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" | tail -n 1 | cut -d ':' -f2)"
             fi
         ;;
 
@@ -1266,7 +1249,7 @@ fselection_mode_handler() {
         ${HSFM_KEY_PARENT4:=$'\b'}|\
         ${HSFM_KEY_PARENT5:=$'\eOD'})
             # If a search was done, clear the results and open the current dir.
-            if ((VAR_SEARCH_MODE == 1 && VAR_SEARCH_END_EARLY != 1)); then
+            if ((VAR_SEARCH_MODE == 1 && VAR_TERM_SEARCH_END_EARLY != 1)); then
                 fsys_open "$PWD"
 
             # If '$PWD' is '/', do nothing.
@@ -1282,7 +1265,7 @@ fselection_mode_handler() {
         ${HSFM_KEY_SCROLL_DOWN1:=j}|\
         ${HSFM_KEY_SCROLL_DOWN2:=$'\e[B'}|\
         ${HSFM_KEY_SCROLL_DOWN3:=$'\eOB'})
-            ((VAR_TERM_CONTENT_SCROLL_IDX < VAR_DIR_LIST_CNT)) && {
+            ((VAR_TERM_CONTENT_SCROLL_IDX < VAR_TERM_DIR_LIST_CNT)) && {
 
                 ((VAR_TERM_CONTENT_SCROLL_IDX++))
 
@@ -1337,7 +1320,7 @@ fselection_mode_handler() {
 
         # File operstions
         ${HSFM_KEY_YANK:=y})
-            VAR_FILE_PROGRAM=(cp -iR)
+            VAR_TERM_FILE_PROGRAM=(cp -iR)
             VAR_TERM_SELECTION_FILE_LIST=(${VAR_TERM_MARKED_FILE_LIST[@]})
 
             VAR_TERM_MARKED_FILE_LIST=()
@@ -1346,7 +1329,7 @@ fselection_mode_handler() {
             flog_msg "${#VAR_TERM_SELECTION_FILE_LIST[@]} files yanked."
             ;;
         ${HSFM_KEY_CUT:=m})
-            VAR_FILE_PROGRAM=(mv -i)
+            VAR_TERM_FILE_PROGRAM=(mv -i)
             VAR_TERM_SELECTION_FILE_LIST=(${VAR_TERM_MARKED_FILE_LIST[@]})
 
             VAR_TERM_MARKED_FILE_LIST=()
@@ -1355,7 +1338,7 @@ fselection_mode_handler() {
             flog_msg "${#VAR_TERM_SELECTION_FILE_LIST[@]} files cuted."
             ;;
         ${HSFM_KEY_TRASH:=d})
-            VAR_FILE_PROGRAM=(fselect_remove)
+            VAR_TERM_FILE_PROGRAM=(fselect_remove)
             VAR_TERM_SELECTION_FILE_LIST=(${VAR_TERM_MARKED_FILE_LIST[@]})
 
             VAR_TERM_MARKED_FILE_LIST=()
@@ -1375,8 +1358,8 @@ fget_mime_type() {
 }
 fget_selection() {
 
-    # VAR_DIR_FILE_LIST+=("$item")
-    echo ${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}
+    # VAR_TERM_DIR_FILE_LIST+=("$item")
+    echo ${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}
 }
 
 ###########################################################
@@ -1388,17 +1371,16 @@ fcommand_handler()
     ################################################################
     # new functon for handle all commands
     # printf '\e7\e[%sH\e[?25h' "$VAR_TERM_LINE_CNT"
-    printf '\e7\e[%sH\e[?25h' "$VAR_TERM_LINE_CNT"
 
     ## Main handler
     ################################################################
     case ${1} in
         "command")
-            fcommand_line_interact "${HSFM_KEY_OPEN_CMD}" "command" "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]##*/}"
-            printf '\e[?25l\e8'
+            fcommand_line_interact "${HSFM_KEY_OPEN_CMD}" "command" "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]##*/}"
+            # printf '\e[?25l\e8'
             ;;
         "search")
-            fcommand_line_interact "${HSFM_KEY_SEARCH}" "search" "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]##*/}"
+            fcommand_line_interact "${HSFM_KEY_SEARCH}" "search" "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]##*/}"
             fterminal_redraw
             ;;
     esac
@@ -1413,7 +1395,6 @@ fcommand_handler()
     # '\e8':     Restore cursor position.
     # printf '\e[2K\e[?25l\e8'
     # printf '\e[?25l\e8'
-    # fterminal_redraw
 
     # we don't need fterminal_redraw after commands running
     # this will be clear after fterminal_redraw
@@ -1422,19 +1403,20 @@ fcommand_handler()
 }
 fcommand_line_interact() {
     # Write to the command_line (under fterminal_draw_status_line).
-    local var_cmd_list=("redraw" "search" "mkdir" "mkfile" "touch" "open" "exit" "rename" "more" "help" "info")
+    local var_cmd_list=("redraw" "fullredraw" "search" "mkdir" "mkfile" "touch" "open" "exit" "rename" "more" "help" "info")
     local var_cmd_prefix=${1}
     local var_cmd_function=${2:=""}
     local var_cmd_file=${3:=""}
-    VAR_CMD_INPUT_BUFFER=""
+    VAR_TERM_CMD_INPUT_BUFFER=""
 
+    printf '\e7\e[%sH\e[?25h' "$VAR_TERM_LINE_CNT"
     # '\r\e[K': Redraw the read prompt on every keypress.
     #           This is mimicking what happens normally.
-    while IFS= read -rsn 1 -p $'\r\e[K'"${var_cmd_prefix}${VAR_CMD_INPUT_BUFFER}" read_reply; do
+    while IFS= read -rsn 1 -p $'\r\e[K'"${var_cmd_prefix}${VAR_TERM_CMD_INPUT_BUFFER}" read_reply; do
         case $read_reply in
             # Backspace.
             $'\177'|$'\b')
-                VAR_CMD_INPUT_BUFFER=${VAR_CMD_INPUT_BUFFER%?}
+                VAR_TERM_CMD_INPUT_BUFFER=${VAR_TERM_CMD_INPUT_BUFFER%?}
 
                 # Clear tab-completion.
                 unset comp c
@@ -1442,11 +1424,11 @@ fcommand_line_interact() {
 
             # Tab.
             $'\t')
-                comp_glob="$VAR_CMD_INPUT_BUFFER*"
+                comp_glob="$VAR_TERM_CMD_INPUT_BUFFER*"
 
                 # Pass the argument dirs to limit completion to directories.
                 # [[ $2 == dirs ]] &&
-                #     comp_glob="$VAR_CMD_INPUT_BUFFER*/"
+                #     comp_glob="$VAR_TERM_CMD_INPUT_BUFFER*/"
 
                 # Generate a completion list once.
                 # [[ -z ${comp[0]} ]] &&
@@ -1455,22 +1437,24 @@ fcommand_line_interact() {
                 if [[ -z ${comp[0]} ]]
                 then
                     # IFS=$'\n' read -d "" -ra globpat < <(compgen -G "$comp_glob")
-                    IFS=$'\n' read -d "" -ra wordlist < <(compgen -W "${var_cmd_list[*]}" ${VAR_CMD_INPUT_BUFFER})
+                    IFS=$'\n' read -d "" -ra wordlist < <(compgen -W "${var_cmd_list[*]}" ${VAR_TERM_CMD_INPUT_BUFFER})
                     # comp=$globpat
                     comp+=$wordlist
                 fi
 
                 # On each tab press, cycle through the completion list.
                 [[ -n ${comp[c]} ]] && {
-                    VAR_CMD_INPUT_BUFFER=${comp[c]}
+                    VAR_TERM_CMD_INPUT_BUFFER=${comp[c]}
                     ((c=c >= ${#comp[@]}-1 ? 0 : ++c))
                 }
             ;;
 
             # Escape / Custom 'no' value (used as a replacement for '-n 1').
             $'\e'|${3:-null})
-                read "${VAR_READ_FLAGS[@]}" -rsn 2
-                VAR_CMD_INPUT_BUFFER=
+                read "${VAR_TERM_READ_FLAGS[@]}" -rsn 2
+                VAR_TERM_CMD_INPUT_BUFFER=
+
+                printf '\e[?25l\e8'
                 break
             ;;
 
@@ -1483,8 +1467,8 @@ fcommand_line_interact() {
                     break
                 }
 
-                tmp_command=$(echo ${VAR_CMD_INPUT_BUFFER} | tr -s ' ' |sed 's/^ //g' | cut -d ' ' -f 1)
-                tmp_args=$(echo ${VAR_CMD_INPUT_BUFFER} | tr -s ' ' |sed 's/^ //g' | cut -d ' ' -f 2-)
+                tmp_command=$(echo ${VAR_TERM_CMD_INPUT_BUFFER} | tr -s ' ' |sed 's/^ //g' | cut -d ' ' -f 1)
+                tmp_args=$(echo ${VAR_TERM_CMD_INPUT_BUFFER} | tr -s ' ' |sed 's/^ //g' | cut -d ' ' -f 2-)
                 # printf "\r\e[2K%s" ${tmp_command}
                 case ${tmp_command} in
                     "vim")
@@ -1500,20 +1484,27 @@ fcommand_line_interact() {
                     "file"|"info")
                         cmd_stat "${var_cmd_file}"
                         ;;
+                    "fullredraw")
+                        fterminal_redraw full
+                        ;;
                     "redraw")
-                        fterminal_redraw
+                        fterminal_redraw full
                         ;;
                     "open")
-                        fsys_open "${tmp_args}"
+                        fsys_open ${tmp_args}
+                        ;;
+                    "open"|"cd")
+                        cmd_cd ${tmp_args}
                         ;;
                     *)
-                    # flog_msg "Unknown commands: ${tmp_command} ${tmp_args}"
-                    cmd_${tmp_command} ${tmp_args}
-                    ;;
+                        # flog_msg "Unknown commands: ${tmp_command} ${tmp_args}"
+                        cmd_${tmp_command} ${tmp_args}
+                        printf '\e[?25l\e8'
+                        ;;
                 esac
 
                 # [[ $1 == :  ]] && {
-                #     nohup "${VAR_CMD_INPUT_BUFFER}" "$2" &>/dev/null &
+                #     nohup "${VAR_TERM_CMD_INPUT_BUFFER}" "$2" &>/dev/null &
                 # }
 
                 break
@@ -1527,12 +1518,12 @@ fcommand_line_interact() {
 
             # Replace '~' with '$HOME'.
             "~")
-                VAR_CMD_INPUT_BUFFER+=$HOME
+                VAR_TERM_CMD_INPUT_BUFFER+=$HOME
             ;;
 
             # Anything else, add it to read reply.
             *)
-                VAR_CMD_INPUT_BUFFER+=$read_reply
+                VAR_TERM_CMD_INPUT_BUFFER+=$read_reply
 
                 # Clear tab-completion.
                 unset comp c
@@ -1540,7 +1531,7 @@ fcommand_line_interact() {
         esac
 
         [[ ${var_cmd_function} == "search" ]] && {
-            cmd_search "${VAR_CMD_INPUT_BUFFER}"
+            cmd_search "${VAR_TERM_CMD_INPUT_BUFFER}"
         }
 
     done
@@ -1562,8 +1553,8 @@ cmd_search()
     printf '\e[?25l'
 
     # Use a greedy glob to search.
-    VAR_DIR_FILE_LIST=("$PWD"/*"$var_pattern"*)
-    ((VAR_DIR_LIST_CNT=${#VAR_DIR_FILE_LIST[@]}-1))
+    VAR_TERM_DIR_FILE_LIST=("$PWD"/*"$var_pattern"*)
+    ((VAR_TERM_DIR_LIST_CNT=${#VAR_TERM_DIR_FILE_LIST[@]}-1))
 
     # Draw the search results on screen.
     VAR_TERM_CONTENT_SCROLL_IDX=0
@@ -1579,8 +1570,8 @@ cmd_rename()
     if [[ -e $var_new_name ]]; then
         flog_msg "warn: '$var_new_name' already exists."
 
-    elif [[ -w ${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]} ]]; then
-        mv "${VAR_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" "${PWD}/${var_new_name}"
+    elif [[ -w ${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]} ]]; then
+        mv "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" "${PWD}/${var_new_name}"
         fterminal_redraw full
     else
         flog_msg "warn: no write access to file."
@@ -1691,7 +1682,7 @@ cmd_exit()
 
 cmd_line() {
     # Write to the command_line (under fterminal_draw_status_line).
-    VAR_CMD_INPUT_BUFFER=
+    VAR_TERM_CMD_INPUT_BUFFER=
 
     # '\e7':     Save cursor position.
     # '\e[?25h': Unhide the cursor.
@@ -1700,11 +1691,11 @@ cmd_line() {
 
     # '\r\e[K': Redraw the read prompt on every keypress.
     #           This is mimicking what happens normally.
-    while IFS= read -rsn 1 -p $'\r\e[K'"${1}${VAR_CMD_INPUT_BUFFER}" read_reply; do
+    while IFS= read -rsn 1 -p $'\r\e[K'"${1}${VAR_TERM_CMD_INPUT_BUFFER}" read_reply; do
         case $read_reply in
             # Backspace.
             $'\177'|$'\b')
-                VAR_CMD_INPUT_BUFFER=${VAR_CMD_INPUT_BUFFER%?}
+                VAR_TERM_CMD_INPUT_BUFFER=${VAR_TERM_CMD_INPUT_BUFFER%?}
 
                 # Clear tab-completion.
                 unset comp c
@@ -1712,11 +1703,11 @@ cmd_line() {
 
             # Tab.
             $'\t')
-                comp_glob="$VAR_CMD_INPUT_BUFFER*"
+                comp_glob="$VAR_TERM_CMD_INPUT_BUFFER*"
 
                 # Pass the argument dirs to limit completion to directories.
                 [[ $2 == dirs ]] &&
-                    comp_glob="$VAR_CMD_INPUT_BUFFER*/"
+                    comp_glob="$VAR_TERM_CMD_INPUT_BUFFER*/"
 
                 # Generate a completion list once.
                 [[ -z ${comp[0]} ]] &&
@@ -1724,15 +1715,15 @@ cmd_line() {
 
                 # On each tab press, cycle through the completion list.
                 [[ -n ${comp[c]} ]] && {
-                    VAR_CMD_INPUT_BUFFER=${comp[c]}
+                    VAR_TERM_CMD_INPUT_BUFFER=${comp[c]}
                     ((c=c >= ${#comp[@]}-1 ? 0 : ++c))
                 }
             ;;
 
             # Escape / Custom 'no' value (used as a replacement for '-n 1').
             $'\e'|${3:-null})
-                read "${VAR_READ_FLAGS[@]}" -rsn 2
-                VAR_CMD_INPUT_BUFFER=
+                read "${VAR_TERM_READ_FLAGS[@]}" -rsn 2
+                VAR_TERM_CMD_INPUT_BUFFER=
                 break
             ;;
 
@@ -1740,12 +1731,12 @@ cmd_line() {
             "")
                 # If there's only one search result and its a directory,
                 # enter it on one enter keypress.
-                [[ $2 == search && -d ${VAR_DIR_FILE_LIST[0]} ]] && ((VAR_DIR_LIST_CNT == 0)) && {
+                [[ $2 == search && -d ${VAR_TERM_DIR_FILE_LIST[0]} ]] && ((VAR_TERM_DIR_LIST_CNT == 0)) && {
                     # '\e[?25l': Hide the cursor.
                     printf '\e[?25l'
 
-                    fsys_open "${VAR_DIR_FILE_LIST[0]}"
-                    VAR_SEARCH_END_EARLY=1
+                    fsys_open "${VAR_TERM_DIR_FILE_LIST[0]}"
+                    VAR_TERM_SEARCH_END_EARLY=1
 
                     # Unset tab completion variables since we're done.
                     unset comp c
@@ -1753,7 +1744,7 @@ cmd_line() {
                 }
 
                 [[ $1 == :  ]] && {
-                    nohup "${VAR_CMD_INPUT_BUFFER}" "$2" &>/dev/null &
+                    nohup "${VAR_TERM_CMD_INPUT_BUFFER}" "$2" &>/dev/null &
                 }
 
                 break
@@ -1761,18 +1752,18 @@ cmd_line() {
 
             # Custom 'yes' value (used as a replacement for '-n 1').
             ${2:-null})
-                VAR_CMD_INPUT_BUFFER=$read_reply
+                VAR_TERM_CMD_INPUT_BUFFER=$read_reply
                 break
             ;;
 
             # Replace '~' with '$HOME'.
             "~")
-                VAR_CMD_INPUT_BUFFER+=$HOME
+                VAR_TERM_CMD_INPUT_BUFFER+=$HOME
             ;;
 
             # Anything else, add it to read reply.
             *)
-                VAR_CMD_INPUT_BUFFER+=$read_reply
+                VAR_TERM_CMD_INPUT_BUFFER+=$read_reply
 
                 # Clear tab-completion.
                 unset comp c
@@ -1785,8 +1776,8 @@ cmd_line() {
             printf '\e[?25l'
 
             # Use a greedy glob to search.
-            VAR_DIR_FILE_LIST=("$PWD"/*"$VAR_CMD_INPUT_BUFFER"*)
-            ((VAR_DIR_LIST_CNT=${#VAR_DIR_FILE_LIST[@]}-1))
+            VAR_TERM_DIR_FILE_LIST=("$PWD"/*"$VAR_TERM_CMD_INPUT_BUFFER"*)
+            ((VAR_TERM_DIR_LIST_CNT=${#VAR_TERM_DIR_FILE_LIST[@]}-1))
 
             # Draw the search results on screen.
             VAR_TERM_CONTENT_SCROLL_IDX=0
@@ -1811,7 +1802,7 @@ fsys_open() {
     # Open directories and files.
     if [[ -d $1/ ]]; then
         VAR_SEARCH_MODE=
-        VAR_SEARCH_END_EARLY=
+        VAR_TERM_SEARCH_END_EARLY=
         cd "${1:-/}" ||:
         fterminal_redraw full
 
@@ -1833,7 +1824,7 @@ fsys_open() {
             text/*|*x-empty*|*json*)
                 # If 'hsfm' was opened as a file picker, save the opened
                 # file in a file called 'opened_file'.
-                ((VAR_FILE_PICKER == 1)) && {
+                ((VAR_TERM_FILE_PICKER == 1)) && {
                     printf '%s\n' "$1" > \
                         "${XDG_CACHE_HOME:=${HOME}/.cache}/hsfm/opened_file"
                     exit
@@ -1877,8 +1868,8 @@ fselect_execute()
         # fterminal_reset
 
         stty echo
-        # printf '\e[1mhsfm\e[m: %s\n' "Running ${VAR_FILE_PROGRAM[0]}"
-        "${VAR_FILE_PROGRAM[@]}" "${VAR_TERM_SELECTION_FILE_LIST[@]}" .
+        # printf '\e[1mhsfm\e[m: %s\n' "Running ${VAR_TERM_FILE_PROGRAM[0]}"
+        "${VAR_TERM_FILE_PROGRAM[@]}" "${VAR_TERM_SELECTION_FILE_LIST[@]}" .
         stty -echo
 
         # VAR_TERM_SELECTION_FILE_LIST=()
@@ -1896,7 +1887,7 @@ fselect_remove() {
         cmd_line "trash [${#VAR_TERM_SELECTION_FILE_LIST[@]}] items? [y/n]: " y n
     fi
 
-    [[ $VAR_CMD_INPUT_BUFFER != y ]] &&
+    [[ $VAR_TERM_CMD_INPUT_BUFFER != y ]] &&
         return
 
     if [[ $HSFM_TRASH_CMD ]]; then
@@ -1999,18 +1990,18 @@ fsetup_options() {
 
     # Format for normal files.
     [[ $HSFM_FILE_FORMAT == *%f* ]] && {
-        VAR_FILE_PRE=${HSFM_FILE_FORMAT/'%f'*}
-        VAR_FILE_POST=${HSFM_FILE_FORMAT/*'%f'}
+        VAR_TERM_FILE_PRE=${HSFM_FILE_FORMAT/'%f'*}
+        VAR_TERM_FILE_POST=${HSFM_FILE_FORMAT/*'%f'}
     }
 
     # Format for marked files.
     # Use affixes provided by the user or use defaults, if necessary.
     if [[ $HSFM_MARK_FORMAT == *%f* ]]; then
-        VAR_MARK_PRE=${HSFM_MARK_FORMAT/'%f'*}
-        VAR_MARK_POST=${HSFM_MARK_FORMAT/*'%f'}
+        VAR_TERM_MARK_PRE=${HSFM_MARK_FORMAT/'%f'*}
+        VAR_TERM_MARK_POST=${HSFM_MARK_FORMAT/*'%f'}
     else
-        VAR_MARK_PRE=" "
-        VAR_MARK_POST="*"
+        VAR_TERM_MARK_PRE=" "
+        VAR_TERM_MARK_POST="*"
     fi
 
     # Find supported 'file' arguments.
@@ -2151,7 +2142,7 @@ function fmain() {
     # Store file name in a file on open instead of using 'HSFM_OPENER'.
     # Used in 'hsfm.vim'.
     [[ $1 == -p ]] &&
-        VAR_FILE_PICKER=1
+        VAR_TERM_FILE_PICKER=1
 
     # bash 5 and some versions of bash 4 don't allow SIGWINCH to interrupt
     # a 'read' command and instead wait for it to complete. In this case it
@@ -2162,7 +2153,7 @@ function fmain() {
     # anything until a key is pressed.
     # SEE: https://github.com/dylanaraps/hsfm/issues/48
     ((BASH_VERSINFO[0] > 3)) &&
-        VAR_READ_FLAGS=(-t 0.05)
+        VAR_TERM_READ_FLAGS=(-t 0.05)
 
     ((${HSFM_LS_COLORS:=1} == 1)) &&
         fget_ls_colors
@@ -2194,7 +2185,7 @@ function fmain() {
 
     # Vintage infinite loop.
     for ((;;)); {
-        read "${VAR_READ_FLAGS[@]}" -srn 1 && {
+        read "${VAR_TERM_READ_FLAGS[@]}" -srn 1 && {
 
             case ${VAR_TERM_OPS_MODE} in
                 'v')
