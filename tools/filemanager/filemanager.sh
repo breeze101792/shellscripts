@@ -2,7 +2,7 @@
 ###########################################################
 ## Flags
 ###########################################################
-export FLAG_TERM_DEBUG=true
+export FLAG_TERM_DEBUG=false
 
 ## TERMINAL Vars Options
 ###########################################################
@@ -374,21 +374,28 @@ fterminal_draw_tab_line() {
     local var_tab_list_buf=""
     local var_tab_list_pre_buf=""
     local var_tab_list_post_buf=""
-    VAR_TERM_TAB_LINE_LIST[${VAR_TERM_TAB_LINE_IDX}]="${PWD}"
+    # PWD_escaped=${PWD//[^[:print:]]/^[}
+    # Escape the directory string.
+    # Remove all non-printable characters.
+    # PWD_escaped=${PWD//[^[:print:]]/^[}
+    if test -z "$VAR_TERM_TAB_LINE_LIST"
+    then
+        VAR_TERM_TAB_LINE_LIST[${VAR_TERM_TAB_LINE_IDX}]="$(realpath .)"
+    fi
 
     for each_idx in "${!VAR_TERM_TAB_LINE_LIST[@]}"
     do
         if [ "${VAR_TERM_TAB_LINE_IDX}" = "${each_idx}" ]
         then
             # var_tab_list_buf=${var_tab_list_buf}"${each_idx}: $(basename ${VAR_TERM_TAB_LINE_LIST[${each_idx}]})"
-            var_tab_list_buf=${var_tab_list_buf}"${each_idx}: ${VAR_TERM_TAB_LINE_LIST[${each_idx}]//[^[:print:]]/^[}"
+            var_tab_list_buf=${var_tab_list_buf}"${each_idx}: $(basename ${VAR_TERM_TAB_LINE_LIST[${each_idx}]})"
         elif [[ "${VAR_TERM_TAB_LINE_IDX}" -gt "${each_idx}" ]]
         then
             # var_tab_list_pre_buf=${var_tab_list_pre_buf}"${each_idx}: $(basename ${VAR_TERM_TAB_LINE_LIST[${each_idx}]})|"
-            var_tab_list_pre_buf=${var_tab_list_pre_buf}"${each_idx}: ${VAR_TERM_TAB_LINE_LIST[${each_idx}]//[^[:print:]]/^[}|"
+            var_tab_list_pre_buf=${var_tab_list_pre_buf}"${each_idx}: $(basename ${VAR_TERM_TAB_LINE_LIST[${each_idx}]})|"
         else
             # var_tab_list_post_buf=${var_tab_list_post_buf}"${each_idx}: $(basename ${VAR_TERM_TAB_LINE_LIST[${each_idx}]})|"
-            var_tab_list_post_buf=${var_tab_list_post_buf}"${each_idx}: ${VAR_TERM_TAB_LINE_LIST[${each_idx}]//[^[:print:]]/^[}|"
+            var_tab_list_post_buf=${var_tab_list_post_buf}"${each_idx}: $(basename ${VAR_TERM_TAB_LINE_LIST[${each_idx}]})|"
         fi
     done
 
