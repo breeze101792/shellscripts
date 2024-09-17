@@ -3,6 +3,7 @@
 ## Flags
 ###########################################################
 export FLAG_TERM_DEBUG=false
+export FLAG_TERM_DEBUG=true
 
 ## TERMINAL Vars Options
 ###########################################################
@@ -285,23 +286,18 @@ fterminal_redraw() {
         fterminal_read_dir
         VAR_TERM_CONTENT_SCROLL_IDX=0
         VAR_TERM_SCROLL_CURSOR=0
-        if ${FLAG_TERM_DEBUG}
-        then
-            fterminal_clear
-        else
-            tmp_buffer+="$(fterminal_clear)"
-        fi
     }
 
     # order is important, don't change it.
+    # clear before redraw, avoid glict/search result incorrect.
     if ${FLAG_TERM_DEBUG}
     then
-        # fterminal_clear
+        fterminal_clear
         fterminal_draw_dir
         fterminal_draw_tab_line
         fterminal_draw_status_line
     else
-        # tmp_buffer+="$(fterminal_clear)"
+        tmp_buffer+="$(fterminal_clear)"
         tmp_buffer+="$(fterminal_draw_dir)"
         tmp_buffer+="$(fterminal_draw_tab_line)"
         tmp_buffer+="$(fterminal_draw_status_line)"
@@ -378,10 +374,7 @@ fterminal_draw_tab_line() {
     # Escape the directory string.
     # Remove all non-printable characters.
     # PWD_escaped=${PWD//[^[:print:]]/^[}
-    if test -z "$VAR_TERM_TAB_LINE_LIST"
-    then
-        VAR_TERM_TAB_LINE_LIST[${VAR_TERM_TAB_LINE_IDX}]="$(realpath .)"
-    fi
+    VAR_TERM_TAB_LINE_LIST[${VAR_TERM_TAB_LINE_IDX}]="$(realpath .)"
 
     for each_idx in "${!VAR_TERM_TAB_LINE_LIST[@]}"
     do
