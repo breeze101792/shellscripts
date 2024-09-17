@@ -901,7 +901,7 @@ function session()
                 # ps -ef |grep 'tmux\|session' |grep "\/$each_session "
                 if ps -ef |grep 'tmux\|session' | grep "/$each_session " > /dev/null
                 then
-                    printf "Session: ${each_session}\n"
+                    printf "Socket: ${each_session}\n"
                     printf "    %s\n" "$(eval ${var_cmd[@]} -S ${var_session_tmp_path}/${each_session} ls)"
                 fi
             done
