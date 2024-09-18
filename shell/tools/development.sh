@@ -782,7 +782,7 @@ function session()
                     var_hostname=$(echo ${var_hostname}| sed 's/\./_/g')
                 fi
 
-                local tmp_name=$(session ls |grep "${var_hostname}" | cut -d ':' -f 1| tr -d  ' ')
+                local tmp_name=$(session ls | grep "${var_hostname}" | cut -d ':' -f 2| tr -d  ' ')
                 if [ "${tmp_name}" != "" ]
                 then
                     var_action="attach"
@@ -816,7 +816,7 @@ function session()
                 ;;
             *)
                 echo "Auto detect."
-                local tmp_name=$(session ls |grep "${1}" | cut -d ':' -f 1 | tr -d ' ')
+                local tmp_name=$(session ls |grep "${1}" | cut -d ':' -f 2 | tr -d ' ')
                 if [ "${tmp_name}" != "" ]
                 then
                     var_action="attach-only"
@@ -896,13 +896,13 @@ function session()
 
         if [ "${flag_multiple_instance}" = "y" ]
         then
+            printf "%s:%s\n" "Socket" "Session"
             for each_session in $(ls ${var_session_tmp_path})
             do
                 # ps -ef |grep 'tmux\|session' |grep "\/$each_session "
                 if ps -ef |grep 'tmux\|session' | grep "/$each_session " > /dev/null
                 then
-                    printf "Socket: ${each_session}\n"
-                    printf "    %s\n" "$(eval ${var_cmd[@]} -S ${var_session_tmp_path}/${each_session} ls)"
+                    printf "%s:%s\n" "${each_session}" "$(eval ${var_cmd[@]} -S ${var_session_tmp_path}/${each_session} ls)"
                 fi
             done
         else
