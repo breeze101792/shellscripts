@@ -80,6 +80,7 @@ export VAR_TERM_MSGWIN_HEIGHT="15"
 export VAR_TERM_CMD_INPUT_BUFFER=""
 export VAR_TERM_CMD_LIST=( "redraw" "fullredraw" "help" "info" "exit" "select" "shell" "dump" "test")
 VAR_TERM_CMD_LIST+=( "mkdir" "mkfile" "touch" "rename" "search" )
+VAR_TERM_CMD_LIST+=( "quit" "tab" )
 VAR_TERM_CMD_LIST+=( "open" "editor" "vim" "media" "play" "image" "preview")
 
 # Mode
@@ -1024,140 +1025,6 @@ fterminal_read_key() {
     fi
     return ${ret_value}
 }
-fterminal_scroll_up() {
-    # '\e[1L': Insert a line above the cursor.
-    # '\e[A':  Move cursor up a line.
-    if ((VAR_TERM_CONTENT_SCROLL_IDX > 0))
-    then
-        VAR_TERM_PRINT_BUFFER_ENABLE=true
-        ((VAR_TERM_CONTENT_SCROLL_IDX--))
-        # if [ "${VAR_TERM_OPS_MODE}" = 'v' ] && [[ $VAR_TERM_CONTENT_SCROLL_IDX -gt $VAR_TERM_VISUAL_START_IDX ]]
-        # then
-        #     fterminal_mark_remove "$VAR_TERM_CONTENT_SCROLL_IDX"
-        # fi
-
-        fterminal_draw_file_line "$((VAR_TERM_CONTENT_SCROLL_IDX+1))"
-
-        if ((VAR_TERM_WIN_CURRENT_CURSOR < 1)); then
-            # fterminal_print '\e[L'
-            fterminal_redraw
-            return 0
-        else
-            fterminal_print '\e[A'
-            ((VAR_TERM_WIN_CURRENT_CURSOR--))
-        fi
-        fterminal_draw_file_line $VAR_TERM_CONTENT_SCROLL_IDX
-        # if [ "${VAR_TERM_OPS_MODE}" = 'v' ] && [[ $VAR_TERM_CONTENT_SCROLL_IDX -lt $VAR_TERM_VISUAL_START_IDX ]]
-        # then
-        #     fterminal_mark_add "$VAR_TERM_CONTENT_SCROLL_IDX"
-        # fi
-        # fterminal_draw_tab_line
-        fterminal_draw_status_line
-        fterminal_flush
-    fi
-}
-fterminal_scroll_down() {
-    if ((VAR_TERM_CONTENT_SCROLL_IDX < VAR_TERM_DIR_LIST_CNT))
-    then
-        VAR_TERM_PRINT_BUFFER_ENABLE=true
-
-        # We need to mark on visula mode
-        # if [ "${VAR_TERM_OPS_MODE}" = 'v' ] && [[ ${VAR_TERM_CONTENT_SCROLL_IDX} -lt ${VAR_TERM_VISUAL_START_IDX} ]]
-        # then
-        #     fterminal_mark_remove "$VAR_TERM_CONTENT_SCROLL_IDX"
-        # fi
-        ((VAR_TERM_CONTENT_SCROLL_IDX++))
-        # if [ "${VAR_TERM_OPS_MODE}" = 'v' ] && [[ $VAR_TERM_CONTENT_SCROLL_IDX -gt $VAR_TERM_VISUAL_START_IDX ]]
-        # then
-        #     fterminal_mark_add "$VAR_TERM_CONTENT_SCROLL_IDX"
-        # fi
-
-        if ((VAR_TERM_WIN_CURRENT_CURSOR + 1 < VAR_TERM_CONTENT_MAX_CNT))
-        then
-            fterminal_draw_file_line $((VAR_TERM_CONTENT_SCROLL_IDX-1))
-            ((VAR_TERM_WIN_CURRENT_CURSOR++))
-        else
-            # FIXME, it's a patch to avoid glitch
-            # clear the first content line
-            # fterminal_draw_tab_line
-            # fterminal_print "\e[$((VAR_TERM_CONTENT_MAX_CNT + VAR_TERM_TAB_LINE_HEIGHT))H"
-            # fterminal_draw_dir
-
-            # Draw new page, this is not partial update.
-            fterminal_redraw
-            return 0
-        fi
-        fterminal_draw_file_line $((VAR_TERM_CONTENT_SCROLL_IDX))
-
-        fterminal_draw_status_line
-        fterminal_flush
-    fi
-}
-# FIXME, i dont want to seperate two simlar function for different mode
-fterminal_scroll_up_visual() {
-    # '\e[1L': Insert a line above the cursor.
-    # '\e[A':  Move cursor up a line.
-    if ((VAR_TERM_CONTENT_SCROLL_IDX > 0))
-    then
-        VAR_TERM_PRINT_BUFFER_ENABLE=true
-        ((VAR_TERM_CONTENT_SCROLL_IDX--))
-        if [ "${VAR_TERM_OPS_MODE}" = 'v' ] && [[ $VAR_TERM_CONTENT_SCROLL_IDX -gt $VAR_TERM_VISUAL_START_IDX ]]
-        then
-            fterminal_mark_remove "$VAR_TERM_CONTENT_SCROLL_IDX"
-        fi
-
-        fterminal_draw_file_line "$((VAR_TERM_CONTENT_SCROLL_IDX+1))"
-
-        if ((VAR_TERM_WIN_CURRENT_CURSOR < 1)); then
-            fterminal_print '\e[L'
-        else
-            fterminal_print '\e[A'
-            ((VAR_TERM_WIN_CURRENT_CURSOR--))
-        fi
-        fterminal_draw_file_line $VAR_TERM_CONTENT_SCROLL_IDX
-        if [ "${VAR_TERM_OPS_MODE}" = 'v' ] && [[ $VAR_TERM_CONTENT_SCROLL_IDX -lt $VAR_TERM_VISUAL_START_IDX ]]
-        then
-            fterminal_mark_add "$VAR_TERM_CONTENT_SCROLL_IDX"
-        fi
-        fterminal_draw_tab_line
-        fterminal_draw_status_line
-        fterminal_flush
-    fi
-}
-fterminal_scroll_down_visual() {
-    if ((VAR_TERM_CONTENT_SCROLL_IDX < VAR_TERM_DIR_LIST_CNT))
-    then
-        VAR_TERM_PRINT_BUFFER_ENABLE=true
-
-        # We need to mark on visula mode
-        if [ "${VAR_TERM_OPS_MODE}" = 'v' ] && [[ ${VAR_TERM_CONTENT_SCROLL_IDX} -lt ${VAR_TERM_VISUAL_START_IDX} ]]
-        then
-            fterminal_mark_remove "$VAR_TERM_CONTENT_SCROLL_IDX"
-        fi
-        ((VAR_TERM_CONTENT_SCROLL_IDX++))
-
-        fterminal_draw_file_line $((VAR_TERM_CONTENT_SCROLL_IDX-1))
-        fterminal_print "\n"
-
-        if ((VAR_TERM_WIN_CURRENT_CURSOR + 1 < VAR_TERM_CONTENT_MAX_CNT))
-        then
-            ((VAR_TERM_WIN_CURRENT_CURSOR++))
-        else
-            # FIXME, it's a patch to avoid glitch
-            # clear the first content line
-            fterminal_draw_tab_line
-            fterminal_print "\e[$((VAR_TERM_CONTENT_MAX_CNT + VAR_TERM_TAB_LINE_HEIGHT))H"
-        fi
-        fterminal_draw_file_line $((VAR_TERM_CONTENT_SCROLL_IDX))
-
-        if [ "${VAR_TERM_OPS_MODE}" = 'v' ] && [[ $VAR_TERM_CONTENT_SCROLL_IDX -gt $VAR_TERM_VISUAL_START_IDX ]]
-        then
-            fterminal_mark_add "$VAR_TERM_CONTENT_SCROLL_IDX"
-        fi
-        fterminal_draw_status_line
-        fterminal_flush
-    fi
-}
 
 fterminal_tab_reset_contex() {
     local var_tab_id=$1
@@ -1249,6 +1116,256 @@ fterminal_tab_swap_contex() {
 ## GUI Functions
 ###########################################################
 
+fgui_scroll_up() {
+    # '\e[1L': Insert a line above the cursor.
+    # '\e[A':  Move cursor up a line.
+    if ((VAR_TERM_CONTENT_SCROLL_IDX > 0))
+    then
+        VAR_TERM_PRINT_BUFFER_ENABLE=true
+        ((VAR_TERM_CONTENT_SCROLL_IDX--))
+        # if [ "${VAR_TERM_OPS_MODE}" = 'v' ] && [[ $VAR_TERM_CONTENT_SCROLL_IDX -gt $VAR_TERM_VISUAL_START_IDX ]]
+        # then
+        #     fterminal_mark_remove "$VAR_TERM_CONTENT_SCROLL_IDX"
+        # fi
+
+        fterminal_draw_file_line "$((VAR_TERM_CONTENT_SCROLL_IDX+1))"
+
+        if ((VAR_TERM_WIN_CURRENT_CURSOR < 1)); then
+            # fterminal_print '\e[L'
+            fterminal_redraw
+            return 0
+        else
+            fterminal_print '\e[A'
+            ((VAR_TERM_WIN_CURRENT_CURSOR--))
+        fi
+        fterminal_draw_file_line $VAR_TERM_CONTENT_SCROLL_IDX
+        # if [ "${VAR_TERM_OPS_MODE}" = 'v' ] && [[ $VAR_TERM_CONTENT_SCROLL_IDX -lt $VAR_TERM_VISUAL_START_IDX ]]
+        # then
+        #     fterminal_mark_add "$VAR_TERM_CONTENT_SCROLL_IDX"
+        # fi
+        # fterminal_draw_tab_line
+        fterminal_draw_status_line
+        fterminal_flush
+    fi
+}
+fgui_scroll_down() {
+    if ((VAR_TERM_CONTENT_SCROLL_IDX < VAR_TERM_DIR_LIST_CNT))
+    then
+        VAR_TERM_PRINT_BUFFER_ENABLE=true
+
+        # We need to mark on visula mode
+        # if [ "${VAR_TERM_OPS_MODE}" = 'v' ] && [[ ${VAR_TERM_CONTENT_SCROLL_IDX} -lt ${VAR_TERM_VISUAL_START_IDX} ]]
+        # then
+        #     fterminal_mark_remove "$VAR_TERM_CONTENT_SCROLL_IDX"
+        # fi
+        ((VAR_TERM_CONTENT_SCROLL_IDX++))
+        # if [ "${VAR_TERM_OPS_MODE}" = 'v' ] && [[ $VAR_TERM_CONTENT_SCROLL_IDX -gt $VAR_TERM_VISUAL_START_IDX ]]
+        # then
+        #     fterminal_mark_add "$VAR_TERM_CONTENT_SCROLL_IDX"
+        # fi
+
+        if ((VAR_TERM_WIN_CURRENT_CURSOR + 1 < VAR_TERM_CONTENT_MAX_CNT))
+        then
+            fterminal_draw_file_line $((VAR_TERM_CONTENT_SCROLL_IDX-1))
+            ((VAR_TERM_WIN_CURRENT_CURSOR++))
+        else
+            # FIXME, it's a patch to avoid glitch
+            # clear the first content line
+            # fterminal_draw_tab_line
+            # fterminal_print "\e[$((VAR_TERM_CONTENT_MAX_CNT + VAR_TERM_TAB_LINE_HEIGHT))H"
+            # fterminal_draw_dir
+
+            # Draw new page, this is not partial update.
+            fterminal_redraw
+            return 0
+        fi
+        fterminal_draw_file_line $((VAR_TERM_CONTENT_SCROLL_IDX))
+
+        fterminal_draw_status_line
+        fterminal_flush
+    fi
+}
+# FIXME, i dont want to seperate two simlar function for different mode
+fgui_scroll_up_visual() {
+    # '\e[1L': Insert a line above the cursor.
+    # '\e[A':  Move cursor up a line.
+    if ((VAR_TERM_CONTENT_SCROLL_IDX > 0))
+    then
+        VAR_TERM_PRINT_BUFFER_ENABLE=true
+        ((VAR_TERM_CONTENT_SCROLL_IDX--))
+        if [ "${VAR_TERM_OPS_MODE}" = 'v' ] && [[ $VAR_TERM_CONTENT_SCROLL_IDX -gt $VAR_TERM_VISUAL_START_IDX ]]
+        then
+            fterminal_mark_remove "$VAR_TERM_CONTENT_SCROLL_IDX"
+        fi
+
+        fterminal_draw_file_line "$((VAR_TERM_CONTENT_SCROLL_IDX+1))"
+
+        if ((VAR_TERM_WIN_CURRENT_CURSOR < 1)); then
+            fterminal_print '\e[L'
+        else
+            fterminal_print '\e[A'
+            ((VAR_TERM_WIN_CURRENT_CURSOR--))
+        fi
+        fterminal_draw_file_line $VAR_TERM_CONTENT_SCROLL_IDX
+        if [ "${VAR_TERM_OPS_MODE}" = 'v' ] && [[ $VAR_TERM_CONTENT_SCROLL_IDX -lt $VAR_TERM_VISUAL_START_IDX ]]
+        then
+            fterminal_mark_add "$VAR_TERM_CONTENT_SCROLL_IDX"
+        fi
+        fterminal_draw_tab_line
+        fterminal_draw_status_line
+        fterminal_flush
+    fi
+}
+fgui_scroll_down_visual() {
+    if ((VAR_TERM_CONTENT_SCROLL_IDX < VAR_TERM_DIR_LIST_CNT))
+    then
+        VAR_TERM_PRINT_BUFFER_ENABLE=true
+
+        # We need to mark on visula mode
+        if [ "${VAR_TERM_OPS_MODE}" = 'v' ] && [[ ${VAR_TERM_CONTENT_SCROLL_IDX} -lt ${VAR_TERM_VISUAL_START_IDX} ]]
+        then
+            fterminal_mark_remove "$VAR_TERM_CONTENT_SCROLL_IDX"
+        fi
+        ((VAR_TERM_CONTENT_SCROLL_IDX++))
+
+        fterminal_draw_file_line $((VAR_TERM_CONTENT_SCROLL_IDX-1))
+        fterminal_print "\n"
+
+        if ((VAR_TERM_WIN_CURRENT_CURSOR + 1 < VAR_TERM_CONTENT_MAX_CNT))
+        then
+            ((VAR_TERM_WIN_CURRENT_CURSOR++))
+        else
+            # FIXME, it's a patch to avoid glitch
+            # clear the first content line
+            fterminal_draw_tab_line
+            fterminal_print "\e[$((VAR_TERM_CONTENT_MAX_CNT + VAR_TERM_TAB_LINE_HEIGHT))H"
+        fi
+        fterminal_draw_file_line $((VAR_TERM_CONTENT_SCROLL_IDX))
+
+        if [ "${VAR_TERM_OPS_MODE}" = 'v' ] && [[ $VAR_TERM_CONTENT_SCROLL_IDX -gt $VAR_TERM_VISUAL_START_IDX ]]
+        then
+            fterminal_mark_add "$VAR_TERM_CONTENT_SCROLL_IDX"
+        fi
+        fterminal_draw_status_line
+        fterminal_flush
+    fi
+}
+fgui_tab_go_previous()
+{
+    if [[ ${#VAR_TERM_TAB_LINE_LIST_PATH[@]} -eq 1 ]] ||
+        [[ ${VAR_TERM_TAB_LINE_IDX} -eq 0 ]]
+        then
+            flog_msg "PREVIOUS_TAB ignored."
+            return
+        else
+            fterminal_tab_save_contex ${VAR_TERM_TAB_LINE_IDX}
+            VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]="$(realpath .)"
+            VAR_TERM_TAB_LINE_IDX=$(($VAR_TERM_TAB_LINE_IDX - 1))
+            cd ${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}
+            fterminal_tab_load_contex ${VAR_TERM_TAB_LINE_IDX}
+            fterminal_redraw full
+            flog_msg "Go PREVIOUS_TAB."
+    fi
+}
+fgui_tab_go_next()
+{
+    if [[ ${#VAR_TERM_TAB_LINE_LIST_PATH[@]} -eq 1 ]] ||
+        (( ${VAR_TERM_TAB_LINE_IDX} + 1 == ${#VAR_TERM_TAB_LINE_LIST_PATH[@]} )) ||
+        ! test -d ${VAR_TERM_TAB_LINE_LIST_PATH[(( ${VAR_TERM_TAB_LINE_IDX} + 1))]}
+    then
+        flog_msg "NEXT_TAB ignored."
+        return
+    else
+        fterminal_tab_save_contex ${VAR_TERM_TAB_LINE_IDX}
+        VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]="$(realpath .)"
+        VAR_TERM_TAB_LINE_IDX=$(($VAR_TERM_TAB_LINE_IDX + 1))
+        cd ${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}
+        fterminal_tab_load_contex ${VAR_TERM_TAB_LINE_IDX}
+        fterminal_redraw full
+        flog_msg "Go NEXT_TAB"
+    fi
+}
+fgui_tab_move_previous()
+{
+    if [[ ${#VAR_TERM_TAB_LINE_LIST_PATH[@]} -eq 1 ]] ||
+        [[ ${VAR_TERM_TAB_LINE_IDX} -eq 0 ]]
+    then
+        flog_msg "MOVE_PREVIOUS_TAB ignored."
+        return
+    else
+        fterminal_tab_swap_contex ${VAR_TERM_TAB_LINE_IDX} $(($VAR_TERM_TAB_LINE_IDX - 1))
+        # tmp_preserved_path=${VAR_TERM_TAB_LINE_LIST_PATH[$((${VAR_TERM_TAB_LINE_IDX}-1))]}
+        # VAR_TERM_TAB_LINE_LIST_PATH[$((${VAR_TERM_TAB_LINE_IDX} - 1))]="$(realpath .)"
+        # VAR_TERM_TAB_LINE_LIST_PATH[$((${VAR_TERM_TAB_LINE_IDX}))]="${tmp_preserved_path}"
+        VAR_TERM_TAB_LINE_IDX=$(($VAR_TERM_TAB_LINE_IDX - 1))
+
+        fterminal_redraw
+        flog_msg "Move to PREVIOUS_TAB."
+    fi
+}
+fgui_tab_move_next()
+{
+    if [[ ${#VAR_TERM_TAB_LINE_LIST_PATH[@]} -eq 1 ]] ||
+        (( ${VAR_TERM_TAB_LINE_IDX} + 1 == ${#VAR_TERM_TAB_LINE_LIST_PATH[@]} )) ||
+        ! test -d ${VAR_TERM_TAB_LINE_LIST_PATH[(( ${VAR_TERM_TAB_LINE_IDX} + 1))]}
+
+    then
+        flog_msg "MOVE_NEXT_TAB ignored."
+        return
+    else
+        fterminal_tab_swap_contex ${VAR_TERM_TAB_LINE_IDX} $(($VAR_TERM_TAB_LINE_IDX + 1))
+        # tmp_preserved_path=${VAR_TERM_TAB_LINE_LIST_PATH[$((${VAR_TERM_TAB_LINE_IDX}+1))]}
+        # VAR_TERM_TAB_LINE_LIST_PATH[$((${VAR_TERM_TAB_LINE_IDX}+1))]="$(realpath .)"
+        # VAR_TERM_TAB_LINE_LIST_PATH[$((${VAR_TERM_TAB_LINE_IDX}))]="${tmp_preserved_path}"
+        VAR_TERM_TAB_LINE_IDX=$(($VAR_TERM_TAB_LINE_IDX + 1))
+
+        fterminal_redraw
+        flog_msg "Move to NEXT_TAB"
+    fi
+}
+fgui_tab_open()
+{
+    VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]="$(realpath .)"
+
+    # move tab to insert a new tab.
+    ((each_idx=${#VAR_TERM_TAB_LINE_LIST_PATH[@]} - 1))
+    while ((${each_idx} > ${VAR_TERM_TAB_LINE_IDX})) &&  ((each_idx != VAR_TERM_TAB_LINE_IDX))
+    do
+        VAR_TERM_TAB_LINE_LIST_PATH[$((${each_idx} + 1))]="${VAR_TERM_TAB_LINE_LIST_PATH[$((${each_idx}))]}"
+        ((each_idx-=1))
+    done
+
+    fterminal_tab_save_contex ${VAR_TERM_TAB_LINE_IDX}
+    VAR_TERM_TAB_LINE_IDX=$((${VAR_TERM_TAB_LINE_IDX} + 1))
+    if test -d "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
+    then
+        cd "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
+    fi
+    fterminal_tab_reset_contex ${VAR_TERM_TAB_LINE_IDX}
+    # VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]="$(realpath .)"
+    fterminal_redraw full
+}
+fgui_tab_close()
+{
+    if [[ ${#VAR_TERM_TAB_LINE_LIST_PATH[@]} -eq 1 ]]
+    then
+        # flog_msg "CLOSE_TAB ignored."
+        exit 0
+    else
+        fterminal_tab_remove ${VAR_TERM_TAB_LINE_IDX}
+
+        if [[ ${VAR_TERM_TAB_LINE_IDX} -ne 0 ]]
+        then
+            VAR_TERM_TAB_LINE_IDX=$((VAR_TERM_TAB_LINE_IDX - 1 ))
+        fi
+        fterminal_tab_load_contex ${VAR_TERM_TAB_LINE_IDX}
+
+        cd ${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}
+        fterminal_redraw full
+        flog_msg "Tab closed."
+    fi
+}
+
 fmode_setup()
 {
     case ${1} in
@@ -1299,7 +1416,7 @@ fnormal_mode_handler() {
                 fsys_open "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
             elif test -f "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
             then
-                local tmp_mine=$(fget_mime_type "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}")
+                local tmp_mine=$(fprase_mime_type "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}")
                 local tmp_info=$(file "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}")
                 # flog_msg "File info(${tmp_mine%%;*}):$(file "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" | tail -n 1 | cut -d ':' -f2)"
                 flog_msg "File info(${tmp_mine%%;*}):${tmp_info##*:}"
@@ -1335,7 +1452,7 @@ fnormal_mode_handler() {
         ${HSFM_KEY_SCROLL_DOWN1:=j}|\
         ${HSFM_KEY_SCROLL_DOWN2:=$'\e[B'}|\
         ${HSFM_KEY_SCROLL_DOWN3:=$'\eOB'})
-                fterminal_scroll_down
+                fgui_scroll_down
         ;;
 
         # Scroll up.
@@ -1344,7 +1461,7 @@ fnormal_mode_handler() {
         ${HSFM_KEY_SCROLL_UP1:=k}|\
         ${HSFM_KEY_SCROLL_UP2:=$'\e[A'}|\
         ${HSFM_KEY_SCROLL_UP3:=$'\eOA'})
-                fterminal_scroll_up
+                fgui_scroll_up
         ;;
 
         # Go to top.
@@ -1365,133 +1482,24 @@ fnormal_mode_handler() {
 
         # Tab selcet
         ${HSFM_KEY_GO_PREVIOUS_TAB})
-            if [[ ${#VAR_TERM_TAB_LINE_LIST_PATH[@]} -eq 1 ]] ||
-                [[ ${VAR_TERM_TAB_LINE_IDX} -eq 0 ]]
-            then
-                flog_msg "PREVIOUS_TAB ignored."
-                return
-            else
-                fterminal_tab_save_contex ${VAR_TERM_TAB_LINE_IDX}
-                VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]="$(realpath .)"
-                VAR_TERM_TAB_LINE_IDX=$(($VAR_TERM_TAB_LINE_IDX - 1))
-                cd ${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}
-                fterminal_tab_load_contex ${VAR_TERM_TAB_LINE_IDX}
-                fterminal_redraw full
-                flog_msg "Go PREVIOUS_TAB."
-            fi
+            fgui_tab_go_previous
         ;;
 
         ${HSFM_KEY_GO_NEXT_TAB})
-            if [[ ${#VAR_TERM_TAB_LINE_LIST_PATH[@]} -eq 1 ]] ||
-                (( ${VAR_TERM_TAB_LINE_IDX} + 1 == ${#VAR_TERM_TAB_LINE_LIST_PATH[@]} )) ||
-                ! test -d ${VAR_TERM_TAB_LINE_LIST_PATH[(( ${VAR_TERM_TAB_LINE_IDX} + 1))]}
-
-            then
-                flog_msg "NEXT_TAB ignored."
-                return
-            else
-                fterminal_tab_save_contex ${VAR_TERM_TAB_LINE_IDX}
-                VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]="$(realpath .)"
-                VAR_TERM_TAB_LINE_IDX=$(($VAR_TERM_TAB_LINE_IDX + 1))
-                cd ${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}
-                fterminal_tab_load_contex ${VAR_TERM_TAB_LINE_IDX}
-                fterminal_redraw full
-                flog_msg "Go NEXT_TAB"
-            fi
+            fgui_tab_go_next
         ;;
         ${HSFM_KEY_MOVE_TAB_PREVIOUS})
-            if [[ ${#VAR_TERM_TAB_LINE_LIST_PATH[@]} -eq 1 ]] ||
-                [[ ${VAR_TERM_TAB_LINE_IDX} -eq 0 ]]
-            then
-                flog_msg "MOVE_PREVIOUS_TAB ignored."
-                return
-            else
-                fterminal_tab_swap_contex ${VAR_TERM_TAB_LINE_IDX} $(($VAR_TERM_TAB_LINE_IDX - 1))
-                # tmp_preserved_path=${VAR_TERM_TAB_LINE_LIST_PATH[$((${VAR_TERM_TAB_LINE_IDX}-1))]}
-                # VAR_TERM_TAB_LINE_LIST_PATH[$((${VAR_TERM_TAB_LINE_IDX} - 1))]="$(realpath .)"
-                # VAR_TERM_TAB_LINE_LIST_PATH[$((${VAR_TERM_TAB_LINE_IDX}))]="${tmp_preserved_path}"
-                VAR_TERM_TAB_LINE_IDX=$(($VAR_TERM_TAB_LINE_IDX - 1))
-
-                fterminal_redraw
-                flog_msg "Move to PREVIOUS_TAB."
-            fi
+            fgui_tab_move_previous
         ;;
 
         ${HSFM_KEY_MOVE_TAB_NEXT})
-            if [[ ${#VAR_TERM_TAB_LINE_LIST_PATH[@]} -eq 1 ]] ||
-                (( ${VAR_TERM_TAB_LINE_IDX} + 1 == ${#VAR_TERM_TAB_LINE_LIST_PATH[@]} )) ||
-                ! test -d ${VAR_TERM_TAB_LINE_LIST_PATH[(( ${VAR_TERM_TAB_LINE_IDX} + 1))]}
-
-            then
-                flog_msg "MOVE_NEXT_TAB ignored."
-                return
-            else
-                fterminal_tab_swap_contex ${VAR_TERM_TAB_LINE_IDX} $(($VAR_TERM_TAB_LINE_IDX + 1))
-                # tmp_preserved_path=${VAR_TERM_TAB_LINE_LIST_PATH[$((${VAR_TERM_TAB_LINE_IDX}+1))]}
-                # VAR_TERM_TAB_LINE_LIST_PATH[$((${VAR_TERM_TAB_LINE_IDX}+1))]="$(realpath .)"
-                # VAR_TERM_TAB_LINE_LIST_PATH[$((${VAR_TERM_TAB_LINE_IDX}))]="${tmp_preserved_path}"
-                VAR_TERM_TAB_LINE_IDX=$(($VAR_TERM_TAB_LINE_IDX + 1))
-
-                fterminal_redraw
-                flog_msg "Move to NEXT_TAB"
-            fi
+            fgui_tab_move_next
         ;;
         ${HSFM_KEY_OPEN_TAB})
-            VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]="$(realpath .)"
-
-            # move tab to insert a new tab.
-            ((each_idx=${#VAR_TERM_TAB_LINE_LIST_PATH[@]} - 1))
-            while ((${each_idx} > ${VAR_TERM_TAB_LINE_IDX})) &&  ((each_idx != VAR_TERM_TAB_LINE_IDX))
-            do
-                VAR_TERM_TAB_LINE_LIST_PATH[$((${each_idx} + 1))]="${VAR_TERM_TAB_LINE_LIST_PATH[$((${each_idx}))]}"
-                ((each_idx-=1))
-            done
-
-            fterminal_tab_save_contex ${VAR_TERM_TAB_LINE_IDX}
-            VAR_TERM_TAB_LINE_IDX=$((${VAR_TERM_TAB_LINE_IDX} + 1))
-            if test -d "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
-            then
-                cd "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
-            fi
-            fterminal_tab_reset_contex ${VAR_TERM_TAB_LINE_IDX}
-            # VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]="$(realpath .)"
-            fterminal_redraw full
-            # flog_msg "HSFM_KEY_OPEN_TAB.${VAR_TERM_TAB_LINE_IDX}"$(fget_selection)
+            fgui_tab_open
         ;;
         ${HSFM_KEY_CLOSE_TAB})
-            if [[ ${#VAR_TERM_TAB_LINE_LIST_PATH[@]} -eq 1 ]]
-            then
-                flog_msg "CLOSE_TAB ignored."
-                return
-            else
-                fterminal_tab_remove ${VAR_TERM_TAB_LINE_IDX}
-                # each_idx=${VAR_TERM_TAB_LINE_IDX}
-                # while ((${each_idx} < ${#VAR_TERM_TAB_LINE_LIST_PATH[@]}))
-                # do
-                #     if ((${each_idx} + 1 <  ${#VAR_TERM_TAB_LINE_LIST_PATH[@]}))
-                #     then
-                #         VAR_TERM_TAB_LINE_LIST_PATH[${each_idx}]="${VAR_TERM_TAB_LINE_LIST_PATH[$((${each_idx} + 1))]}"
-                #     elif ((${each_idx} + 1 == ${#VAR_TERM_TAB_LINE_LIST_PATH[@]}))
-                #     then
-                #         tmp_remove_pattern="hsfm_removed"
-                #         VAR_TERM_TAB_LINE_LIST_PATH[${each_idx}]=${tmp_remove_pattern}
-                #         VAR_TERM_TAB_LINE_LIST_PATH=(${VAR_TERM_TAB_LINE_LIST_PATH[@]/${tmp_remove_pattern}})
-                #         break
-                #     fi
-                #     ((each_idx+=1))
-                # done
-                #
-
-                if [[ ${VAR_TERM_TAB_LINE_IDX} -ne 0 ]]
-                then
-                    VAR_TERM_TAB_LINE_IDX=$((VAR_TERM_TAB_LINE_IDX - 1 ))
-                fi
-                fterminal_tab_load_contex ${VAR_TERM_TAB_LINE_IDX}
-
-                cd ${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}
-                fterminal_redraw full
-                flog_msg "Tab closed."
-            fi
+            fgui_tab_close
         ;;
 
         # Show hidden files.
@@ -1552,12 +1560,6 @@ fnormal_mode_handler() {
         ${HSFM_KEY_ATTRIBUTES:=x})
             [[ -e "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" ]] && {
                 cmd_stat "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
-                # fterminal_clear
-                # # fterminal_draw_tab_line
-                # fterminal_draw_status_line "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
-                # "${HSFM_STAT_CMD:-stat}" "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
-                # read -ern 1
-                # fterminal_redraw
             }
         ;;
 
@@ -1634,15 +1636,6 @@ fnormal_mode_handler() {
         # remove the option to quit.
         q)
             cmd_exit
-            # : "${HSFM_FILE_CD_HISTORY:=${XDG_CACHE_HOME:=${HOME}/.cache}/hsfm/.hsfm_d}"
-            #
-            # [[ -w $HSFM_FILE_CD_HISTORY ]] &&
-            #     rm "$HSFM_FILE_CD_HISTORY"
-            #
-            # [[ ${HSFM_CD_ON_EXIT:=1} == 1 ]] &&
-            #     fterminal_print '%s\n' "$PWD" > "$HSFM_FILE_CD_HISTORY"
-            #
-            # exit
         ;;
     esac
     fterminal_flush
@@ -1697,7 +1690,7 @@ fvisual_mode_handler() {
         ${HSFM_KEY_SCROLL_DOWN1:=j}|\
         ${HSFM_KEY_SCROLL_DOWN2:=$'\e[B'}|\
         ${HSFM_KEY_SCROLL_DOWN3:=$'\eOB'})
-                fterminal_scroll_down_visual
+                fgui_scroll_down_visual
         ;;
 
         # Scroll up.
@@ -1706,7 +1699,7 @@ fvisual_mode_handler() {
         ${HSFM_KEY_SCROLL_UP1:=k}|\
         ${HSFM_KEY_SCROLL_UP2:=$'\e[A'}|\
         ${HSFM_KEY_SCROLL_UP3:=$'\eOA'})
-                fterminal_scroll_up_visual
+                fgui_scroll_up_visual
         ;;
 
         # File operstions
@@ -1792,7 +1785,7 @@ fselection_mode_handler() {
         ${HSFM_KEY_SCROLL_DOWN1:=j}|\
         ${HSFM_KEY_SCROLL_DOWN2:=$'\e[B'}|\
         ${HSFM_KEY_SCROLL_DOWN3:=$'\eOB'})
-                fterminal_scroll_down
+                fgui_scroll_down
         ;;
 
         # Scroll up.
@@ -1801,7 +1794,7 @@ fselection_mode_handler() {
         ${HSFM_KEY_SCROLL_UP1:=k}|\
         ${HSFM_KEY_SCROLL_UP2:=$'\e[A'}|\
         ${HSFM_KEY_SCROLL_UP3:=$'\eOA'})
-                fterminal_scroll_up
+                fgui_scroll_up
         ;;
 
         ${HSFM_KEY_SELECTION})
@@ -1841,15 +1834,16 @@ fselection_mode_handler() {
     esac
 }
 
-fget_mime_type() {
+fprase_mime_type() {
     # Get a file's mime_type.
     # mime_type=$(file "-${VAR_TERM_FILE_ARGS:-biL}" "$1" 2>/dev/null)
     echo $(file "-${VAR_TERM_FILE_ARGS:-biL}" "$*" 2>/dev/null)
 }
-fget_selection() {
-
-    # VAR_TERM_DIR_FILE_LIST+=("$item")
+fget_cursor_file() {
     echo ${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}
+}
+fget_selection_file() {
+    echo ${VAR_TERM_SELECTION_FILE_LIST[@]}
 }
 
 ###########################################################
@@ -2339,6 +2333,10 @@ cmd_test()
     printf -v VAR_TERM_MSGWIN_BUFFER "%s\n" $(stat $*)
     fterminal_redraw
 }
+cmd_quit()
+{
+    fgui_tab_close
+}
 cmd_exit()
 {
     : "${HSFM_FILE_CD_HISTORY}"
@@ -2368,40 +2366,20 @@ fsys_open() {
 
     elif [[ -f $1 ]]; then
         # Figure out what kind of file we're working with.
-        # fget_mime_type "$1"
-
         # Open all text-based files in '$EDITOR'.
         # Everything else goes through 'xdg-open'/'open'.
-        # case "$mime_type" in
-        case "$(fget_mime_type $1)" in
+        case "$(fprase_mime_type $1)" in
             audio/*)
-                # nohup "${HSFM_MEDIA_PLAYER}" "$1" &>/dev/null &
                 cmd_media "$1"
             ;;
             video/*)
-                # nohup "${HSFM_MEDIA_PLAYER}" "$1" &>/dev/null &
                 cmd_media "$1"
             ;;
             image/*)
-                # nohup "${HSFM_PICTURE_VIEWER}" "$1" &>/dev/null &
                 cmd_image "$1"
             ;;
             text/*|*x-empty*|*json*)
                 cmd_editor "$1"
-                # # If 'hsfm' was opened as a file picker, save the opened
-                # # file in a file called 'opened_file'.
-                # ((HSFM_FILE_PICKER == 1)) && {
-                #     fterminal_print '%s\n' "$1" > \
-                #         "${XDG_CACHE_HOME:=${HOME}/.cache}/hsfm/opened_file"
-                #     exit
-                # }
-                #
-                # # fterminal_clear
-                # fterminal_reset
-                # # "${VISUAL:-${EDITOR:-vi}}" "$1"
-                # fopen_editor "$1"
-                # fterminal_setup
-                # fterminal_redraw
             ;;
 
             *)
@@ -2418,9 +2396,6 @@ fsys_open() {
             ;;
         esac
     fi
-}
-function fopen_editor() {
-    "${VISUAL:-${EDITOR:-vi}}" "$1"
 }
 
 ## File Operation Function
@@ -2627,7 +2602,7 @@ fsetup_shell()
         VAR_TERM_READ_FLAGS=(-t 0.05)
 
     ((${HSFM_LS_COLORS:=1} == 1)) &&
-        fget_ls_colors
+        fexport_ls_colors
 
     ((${HSFM_ENABLE_HIDDEN:=0} == 1)) &&
         shopt -s dotglob
@@ -2674,7 +2649,7 @@ fload_settings() {
     fi
 }
 
-fget_ls_colors() {
+fexport_ls_colors() {
     # Parse the LS_COLORS variable and declare each file type
     # as a separate variable.
     # Format: ':.ext=0;0:*.jpg=0;0;0:*png=0;0;0;0:'
@@ -2714,6 +2689,8 @@ fget_ls_colors() {
     # locally. 'declare -g' is not available in 'bash 3'.
     # 'export' is a viable alternative.
     export "${ls_cols[@]}" &>/dev/null
+    echo "${ls_cols[@]}" 
+    exit 0
 }
 
 fHelp_keymap() {
