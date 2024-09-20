@@ -991,14 +991,14 @@ function cifs_mount()
 
     ##################################
 
-    if ! test -d ${var_mount_path}
+    if ! test -d "${var_mount_path}"
     then
-        sudo mkdir ${var_mount_path}
+        sudo mkdir "${var_mount_path}"
     fi
 
-    if mountpoint ${var_mount_path} |grep -v not
+    if mountpoint "${var_mount_path}" |grep -v not
     then
-        sudo umount -l ${var_mount_path}
+        sudo umount -l "${var_mount_path}"
     fi
 
     echo "sudo mount.cifs ${var_server_path} ${var_mount_path} ${var_cifs_options}"
@@ -1079,14 +1079,14 @@ function sshfs_mount()
 
     ##################################
 
-    if ! test -d ${var_mount_path}
+    if ! test -d "${var_mount_path}"
     then
-        mkdir ${var_mount_path}
+        mkdir "${var_mount_path}"
     fi
 
-    if mountpoint ${var_mount_path} |grep -v not
+    if mountpoint "${var_mount_path}" |grep -v not
     then
-        fusermount -u -z ${var_mount_path}
+        fusermount -u -z "${var_mount_path}"
     fi
 
     echo "sshfs ${var_sshfs_options[@]} ${var_server_name}:${var_remote_path} ${var_mount_path} -p ${var_port}"

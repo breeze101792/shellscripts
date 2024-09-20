@@ -12,7 +12,7 @@
 export HS_ENV_VER=0.3.0
 export HS_ENV_TITLE="DO IT NOW"
 
-# test -z "${HS_ENV_OS}" && export HS_ENV_OS="linux"
+# test -z "${HS_ENV_OS}" && export HS_ENV_OS="LINUX"
 case "$(uname -s)" in
     Linux*)     HS_ENV_OS="LINUX";;
     Darwin*)    HS_ENV_OS="DARWIN";;

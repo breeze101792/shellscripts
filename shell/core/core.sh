@@ -212,7 +212,7 @@ function hs_varconfig()
                 # echo grep true
                 # sed -i "/${target_var}=.*/d" ${HS_TMP_FILE_CONFIG}
                 # sed -i "s/${target_var}=.*/${target_var}=${content}/g" ${HS_TMP_FILE_CONFIG}
-                if [ $HS_ENV_OS = "bsd" ]
+                if [ ${HS_ENV_OS} = "DARWIN" ]
                 then
                     sed -i "" "s|${target_var}=.*|${target_var}=${content}|g" ${HS_TMP_FILE_CONFIG}
                 else

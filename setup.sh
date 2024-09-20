@@ -231,8 +231,15 @@ function setup()
             -g|--git)
                 setup_git
                 ;;
-            -s|--shell)
+            -h|--shell-setup)
                 setup_shell
+                ;;
+            -s|--setup)
+                setup_shell
+                setup_config
+                setup_usr
+                setup_tmux
+                setup_git
                 ;;
             -l|--lite)
                 setup_shell_lite
@@ -243,7 +250,7 @@ function setup()
             -c|--config)
                 setup_config
                 ;;
-            -hs|--hs-excute)
+            -hx|--hs-excute)
                 setup_hsexc
                 ;;
             -x|--excute)
@@ -255,7 +262,8 @@ function setup()
                 echo "Setup Usage"
                 printf "    %s%s%s\n" "-t|--tmux" "->" "Setup tmux"
                 printf "    %s%s%s\n" "-g|--git" "->" "Setup git"
-                printf "    %s%s%s\n" "-s|--shell" "->" "Setup shell"
+                printf "    %s%s%s\n" "-s|--setup" "->" "Setup all"
+                printf "    %s%s%s\n" "-hs|--shell-setup" "->" "Setup shell"
                 printf "    %s%s%s\n" "-l|--lite" "->" "Setup lite shell"
                 printf "    %s%s%s\n" "-c|--config" "->" "Setup config"
                 printf "    %s%s%s\n" "-u|--usr" "->" "setup local usr"
