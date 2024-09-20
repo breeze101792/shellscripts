@@ -1,5 +1,6 @@
 testnset -e -v HS_PROJ_ANDROID -c y
 testnset -e -v HS_PROJ_LINUX   -c y
+testnset -e -v HS_PROJ_DARWIN   -c y
 testnset -e -v HS_PROJ_FPGA    -c y
 testnset -e -v HS_PROJ_ZERO    -c y
 
@@ -11,6 +12,11 @@ fi
 if [ "${HS_PROJ_LINUX}" = "y" ]
 then
     source ${HS_PATH_LIB}/projects/linux/linux.sh
+fi
+
+if [ "${HS_PROJ_DARWIN}" = "y" ]
+then
+    source ${HS_PATH_LIB}/projects/darwin/darwin.sh
 fi
 
 if [ "${HS_PROJ_FPGA}" = "y" ]
