@@ -2,8 +2,18 @@
 ###########################################################
 ## Flags
 ###########################################################
-export FLAG_TERM_DEBUG=false
-export FLAG_TERM_DEBUG=true
+export HSFM_DEBUG=true
+
+# Use LS_COLORS to color hsfm.
+# (On by default if available)
+# (Ignores HSFM_COL1)
+export HSFM_LS_COLORS=1
+
+# Show/Hide hidden files on open.
+# (On by default)
+export HSFM_HIDDEN=0
+
+export HSFM_FILE_PICKER=0
 
 ## TERMINAL Vars Options
 ###########################################################
@@ -41,6 +51,7 @@ export VAR_TERM_SELECTION_FILE_LIST=()
 export VAR_TERM_FILE_PROGRAM=()
 # Cmd line
 export VAR_TERM_CMD_INPUT_BUFFER=""
+export VAR_TERM_CMD_LIST=("redraw" "fullredraw" "search" "mkdir" "mkfile" "touch" "open" "rename" "help" "info" "exit" )
 
 # Mode
 export VAR_TERM_VISUAL_START_IDX=0
@@ -48,19 +59,6 @@ export VAR_TERM_OPS_MODE='n'
 
 ## Others
 export VAR_TERM_SEARCH_END_EARLY=0
-export VAR_TERM_FILE_PICKER=0
-
-###########################################################
-## Default Options, for user to config
-###########################################################
-# Use LS_COLORS to color hsfm.
-# (On by default if available)
-# (Ignores HSFM_COL1)
-export HSFM_LS_COLORS=1
-
-# Show/Hide hidden files on open.
-# (On by default)
-export HSFM_HIDDEN=0
 
 ## Themes & colors
 ###########################################################
@@ -200,7 +198,7 @@ export HSFM_KEY_HIDDEN="."
 
 ### File operations.
 export HSFM_KEY_YANK="y"
-export HSFM_KEY_CUT="m"
+export HSFM_KEY_CUT="x"
 export HSFM_KEY_TRASH="d"
 export HSFM_KEY_PASTE="p"
 
@@ -212,6 +210,24 @@ export HSFM_KEY_SELECTION="s"
 ## Terminal Functions
 ###########################################################
 
+export VAR_TERM_PRINT_BUFFER_ENABLE=false
+export VAR_TERM_PRINT_BUFFER=""
+fterminal_print() {
+    if [ ${VAR_TERM_PRINT_BUFFER_ENABLE} = true ]
+    then
+        local tmp_buf=""
+        printf -v tmp_buf "$@"
+        VAR_TERM_PRINT_BUFFER+="${tmp_buf}"
+    else
+        fterminal_flush
+        printf "$@"
+    fi
+}
+fterminal_flush() {
+    printf "${VAR_TERM_PRINT_BUFFER}"
+    VAR_TERM_PRINT_BUFFER_ENABLE=false
+    VAR_TERM_PRINT_BUFFER=""
+}
 fterminal_setup() {
     # Setup the terminal for the TUI.
     # '\e[?1049h': Use alternative screen buffer.
@@ -220,7 +236,7 @@ fterminal_setup() {
     # '\e[2J':     Clear the screen.
     # '\e[1;Nr':   Limit scrolling to scrolling area.
     #              Also sets cursor to (0,0).
-    printf '\e[?1049h\e[?7l\e[?25l\e[2J\e[1;%sr' "$VAR_TERM_CONTENT_MAX_CNT"
+    fterminal_print '\e[?1049h\e[?7l\e[?25l\e[2J\e[1;%sr' "$VAR_TERM_CONTENT_MAX_CNT"
 
     # Hide echoing of user input
     stty -echo
@@ -234,7 +250,7 @@ fterminal_reset() {
     # '\e[;r':    Set the VAR_TERM_CONTENT_SCROLL_IDX region to its default value.
     #             Also sets cursor to (0,0).
     # '\e[?1049l: Restore main screen buffer.
-    printf '\e[?7h\e[?25h\e[2J\e[;r\e[?1049l'
+    fterminal_print '\e[?7h\e[?25h\e[2J\e[;r\e[?1049l'
 
     # Show user input.
     stty echo
@@ -248,9 +264,9 @@ fterminal_clear() {
     # '\e[2J':     Clear screen fully (if using tmux) (fixes clear issues).
     # '\e[1;%sr':  Clearing the screen resets the VAR_TERM_CONTENT_SCROLL_IDX region(?). Re-set it.
     #              Also sets cursor to (0,0).
-    # printf '\e[%sH\e[9999C\e[1J%b\e[1;%sr' \
+    # fterminal_print '\e[%sH\e[9999C\e[1J%b\e[1;%sr' \
     #        "$((VAR_TERM_LINE_CNT-2))" "${TMUX:+\e[2J}" "$VAR_TERM_CONTENT_MAX_CNT"
-    printf '\e[%sH\e[9999C\e[1J%b\e[1;%sr' \
+    fterminal_print '\e[%sH\e[9999C\e[1J%b\e[1;%sr' \
         "$((VAR_TERM_LINE_CNT))" "${TMUX:+\e[2J}" "$(($VAR_TERM_CONTENT_MAX_CNT+$VAR_TERM_TAB_LINE_HEIGHT))"
 }
 
@@ -273,6 +289,7 @@ fterminal_resize_win()
 fterminal_exit()
 {
     fterminal_reset
+    fterminal_print "FM finished.\n"
 }
 
 ###########################################################
@@ -287,22 +304,16 @@ fterminal_redraw() {
         VAR_TERM_CONTENT_SCROLL_IDX=0
         VAR_TERM_SCROLL_CURSOR=0
     }
-
     # order is important, don't change it.
     # clear before redraw, avoid glict/search result incorrect.
-    if ${FLAG_TERM_DEBUG}
-    then
-        fterminal_clear
-        fterminal_draw_dir
-        fterminal_draw_tab_line
-        fterminal_draw_status_line
-    else
-        tmp_buffer+="$(fterminal_clear)"
-        tmp_buffer+="$(fterminal_draw_dir)"
-        tmp_buffer+="$(fterminal_draw_tab_line)"
-        tmp_buffer+="$(fterminal_draw_status_line)"
-        printf "${tmp_buffer}"
-    fi
+    VAR_TERM_PRINT_BUFFER_ENABLE=true
+
+    fterminal_clear
+    fterminal_draw_dir
+    fterminal_draw_tab_line
+    fterminal_draw_status_line
+
+    fterminal_flush
 }
 fterminal_draw_dir() {
     # Print the max directory items that fit in the VAR_TERM_CONTENT_SCROLL_IDX area.
@@ -314,8 +325,7 @@ fterminal_draw_dir() {
     # When going up the directory tree, place the cursor on the position
     # of the previous directory.
     ((VAR_TERM_FIND_PREVIOUS == 1)) && {
-        ((var_scroll_start=previous_index))
-        ((VAR_TERM_CONTENT_SCROLL_IDX=var_scroll_start))
+        ((VAR_TERM_CONTENT_SCROLL_IDX=previous_index))
 
         # Clear the directory history. We're here now.
         VAR_TERM_FIND_PREVIOUS=
@@ -342,13 +352,13 @@ fterminal_draw_dir() {
     ((VAR_TERM_CONTENT_SCROLL_IDX=var_scroll_new_cursor+var_scroll_start))
 
     # Reset cursor position.
-    # printf '\e[H'
-    printf '\e[%sH' "$((1 + ${VAR_TERM_TAB_LINE_HEIGHT}))"
+    # fterminal_print '\e[H'
+    fterminal_print '\e[%sH' "$((1 + ${VAR_TERM_TAB_LINE_HEIGHT}))"
 
     for ((i=0;i<=var_scroll_len;i++)); {
         # Don't print one too many newlines.
         ((i > 0)) &&
-            printf '\n'
+            fterminal_print '\n'
 
         if [[ -z ${VAR_TERM_DIR_FILE_LIST[$((var_scroll_start + i))]} ]]; then
             break
@@ -360,10 +370,9 @@ fterminal_draw_dir() {
     # Move the cursor to its new position if it changed.
     # If the variable 'var_scroll_new_cursor' is empty, the cursor
     # is moved to line '0'.
-    printf '\e[%sH' "$(($var_scroll_new_cursor+1+VAR_TERM_TAB_LINE_HEIGHT))"
-    # printf '\e[%sH' "$((${var_scroll_new_cursor} + ${VAR_TERM_TAB_LINE_HEIGHT}))"
+    fterminal_print '\e[%sH' "$(($var_scroll_new_cursor+1+VAR_TERM_TAB_LINE_HEIGHT))"
+    # fterminal_print '\e[%sH' "$((${var_scroll_new_cursor} + ${VAR_TERM_TAB_LINE_HEIGHT}))"
     ((VAR_TERM_SCROLL_CURSOR=var_scroll_new_cursor))
-
 }
 fterminal_draw_tab_line() {
     # Status_line to print when files are marked for operation.
@@ -409,9 +418,9 @@ fterminal_draw_tab_line() {
     # '\e[H\e[K':  Clear line below fterminal_draw_status_line.
     # '\e8':       Restore cursor position.
     #              This is more widely supported than '\e[u'.
-    # printf '\e7\e[%sH\e[%s;%sm%*s\r%s %s%s\e[m\e[%sH\e[K\e8' \
+    # fterminal_print '\e7\e[%sH\e[%s;%sm%*s\r%s %s%s\e[m\e[%sH\e[K\e8' \
 
-    printf '\e7\e[%sH\e[%s;%sm%*s\rFM %s\e[%s;%sm%s\e[%s;%sm%s\e[m\e8' \
+    fterminal_print '\e7\e[%sH\e[%s;%sm%*s\rFM %s\e[%s;%sm%s\e[%s;%sm%s\e[m\e8' \
            "$((0))" \
            "${HSFM_COLOR_STATUS_FG}" \
            "${HSFM_COLOR_STATUS_BG}" \
@@ -470,7 +479,7 @@ fterminal_draw_status_line() {
     # '\e8':       Restore cursor position.
     #              This is more widely supported than '\e[u'.
 
-    # printf '\e7\e[%sH\e[%s;%sm%*s\r%s %s%s\e[m\e[%sH\e[K\e8' \
+    # fterminal_print '\e7\e[%sH\e[%s;%sm%*s\r%s %s%s\e[m\e[%sH\e[K\e8' \
     #        "$((VAR_TERM_LINE_CNT-1))" \
     #        "${HSFM_COLOR_STATUS_FG:-30}" \
     #        "${HSFM_COLOR_STATUS_BG:-41}" \
@@ -480,7 +489,7 @@ fterminal_draw_status_line() {
     #        "${1:-${var_pwd_escaped:-/}}" \
     #        "$VAR_TERM_LINE_CNT"
 
-    printf "\e7\e[%sH\e[%s;%sm%*s\r%s%s%s\e[m\e[%sH\e[K\e8" \
+    fterminal_print "\e7\e[%sH\e[%s;%sm%*s\r%s%s%s\e[m\e[%sH\e[K\e8" \
            "$((VAR_TERM_LINE_CNT-1))" \
            "${HSFM_COLOR_STATUS_FG:-30}" \
            "${HSFM_COLOR_STATUS_BG:-41}" \
@@ -574,7 +583,7 @@ fterminal_draw_file_line() {
     # Remove all non-printable characters.
     var_file_name=${var_file_name//[^[:print:]]/^[}
 
-    printf '\r%b%s\e[m\e[K\r' \
+    fterminal_print '\r%b%s\e[m\e[K\r' \
         " ${VAR_TERM_FILE_PRE}${var_format}" \
         "${file_info} ${var_file_name}${var_suffix}${VAR_TERM_FILE_POST}"
 }
@@ -609,7 +618,7 @@ fterminal_mark_toggle() {
         fi
 
         # Clear line before changing it.
-        printf '\e[K'
+        fterminal_print '\e[K'
         fterminal_draw_file_line "$1"
     fi
 
@@ -652,7 +661,7 @@ fterminal_mark_add() {
         fi
 
         # Clear line before changing it.
-        printf '\e[K'
+        fterminal_print '\e[K'
         fterminal_draw_file_line "$1"
     }
 
@@ -675,7 +684,7 @@ fterminal_mark_remove() {
         fi
 
         # Clear line before changing it.
-        printf '\e[K'
+        fterminal_print '\e[K'
         fterminal_draw_file_line "$1"
     }
 
@@ -690,7 +699,7 @@ fterminal_read_dir() {
     # NOTE. Clear VAR_TERM_DIR_FILE_LIST & use it directly to avoid VAR_TERM_DIR_FILE_LIST index issue on BSD
 
     # Set window name.
-    printf '\e]2;hsfm: %s\e'\\ "$PWD"
+    fterminal_print '\e]2;hsfm: %s\e'\\ "$PWD"
 
     # If '$PWD' is '/', unset it to avoid '//'.
     [[ $PWD == / ]] && PWD=
@@ -837,13 +846,13 @@ fnormal_mode_handler() {
                 else
                     # FIXME, it's a patch to avoid glitch
                     # clear the first content line
-                    # printf '\e7\e[2H\e[K\e8'
+                    # fterminal_print '\e7\e[2H\e[K\e8'
                     tmp_print_buf+="$(fterminal_draw_tab_line)"
                     tmp_print_buf+="\e[$((VAR_TERM_CONTENT_MAX_CNT + VAR_TERM_TAB_LINE_HEIGHT))H"
                 fi
                 tmp_print_buf+="$(fterminal_draw_file_line $((VAR_TERM_CONTENT_SCROLL_IDX)))"
                 tmp_print_buf+="$(fterminal_draw_status_line)"
-                printf "${tmp_print_buf}"
+                fterminal_print "${tmp_print_buf}"
             }
         ;;
 
@@ -871,7 +880,7 @@ fnormal_mode_handler() {
                 tmp_print_buf+="$(fterminal_draw_file_line $VAR_TERM_CONTENT_SCROLL_IDX)"
                 # tmp_print_buf+="$(fterminal_draw_tab_line)"
                 tmp_print_buf+="$(fterminal_draw_status_line)"
-                printf "${tmp_print_buf}"
+                fterminal_print "${tmp_print_buf}"
             }
         ;;
 
@@ -1054,7 +1063,7 @@ fnormal_mode_handler() {
             #     rm "$HSFM_CD_FILE"
             #
             # [[ ${HSFM_CD_ON_EXIT:=1} == 1 ]] &&
-            #     printf '%s\n' "$PWD" > "$HSFM_CD_FILE"
+            #     fterminal_print '%s\n' "$PWD" > "$HSFM_CD_FILE"
             #
             # exit
         ;;
@@ -1133,12 +1142,12 @@ fvisual_mode_handler() {
                     ((VAR_TERM_SCROLL_CURSOR++))
                 else
                 # elif ((VAR_TERM_SCROLL_CURSOR + 1 == VAR_TERM_CONTENT_MAX_CNT)); then
-                    printf '\e7\e[2H\e[K\e8'
+                    fterminal_print '\e7\e[2H\e[K\e8'
                     # read x
                 fi
 
                 fterminal_draw_file_line "$((VAR_TERM_CONTENT_SCROLL_IDX-1))"
-                printf '\n'
+                fterminal_print '\n'
                 fterminal_draw_file_line "${VAR_TERM_CONTENT_SCROLL_IDX}"
 
                 if [[ $VAR_TERM_CONTENT_SCROLL_IDX -gt $VAR_TERM_VISUAL_START_IDX ]]
@@ -1169,9 +1178,9 @@ fvisual_mode_handler() {
                 fterminal_draw_file_line "$((VAR_TERM_CONTENT_SCROLL_IDX+1))"
 
                 if ((VAR_TERM_SCROLL_CURSOR < 1)); then
-                    printf '\e[L'
+                    fterminal_print '\e[L'
                 else
-                    printf '\e[A'
+                    fterminal_print '\e[A'
                     ((VAR_TERM_SCROLL_CURSOR--))
                 fi
 
@@ -1287,12 +1296,12 @@ fselection_mode_handler() {
                     ((VAR_TERM_SCROLL_CURSOR++))
                 else
                 # elif ((VAR_TERM_SCROLL_CURSOR + 1 == VAR_TERM_CONTENT_MAX_CNT)); then
-                    printf '\e7\e[2H\e[K\e8'
+                    fterminal_print '\e7\e[2H\e[K\e8'
                     # read x
                 fi
 
                 fterminal_draw_file_line "$((VAR_TERM_CONTENT_SCROLL_IDX-1))"
-                printf '\n'
+                fterminal_print '\n'
                 fterminal_draw_file_line "${VAR_TERM_CONTENT_SCROLL_IDX}"
 
                 fterminal_draw_tab_line
@@ -1314,9 +1323,9 @@ fselection_mode_handler() {
                 fterminal_draw_file_line "$((VAR_TERM_CONTENT_SCROLL_IDX+1))"
 
                 if ((VAR_TERM_SCROLL_CURSOR < 1)); then
-                    printf '\e[L'
+                    fterminal_print '\e[L'
                 else
-                    printf '\e[A'
+                    fterminal_print '\e[A'
                     ((VAR_TERM_SCROLL_CURSOR--))
                 fi
 
@@ -1383,14 +1392,14 @@ fcommand_handler()
     ## Pre settings.
     ################################################################
     # new functon for handle all commands
-    # printf '\e7\e[%sH\e[?25h' "$VAR_TERM_LINE_CNT"
+    # fterminal_print '\e7\e[%sH\e[?25h' "$VAR_TERM_LINE_CNT"
 
     ## Main handler
     ################################################################
     case ${1} in
         "command")
             fcommand_line_interact "${HSFM_KEY_OPEN_CMD}" "command" "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]##*/}"
-            # printf '\e[?25l\e8'
+            # fterminal_print '\e[?25l\e8'
             ;;
         "search")
             fcommand_line_interact "${HSFM_KEY_SEARCH}" "search" "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]##*/}"
@@ -1406,8 +1415,8 @@ fcommand_handler()
     # '\e[2K':   Clear the entire cmd_line on finish.
     # '\e[?25l': Hide the cursor.
     # '\e8':     Restore cursor position.
-    # printf '\e[2K\e[?25l\e8'
-    # printf '\e[?25l\e8'
+    # fterminal_print '\e[2K\e[?25l\e8'
+    # fterminal_print '\e[?25l\e8'
 
     # we don't need fterminal_redraw after commands running
     # this will be clear after fterminal_redraw
@@ -1416,13 +1425,12 @@ fcommand_handler()
 }
 fcommand_line_interact() {
     # Write to the command_line (under fterminal_draw_status_line).
-    local var_cmd_list=("redraw" "fullredraw" "search" "mkdir" "mkfile" "touch" "open" "exit" "rename" "more" "help" "info")
     local var_cmd_prefix=${1}
     local var_cmd_function=${2:=""}
     local var_cmd_file=${3:=""}
     VAR_TERM_CMD_INPUT_BUFFER=""
 
-    printf '\e7\e[%sH\e[?25h' "$VAR_TERM_LINE_CNT"
+    fterminal_print '\e7\e[%sH\e[?25h' "$VAR_TERM_LINE_CNT"
     # '\r\e[K': Redraw the read prompt on every keypress.
     #           This is mimicking what happens normally.
     while IFS= read -rsn 1 -p $'\r\e[K'"${var_cmd_prefix}${VAR_TERM_CMD_INPUT_BUFFER}" read_reply; do
@@ -1450,7 +1458,7 @@ fcommand_line_interact() {
                 if [[ -z ${comp[0]} ]]
                 then
                     # IFS=$'\n' read -d "" -ra globpat < <(compgen -G "$comp_glob")
-                    IFS=$'\n' read -d "" -ra wordlist < <(compgen -W "${var_cmd_list[*]}" ${VAR_TERM_CMD_INPUT_BUFFER})
+                    IFS=$'\n' read -d "" -ra wordlist < <(compgen -W "${VAR_TERM_CMD_LIST[*]}" ${VAR_TERM_CMD_INPUT_BUFFER})
                     # comp=$globpat
                     comp+=$wordlist
                 fi
@@ -1467,7 +1475,7 @@ fcommand_line_interact() {
                 read "${VAR_TERM_READ_FLAGS[@]}" -rsn 2
                 VAR_TERM_CMD_INPUT_BUFFER=
 
-                printf '\e[?25l\e8'
+                fterminal_print '\e[?25l\e8'
                 break
             ;;
 
@@ -1482,13 +1490,13 @@ fcommand_line_interact() {
 
                 tmp_command=$(echo ${VAR_TERM_CMD_INPUT_BUFFER} | tr -s ' ' |sed 's/^ //g' | cut -d ' ' -f 1)
                 tmp_args=$(echo ${VAR_TERM_CMD_INPUT_BUFFER} | tr -s ' ' |sed 's/^ //g' | cut -d ' ' -f 2-)
-                # printf "\r\e[2K%s" ${tmp_command}
+                # fterminal_print "\r\e[2K%s" ${tmp_command}
                 case ${tmp_command} in
                     "vim")
                         cmd_vim "${var_cmd_file}"
                         ;;
                     # "echo")
-                    #     # printf "\r\e[2K%s"
+                    #     # fterminal_print "\r\e[2K%s"
                     #     flog_msg "${tmp_args}"
                     #     ;;
                     "mkfile"|"touch")
@@ -1512,7 +1520,7 @@ fcommand_line_interact() {
                     *)
                         # flog_msg "Unknown commands: ${tmp_command} ${tmp_args}"
                         cmd_${tmp_command} ${tmp_args}
-                        printf '\e[?25l\e8'
+                        fterminal_print '\e[?25l\e8'
                         ;;
                 esac
 
@@ -1554,16 +1562,16 @@ fcommand_line_interact() {
 }
 flog_msg()
 {
-    printf '\e7\e[%sH\e[?25h' "$VAR_TERM_LINE_CNT"
-    printf '\r\e[%sH\e[?25h\e[2K%s' "$VAR_TERM_LINE_CNT" "$@"
-    printf '\e[?25l\e8'
+    fterminal_print '\e7\e[%sH\e[?25h' "$VAR_TERM_LINE_CNT"
+    fterminal_print '\r\e[%sH\e[?25h\e[2K%s' "$VAR_TERM_LINE_CNT" "$@"
+    fterminal_print '\e[?25l\e8'
 }
 cmd_search()
 {
     local var_pattern="$*"
     # Search on keypress if search passed as an argument.
     # '\e[?25l': Hide the cursor.
-    printf '\e[?25l'
+    fterminal_print '\e[?25l'
 
     # Use a greedy glob to search.
     VAR_TERM_DIR_FILE_LIST=("$PWD"/*"$var_pattern"*)
@@ -1575,7 +1583,7 @@ cmd_search()
 
     # '\e[%sH':  Move cursor back to cmd-line.
     # '\e[?25h': Unhide the cursor.
-    printf '\e[%sH\e[?25h' "$VAR_TERM_LINE_CNT"
+    fterminal_print '\e[%sH\e[?25h' "$VAR_TERM_LINE_CNT"
 }
 cmd_rename()
 {
@@ -1650,7 +1658,7 @@ cmd_stat()
     fterminal_clear
     fterminal_draw_tab_line
     fterminal_draw_status_line "File info"
-    printf "\n"
+    fterminal_print "\n"
     # fHelp $@
     stat $@
     read -ern 1
@@ -1667,7 +1675,7 @@ cmd_cd()
         # fterminal_redraw full
         # backup cursor
         # NOTE. It's a patch for storing cursor position, cuse fcommand_handler will restore it.
-        printf '\e7'
+        fterminal_print '\e7'
     fi
 }
 cmd_help()
@@ -1675,7 +1683,7 @@ cmd_help()
     fterminal_clear
     fterminal_draw_tab_line
     fterminal_draw_status_line "Help info"
-    printf "\n"
+    fterminal_print "\n"
     fHelp $@
     read -ern 1
     fterminal_redraw
@@ -1688,7 +1696,7 @@ cmd_exit()
         rm "$HSFM_CD_FILE"
 
     [[ ${HSFM_CD_ON_EXIT:=1} == 1 ]] &&
-        printf '%s\n' "$PWD" > "$HSFM_CD_FILE"
+        fterminal_print '%s\n' "$PWD" > "$HSFM_CD_FILE"
 
     exit 0
 }
@@ -1700,7 +1708,7 @@ cmd_line() {
     # '\e7':     Save cursor position.
     # '\e[?25h': Unhide the cursor.
     # '\e[%sH':  Move cursor to bottom (cmd_line).
-    printf '\e7\e[%sH\e[?25h' "$VAR_TERM_LINE_CNT"
+    fterminal_print '\e7\e[%sH\e[?25h' "$VAR_TERM_LINE_CNT"
 
     # '\r\e[K': Redraw the read prompt on every keypress.
     #           This is mimicking what happens normally.
@@ -1746,7 +1754,7 @@ cmd_line() {
                 # enter it on one enter keypress.
                 [[ $2 == search && -d ${VAR_TERM_DIR_FILE_LIST[0]} ]] && ((VAR_TERM_DIR_LIST_CNT == 0)) && {
                     # '\e[?25l': Hide the cursor.
-                    printf '\e[?25l'
+                    fterminal_print '\e[?25l'
 
                     fsys_open "${VAR_TERM_DIR_FILE_LIST[0]}"
                     VAR_TERM_SEARCH_END_EARLY=1
@@ -1786,7 +1794,7 @@ cmd_line() {
         # Search on keypress if search passed as an argument.
         [[ $2 == search ]] && {
             # '\e[?25l': Hide the cursor.
-            printf '\e[?25l'
+            fterminal_print '\e[?25l'
 
             # Use a greedy glob to search.
             VAR_TERM_DIR_FILE_LIST=("$PWD"/*"$VAR_TERM_CMD_INPUT_BUFFER"*)
@@ -1798,7 +1806,7 @@ cmd_line() {
 
             # '\e[%sH':  Move cursor back to cmd-line.
             # '\e[?25h': Unhide the cursor.
-            printf '\e[%sH\e[?25h' "$VAR_TERM_LINE_CNT"
+            fterminal_print '\e[%sH\e[?25h' "$VAR_TERM_LINE_CNT"
         }
     done
 
@@ -1808,7 +1816,7 @@ cmd_line() {
     # '\e[2K':   Clear the entire cmd_line on finish.
     # '\e[?25l': Hide the cursor.
     # '\e8':     Restore cursor position.
-    printf '\e[2K\e[?25l\e8'
+    fterminal_print '\e[2K\e[?25l\e8'
     fterminal_redraw
 }
 fsys_open() {
@@ -1837,8 +1845,8 @@ fsys_open() {
             text/*|*x-empty*|*json*)
                 # If 'hsfm' was opened as a file picker, save the opened
                 # file in a file called 'opened_file'.
-                ((VAR_TERM_FILE_PICKER == 1)) && {
-                    printf '%s\n' "$1" > \
+                ((HSFM_FILE_PICKER == 1)) && {
+                    fterminal_print '%s\n' "$1" > \
                         "${XDG_CACHE_HOME:=${HOME}/.cache}/hsfm/opened_file"
                     exit
                 }
@@ -1881,7 +1889,7 @@ fselect_execute()
         # fterminal_reset
 
         stty echo
-        # printf '\e[1mhsfm\e[m: %s\n' "Running ${VAR_TERM_FILE_PROGRAM[0]}"
+        # fterminal_print '\e[1mhsfm\e[m: %s\n' "Running ${VAR_TERM_FILE_PROGRAM[0]}"
         "${VAR_TERM_FILE_PROGRAM[@]}" "${VAR_TERM_SELECTION_FILE_LIST[@]}" .
         stty -echo
 
@@ -1929,7 +1937,7 @@ fselect_rename() {
     VAR_TERM_MARKED_FILE_LIST=("${@:1:$#-1}")
 
     # Save marked files to a file and open them for editing.
-    printf '%s\n' "${VAR_TERM_MARKED_FILE_LIST[@]##*/}" > "$rename_file"
+    fterminal_print '%s\n' "${VAR_TERM_MARKED_FILE_LIST[@]##*/}" > "$rename_file"
     "${EDITOR:-vi}" "$rename_file"
 
     # Read the renamed files to an array.
@@ -1942,14 +1950,14 @@ fselect_rename() {
         return
     }
 
-    printf '%s\n%s\n' \
+    fterminal_print '%s\n%s\n' \
         "# This file will be executed when the editor is closed." \
         "# Clear the file to abort." > "$rename_file"
 
     # Construct the rename commands.
     for ((i=0;i<${#VAR_TERM_MARKED_FILE_LIST[@]};i++)); {
         [[ ${VAR_TERM_MARKED_FILE_LIST[i]} != "${PWD}/${changed_files[i]}" ]] && {
-            printf 'mv -i -- %q %q\n' \
+            fterminal_print 'mv -i -- %q %q\n' \
                 "${VAR_TERM_MARKED_FILE_LIST[i]}" "${PWD}/${changed_files[i]}"
             local renamed=1
         }
@@ -2064,60 +2072,65 @@ fget_ls_colors() {
 }
 
 fHelp_keymap() {
-    printf "[KeyMap]\n"
+    fterminal_print "[KeyMap]\n"
     if false
     then
-        printf "    % -32s: %s\n"  "HSFM_KEY_CHILD1"                ${HSFM_KEY_CHILD1}
-        printf "    % -32s: %s\n"  "HSFM_KEY_CHILD2"                ${HSFM_KEY_CHILD2}
-        printf "    % -32s: %s\n"  "HSFM_KEY_CHILD3"                ${HSFM_KEY_CHILD3}
-        printf "    % -32s: %s\n"  "HSFM_KEY_PARENT1"               ${HSFM_KEY_PARENT1}
-        printf "    % -32s: %s\n"  "HSFM_KEY_PARENT2"               ${HSFM_KEY_PARENT2}
-        printf "    % -32s: %s\n"  "HSFM_KEY_PARENT3"               ${HSFM_KEY_PARENT3}
-        printf "    % -32s: %s\n"  "HSFM_KEY_PARENT4"               ${HSFM_KEY_PARENT4}
-        printf "    % -32s: %s\n"  "HSFM_KEY_SCROLL_DOWN1"          ${HSFM_KEY_SCROLL_DOWN1}
-        printf "    % -32s: %s\n"  "HSFM_KEY_SCROLL_DOWN2"          ${HSFM_KEY_SCROLL_DOWN2}
-        printf "    % -32s: %s\n"  "HSFM_KEY_SCROLL_UP1"            ${HSFM_KEY_SCROLL_UP1}
-        printf "    % -32s: %s\n"  "HSFM_KEY_SCROLL_UP2"            ${HSFM_KEY_SCROLL_UP2}
+        fterminal_print "    % -32s: %s\n"  "HSFM_KEY_CHILD1"                ${HSFM_KEY_CHILD1}
+        fterminal_print "    % -32s: %s\n"  "HSFM_KEY_CHILD2"                ${HSFM_KEY_CHILD2}
+        fterminal_print "    % -32s: %s\n"  "HSFM_KEY_CHILD3"                ${HSFM_KEY_CHILD3}
+        fterminal_print "    % -32s: %s\n"  "HSFM_KEY_PARENT1"               ${HSFM_KEY_PARENT1}
+        fterminal_print "    % -32s: %s\n"  "HSFM_KEY_PARENT2"               ${HSFM_KEY_PARENT2}
+        fterminal_print "    % -32s: %s\n"  "HSFM_KEY_PARENT3"               ${HSFM_KEY_PARENT3}
+        fterminal_print "    % -32s: %s\n"  "HSFM_KEY_PARENT4"               ${HSFM_KEY_PARENT4}
+        fterminal_print "    % -32s: %s\n"  "HSFM_KEY_SCROLL_DOWN1"          ${HSFM_KEY_SCROLL_DOWN1}
+        fterminal_print "    % -32s: %s\n"  "HSFM_KEY_SCROLL_DOWN2"          ${HSFM_KEY_SCROLL_DOWN2}
+        fterminal_print "    % -32s: %s\n"  "HSFM_KEY_SCROLL_UP1"            ${HSFM_KEY_SCROLL_UP1}
+        fterminal_print "    % -32s: %s\n"  "HSFM_KEY_SCROLL_UP2"            ${HSFM_KEY_SCROLL_UP2}
     fi
 
-    printf "\n%s\n" "## Shortcut operations."
-    printf "    % -32s: %s\n"  "HSFM_KEY_TO_TOP"                ${HSFM_KEY_TO_TOP}
-    printf "    % -32s: %s\n"  "HSFM_KEY_TO_BOTTOM"             ${HSFM_KEY_TO_BOTTOM}
-    printf "    % -32s: %s\n"  "HSFM_KEY_GO_HOME"               ${HSFM_KEY_GO_HOME}
-    printf "    % -32s: %s\n"  "HSFM_KEY_GO_TRASH"              ${HSFM_KEY_GO_TRASH}
-    printf "    % -32s: %s\n"  "HSFM_KEY_PREVIOUS"              ${HSFM_KEY_PREVIOUS}
-    printf "    % -32s: %s\n"  "HSFM_KEY_SEARCH"                ${HSFM_KEY_SEARCH}
-    printf "    % -32s: %s\n"  "HSFM_KEY_SHELL"                 ${HSFM_KEY_SHELL}
-    printf "    % -32s: %s\n"  "HSFM_KEY_OPEN_CMD"              ${HSFM_KEY_OPEN_CMD}
-    printf "    % -32s: %s\n"  "HSFM_KEY_HELP"                  ${HSFM_KEY_HELP}
+    fterminal_print "\n%s\n" "## Shortcut operations."
+    fterminal_print "    % -32s: %s\n"  "HSFM_KEY_TO_TOP"                ${HSFM_KEY_TO_TOP}
+    fterminal_print "    % -32s: %s\n"  "HSFM_KEY_TO_BOTTOM"             ${HSFM_KEY_TO_BOTTOM}
+    fterminal_print "    % -32s: %s\n"  "HSFM_KEY_GO_HOME"               ${HSFM_KEY_GO_HOME}
+    fterminal_print "    % -32s: %s\n"  "HSFM_KEY_GO_TRASH"              ${HSFM_KEY_GO_TRASH}
+    fterminal_print "    % -32s: %s\n"  "HSFM_KEY_PREVIOUS"              ${HSFM_KEY_PREVIOUS}
+    fterminal_print "    % -32s: %s\n"  "HSFM_KEY_SEARCH"                ${HSFM_KEY_SEARCH}
+    fterminal_print "    % -32s: %s\n"  "HSFM_KEY_SHELL"                 ${HSFM_KEY_SHELL}
+    fterminal_print "    % -32s: %s\n"  "HSFM_KEY_OPEN_CMD"              ${HSFM_KEY_OPEN_CMD}
+    fterminal_print "    % -32s: %s\n"  "HSFM_KEY_HELP"                  ${HSFM_KEY_HELP}
 
-    printf "\n%s\n" "## File operations."
-    printf "    % -32s: %s\n"  "HSFM_KEY_YANK"                  ${HSFM_KEY_YANK}
-    printf "    % -32s: %s\n"  "HSFM_KEY_CUT"                   ${HSFM_KEY_CUT}
-    printf "    % -32s: %s\n"  "HSFM_KEY_TRASH"                 ${HSFM_KEY_TRASH}
-    # printf "    % -32s: %s\n"  "HSFM_KEY_LINK"                  ${HSFM_KEY_LINK}
-    printf "    % -32s: %s\n"  "HSFM_KEY_PASTE"                 ${HSFM_KEY_PASTE}
-    # printf "    % -32s: %s\n"  "HSFM_KEY_MKDIR"                 ${HSFM_KEY_MKDIR}
-    # printf "    % -32s: %s\n"  "HSFM_KEY_MKFILE"                ${HSFM_KEY_MKFILE}
+    fterminal_print "\n%s\n" "## File operations."
+    fterminal_print "    % -32s: %s\n"  "HSFM_KEY_YANK"                  ${HSFM_KEY_YANK}
+    fterminal_print "    % -32s: %s\n"  "HSFM_KEY_CUT"                   ${HSFM_KEY_CUT}
+    fterminal_print "    % -32s: %s\n"  "HSFM_KEY_TRASH"                 ${HSFM_KEY_TRASH}
+    # fterminal_print "    % -32s: %s\n"  "HSFM_KEY_LINK"                  ${HSFM_KEY_LINK}
+    fterminal_print "    % -32s: %s\n"  "HSFM_KEY_PASTE"                 ${HSFM_KEY_PASTE}
+    # fterminal_print "    % -32s: %s\n"  "HSFM_KEY_MKDIR"                 ${HSFM_KEY_MKDIR}
+    # fterminal_print "    % -32s: %s\n"  "HSFM_KEY_MKFILE"                ${HSFM_KEY_MKFILE}
 
-    printf "\n%s\n" "## Miscellaneous"
-    printf "    % -32s: %s\n"  "HSFM_KEY_ATTRIBUTES"            ${HSFM_KEY_ATTRIBUTES}
-    # printf "    % -32s: %s\n"  "HSFM_KEY_EXECUTABLE"            ${HSFM_KEY_EXECUTABLE}
-    printf "    % -32s: %s\n"  "HSFM_KEY_HIDDEN"                ${HSFM_KEY_HIDDEN}
+    fterminal_print "\n%s\n" "## Miscellaneous"
+    fterminal_print "    % -32s: %s\n"  "HSFM_KEY_ATTRIBUTES"            ${HSFM_KEY_ATTRIBUTES}
+    # fterminal_print "    % -32s: %s\n"  "HSFM_KEY_EXECUTABLE"            ${HSFM_KEY_EXECUTABLE}
+    fterminal_print "    % -32s: %s\n"  "HSFM_KEY_HIDDEN"                ${HSFM_KEY_HIDDEN}
 }
 fHelp_commands() {
-    printf "Help Info\n"
-    printf "[Commands]\n"
-    printf "    % -16s: %s\n"  "fterminal_redraw" "Commands."
-    printf "    % -16s: %s\n"  "search" "Commands."
-    printf "    % -16s: %s\n"  "mkdir " "Commands."
-    printf "    % -16s: %s\n"  "mkfile" "Commands."
-    printf "    % -16s: %s\n"  "touch " "Commands."
-    printf "    % -16s: %s\n"  "open  " "Commands."
-    printf "    % -16s: %s\n"  "exit  " "Commands."
-    printf "    % -16s: %s\n"  "rename" "Commands."
-    printf "    % -16s: %s\n"  "more  " "Commands."
-    printf "    % -16s: %s\n"  "help  " "Commands. Accept option for key/map"
+    echo "FileManager"
+    fterminal_print "[Options]\n"
+    fterminal_print "    %- 16s\t%s\n" "-d|--debug" "Enable debug flag."
+    fterminal_print "    %- 16s\t%s\n" "--history" "Store history."
+    fterminal_print "[Commands]\n"
+    fterminal_print "    % -16s: %s\n"  "redraw" "Commands."
+    fterminal_print "    % -16s: %s\n"  "search" "Commands."
+    fterminal_print "    % -16s: %s\n"  "mkdir " "Commands."
+    fterminal_print "    % -16s: %s\n"  "mkfile" "Commands."
+    fterminal_print "    % -16s: %s\n"  "touch " "Commands."
+    fterminal_print "    % -16s: %s\n"  "open  " "Commands."
+    fterminal_print "    % -16s: %s\n"  "exit  " "Commands."
+    fterminal_print "    % -16s: %s\n"  "rename" "Commands."
+    fterminal_print "    % -16s: %s\n"  "more  " "Commands."
+    fterminal_print "    % -16s: %s\n"  "help  " "Commands. Accept option for key/map"
+    fterminal_print "[Other commands]\n"
+    fterminal_print "    % -16s: %s\n"  "${VAR_TERM_CMD_LIST[@]}"
 }
 fHelp() {
     local help_type=$1
@@ -2128,12 +2141,12 @@ fHelp() {
         fHelp_commands $@
     fi
 
-    printf "Press any key to continue..."
+    fterminal_print "Press any key to continue..."
 }
 
-## Main Function
+## Core Function
 ###########################################################
-function fmain() {
+function fCore() {
     # Handle a directory as the first argument.
     # 'cd' is a cheap way of finding the full path to a directory.
     # It updates the '$PWD' variable on successful execution.
@@ -2141,21 +2154,6 @@ function fmain() {
     #
     # '||:': Do nothing if 'cd' fails. We don't care.
     cd "${2:-$1}" &>/dev/null ||:
-
-    [[ $1 == -v ]] && {
-        printf '%s\n' "hsfm 2.2"
-        exit
-    }
-
-    [[ $1 == -h ]] && {
-        man hsfm
-        exit
-    }
-
-    # Store file name in a file on open instead of using 'HSFM_OPENER'.
-    # Used in 'hsfm.vim'.
-    [[ $1 == -p ]] &&
-        VAR_TERM_FILE_PICKER=1
 
     # bash 5 and some versions of bash 4 don't allow SIGWINCH to interrupt
     # a 'read' command and instead wait for it to complete. In this case it
@@ -2184,11 +2182,11 @@ function fmain() {
 
     # Trap the exit signal (we need to reset the terminal to a useable state.)
     # trap 'fterminal_reset' EXIT
-    trap "trap - SIGTERM && fterminal_reset &&kill -- -$$" SIGINT SIGTERM EXIT
+    # trap "trap - SIGTERM && fterminal_exit &&kill -- -$$" SIGINT SIGTERM EXIT
+    trap "fterminal_exit" SIGINT SIGTERM EXIT
 
     # Trap the window resize signal (handle window resize events).
     trap 'fterminal_resize_win' WINCH
-
 
     fget_os
     fterminal_get_size
@@ -2218,5 +2216,49 @@ function fmain() {
         [[ -t 1 ]] || exit 1
     }
 }
+## Main Functions
+###########################################################
+function fMain()
+{
+    # fPrintHeader "Launch ${VAR_SCRIPT_NAME}"
+    local flag_verbose=false
 
-fmain "$@"
+    while [[ $# != 0 ]]
+    do
+        case $1 in
+            -d|--debug)
+                HSFM_DEBUG=true
+                ;;
+            --history)
+                # Store file name in a file on open instead of using 'HSFM_OPENER'.
+                # Used in 'hsfm.vim'.
+                HSFM_FILE_PICKER=1
+                ;;
+            # Options
+            -v|--verbose)
+                flag_verbose=true
+                ;;
+            -h|--help)
+                fHelp
+                exit 0
+                ;;
+            *)
+                echo "Unknown Options: ${1}"
+                fHelp
+                exit 1
+                ;;
+        esac
+        shift 1
+    done
+
+    ## Download
+    if [ ${flag_verbose} = true ]
+    then
+        OPTION_VERBOSE=y
+        fInfo; fErrControl ${FUNCNAME[0]} ${LINENO}
+    fi
+
+    fCore
+}
+
+fMain $@
