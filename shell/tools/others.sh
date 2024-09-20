@@ -1089,8 +1089,8 @@ function sshfs_mount()
         fusermount -u -z ${var_mount_path}
     fi
 
-    echo "sshfs ${var_sshfs_options} ${var_server_name}:${var_remote_path} ${var_mount_path} -p ${var_port}"
-    sshfs ${var_sshfs_options} ${var_server_name}:${var_remote_path} ${var_mount_path} -p ${var_port}
+    echo "sshfs ${var_sshfs_options[@]} ${var_server_name}:${var_remote_path} ${var_mount_path} -p ${var_port}"
+    eval sshfs "${var_sshfs_options[@]}" ${var_server_name}:${var_remote_path} ${var_mount_path} -p ${var_port}
 } 
 function join_by()
 {
