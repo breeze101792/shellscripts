@@ -1090,7 +1090,7 @@ function sshfs_mount()
     fi
 
     echo "sshfs ${var_sshfs_options[@]} ${var_server_name}:${var_remote_path} ${var_mount_path} -p ${var_port}"
-    eval sshfs ${var_sshfs_options[@]} ${var_server_name}:${var_remote_path} ${var_mount_path} -p ${var_port}
+    eval sshfs "${var_sshfs_options[@]}" ${var_server_name}:${var_remote_path} ${var_mount_path} -p ${var_port}
 } 
 function join_by()
 {
