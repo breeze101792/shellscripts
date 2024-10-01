@@ -26,7 +26,7 @@ export VAR_TERM_READ_FLAGS=()
 ## Terminal UI control
 export VAR_TERM_SCROLL_CURSOR=0
 export VAR_TERM_STATUS_LINE_CNT=2
-export VAR_TERM_TAB_LINE_HEIGHT=1
+export VAR_TERM_TAB_LINE_HEIGHT=2
 export VAR_TERM_LINE_CNT=0
 export VAR_TERM_COLUMN_CNT=0
 
@@ -78,6 +78,9 @@ export HSFM_COLOR_SELECTION=100
 export HSFM_COLOR_TAB_SELECTION_FG=97
 export HSFM_COLOR_TAB_SELECTION_BG=100
 
+export HSFM_COLOR_TAB_BOOKMARK_FG=97
+export HSFM_COLOR_TAB_BOOKMARK_BG=100
+
 # Cursor color [0\-9]
 # export HSFM_COL4=1
 export HSFM_COLOR_CURSOR=37
@@ -106,7 +109,10 @@ export HSFM_CD_ON_EXIT=1
 # CD on exit helper file
 # Default: '${XDG_CACHE_HOME}/hsfm/hsfm.d'
 #          If not using XDG, '${HOME}/.cache/hsfm/hsfm.d' is used.
-export HSFM_CD_FILE=~/.hsfm_d
+export HSFM_STORE_PATH="${HOME}/.cache/hsfm"
+export HSFM_SESSION_FILE=${HSFM_STORE_PATH}/hsfm_session.sh
+export HSFM_CD_FILE=${HSFM_STORE_PATH}/hsfm_history.log
+export HSFM_MESSAGE_FILE=${HSFM_STORE_PATH}/hsfm_message.log
 
 # Trash Directory
 # Default: '${XDG_DATA_HOME}/hsfm/trash'
@@ -124,12 +130,12 @@ export HSFM_TRASH_CMD=""
 export HSFM_FAV1=~
 export HSFM_FAV2=~/tools
 export HSFM_FAV3=~/lab
-export HSFM_FAV4=/etc
+export HSFM_FAV4=~/projects
 export HSFM_FAV5=~/workspace
-export HSFM_FAV6=
+export HSFM_FAV6=~/documents
 export HSFM_FAV7=~/downloads
 export HSFM_FAV8=~/media
-export HSFM_FAV9=
+export HSFM_FAV9=${HSFM_STORE_PATH}
 
 # File format.
 # Customize the item string.
@@ -296,11 +302,13 @@ fterminal_resize_win()
     # print size to prevent buffering
     flog_msg "Window resized"
 }
-fterminal_exit()
+fHSFM_exit()
 {
     HSFM_RUNNING=0
+    fsave_settings
     fterminal_reset
     fterminal_print "FM finished.\n"
+    exit 0
 }
 
 ###########################################################
@@ -441,7 +449,7 @@ fterminal_draw_tab_line() {
     # fterminal_print '\e7\e[%sH\e[%s;%sm%*s\r%s %s%s\e[m\e[%sH\e[K\e8' \
 
     fterminal_print '\e7\e[%sH\e[%s;%sm%*s\rFM %s\e[%s;%sm%s\e[%s;%sm%s\e[m\e8' \
-           "$((0))" \
+           "$((1))" \
            "${HSFM_COLOR_STATUS_FG}" \
            "${HSFM_COLOR_STATUS_BG}" \
            "$VAR_TERM_COLUMN_CNT" "" \
@@ -453,6 +461,15 @@ fterminal_draw_tab_line() {
            "${HSFM_COLOR_STATUS_BG}" \
            "|${var_tab_list_post_buf}"
            # "|${1:-${var_pwd_escaped:-/}}|${var_tab_list_buf[@]}"
+
+
+    # bookmark bar
+    fterminal_print '\e7\e[%sH\e[%s;%sm%*s\rBM |%s|\e[m\e8' \
+           "$((2))" \
+           "${HSFM_COLOR_TAB_BOOKMARK_FG}" \
+           "${HSFM_COLOR_TAB_BOOKMARK_BG}" \
+           "$VAR_TERM_COLUMN_CNT" "" \
+           "1 :${HSFM_FAV1##*/} | 2:${HSFM_FAV2##*/} | 3:${HSFM_FAV3##*/} | 4:${HSFM_FAV4##*/} | 5:${HSFM_FAV5##*/} | 6:${HSFM_FAV6##*/} | 7:${HSFM_FAV7##*/} | 8:${HSFM_FAV8##*/} | 9:${HSFM_FAV9##*/}"
 }
 fterminal_draw_status_line() {
     # Status_line to print when files are marked for operation.
@@ -1785,6 +1802,13 @@ fcommand_line_interact() {
     # Unset tab completion variables since we're done.
     unset comp c
 }
+flog_msg_debug()
+{
+    if [ ${HSFM_DEBUG} = true ]
+    then
+        printf "%s\n" "$*" >> ${HSFM_MESSAGE_FILE}
+    fi
+}
 flog_msg()
 {
     fterminal_print '\e7\e[%sH\e[?25h' "$VAR_TERM_LINE_CNT"
@@ -1927,7 +1951,7 @@ cmd_help()
 }
 cmd_exit()
 {
-    : "${HSFM_CD_FILE:=${XDG_CACHE_HOME:=${HOME}/.cache}/hsfm/.hsfm_d}"
+    : "${HSFM_CD_FILE}"
 
     [[ -w $HSFM_CD_FILE ]] &&
         rm "$HSFM_CD_FILE"
@@ -1935,7 +1959,7 @@ cmd_exit()
     [[ ${HSFM_CD_ON_EXIT:=1} == 1 ]] &&
         fterminal_print '%s\n' "$PWD" > "$HSFM_CD_FILE"
 
-    exit 0
+    fHSFM_exit
 }
 
 cmd_line() {
@@ -2271,6 +2295,28 @@ fsetup_options() {
     file -I &>/dev/null || : "${file_flags:=biL}"
 }
 
+fsave_settings() {
+    if [[ ${#VAR_TERM_TAB_LINE_LIST[@]} -eq 1 ]]
+    then
+        return 0
+    fi
+
+    if test -f ${HSFM_SESSION_FILE}
+    then
+        rm ${HSFM_SESSION_FILE}
+    fi
+
+    echo "export VAR_TERM_TAB_LINE_IDX=(${VAR_TERM_TAB_LINE_IDX})" >> ${HSFM_SESSION_FILE}
+    echo "export VAR_TERM_TAB_LINE_LIST=(${VAR_TERM_TAB_LINE_LIST[@]})" >> ${HSFM_SESSION_FILE}
+    echo "cd ${PWD}" >> ${HSFM_SESSION_FILE}
+}
+fload_settings() {
+    if test -f ${HSFM_SESSION_FILE}
+    then
+        source ${HSFM_SESSION_FILE}
+    fi
+}
+
 fget_ls_colors() {
     # Parse the LS_COLORS variable and declare each file type
     # as a separate variable.
@@ -2358,8 +2404,9 @@ fHelp_keymap() {
 fHelp_commands() {
     echo "FileManager"
     fterminal_print "[Options]\n"
-    fterminal_print "    %- 16s\t%s\n" "-d|--debug" "Enable debug flag."
-    fterminal_print "    %- 16s\t%s\n" "--history" "Store history."
+    fterminal_print "    %- 16s\t%s\n" "-d|--debug  " "Enable debug flag."
+    fterminal_print "    %- 16s\t%s\n" "-r|--restore" "restore previous session."
+    fterminal_print "    %- 16s\t%s\n" "--history   " "Store history."
     fterminal_print "[Commands]\n"
     fterminal_print "    % -16s: %s\n"  "redraw" "Commands."
     fterminal_print "    % -16s: %s\n"  "search" "Commands."
@@ -2415,8 +2462,7 @@ function fCore() {
         shopt -s dotglob
 
     # Create the trash and cache directory if they don't exist.
-    mkdir -p "${XDG_CACHE_HOME:=${HOME}/.cache}/hsfm" \
-             "${HSFM_TRASH:=${XDG_DATA_HOME:=${HOME}/.local/share}/hsfm/trash}"
+    mkdir -p "${HSFM_STORE_PATH}"
 
     # 'nocaseglob': Glob case insensitively (Used for case insensitive search).
     # 'nullglob':   Don't expand non-matching globs to themselves.
@@ -2424,15 +2470,16 @@ function fCore() {
 
     # Trap the exit signal (we need to reset the terminal to a useable state.)
     # trap 'fterminal_reset' EXIT
-    # trap "trap - SIGTERM && fterminal_exit &&kill -- -$$" SIGINT SIGTERM EXIT
-    trap "fterminal_exit" SIGINT SIGTERM EXIT
+    # trap "trap - SIGTERM && fHSFM_exit &&kill -- -$$" SIGINT SIGTERM EXIT
+    trap "fHSFM_exit" SIGINT SIGTERM EXIT
 
     # Trap the window resize signal (handle window resize events).
     trap 'fterminal_resize_win' WINCH
 
     fget_os
-    fterminal_get_size
     fsetup_options
+
+    fterminal_get_size
     fterminal_setup
     fterminal_redraw full
 
@@ -2475,6 +2522,9 @@ function fMain()
                 # Store file name in a file on open instead of using 'HSFM_OPENER'.
                 # Used in 'hsfm.vim'.
                 HSFM_FILE_PICKER=1
+                ;;
+            -r|-restore)
+                fload_settings
                 ;;
             # Options
             -v|--verbose)
