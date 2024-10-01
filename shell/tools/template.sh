@@ -53,7 +53,6 @@ function tmp1()
                 ;;
             -v|--verbose)
                 flag_verbose=true
-                shift 1
                 ;;
             -h|--help)
                 cli_helper -c "template" -cd "template function"

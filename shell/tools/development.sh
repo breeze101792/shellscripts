@@ -683,7 +683,7 @@ function session()
                 then
                     if ! [[ $2 =~ \-.* ]]
                     then
-                        var_target_name+=(${2})
+                        var_target_name=${2}
                         shift 1
                     fi
                 fi
@@ -955,7 +955,7 @@ function session()
     then
         echo "Try: ${var_action} ${var_target_name}@${var_taget_socket}"
 
-        for each_session in $(session ls | cut -d ":" -f 1)
+        for each_session in $(session ls | cut -d ":" -f 1| cut -d '@' -f 2)
         do
             if [ "${each_session}" = "${var_target_name}" ]
             then
@@ -990,7 +990,7 @@ function session()
     then
         echo "${var_action} all session"
 
-        for each_session in $(session ls | cut -d ":" -f 1)
+        for each_session in $(session ls | cut -d ":" -f 1| cut -d '@' -f 2)
         do
             if [ "${each_session}" != "" ]
             then
@@ -1002,7 +1002,7 @@ function session()
     then
         echo "${var_action} ${var_target_name}@${var_taget_socket}"
 
-        for each_session in $(session ls | cut -d ":" -f 1)
+        for each_session in $(session ls | cut -d ":" -f 1| cut -d '@' -f 2)
         do
             if [ "${each_session}" = "${var_taget_socket}" ]
             then
