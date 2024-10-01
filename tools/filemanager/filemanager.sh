@@ -530,6 +530,7 @@ fterminal_draw_file_line() {
     # Format the VAR_TERM_DIR_FILE_LIST item and print it.
     local var_content_idx=$1
     local var_file_name=${VAR_TERM_DIR_FILE_LIST[$var_content_idx]##*/}
+    # local var_file_name=${VAR_TERM_DIR_FILE_LIST[$var_content_idx]}
     local var_file_ext=${var_file_name##*.}
     local var_format
     local var_postfix
@@ -538,7 +539,7 @@ fterminal_draw_file_line() {
     local file_info="${VAR_TERM_DIR_FILE_INFO_LIST[$var_content_idx]}"
 
     # Directory.
-    if [[ -d ${VAR_TERM_DIR_FILE_LIST[$var_content_idx]} ]]; then
+    if [[ -d "${VAR_TERM_DIR_FILE_LIST[$var_content_idx]}" ]]; then
         var_format+=\\e[${di:-1;${HSFM_COLOR_DIR:-32}}m
         var_postfix+=/
 
@@ -775,46 +776,6 @@ fterminal_read_dir() {
         done
     elif [[ $HSFM_READ_WITH_LS == 2 ]]
     then
-        # local var_previous_dir=$(basename ${OLDPWD})
-        local var_previous_dir=${OLDPWD/*\//}
-        local var_ls_args=("--color=none")
-        var_ls_args+=("--group-directories-first")
-        if [[ ${HSFM_ENABLE_HIDDEN} -gt 0 ]]
-        then
-            var_ls_args+=("-A")
-        fi
-        # for each_line in "$(ls -al ${PWD}/)";
-        while read each_line;
-        do
-            # item=$(echo ${each_line} | tr -s ' '|cut -d ' ' -f 9)
-
-            item="${each_line/* /}"
-            info="${each_line/ ->*/}"
-            info="${info/ ${item}/}"
-
-            if [[ -d $item ]]; then
-                # var_dirs+=("$item")
-                VAR_TERM_DIR_FILE_LIST+=("$item")
-                VAR_TERM_DIR_FILE_INFO_LIST+=("$info")
-
-                # Find the position of the child directory in the
-                # parent directory list.
-                [[ $item == "$var_previous_dir" ]] &&
-                    ((previous_index=var_item_index))
-                                ((var_item_index++))
-            elif [[ -f $item ]]; then
-                # var_files+=("$item")
-                VAR_TERM_DIR_FILE_LIST+=("$item")
-                VAR_TERM_DIR_FILE_INFO_LIST+=("$info")
-            # else
-            #     # debug
-            #     var_files+=("$item")
-            #     VAR_TERM_DIR_FILE_LIST+=("$item")
-            fi
-        done << EOF
-$(ls ${var_ls_args[@]} -l ${PWD})
-EOF
-    else
         local var_ls_args=("--color=none")
         var_ls_args+=("--group-directories-first")
         if [[ ${HSFM_ENABLE_HIDDEN} -eq 0 ]]
@@ -856,7 +817,50 @@ EOF
                 VAR_TERM_DIR_FILE_INFO_LIST+=("$info")
             fi
         done << EOF
-$(ls ${var_ls_args[@]} -h -ld ${PWD}/${var_pattern})
+$(ls ${var_ls_args[@]} -h -ld "${PWD}"/${var_pattern})
+EOF
+    else
+        local var_ls_args=("--color=none")
+        var_ls_args+=("--group-directories-first")
+        if [[ ${HSFM_ENABLE_HIDDEN} -eq 0 ]]
+        then
+            var_ls_args+=("-A")
+        fi
+        # for each_line in "$(ls -al ${PWD}/)";
+        while read each_line;
+        do
+            local item
+            local info
+
+            each_line="${each_line%% ->*}"
+
+            info="${each_line%% /*}"
+            # item="${each_line/* \'/}"
+            # item="${each_line/* /}"
+
+            item=${each_line/#*[0-9]? \//\/}
+
+            if [[ -d $item ]]; then
+                # var_dirs+=("$item")
+                VAR_TERM_DIR_FILE_LIST+=("$item")
+                VAR_TERM_DIR_FILE_INFO_LIST+=("$info")
+
+                # Find the position of the child directory in the
+                # parent directory list.
+                [[ $item == "$OLDPWD" ]] &&
+                    ((previous_index=var_item_index))
+                                ((var_item_index++))
+            elif [[ -f $item ]]; then
+                # var_files+=("$item")
+                VAR_TERM_DIR_FILE_LIST+=("$item")
+                VAR_TERM_DIR_FILE_INFO_LIST+=("$info")
+            else
+                # debug
+                VAR_TERM_DIR_FILE_LIST+=("$item")
+                VAR_TERM_DIR_FILE_INFO_LIST+=("$info")
+            fi
+        done << EOF
+$(ls ${var_ls_args[@]} -h -ld "${PWD}"/${var_pattern})
 EOF
     fi
 
@@ -1476,7 +1480,8 @@ fselection_mode_handler() {
                 fsys_open "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
             else
                 # flog_msg $(file "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" | tail -n 1)
-                flog_msg "File type: $(file "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" | tail -n 1 | cut -d ':' -f2)"
+                local tmp_file_info=($(file "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" | tail -n 1 | cut -d ':' -f2))
+                flog_msg "File type: ${tmp_file_info[@]}"
             fi
         ;;
 
@@ -1783,7 +1788,7 @@ fcommand_line_interact() {
 flog_msg()
 {
     fterminal_print '\e7\e[%sH\e[?25h' "$VAR_TERM_LINE_CNT"
-    fterminal_print '\r\e[%sH\e[?25h\e[2K%s' "$VAR_TERM_LINE_CNT" "$@"
+    fterminal_print '\r\e[%sH\e[?25h\e[2K%s' "$VAR_TERM_LINE_CNT" "$*"
     fterminal_print '\e[?25l\e8'
 }
 cmd_search()
@@ -1858,11 +1863,11 @@ cmd_mkfile()
 cmd_vim()
 {
     local var_file="$@"
-    if [[ -f $var_file ]]; then
+    if [[ -f "${var_file}" ]]; then
         fterminal_clear
         fterminal_reset
 
-        vim ${var_file}
+        vim "${var_file}"
 
         fterminal_setup
         fterminal_redraw
@@ -1889,7 +1894,8 @@ cmd_stat()
     # fterminal_draw_status_line "File info"
     # fterminal_print "\n"
     # fHelp $@
-    stat $@
+    fterminal_print "\n"
+    stat "$*"
     fterminal_draw_tab_line
     fterminal_draw_status_line
     read -ern 1
