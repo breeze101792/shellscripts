@@ -10,6 +10,122 @@
 ########################################################
 #####    Usefull Function                          #####
 ########################################################
+# print_char_by_char() {
+#     local input_string="$1"
+#     local length=${#input_string}
+#
+#     for ((i=0; i<length; i++)); do
+#         echo -n "${input_string:$i:1}"
+#         sleep 0.1  # Adjust this value to change the delay between characters
+#     done
+#     echo  # Print a newline at the end
+# }
+
+function ai()
+{
+    local var_host="localhost"
+    local var_port="11434"
+    local var_msg=""
+    local flag_verbose=false
+
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -s|--server)
+                var_host=$1
+                shift 1
+                ;;
+            -p|--port)
+                var_port=$1
+                shift 1
+                ;;
+            -d|--dict|dict)
+                var_msg="Please explain this word with example usage: "
+                shift 1
+                var_msg+=$1
+                ;;
+            -v|--verbose)
+                flag_verbose=true
+                ;;
+            -h|--help)
+                cli_helper -c "ai" -cd "ai function, use with ollama"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "ai [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-s|--server" -d "specify server ip"
+                cli_helper -o "-p|--port" -d "specify server port"
+                cli_helper -o "-v|--verbose" -d "Verbose print "
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                var_msg="$*"
+                break
+                # echo "Wrong args, $@"
+                # return -1
+                ;;
+        esac
+        shift 1
+    done
+    # local var_cmd="curl --silent --no-buffer -X POST http://${var_host}:${var_port}/api/"
+    # echo "curl --silent --no-buffer -X POST http://${var_host}:${var_port}/api/chat -d ${var_msg}"
+    # eval "curl --silent --no-buffer -X POST http://${var_host}:${var_port}/api/chat -d ${var_msg}"
+
+    local var_cmd="curl --silent --no-buffer -X POST http://${var_host}:${var_port}/api/"
+    var_cmd+="generate -d '{"
+    var_cmd+="\"model\": \"llama3.1\","
+    var_cmd+="\"prompt\": \"$var_msg\""
+    var_cmd+="}'"
+
+    if [ ${flag_verbose} = true ]
+    then
+        echo "${var_cmd}"
+    else
+        echo ">> ${var_msg}"
+    fi
+
+    # eval "${var_cmd}" 
+    # eval "${var_cmd}" | awk 'BEGIN { RS="\n"; FS="\"response\":\"" } { split($2, a, "\",\""); print a[1] }' | while read -r each_line;
+    # eval "${var_cmd}" | awk -W interactive -F'"response":"' '{print $2}' | awk -W interactive -F'","' '{print $1}' | while read -r each_line;
+    # eval "${var_cmd}" | grep --line-buffered -o '"response":"[^"]*"' | grep --line-buffered  -o '"[^"]*"$' | while read -r each_line;
+    # do
+    #     tmp_print_cmd="printf '${each_line}'"
+    #     eval "${tmp_print_cmd}"
+    #     # printf "%s " ${each_line} 
+    # done
+    # function print_char_by_char() {
+    #     local input_string="$1"
+    #     local length=${#input_string}
+    #
+    #     for ((i=0; i<length; i++)); do
+    #         printf "${input_string:$i:1}"
+    #         # sleep 0.1  # Adjust this value to change the delay between characters
+    #     done
+    # }
+    eval "${var_cmd}" | while IFS= read -r line; do
+        local tmp_buff=""
+        local tmp_buff_len=0
+        if [ "${HS_ENV_SHELL}" = "zsh" ] && [[ $line =~ \"response\":\"([^\"]*)\" ]]; then
+            # FIXME, it's an patch on sed, Pleasze filter with original word.
+            tmp_buff="${match[1]}"
+            # tmp_buff_len="${#tmp_buff[@]}"
+            # printf "${match[1]}" | sed 's/\\/"/g'
+            # printf "${tmp_buff}" | sed 's/\\/"/g'
+        elif [[ $line =~ \"response\":\"([^\"]*)\" ]]; then
+            # Bash
+            # printf "%s" "${BASH_REMATCH[1]}" | sed 's/\\n/\n/g'| sed 's/\\/"/g' 2> /dev/null
+            tmp_buff="${BASH_REMATCH[1]}"
+        fi
+        printf "%s" "${tmp_buff}" | sed 's/\\n/\n/g'| sed 's/\\/"/g' 2> /dev/null
+    done
+    # printf "%s" "${tmp_buff}" | sed 's/\\n/\n/g'| sed 's/\\/"/g' 2> /dev/null
+    # printf "${tmp_buff[@]}"
+    printf "\n"
+
+    # json='{"access_token":"kjdshfsd", "key2":"value"}' 
+    # echo $json | grep -o '"access_token":"[^"]*' | grep -o '[^"]*$'
+    # echo $json | grep -o '"access_token":"[^"]*"' | grep -o '"[^"]*"$'
+}
 function wifi()
 {
     # local var_utility='sudo wpa_cli'

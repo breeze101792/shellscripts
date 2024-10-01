@@ -12,9 +12,11 @@ export HSFM_LS_COLORS=1
 
 # Show/Hide hidden files on open.
 # (On by default)
-export HSFM_HIDDEN=0
+export HSFM_ENABLE_HIDDEN=0
 
 export HSFM_FILE_PICKER=0
+
+export HSFM_READ_WITH_LS=1
 
 ## TERMINAL Vars Options
 ###########################################################
@@ -34,6 +36,7 @@ export VAR_TERM_CONTENT_SCROLL_START_IDX=0
 
 export VAR_TERM_DIR_LIST_CNT=0
 export VAR_TERM_DIR_FILE_LIST=()
+export VAR_TERM_DIR_FILE_INFO_LIST=()
 
 # Marks
 export VAR_TERM_FILE_PRE=""
@@ -70,7 +73,7 @@ export VAR_TERM_SEARCH_END_EARLY=0
 export HSFM_COLOR_DIR=32
 
 # Selection color [0\-9] (copied/moved files)
-export HSFM_COLOR_SELECTION=34
+export HSFM_COLOR_SELECTION=100
 
 export HSFM_COLOR_TAB_SELECTION_FG=97
 export HSFM_COLOR_TAB_SELECTION_BG=100
@@ -138,7 +141,7 @@ export HSFM_FILE_FORMAT="%f"
 # Customize the marked item string.
 # Format ('%f' is the current file): "str%fstr"
 # Example (Add a ' >' before files): HSFM_MARK_FORMAT="> %f"
-export HSFM_MARK_FORMAT=" %f*"
+export HSFM_MARK_FORMAT="%f*"
 
 ## Keybindings
 ###########################################################
@@ -529,13 +532,15 @@ fterminal_draw_file_line() {
     local var_file_name=${VAR_TERM_DIR_FILE_LIST[$var_content_idx]##*/}
     local var_file_ext=${var_file_name##*.}
     local var_format
-    local var_suffix
+    local var_postfix
+    local var_prefix
     # local file_info="$(ls -al $PWD | grep ${var_file_name}\$ | sed 's/ [^ ]\+$//')"
+    local file_info="${VAR_TERM_DIR_FILE_INFO_LIST[$var_content_idx]}"
 
     # Directory.
     if [[ -d ${VAR_TERM_DIR_FILE_LIST[$var_content_idx]} ]]; then
         var_format+=\\e[${di:-1;${HSFM_COLOR_DIR:-32}}m
-        var_suffix+=/
+        var_postfix+=/
 
     # Block special file.
     elif [[ -b ${VAR_TERM_DIR_FILE_LIST[$var_content_idx]} ]]; then
@@ -593,8 +598,8 @@ fterminal_draw_file_line() {
 
     # If the VAR_TERM_DIR_FILE_LIST item is marked for operation.
     [[ ${VAR_TERM_MARKED_FILE_LIST[$var_content_idx]} == "${VAR_TERM_DIR_FILE_LIST[$var_content_idx]:-null}" ]] && {
-        var_format+=\\e[${HSFM_COLOR_SELECTION:-31}m${VAR_TERM_MARK_PRE}
-        var_suffix+=${VAR_TERM_MARK_POST}
+        var_format+=\\e[${HSFM_COLOR_SELECTION}m${VAR_TERM_MARK_PRE}
+        var_prefix+=${VAR_TERM_MARK_POST}
     }
 
     # Escape the directory string.
@@ -619,7 +624,7 @@ fterminal_draw_file_line() {
 
     fterminal_print '%b%s\e[m\e[K\r' \
         " ${VAR_TERM_FILE_PRE}${var_format}" \
-        "${file_info} ${var_file_name}${var_suffix}${VAR_TERM_FILE_POST}"
+        "${file_info} ${var_prefix}${var_file_name}${var_postfix}${VAR_TERM_FILE_POST}"
 }
 
 fterminal_mark_toggle() {
@@ -726,11 +731,18 @@ fterminal_mark_remove() {
 }
 fterminal_read_dir() {
     # Read a directory to an array and sort it directories first.
+    local var_pattern="*"
     local var_dirs
     local var_files
     local var_item_index
     VAR_TERM_DIR_FILE_LIST=()
+    VAR_TERM_DIR_FILE_INFO_LIST=()
     # NOTE. Clear VAR_TERM_DIR_FILE_LIST & use it directly to avoid VAR_TERM_DIR_FILE_LIST index issue on BSD
+
+    if [[ "${#}" -eq "1" ]]
+    then
+        var_pattern="*$1*"
+    fi
 
     # Set window name.
     fterminal_print '\e]2;hsfm: %s\e'\\ "$PWD"
@@ -738,27 +750,115 @@ fterminal_read_dir() {
     # If '$PWD' is '/', unset it to avoid '//'.
     [[ $PWD == / ]] && PWD=
 
-    # for some reason, we should sort in seperate loop.
-    # sort for dir first
-    for item in "$PWD"/*; do
-        if [[ -d $item ]]; then
-            var_dirs+=("$item")
-            VAR_TERM_DIR_FILE_LIST+=("$item")
+    if [[ $HSFM_READ_WITH_LS == 0 ]]
+    then
+        # for some reason, we should sort in seperate loop.
+        # sort for dir first
+        for item in "$PWD"/*; do
+            if [[ -d $item ]]; then
+                var_dirs+=("$item")
+                VAR_TERM_DIR_FILE_LIST+=("$item")
 
             # Find the position of the child directory in the
             # parent directory list.
             [[ $item == "$OLDPWD" ]] &&
                 ((previous_index=var_item_index))
-            ((var_item_index++))
-        fi
-    done
+                            ((var_item_index++))
+            fi
+        done
 
-    for item in "$PWD"/*; do
-        if [[ -f $item ]]; then
-            var_files+=("$item")
-            VAR_TERM_DIR_FILE_LIST+=("$item")
+        for item in "$PWD"/*; do
+            if [[ -f $item ]]; then
+                var_files+=("$item")
+                VAR_TERM_DIR_FILE_LIST+=("$item")
+            fi
+        done
+    elif [[ $HSFM_READ_WITH_LS == 2 ]]
+    then
+        # local var_previous_dir=$(basename ${OLDPWD})
+        local var_previous_dir=${OLDPWD/*\//}
+        local var_ls_args=("--color=none")
+        var_ls_args+=("--group-directories-first")
+        if [[ ${HSFM_ENABLE_HIDDEN} -gt 0 ]]
+        then
+            var_ls_args+=("-A")
         fi
-    done
+        # for each_line in "$(ls -al ${PWD}/)";
+        while read each_line;
+        do
+            # item=$(echo ${each_line} | tr -s ' '|cut -d ' ' -f 9)
+
+            item="${each_line/* /}"
+            info="${each_line/ ->*/}"
+            info="${info/ ${item}/}"
+
+            if [[ -d $item ]]; then
+                # var_dirs+=("$item")
+                VAR_TERM_DIR_FILE_LIST+=("$item")
+                VAR_TERM_DIR_FILE_INFO_LIST+=("$info")
+
+                # Find the position of the child directory in the
+                # parent directory list.
+                [[ $item == "$var_previous_dir" ]] &&
+                    ((previous_index=var_item_index))
+                                ((var_item_index++))
+            elif [[ -f $item ]]; then
+                # var_files+=("$item")
+                VAR_TERM_DIR_FILE_LIST+=("$item")
+                VAR_TERM_DIR_FILE_INFO_LIST+=("$info")
+            # else
+            #     # debug
+            #     var_files+=("$item")
+            #     VAR_TERM_DIR_FILE_LIST+=("$item")
+            fi
+        done << EOF
+$(ls ${var_ls_args[@]} -l ${PWD})
+EOF
+    else
+        local var_ls_args=("--color=none")
+        var_ls_args+=("--group-directories-first")
+        if [[ ${HSFM_ENABLE_HIDDEN} -eq 0 ]]
+        then
+            var_ls_args+=("-A")
+        fi
+        # for each_line in "$(ls -al ${PWD}/)";
+        while read each_line;
+        do
+            # item=$(echo ${each_line} | tr -s ' '|cut -d ' ' -f 9)
+
+            # item="${each_line/* /}"
+            # info="${each_line/ ->*/}"
+            # info="${info/ ${item}/}"
+
+            each_line="${each_line%% ->*}"
+
+            info="${each_line%% /*}"
+            item="${each_line/* /}"
+            # info="${each_line/ ${item}/}|"
+
+            if [[ -d $item ]]; then
+                # var_dirs+=("$item")
+                VAR_TERM_DIR_FILE_LIST+=("$item")
+                VAR_TERM_DIR_FILE_INFO_LIST+=("$info")
+
+                # Find the position of the child directory in the
+                # parent directory list.
+                [[ $item == "$OLDPWD" ]] &&
+                    ((previous_index=var_item_index))
+                                ((var_item_index++))
+            elif [[ -f $item ]]; then
+                # var_files+=("$item")
+                VAR_TERM_DIR_FILE_LIST+=("$item")
+                VAR_TERM_DIR_FILE_INFO_LIST+=("$info")
+            else
+                # debug
+                VAR_TERM_DIR_FILE_LIST+=("$item")
+                VAR_TERM_DIR_FILE_INFO_LIST+=("$info")
+            fi
+        done << EOF
+$(ls ${var_ls_args[@]} -h -ld ${PWD}/${var_pattern})
+EOF
+    fi
 
     # sort for dir first
     # VAR_TERM_DIR_FILE_LIST=("${var_dirs[@]}" "${var_files[@]}")
@@ -1058,9 +1158,16 @@ fnormal_mode_handler() {
             # 'a=a>0?0:++a': Toggle between both values of 'shopt_flags'.
             #                This also works for '3' or more values with
             #                some modification.
+            if [[ ${HSFM_ENABLE_HIDDEN} == 0 ]]
+            then
+                HSFM_ENABLE_HIDDEN=1
+            else
+                HSFM_ENABLE_HIDDEN=0
+            fi
             shopt_flags=(u s)
-            shopt -"${shopt_flags[((a=${a:=$HSFM_HIDDEN}>0?0:++a))]}" dotglob
+            shopt -"${shopt_flags[$HSFM_ENABLE_HIDDEN]}" dotglob
             fterminal_redraw full
+            # flog_msg "Hidden: $HSFM_ENABLE_HIDDEN/${shopt_flags[$HSFM_ENABLE_HIDDEN]}"
         ;;
 
         # Search.
@@ -1094,12 +1201,13 @@ fnormal_mode_handler() {
         # Show file attributes.
         ${HSFM_KEY_ATTRIBUTES:=x})
             [[ -e "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" ]] && {
-                fterminal_clear
-                # fterminal_draw_tab_line
-                fterminal_draw_status_line "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
-                "${HSFM_STAT_CMD:-stat}" "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
-                read -ern 1
-                fterminal_redraw
+                cmd_stat "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
+                # fterminal_clear
+                # # fterminal_draw_tab_line
+                # fterminal_draw_status_line "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
+                # "${HSFM_STAT_CMD:-stat}" "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
+                # read -ern 1
+                # fterminal_redraw
             }
         ;;
 
@@ -1685,9 +1793,18 @@ cmd_search()
     # '\e[?25l': Hide the cursor.
     fterminal_print '\e[?25l'
 
-    # Use a greedy glob to search.
-    VAR_TERM_DIR_FILE_LIST=("$PWD"/*"$var_pattern"*)
-    ((VAR_TERM_DIR_LIST_CNT=${#VAR_TERM_DIR_FILE_LIST[@]}-1))
+    fterminal_read_dir "*${var_pattern}*"
+    # if [[ $HSFM_READ_WITH_LS == 0 ]]
+    # then
+    #     # Use a greedy glob to search.
+    #     VAR_TERM_DIR_FILE_LIST=("$PWD"/*"$var_pattern"*)
+    #     ((VAR_TERM_DIR_LIST_CNT=${#VAR_TERM_DIR_FILE_LIST[@]}-1))
+    #     VAR_TERM_DIR_FILE_INFO_LIST=()
+    # else
+    #     VAR_TERM_DIR_FILE_LIST=("$PWD"/*"$var_pattern"*)
+    #     ((VAR_TERM_DIR_LIST_CNT=${#VAR_TERM_DIR_FILE_LIST[@]}-1))
+    #     VAR_TERM_DIR_FILE_INFO_LIST=()
+    # fi
 
     # Draw the search results on screen.
     VAR_TERM_CONTENT_SCROLL_IDX=0
@@ -1769,10 +1886,12 @@ cmd_stat()
 {
     fterminal_clear
     fterminal_draw_tab_line
-    fterminal_draw_status_line "File info"
-    fterminal_print "\n"
+    # fterminal_draw_status_line "File info"
+    # fterminal_print "\n"
     # fHelp $@
     stat $@
+    fterminal_draw_tab_line
+    fterminal_draw_status_line
     read -ern 1
     fterminal_redraw
 }
@@ -1975,8 +2094,13 @@ fsys_open() {
                 # 'nohup':  Make the process immune to hangups.
                 # '&':      Send it to the background.
                 # 'disown': Detach it from the shell.
-                nohup "${HSFM_OPENER:-${opener:-xdg-open}}" "$1" &>/dev/null &
-                disown
+                if command -v ${HSFM_OPENER} > /dev/null
+                then
+                    nohup "${HSFM_OPENER}" "$1" &>/dev/null &
+                    disown
+                else
+                    flog_msg "Unknown file type: $1"
+                fi
             ;;
         esac
     fi
@@ -2133,7 +2257,7 @@ fsetup_options() {
         VAR_TERM_MARK_PRE=${HSFM_MARK_FORMAT/'%f'*}
         VAR_TERM_MARK_POST=${HSFM_MARK_FORMAT/*'%f'}
     else
-        VAR_TERM_MARK_PRE=" "
+        VAR_TERM_MARK_PRE=""
         VAR_TERM_MARK_POST="*"
     fi
 
@@ -2281,7 +2405,7 @@ function fCore() {
     ((${HSFM_LS_COLORS:=1} == 1)) &&
         fget_ls_colors
 
-    ((${HSFM_HIDDEN:=0} == 1)) &&
+    ((${HSFM_ENABLE_HIDDEN:=0} == 1)) &&
         shopt -s dotglob
 
     # Create the trash and cache directory if they don't exist.
