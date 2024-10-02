@@ -38,6 +38,8 @@ export VAR_TERM_DIR_LIST_CNT=0
 export VAR_TERM_DIR_FILE_LIST=()
 export VAR_TERM_DIR_FILE_INFO_LIST=()
 
+export VAR_TERM_DIR_LS_ARGS=()
+
 # Buffer
 export VAR_TERM_PRINT_BUFFER_ENABLE=false
 export VAR_TERM_PRINT_BUFFER=""
@@ -63,9 +65,9 @@ export VAR_TERM_FILE_PROGRAM=()
 
 # Cmd line
 export VAR_TERM_CMD_INPUT_BUFFER=""
-export VAR_TERM_CMD_LIST=( "redraw" "fullredraw" "help" "info" "exit" "select" "shell")
-export VAR_TERM_CMD_LIST+=( "mkdir" "mkfile" "touch" "rename" "search")
-export VAR_TERM_CMD_LIST+=( "open" "editor" "vim" "media" "play" "image" "preview")
+export VAR_TERM_CMD_LIST=( "redraw" "fullredraw" "help" "info" "exit" "select" "shell" )
+VAR_TERM_CMD_LIST+=( "mkdir" "mkfile" "touch" "rename" "search" )
+VAR_TERM_CMD_LIST+=( "open" "editor" "vim" "media" "play" "image" "preview" )
 
 # Mode
 export VAR_TERM_VISUAL_START_IDX=0
@@ -802,54 +804,8 @@ fterminal_read_dir() {
                 VAR_TERM_DIR_FILE_LIST+=("$item")
             fi
         done
-    elif [[ $HSFM_READ_WITH_LS == 2 ]]
-    then
-        local var_ls_args=("--color=none")
-        var_ls_args+=("--group-directories-first")
-        if [[ ${HSFM_ENABLE_HIDDEN} -eq 0 ]]
-        then
-            var_ls_args+=("-A")
-        fi
-        # for each_line in "$(ls -al ${PWD}/)";
-        while read each_line;
-        do
-            # item=$(echo ${each_line} | tr -s ' '|cut -d ' ' -f 9)
-
-            # item="${each_line/* /}"
-            # info="${each_line/ ->*/}"
-            # info="${info/ ${item}/}"
-
-            each_line="${each_line%% ->*}"
-
-            info="${each_line%% /*}"
-            item="${each_line/* /}"
-            # info="${each_line/ ${item}/}|"
-
-            if [[ -d $item ]]; then
-                # var_dirs+=("$item")
-                VAR_TERM_DIR_FILE_LIST+=("$item")
-                VAR_TERM_DIR_FILE_INFO_LIST+=("$info")
-
-                # Find the position of the child directory in the
-                # parent directory list.
-                [[ $item == "$OLDPWD" ]] &&
-                    ((previous_index=var_item_index))
-                                ((var_item_index++))
-            elif [[ -f $item ]]; then
-                # var_files+=("$item")
-                VAR_TERM_DIR_FILE_LIST+=("$item")
-                VAR_TERM_DIR_FILE_INFO_LIST+=("$info")
-            else
-                # debug
-                VAR_TERM_DIR_FILE_LIST+=("$item")
-                VAR_TERM_DIR_FILE_INFO_LIST+=("$info")
-            fi
-        done << EOF
-$(ls ${var_ls_args[@]} -h -ld "${PWD}"/${var_pattern})
-EOF
     else
-        local var_ls_args=("--color=none")
-        var_ls_args+=("--group-directories-first")
+        local var_ls_args=(${VAR_TERM_DIR_LS_ARGS[@]})
         if [[ ${HSFM_ENABLE_HIDDEN} -eq 0 ]]
         then
             var_ls_args+=("-A")
@@ -889,11 +845,12 @@ EOF
                 VAR_TERM_DIR_FILE_INFO_LIST+=("$info")
             else
                 # debug
+                # var_files+=("$item")
                 VAR_TERM_DIR_FILE_LIST+=("$item")
                 VAR_TERM_DIR_FILE_INFO_LIST+=("$info")
             fi
         done << EOF
-$(ls ${var_ls_args[@]} -h -ld "${PWD}"/${var_pattern})
+$(ls ${var_ls_args[@]} "${PWD}"/${var_pattern})
 EOF
     fi
 
@@ -1284,7 +1241,6 @@ fnormal_mode_handler() {
 
         # Go to trash.
         ${HSFM_KEY_GO_TRASH:=t})
-            fget_os
             fsys_open "$HSFM_TRASH"
         ;;
 
@@ -2231,7 +2187,7 @@ fselect_rename() {
 ###########################################################
 ## Others
 ###########################################################
-fget_os() {
+fsetup_osenv() {
     # Figure out the current operating system to set some specific variables.
     # '$OSTYPE' typically stores the name of the OS kernel.
     case $OSTYPE in
@@ -2239,10 +2195,14 @@ fget_os() {
         darwin*)
             HSFM_OPENER=fsys_open
             file_flags=bIL
+            VAR_TERM_DIR_LS_ARGS=("--color=none")
+            VAR_TERM_DIR_LS_ARGS+=("-h -ld ")
+            break
         ;;
 
-        haiku)
+        linux*|*)
             HSFM_OPENER=fsys_open
+            file_flags=bIL
 
             [[ -z $HSFM_TRASH_CMD ]] &&
                 HSFM_TRASH_CMD=fselect_remove
@@ -2251,6 +2211,11 @@ fget_os() {
                 HSFM_TRASH=$(finddir -v "$PWD" B_TRASH_DIRECTORY)
                 mkdir -p "$HSFM_TRASH"
             }
+
+            VAR_TERM_DIR_LS_ARGS=("--color=none")
+            VAR_TERM_DIR_LS_ARGS+=("--group-directories-first")
+            VAR_TERM_DIR_LS_ARGS+=("-h -ld ")
+            break
         ;;
     esac
 }
@@ -2460,7 +2425,7 @@ function fCore() {
     # Trap the window resize signal (handle window resize events).
     trap 'fterminal_resize_win' WINCH
 
-    fget_os
+    fsetup_osenv
     fsetup_options
 
     fterminal_get_size
