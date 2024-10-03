@@ -39,6 +39,7 @@ export VAR_TERM_DIR_FILE_LIST=()
 export VAR_TERM_DIR_FILE_INFO_LIST=()
 
 export VAR_TERM_DIR_LS_ARGS=()
+export VAR_TERM_FILE_ARGS=""
 
 # Buffer
 export VAR_TERM_PRINT_BUFFER_ENABLE=false
@@ -272,7 +273,8 @@ fterminal_reset() {
     # '\e[;r':    Set the VAR_TERM_CONTENT_SCROLL_IDX region to its default value.
     #             Also sets cursor to (0,0).
     # '\e[?1049l: Restore main screen buffer.
-    fterminal_print '\e[?7h\e[?25h\e[2J\e[;r\e[?1049l'
+    # fterminal_print '\e[?7h\e[?25h\e[2J\e[;r\e[?1049l'
+    fterminal_print '\e[?7h\e[?25h\e[;r\e[?1049l'
 
     # Show user input.
     stty echo
@@ -464,15 +466,29 @@ fterminal_draw_tab_line() {
            "${HSFM_COLOR_STATUS_BG}" \
            "|${var_tab_list_post_buf}"
            # "|${1:-${var_pwd_escaped:-/}}|${var_tab_list_buf[@]}"
-
-
+    fterminal_draw_bookmark_line
+}
+fterminal_draw_bookmark_line() {
     # bookmark bar
-    fterminal_print '\e7\e[%sH\e[%s;%sm%*s\rBM | %s |\e[m\e8' \
+    local tmp_bookmark_buf=""
+    local tmp_cnt=1
+    for each_fav in "${!HSFM_FAV@}"
+    do
+        if test -n "${!each_fav}"
+        then
+            tmp_bookmark_buf+=" ${tmp_cnt}: ${!each_fav##*/} |"
+        fi
+        ((tmp_cnt++))
+    done
+
+    fterminal_print '\e7\e[%sH\e[%s;%sm%*s\rBM |%s \e[m\e8' \
            "$((2))" \
            "${HSFM_COLOR_TAB_BOOKMARK_FG}" \
            "${HSFM_COLOR_TAB_BOOKMARK_BG}" \
-           "$VAR_TERM_COLUMN_CNT" "" \
-           "1 :${HSFM_FAV1##*/} | 2:${HSFM_FAV2##*/} | 3:${HSFM_FAV3##*/} | 4:${HSFM_FAV4##*/} | 5:${HSFM_FAV5##*/} | 6:${HSFM_FAV6##*/} | 7:${HSFM_FAV7##*/} | 8:${HSFM_FAV8##*/} | 9:${HSFM_FAV9##*/}"
+           "${VAR_TERM_COLUMN_CNT}" "" \
+           "${tmp_bookmark_buf}"
+
+           # "1 :${HSFM_FAV1##*/} | 2:${HSFM_FAV2##*/} | 3:${HSFM_FAV3##*/} | 4:${HSFM_FAV4##*/} | 5:${HSFM_FAV5##*/} | 6:${HSFM_FAV6##*/} | 7:${HSFM_FAV7##*/} | 8:${HSFM_FAV8##*/} | 9:${HSFM_FAV9##*/}"
 }
 fterminal_draw_status_line() {
     # Status_line to print when files are marked for operation.
@@ -950,12 +966,17 @@ fnormal_mode_handler() {
         ${HSFM_KEY_CHILD2:=$'\e[C'}|\
         ${HSFM_KEY_CHILD4:=$'\eOC'})
             # only check if it's directory.
-            if test -d "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]##*/}"
+            if test -d "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
             then
                 fsys_open "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
+            elif test -f "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
+            then
+                local tmp_mine=$(fget_mime_type "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}")
+                local tmp_info=$(file "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}")
+                # flog_msg "File info(${tmp_mine%%;*}):$(file "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" | tail -n 1 | cut -d ':' -f2)"
+                flog_msg "File info(${tmp_mine%%;*}):${tmp_info##:}"
             else
-                # flog_msg $(file "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" | tail -n 1)
-                flog_msg "File type: $(file "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" | tail -n 1 | cut -d ':' -f2)"
+                flog_msg "No file found."
             fi
         ;;
 
@@ -1612,8 +1633,8 @@ fselection_mode_handler() {
 
 fget_mime_type() {
     # Get a file's mime_type.
-    # mime_type=$(file "-${file_flags:-biL}" "$1" 2>/dev/null)
-    echo $(file "-${file_flags:-biL}" "$*" 2>/dev/null)
+    # mime_type=$(file "-${VAR_TERM_FILE_ARGS:-biL}" "$1" 2>/dev/null)
+    echo $(file "-${VAR_TERM_FILE_ARGS:-biL}" "$*" 2>/dev/null)
 }
 fget_selection() {
 
@@ -1897,7 +1918,6 @@ cmd_editor()
 {
     local var_file="$@"
     if [[ -f "${var_file}" ]]; then
-        fterminal_clear
         fterminal_reset
 
         vim "${var_file}"
@@ -2194,15 +2214,14 @@ fsetup_osenv() {
         # Mac OS X / macOS.
         darwin*)
             HSFM_OPENER=fsys_open
-            file_flags=bIL
+            VAR_TERM_FILE_ARGS=bIL
             VAR_TERM_DIR_LS_ARGS=("--color=none")
             VAR_TERM_DIR_LS_ARGS+=("-h -ld ")
-            break
         ;;
 
         linux*|*)
             HSFM_OPENER=fsys_open
-            file_flags=bIL
+            VAR_TERM_FILE_ARGS=bIL
 
             [[ -z $HSFM_TRASH_CMD ]] &&
                 HSFM_TRASH_CMD=fselect_remove
@@ -2215,7 +2234,6 @@ fsetup_osenv() {
             VAR_TERM_DIR_LS_ARGS=("--color=none")
             VAR_TERM_DIR_LS_ARGS+=("--group-directories-first")
             VAR_TERM_DIR_LS_ARGS+=("-h -ld ")
-            break
         ;;
     esac
 }
@@ -2243,7 +2261,16 @@ fsetup_options() {
     fi
 
     # Find supported 'file' arguments.
-    file -I &>/dev/null || : "${file_flags:=biL}"
+    file -I &>/dev/null || : "${VAR_TERM_FILE_ARGS:=biL}"
+
+    # Setup bookmark
+    for each_fav in "${!HSFM_FAV@}"
+    do
+        if ! test -d ${!each_fav}
+        then
+            eval "${each_fav}=''"
+        fi
+    done
 }
 
 fsave_settings() {
