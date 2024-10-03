@@ -1979,7 +1979,7 @@ cmd_select()
     fterminal_print '\e[%sH' "$((VAR_TERM_TAB_LINE_HEIGHT + 1))"
     {
         fterminal_print 'Program: %s\n' "${VAR_TERM_FILE_PROGRAM}"
-        fterminal_print 'File list: %s files slected.\n' ${VAR_TERM_SELECTION_FILE_LIST[@]}
+        fterminal_print 'File list: %s files slected.\n' ${#VAR_TERM_SELECTION_FILE_LIST[@]}
         for each_file in "${VAR_TERM_SELECTION_FILE_LIST[@]}"
         do
             if test -e ${each_file}
@@ -2146,6 +2146,7 @@ fselect_remove() {
         command "$HSFM_TRASH_CMD" "${@:1:$#-1}"
 
     else
+        test -d "${HSFM_TRASH}" || mkdir -p "${HSFM_TRASH}"
         cd "$HSFM_TRASH" || flog_msg "error: Can't cd to trash directory."
 
         if cp -alf "$@" &>/dev/null; then
@@ -2215,6 +2216,7 @@ fsetup_osenv() {
         darwin*)
             HSFM_OPENER=fsys_open
             VAR_TERM_FILE_ARGS=bIL
+
             VAR_TERM_DIR_LS_ARGS=("--color=none")
             VAR_TERM_DIR_LS_ARGS+=("-h -ld ")
         ;;
@@ -2222,14 +2224,6 @@ fsetup_osenv() {
         linux*|*)
             HSFM_OPENER=fsys_open
             VAR_TERM_FILE_ARGS=bIL
-
-            [[ -z $HSFM_TRASH_CMD ]] &&
-                HSFM_TRASH_CMD=fselect_remove
-
-            [[ $HSFM_TRASH_CMD == fselect_remove ]] && {
-                HSFM_TRASH=$(finddir -v "$PWD" B_TRASH_DIRECTORY)
-                mkdir -p "$HSFM_TRASH"
-            }
 
             VAR_TERM_DIR_LS_ARGS=("--color=none")
             VAR_TERM_DIR_LS_ARGS+=("--group-directories-first")
