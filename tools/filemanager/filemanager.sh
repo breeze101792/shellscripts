@@ -64,11 +64,17 @@ export VAR_TERM_MARK_DIR=""
 export VAR_TERM_SELECTION_FILE_LIST=()
 export VAR_TERM_FILE_PROGRAM=()
 
+# log win
+export VAR_TERM_MSGWIN_SHOW=false
+export VAR_TERM_MSGWIN_BUFFER=""
+export VAR_TERM_MSGWIN_SCROLL_IDX=""
+export VAR_TERM_MSGWIN_HEIGHT="10"
+
 # Cmd line
 export VAR_TERM_CMD_INPUT_BUFFER=""
-export VAR_TERM_CMD_LIST=( "redraw" "fullredraw" "help" "info" "exit" "select" "shell" )
+export VAR_TERM_CMD_LIST=( "redraw" "fullredraw" "help" "info" "exit" "select" "shell" "test")
 VAR_TERM_CMD_LIST+=( "mkdir" "mkfile" "touch" "rename" "search" )
-VAR_TERM_CMD_LIST+=( "open" "editor" "vim" "media" "play" "image" "preview" )
+VAR_TERM_CMD_LIST+=( "open" "editor" "vim" "media" "play" "image" "preview")
 
 # Mode
 export VAR_TERM_VISUAL_START_IDX=0
@@ -212,6 +218,9 @@ export HSFM_KEY_CLOSE_TAB='w'
 export HSFM_KEY_MOVE_TAB_PREVIOUS='H'
 export HSFM_KEY_MOVE_TAB_NEXT='L'
 
+# Toggle message win.
+export HSFM_KEY_TOGGLE_MSGWIN="m"
+
 ### Miscellaneous
 # Show file attributes.
 export HSFM_KEY_ATTRIBUTES="i"
@@ -316,7 +325,7 @@ fHSFM_exit()
     fsave_settings
     fterminal_reset
     fterminal_print "FM finished.\n"
-    exit 0
+    # exit 0
 }
 
 ###########################################################
@@ -330,15 +339,31 @@ fterminal_redraw() {
         fterminal_read_dir
         VAR_TERM_CONTENT_SCROLL_IDX=0
         VAR_TERM_SCROLL_CURSOR=0
+
+        # Update status height
+        if [ ${VAR_TERM_MSGWIN_SHOW} = true ]
+        then
+            VAR_TERM_STATUS_LINE_CNT=$((${VAR_TERM_MSGWIN_HEIGHT} + 2))
+        else
+            VAR_TERM_STATUS_LINE_CNT=2
+        fi
+        fterminal_get_size
     }
+
+    ## Update ENV
     # order is important, don't change it.
     # clear before redraw, avoid glict/search result incorrect.
     VAR_TERM_PRINT_BUFFER_ENABLE=true
 
+    ## Do redraw
     fterminal_clear
     fterminal_draw_dir
     fterminal_draw_tab_line
     fterminal_draw_status_line
+    if [ ${VAR_TERM_MSGWIN_SHOW} = true ]
+    then
+        fterminal_draw_msgwin
+    fi
 
     fterminal_flush
 }
@@ -406,6 +431,115 @@ fterminal_draw_dir() {
     # fterminal_print '\e[%sH' "$((${var_scroll_new_cursor} + ${VAR_TERM_TAB_LINE_HEIGHT}))"
     ((VAR_TERM_SCROLL_CURSOR=var_scroll_new_cursor))
 }
+
+fterminal_draw_file_line() {
+
+    # If the dir item doesn't exist, end here.
+    if [[ -z ${VAR_TERM_DIR_FILE_LIST[$1]} ]]; then
+        return
+    fi
+
+    # Format the VAR_TERM_DIR_FILE_LIST item and print it.
+    local var_content_idx=$1
+    local var_file_name=${VAR_TERM_DIR_FILE_LIST[$var_content_idx]##*/}
+    # local var_file_name=${VAR_TERM_DIR_FILE_LIST[$var_content_idx]}
+    local var_file_ext=${var_file_name##*.}
+    local var_format
+    local var_postfix
+    local var_prefix
+    # local file_info="$(ls -al $PWD | grep ${var_file_name}\$ | sed 's/ [^ ]\+$//')"
+    local file_info="${VAR_TERM_DIR_FILE_INFO_LIST[$var_content_idx]}"
+
+    # Directory.
+    if [[ -d "${VAR_TERM_DIR_FILE_LIST[$var_content_idx]}" ]]; then
+        var_format+=\\e[${di:-1;${HSFM_COLOR_DIR:-32}}m
+        var_postfix+=/
+
+    # Block special file.
+    elif [[ -b ${VAR_TERM_DIR_FILE_LIST[$var_content_idx]} ]]; then
+        var_format+=\\e[${bd:-40;33;01}m
+
+    # Character special file.
+    elif [[ -c ${VAR_TERM_DIR_FILE_LIST[$var_content_idx]} ]]; then
+        var_format+=\\e[${cd:-40;33;01}m
+
+    # Executable file.
+    elif [[ -x ${VAR_TERM_DIR_FILE_LIST[$var_content_idx]} ]]; then
+        var_format+=\\e[${ex:-01;32}m
+
+    # Symbolic Link (broken).
+    elif [[ -h ${VAR_TERM_DIR_FILE_LIST[$var_content_idx]} && ! -e ${VAR_TERM_DIR_FILE_LIST[$var_content_idx]} ]]; then
+        var_format+=\\e[${mi:-01;31;7}m
+
+    # Symbolic Link.
+    elif [[ -h ${VAR_TERM_DIR_FILE_LIST[$var_content_idx]} ]]; then
+        var_format+=\\e[${ln:-01;36}m
+
+    # Fifo file.
+    elif [[ -p ${VAR_TERM_DIR_FILE_LIST[$var_content_idx]} ]]; then
+        var_format+=\\e[${pi:-40;33}m
+
+    # Socket file.
+    elif [[ -S ${VAR_TERM_DIR_FILE_LIST[$var_content_idx]} ]]; then
+        var_format+=\\e[${so:-01;35}m
+
+    # Color files that end in a pattern as defined in LS_COLORS.
+    # 'BASH_REMATCH' is an array that stores each REGEX match.
+    elif [[ $HSFM_LS_COLORS == 1 &&
+            $ls_patterns &&
+            $var_file_name =~ ($ls_patterns)$ ]]; then
+        match=${BASH_REMATCH[0]}
+        var_file_ext=ls_${match//[^a-zA-Z0-9=\\;]/_}
+        var_format+=\\e[${!var_file_ext:-${fi:-37}}m
+
+    # Color files based on file extension and LS_COLORS.
+    # Check if file extension adheres to POSIX naming
+    # standard before checking if its a variable.
+    elif [[ $HSFM_LS_COLORS == 1 &&
+            $var_file_ext != "$var_file_name" &&
+            $var_file_ext =~ ^[a-zA-Z0-9_]*$ ]]; then
+        var_file_ext=ls_${var_file_ext}
+        var_format+=\\e[${!var_file_ext:-${fi:-37}}m
+
+    else
+        var_format+=\\e[${fi:-37}m
+    fi
+
+    # If the VAR_TERM_DIR_FILE_LIST item is under the cursor.
+    (($var_content_idx == VAR_TERM_CONTENT_SCROLL_IDX)) &&
+        var_format+="\\e[1;${HSFM_COLOR_CURSOR:-36};7m"
+
+    # If the VAR_TERM_DIR_FILE_LIST item is marked for operation.
+    [[ ${VAR_TERM_MARKED_FILE_LIST[$var_content_idx]} == "${VAR_TERM_DIR_FILE_LIST[$var_content_idx]:-null}" ]] && {
+        var_format+=\\e[${HSFM_COLOR_SELECTION}m${VAR_TERM_MARK_PRE}
+        var_prefix+=${VAR_TERM_MARK_POST}
+    }
+
+    # Escape the directory string.
+    # Remove all non-printable characters.
+    var_file_name=${var_file_name//[^[:print:]]/^[}
+
+    local var_col_offset=0
+    local var_line_offset=0
+    if ((var_content_idx - VAR_TERM_CONTENT_SCROLL_START_IDX >= VAR_TERM_CONTENT_MAX_CNT))
+    then
+        ((VAR_TERM_CONTENT_SCROLL_START_IDX=$var_content_idx-$VAR_TERM_CONTENT_MAX_CNT+1))
+        var_line_offset=$((${VAR_TERM_TAB_LINE_HEIGHT} + ${VAR_TERM_CONTENT_MAX_CNT}))
+    elif ((var_content_idx < VAR_TERM_CONTENT_SCROLL_START_IDX))
+    then
+        ((VAR_TERM_CONTENT_SCROLL_START_IDX=var_content_idx))
+        var_line_offset=$((1 + ${VAR_TERM_TAB_LINE_HEIGHT}))
+    else
+        var_line_offset=$((1 + ${VAR_TERM_TAB_LINE_HEIGHT} + ${var_content_idx} - ${VAR_TERM_CONTENT_SCROLL_START_IDX}))
+    fi
+
+    fterminal_print '\e[%s;%sH' "${var_line_offset}" "${var_col_offset}"
+
+    fterminal_print '%b%s\e[m\e[K\r' \
+        " ${VAR_TERM_FILE_PRE}${var_format}" \
+        "${file_info} ${var_prefix}${var_file_name}${var_postfix}${VAR_TERM_FILE_POST}"
+}
+
 fterminal_draw_tab_line() {
     # Status_line to print when files are marked for operation.
     local var_tab_list_buf=""
@@ -566,112 +700,46 @@ fterminal_draw_status_line() {
            "$VAR_TERM_LINE_CNT"
 }
 
-fterminal_draw_file_line() {
+fterminal_draw_msgwin() {
+    # # Print the max directory items that fit in the VAR_TERM_CONTENT_SCROLL_IDX area.
+    # local var_scroll_start=$VAR_TERM_CONTENT_SCROLL_IDX
+    # local var_scroll_new_cursor
+    # local var_scroll_end
+    # local var_scroll_len=$(($VAR_TERM_CONTENT_MAX_CNT - 1))
 
-    # If the dir item doesn't exist, end here.
-    if [[ -z ${VAR_TERM_DIR_FILE_LIST[$1]} ]]; then
-        return
-    fi
+    fterminal_print '\e7\e[%sH\e[%s;%sm%*s\r MSG Win %s \e[m\n' \
+           "$((1 + ${VAR_TERM_TAB_LINE_HEIGHT} + ${VAR_TERM_CONTENT_MAX_CNT}))" \
+           "${HSFM_COLOR_TAB_BOOKMARK_FG}" \
+           "${HSFM_COLOR_TAB_BOOKMARK_BG}" \
+           "${VAR_TERM_COLUMN_CNT}"
+           # "${tmp_bookmark_buf}"
+    # fterminal_print '\e[%s;%sH' "$((1 + ${VAR_TERM_TAB_LINE_HEIGHT} + ${VAR_TERM_CONTENT_MAX_CNT}))" "${var_col_offset}"
 
-    # Format the VAR_TERM_DIR_FILE_LIST item and print it.
-    local var_content_idx=$1
-    local var_file_name=${VAR_TERM_DIR_FILE_LIST[$var_content_idx]##*/}
-    # local var_file_name=${VAR_TERM_DIR_FILE_LIST[$var_content_idx]}
-    local var_file_ext=${var_file_name##*.}
-    local var_format
-    local var_postfix
-    local var_prefix
-    # local file_info="$(ls -al $PWD | grep ${var_file_name}\$ | sed 's/ [^ ]\+$//')"
-    local file_info="${VAR_TERM_DIR_FILE_INFO_LIST[$var_content_idx]}"
+    # fterminal_print "%s\n" "${VAR_TERM_MSGWIN_BUFFER}"
+    fterminal_print "%s" "$(printf "${VAR_TERM_MSGWIN_BUFFER}" | tail -n $((${VAR_TERM_MSGWIN_HEIGHT} - 1)))"
+    # for ((idx=0;idx<=var_scroll_len;idx++)); {
+    #     # Don't print one too many newlines.
+    #     # if ((idx > 0))
+    #     # then
+    #     #     fterminal_print '\e[%s;%sH' "$((1 + ${VAR_TERM_TAB_LINE_HEIGHT} + idx))" "${var_col_offset}"
+    #     #     # fterminal_print '\n'
+    #     # fi
+    #
+    #     if [[ -z ${VAR_TERM_DIR_FILE_LIST[$((var_scroll_start + idx))]} ]]; then
+    #         break
+    #     fi
+    #
+    #     fterminal_draw_file_line "$((var_scroll_start + idx))"
+    # }
 
-    # Directory.
-    if [[ -d "${VAR_TERM_DIR_FILE_LIST[$var_content_idx]}" ]]; then
-        var_format+=\\e[${di:-1;${HSFM_COLOR_DIR:-32}}m
-        var_postfix+=/
+    fterminal_print '\e8'
 
-    # Block special file.
-    elif [[ -b ${VAR_TERM_DIR_FILE_LIST[$var_content_idx]} ]]; then
-        var_format+=\\e[${bd:-40;33;01}m
-
-    # Character special file.
-    elif [[ -c ${VAR_TERM_DIR_FILE_LIST[$var_content_idx]} ]]; then
-        var_format+=\\e[${cd:-40;33;01}m
-
-    # Executable file.
-    elif [[ -x ${VAR_TERM_DIR_FILE_LIST[$var_content_idx]} ]]; then
-        var_format+=\\e[${ex:-01;32}m
-
-    # Symbolic Link (broken).
-    elif [[ -h ${VAR_TERM_DIR_FILE_LIST[$var_content_idx]} && ! -e ${VAR_TERM_DIR_FILE_LIST[$var_content_idx]} ]]; then
-        var_format+=\\e[${mi:-01;31;7}m
-
-    # Symbolic Link.
-    elif [[ -h ${VAR_TERM_DIR_FILE_LIST[$var_content_idx]} ]]; then
-        var_format+=\\e[${ln:-01;36}m
-
-    # Fifo file.
-    elif [[ -p ${VAR_TERM_DIR_FILE_LIST[$var_content_idx]} ]]; then
-        var_format+=\\e[${pi:-40;33}m
-
-    # Socket file.
-    elif [[ -S ${VAR_TERM_DIR_FILE_LIST[$var_content_idx]} ]]; then
-        var_format+=\\e[${so:-01;35}m
-
-    # Color files that end in a pattern as defined in LS_COLORS.
-    # 'BASH_REMATCH' is an array that stores each REGEX match.
-    elif [[ $HSFM_LS_COLORS == 1 &&
-            $ls_patterns &&
-            $var_file_name =~ ($ls_patterns)$ ]]; then
-        match=${BASH_REMATCH[0]}
-        var_file_ext=ls_${match//[^a-zA-Z0-9=\\;]/_}
-        var_format+=\\e[${!var_file_ext:-${fi:-37}}m
-
-    # Color files based on file extension and LS_COLORS.
-    # Check if file extension adheres to POSIX naming
-    # standard before checking if its a variable.
-    elif [[ $HSFM_LS_COLORS == 1 &&
-            $var_file_ext != "$var_file_name" &&
-            $var_file_ext =~ ^[a-zA-Z0-9_]*$ ]]; then
-        var_file_ext=ls_${var_file_ext}
-        var_format+=\\e[${!var_file_ext:-${fi:-37}}m
-
-    else
-        var_format+=\\e[${fi:-37}m
-    fi
-
-    # If the VAR_TERM_DIR_FILE_LIST item is under the cursor.
-    (($var_content_idx == VAR_TERM_CONTENT_SCROLL_IDX)) &&
-        var_format+="\\e[1;${HSFM_COLOR_CURSOR:-36};7m"
-
-    # If the VAR_TERM_DIR_FILE_LIST item is marked for operation.
-    [[ ${VAR_TERM_MARKED_FILE_LIST[$var_content_idx]} == "${VAR_TERM_DIR_FILE_LIST[$var_content_idx]:-null}" ]] && {
-        var_format+=\\e[${HSFM_COLOR_SELECTION}m${VAR_TERM_MARK_PRE}
-        var_prefix+=${VAR_TERM_MARK_POST}
-    }
-
-    # Escape the directory string.
-    # Remove all non-printable characters.
-    var_file_name=${var_file_name//[^[:print:]]/^[}
-
-    local var_col_offset=0
-    local var_line_offset=0
-    if ((var_content_idx - VAR_TERM_CONTENT_SCROLL_START_IDX >= VAR_TERM_CONTENT_MAX_CNT))
-    then
-        ((VAR_TERM_CONTENT_SCROLL_START_IDX=$var_content_idx-$VAR_TERM_CONTENT_MAX_CNT+1))
-        var_line_offset=$((${VAR_TERM_TAB_LINE_HEIGHT} + ${VAR_TERM_CONTENT_MAX_CNT}))
-    elif ((var_content_idx < VAR_TERM_CONTENT_SCROLL_START_IDX))
-    then
-        ((VAR_TERM_CONTENT_SCROLL_START_IDX=var_content_idx))
-        var_line_offset=$((1 + ${VAR_TERM_TAB_LINE_HEIGHT}))
-    else
-        var_line_offset=$((1 + ${VAR_TERM_TAB_LINE_HEIGHT} + ${var_content_idx} - ${VAR_TERM_CONTENT_SCROLL_START_IDX}))
-    fi
-
-    fterminal_print '\e[%s;%sH' "${var_line_offset}" "${var_col_offset}"
-
-    fterminal_print '%b%s\e[m\e[K\r' \
-        " ${VAR_TERM_FILE_PRE}${var_format}" \
-        "${file_info} ${var_prefix}${var_file_name}${var_postfix}${VAR_TERM_FILE_POST}"
+    # Move the cursor to its new position if it changed.
+    # If the variable 'var_scroll_new_cursor' is empty, the cursor
+    # is moved to line '0'.
+    # fterminal_print '\e[%sH' "$(($var_scroll_new_cursor+1+VAR_TERM_TAB_LINE_HEIGHT))"
+    # fterminal_print '\e[%sH' "$((${var_scroll_new_cursor} + ${VAR_TERM_TAB_LINE_HEIGHT}))"
+    # ((VAR_TERM_SCROLL_CURSOR=var_scroll_new_cursor))
 }
 
 fterminal_mark_toggle() {
@@ -974,7 +1042,7 @@ fnormal_mode_handler() {
                 local tmp_mine=$(fget_mime_type "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}")
                 local tmp_info=$(file "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}")
                 # flog_msg "File info(${tmp_mine%%;*}):$(file "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" | tail -n 1 | cut -d ':' -f2)"
-                flog_msg "File info(${tmp_mine%%;*}):${tmp_info##:}"
+                flog_msg "File info(${tmp_mine%%;*}):${tmp_info##*:}"
             else
                 flog_msg "No file found."
             fi
@@ -1273,7 +1341,16 @@ fnormal_mode_handler() {
         # # Refresh current dir.
         ${HSFM_KEY_REFRESH:=r})
             fterminal_redraw
-            flog_msg "window refreshed."
+            flog_msg "Window Refreshed."
+        ;;
+        ${HSFM_KEY_TOGGLE_MSGWIN})
+            if [ ${VAR_TERM_MSGWIN_SHOW} = true ]
+            then
+                VAR_TERM_MSGWIN_SHOW=false
+            else
+                VAR_TERM_MSGWIN_SHOW=true
+            fi
+            fterminal_redraw full
         ;;
 
         # Directory favourites.
@@ -1780,6 +1857,9 @@ fcommand_line_interact() {
                     "echo")
                         flog_msg "${tmp_args}"
                         ;;
+                    "test")
+                        cmd_test "${tmp_args}" "${var_cmd_file}"
+                        ;;
                     *)
                         # flog_msg "Unknown commands: ${tmp_command} ${tmp_args}"
                         cmd_${tmp_command} ${tmp_args}
@@ -2019,6 +2099,21 @@ cmd_help()
     fcommand_line_interact "Enter Any Key To Continue..." "wait"
     fterminal_redraw
 }
+cmd_test()
+{
+    if [ ${VAR_TERM_MSGWIN_SHOW} = true ]
+    then
+        VAR_TERM_MSGWIN_SHOW=false
+    else
+        VAR_TERM_MSGWIN_SHOW=true
+    fi
+
+    shift 1
+    # VAR_TERM_MSGWIN_BUFFER=$(stat $*)
+    VAR_TERM_MSGWIN_BUFFER="$(stat $*)"
+    # printf -v VAR_TERM_MSGWIN_BUFFER "%s\n%s\n" $(stat $*)
+    fterminal_redraw full
+}
 cmd_exit()
 {
     : "${HSFM_CD_FILE}"
@@ -2029,7 +2124,7 @@ cmd_exit()
     [[ ${HSFM_CD_ON_EXIT:=1} == 1 ]] &&
         fterminal_print '%s\n' "$PWD" > "$HSFM_CD_FILE"
 
-    fHSFM_exit
+    exit 0
 }
 
 fsys_open() {
@@ -2223,7 +2318,7 @@ fsetup_osenv() {
 
         linux*|*)
             HSFM_OPENER=fsys_open
-            VAR_TERM_FILE_ARGS=bIL
+            VAR_TERM_FILE_ARGS=biL
 
             VAR_TERM_DIR_LS_ARGS=("--color=none")
             VAR_TERM_DIR_LS_ARGS+=("--group-directories-first")
@@ -2255,7 +2350,7 @@ fsetup_options() {
     fi
 
     # Find supported 'file' arguments.
-    file -I &>/dev/null || : "${VAR_TERM_FILE_ARGS:=biL}"
+    # file -I &>/dev/null || : "${VAR_TERM_FILE_ARGS:=biL}"
 
     # Setup bookmark
     for each_fav in "${!HSFM_FAV@}"
