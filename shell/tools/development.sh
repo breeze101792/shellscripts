@@ -766,7 +766,7 @@ function session()
                 fi
                 shift 1
                 ;;
-            --host|host|hostname|h)
+            --host|host|h|H)
                 local var_hostname=""
                 if command -v hostname 2>&1 > /dev/null
                 then
@@ -785,8 +785,14 @@ function session()
                 local tmp_name=$(session ls | grep "${var_hostname}" | cut -d ':' -f 1| cut -d "@" -f 2 | tr -d  ' ')
                 if [ "${tmp_name}" != "" ]
                 then
-                    var_action="attach"
-                    var_target_name=${tmp_name}
+                    if [ "${1}" = "H" ] || [ "${1}" = "Host" ]
+                    then
+                        var_action="attach-only"
+                        var_target_name=${tmp_name}
+                    else
+                        var_action="attach"
+                        var_target_name=${tmp_name}
+                    fi
                 else
                     var_action="create"
                     var_target_name=${var_hostname}
@@ -800,7 +806,7 @@ function session()
                 cli_helper -o "-D|--default" -d "use default socket"
                 cli_helper -o "-L|--real-list" -d "use command info to list session"
                 cli_helper -o "-ao|--attach-only|ao" -d "attach session with session name"
-                cli_helper -o "-a|--attach" -d "attach session with session name"
+                cli_helper -o "-a|--attach" -d "attach session with session name, and deatach other client with this session"
                 cli_helper -o "-c|--create" -d "create session with session name"
                 cli_helper -o "-da|--detach-all" -d "detach all session"
                 cli_helper -o "-d|--detach" -d "detach session"
@@ -811,7 +817,7 @@ function session()
                 cli_helper -o "-p|--purge" -d "purge socket"
                 cli_helper -o "-rm|--remove" -d "remove session with session list"
                 cli_helper -o "-f|--file" -d "Specify config file"
-                cli_helper -o "--host|host|hostname|h" -d "detach all session"
+                cli_helper -o "--host|host|Host|h|H" -d "Attach/Create with hostname, if Host/H, will attach-only."
                 return 0
                 ;;
             *)
