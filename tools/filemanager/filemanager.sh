@@ -66,13 +66,13 @@ export VAR_TERM_FILE_PROGRAM=()
 
 # log win
 export VAR_TERM_MSGWIN_SHOW=false
-export VAR_TERM_MSGWIN_BUFFER=""
+export VAR_TERM_MSGWIN_BUFFER="MSG Buffer..."
 export VAR_TERM_MSGWIN_SCROLL_IDX=""
 export VAR_TERM_MSGWIN_HEIGHT="10"
 
 # Cmd line
 export VAR_TERM_CMD_INPUT_BUFFER=""
-export VAR_TERM_CMD_LIST=( "redraw" "fullredraw" "help" "info" "exit" "select" "shell" "test")
+export VAR_TERM_CMD_LIST=( "redraw" "fullredraw" "help" "info" "exit" "select" "shell" "dump" "test")
 VAR_TERM_CMD_LIST+=( "mkdir" "mkfile" "touch" "rename" "search" )
 VAR_TERM_CMD_LIST+=( "open" "editor" "vim" "media" "play" "image" "preview")
 
@@ -82,6 +82,27 @@ export VAR_TERM_OPS_MODE='n'
 
 ## Others
 export VAR_TERM_SEARCH_END_EARLY=0
+
+###########################################################
+## HSFM Vars Options
+###########################################################
+
+## Path & file
+###########################################################
+#This is the setting file.
+export HSFM_FILE_CONFIG="${HOME}/.hsfm.sh"
+# CD on exit helper file
+# Default: '${XDG_CACHE_HOME}/hsfm/hsfm.d'
+#          If not using XDG, '${HOME}/.cache/hsfm/hsfm.d' is used.
+export HSFM_PATH_CACHE="${HOME}/.cache/hsfm"
+export HSFM_FILE_SESSION=${HSFM_PATH_CACHE}/hsfm_session.sh
+export HSFM_FILE_CD_HISTORY=${HSFM_PATH_CACHE}/hsfm_history.log
+export HSFM_FILE_MESSAGE=${HSFM_PATH_CACHE}/hsfm_message.log
+
+# Trash Directory
+# Default: '${XDG_DATA_HOME}/hsfm/trash'
+#          If not using XDG, '${XDG_DATA_HOME}/hsfm/trash' is used.
+export HSFM_PATH_TRASH="${HOME}/.trash"
 
 ## Themes & colors
 ###########################################################
@@ -122,19 +143,6 @@ export HSFM_STAT_CMD="stat"
 # Default: '1'
 export HSFM_CD_ON_EXIT=1
 
-# CD on exit helper file
-# Default: '${XDG_CACHE_HOME}/hsfm/hsfm.d'
-#          If not using XDG, '${HOME}/.cache/hsfm/hsfm.d' is used.
-export HSFM_STORE_PATH="${HOME}/.cache/hsfm"
-export HSFM_SESSION_FILE=${HSFM_STORE_PATH}/hsfm_session.sh
-export HSFM_CD_FILE=${HSFM_STORE_PATH}/hsfm_history.log
-export HSFM_MESSAGE_FILE=${HSFM_STORE_PATH}/hsfm_message.log
-
-# Trash Directory
-# Default: '${XDG_DATA_HOME}/hsfm/trash'
-#          If not using XDG, '${XDG_DATA_HOME}/hsfm/trash' is used.
-export HSFM_TRASH="${HOME}/.trash"
-
 # Trash Command
 # Default: 'mv'
 #          Define a custom program to use to trash files.
@@ -151,7 +159,7 @@ export HSFM_FAV5=~/workspace
 export HSFM_FAV6=~/documents
 export HSFM_FAV7=~/downloads
 export HSFM_FAV8=~/media
-export HSFM_FAV9=${HSFM_STORE_PATH}
+export HSFM_FAV9=${HSFM_PATH_CACHE}
 
 # File format.
 # Customize the item string.
@@ -165,6 +173,9 @@ export HSFM_FILE_FORMAT="%f"
 # Example (Add a ' >' before files): HSFM_MARK_FORMAT="> %f"
 export HSFM_MARK_FORMAT="%f*"
 
+# LS settings
+# a: alph, t:time
+export HSFM_LS_SORTING=""
 ## Keybindings
 ###########################################################
 
@@ -225,8 +236,9 @@ export HSFM_KEY_TOGGLE_MSGWIN="m"
 # Show file attributes.
 export HSFM_KEY_ATTRIBUTES="i"
 
-# Toggle hidden files.
+# LS Toggle hidden files.
 export HSFM_KEY_HIDDEN="."
+export HSFM_KEY_SORTING="S"
 
 # Toggle executable flag.
 # export HSFM_KEY_EXECUTABLE="X"
@@ -323,6 +335,7 @@ fHSFM_exit()
 {
     HSFM_RUNNING=0
     fsave_settings
+    fterminal_clear
     fterminal_reset
     fterminal_print "FM finished.\n"
     # exit 0
@@ -339,21 +352,21 @@ fterminal_redraw() {
         fterminal_read_dir
         VAR_TERM_CONTENT_SCROLL_IDX=0
         VAR_TERM_SCROLL_CURSOR=0
-
-        # Update status height
-        if [ ${VAR_TERM_MSGWIN_SHOW} = true ]
-        then
-            VAR_TERM_STATUS_LINE_CNT=$((${VAR_TERM_MSGWIN_HEIGHT} + 2))
-        else
-            VAR_TERM_STATUS_LINE_CNT=2
-        fi
-        fterminal_get_size
     }
 
     ## Update ENV
     # order is important, don't change it.
     # clear before redraw, avoid glict/search result incorrect.
     VAR_TERM_PRINT_BUFFER_ENABLE=true
+
+    # Update status height
+    if [ ${VAR_TERM_MSGWIN_SHOW} = true ]
+    then
+        VAR_TERM_STATUS_LINE_CNT=$((${VAR_TERM_MSGWIN_HEIGHT} + 2))
+    else
+        VAR_TERM_STATUS_LINE_CNT=2
+    fi
+    fterminal_get_size
 
     ## Do redraw
     fterminal_clear
@@ -700,12 +713,7 @@ fterminal_draw_status_line() {
            "$VAR_TERM_LINE_CNT"
 }
 
-fterminal_draw_msgwin() {
-    # # Print the max directory items that fit in the VAR_TERM_CONTENT_SCROLL_IDX area.
-    # local var_scroll_start=$VAR_TERM_CONTENT_SCROLL_IDX
-    # local var_scroll_new_cursor
-    # local var_scroll_end
-    # local var_scroll_len=$(($VAR_TERM_CONTENT_MAX_CNT - 1))
+fterminal_draw_msgwin_bak() {
 
     fterminal_print '\e7\e[%sH\e[%s;%sm%*s\r MSG Win %s \e[m\n' \
            "$((1 + ${VAR_TERM_TAB_LINE_HEIGHT} + ${VAR_TERM_CONTENT_MAX_CNT}))" \
@@ -717,29 +725,56 @@ fterminal_draw_msgwin() {
 
     # fterminal_print "%s\n" "${VAR_TERM_MSGWIN_BUFFER}"
     fterminal_print "%s" "$(printf "${VAR_TERM_MSGWIN_BUFFER}" | tail -n $((${VAR_TERM_MSGWIN_HEIGHT} - 1)))"
-    # for ((idx=0;idx<=var_scroll_len;idx++)); {
-    #     # Don't print one too many newlines.
-    #     # if ((idx > 0))
-    #     # then
-    #     #     fterminal_print '\e[%s;%sH' "$((1 + ${VAR_TERM_TAB_LINE_HEIGHT} + idx))" "${var_col_offset}"
-    #     #     # fterminal_print '\n'
-    #     # fi
-    #
-    #     if [[ -z ${VAR_TERM_DIR_FILE_LIST[$((var_scroll_start + idx))]} ]]; then
-    #         break
-    #     fi
-    #
-    #     fterminal_draw_file_line "$((var_scroll_start + idx))"
-    # }
 
     fterminal_print '\e8'
+}
+fterminal_draw_msgwin() {
+    local var_width=${VAR_TERM_COLUMN_CNT}
+    local var_height=${VAR_TERM_MSGWIN_HEIGHT}
+    local var_start_line=$((1 + ${VAR_TERM_TAB_LINE_HEIGHT} + ${VAR_TERM_CONTENT_MAX_CNT}))
+    local var_start_col=0
 
-    # Move the cursor to its new position if it changed.
-    # If the variable 'var_scroll_new_cursor' is empty, the cursor
-    # is moved to line '0'.
-    # fterminal_print '\e[%sH' "$(($var_scroll_new_cursor+1+VAR_TERM_TAB_LINE_HEIGHT))"
-    # fterminal_print '\e[%sH' "$((${var_scroll_new_cursor} + ${VAR_TERM_TAB_LINE_HEIGHT}))"
-    # ((VAR_TERM_SCROLL_CURSOR=var_scroll_new_cursor))
+    local var_line_buf=""
+
+    fterminal_print '\e7'
+
+    var_line_buf="MSG Win"
+    fterminal_print '\e[%sH\e[%sm%*s\e[m' \
+           "${var_start_line};${var_start_col}" \
+           "${HSFM_COLOR_TAB_BOOKMARK_FG};${HSFM_COLOR_TAB_BOOKMARK_BG}" \
+           "${var_width}"
+    fterminal_print '\e[%sH\e[%sm %s \e[m' \
+           "${var_start_line};${var_start_col}" \
+           "${HSFM_COLOR_TAB_BOOKMARK_FG};${HSFM_COLOR_TAB_BOOKMARK_BG}" \
+           "${var_line_buf}"
+
+    # fterminal_print "%s" "$(printf "${VAR_TERM_MSGWIN_BUFFER}" | tail -n $((${VAR_TERM_MSGWIN_HEIGHT} - 1)))"
+
+    # local var_line_list=("${VAR_TERM_MSGWIN_BUFFER[@]}")
+    read -a var_line_list <<< "${VAR_TERM_MSGWIN_BUFFER[@]}"
+
+    printf -v var_line_list "%s" "$(printf "${VAR_TERM_MSGWIN_BUFFER}" | tail -n $((${VAR_TERM_MSGWIN_HEIGHT} - 1)))"
+    local var_line_cnt=${#var_line_list[@]}
+
+    for ((idx=0;idx < var_height - 1;idx++)); {
+        var_line_buf=""
+        # clean lines
+        fterminal_print '\e[%sH\e[%sm%*s\e[m' \
+            "$((var_start_line + 1 + idx));${var_start_col}" \
+            "${HSFM_COLOR_TAB_BOOKMARK_FG};${HSFM_COLOR_TAB_BOOKMARK_BG}" \
+            "${var_width}"
+
+        # if (( idx < var_line_cnt ))
+        # then
+            # Draw lines
+            fterminal_print '\e[%sH\e[%sm %s \e[m' \
+            "$((var_start_line + 1 + idx));${var_start_col}" \
+                "${HSFM_COLOR_TAB_BOOKMARK_FG};${HSFM_COLOR_TAB_BOOKMARK_BG}" \
+                "${idx}: ${var_line_list[${idx}]}"
+        # fi
+    }
+
+    fterminal_print '\e8'
 }
 
 fterminal_mark_toggle() {
@@ -894,6 +929,12 @@ fterminal_read_dir() {
         then
             var_ls_args+=("-A")
         fi
+
+        if test -n "${HSFM_LS_SORTING}"
+        then
+            var_ls_args+=("${HSFM_LS_SORTING}")
+        fi
+
         # for each_line in "$(ls -al ${PWD}/)";
         while read each_line;
         do
@@ -1277,6 +1318,17 @@ fnormal_mode_handler() {
             fterminal_redraw full
             # flog_msg "Hidden: $HSFM_ENABLE_HIDDEN/${shopt_flags[$HSFM_ENABLE_HIDDEN]}"
         ;;
+        # Toggle sorting method
+        ${HSFM_KEY_SORTING})
+            if [ "${HSFM_LS_SORTING}" = "" ]
+            then
+                HSFM_LS_SORTING="-t"
+            else
+                HSFM_LS_SORTING=""
+            fi
+            fterminal_redraw full
+            flog_msg "Sorting: ${HSFM_LS_SORTING}"
+        ;;
 
         # Search.
         ${HSFM_KEY_SEARCH:=/})
@@ -1330,7 +1382,7 @@ fnormal_mode_handler() {
 
         # Go to trash.
         ${HSFM_KEY_GO_TRASH:=t})
-            fsys_open "$HSFM_TRASH"
+            fsys_open "$HSFM_PATH_TRASH"
         ;;
 
         # Go to previous dir.
@@ -1350,7 +1402,7 @@ fnormal_mode_handler() {
             else
                 VAR_TERM_MSGWIN_SHOW=true
             fi
-            fterminal_redraw full
+            fterminal_redraw
         ;;
 
         # Directory favourites.
@@ -1390,13 +1442,13 @@ fnormal_mode_handler() {
         # remove the option to quit.
         q)
             cmd_exit
-            # : "${HSFM_CD_FILE:=${XDG_CACHE_HOME:=${HOME}/.cache}/hsfm/.hsfm_d}"
+            # : "${HSFM_FILE_CD_HISTORY:=${XDG_CACHE_HOME:=${HOME}/.cache}/hsfm/.hsfm_d}"
             #
-            # [[ -w $HSFM_CD_FILE ]] &&
-            #     rm "$HSFM_CD_FILE"
+            # [[ -w $HSFM_FILE_CD_HISTORY ]] &&
+            #     rm "$HSFM_FILE_CD_HISTORY"
             #
             # [[ ${HSFM_CD_ON_EXIT:=1} == 1 ]] &&
-            #     fterminal_print '%s\n' "$PWD" > "$HSFM_CD_FILE"
+            #     fterminal_print '%s\n' "$PWD" > "$HSFM_FILE_CD_HISTORY"
             #
             # exit
         ;;
@@ -1532,7 +1584,7 @@ fvisual_mode_handler() {
         # File operstions
         ${HSFM_KEY_YANK:=y})
             VAR_TERM_FILE_PROGRAM=(cp -iR)
-            VAR_TERM_SELECTION_FILE_LIST=(${VAR_TERM_MARKED_FILE_LIST[@]})
+            VAR_TERM_SELECTION_FILE_LIST=("${VAR_TERM_MARKED_FILE_LIST[@]}")
 
             VAR_TERM_MARKED_FILE_LIST=()
             fmode_setup "n"
@@ -1541,7 +1593,7 @@ fvisual_mode_handler() {
             ;;
         ${HSFM_KEY_CUT:=m})
             VAR_TERM_FILE_PROGRAM=(mv -i)
-            VAR_TERM_SELECTION_FILE_LIST=(${VAR_TERM_MARKED_FILE_LIST[@]})
+            VAR_TERM_SELECTION_FILE_LIST=("${VAR_TERM_MARKED_FILE_LIST[@]}")
 
             VAR_TERM_MARKED_FILE_LIST=()
             fmode_setup "n"
@@ -1550,7 +1602,7 @@ fvisual_mode_handler() {
             ;;
         ${HSFM_KEY_TRASH:=d})
             VAR_TERM_FILE_PROGRAM=(fselect_remove)
-            VAR_TERM_SELECTION_FILE_LIST=(${VAR_TERM_MARKED_FILE_LIST[@]})
+            VAR_TERM_SELECTION_FILE_LIST=("${VAR_TERM_MARKED_FILE_LIST[@]}")
 
             VAR_TERM_MARKED_FILE_LIST=()
             fselect_execute
@@ -1678,7 +1730,7 @@ fselection_mode_handler() {
         # File operstions
         ${HSFM_KEY_YANK:=y})
             VAR_TERM_FILE_PROGRAM=(cp -iR)
-            VAR_TERM_SELECTION_FILE_LIST=(${VAR_TERM_MARKED_FILE_LIST[@]})
+            VAR_TERM_SELECTION_FILE_LIST=("${VAR_TERM_MARKED_FILE_LIST[@]}")
 
             VAR_TERM_MARKED_FILE_LIST=()
             fmode_setup "n"
@@ -1687,7 +1739,7 @@ fselection_mode_handler() {
             ;;
         ${HSFM_KEY_CUT:=m})
             VAR_TERM_FILE_PROGRAM=(mv -i)
-            VAR_TERM_SELECTION_FILE_LIST=(${VAR_TERM_MARKED_FILE_LIST[@]})
+            VAR_TERM_SELECTION_FILE_LIST=("${VAR_TERM_MARKED_FILE_LIST[@]}")
 
             VAR_TERM_MARKED_FILE_LIST=()
             fmode_setup "n"
@@ -1696,7 +1748,7 @@ fselection_mode_handler() {
             ;;
         ${HSFM_KEY_TRASH:=d})
             VAR_TERM_FILE_PROGRAM=(fselect_remove)
-            VAR_TERM_SELECTION_FILE_LIST=(${VAR_TERM_MARKED_FILE_LIST[@]})
+            VAR_TERM_SELECTION_FILE_LIST=("${VAR_TERM_MARKED_FILE_LIST[@]}")
 
             VAR_TERM_MARKED_FILE_LIST=()
             fselect_execute
@@ -1916,7 +1968,7 @@ flog_msg_debug()
 {
     if [ ${HSFM_DEBUG} = true ]
     then
-        printf "%s\n" "$*" >> ${HSFM_MESSAGE_FILE}
+        printf "%s\n" "$*" >> ${HSFM_FILE_MESSAGE}
     fi
 }
 flog_msg()
@@ -2038,6 +2090,38 @@ cmd_shell()
     fterminal_setup
     fterminal_redraw
 }
+cmd_sort()
+{
+    local var_name=""
+    case $1 in
+        a*|alph|n*|none)
+            HSFM_LS_SORTING="-U"
+            var_name="none"
+           ;;
+        s*|size)
+            HSFM_LS_SORTING="-S"
+            var_name="size"
+            ;;
+        t*|time)
+            HSFM_LS_SORTING="-t"
+            var_name="time"
+            ;;
+        v*|version)
+            HSFM_LS_SORTING="-v"
+            var_name="version"
+            ;;
+        e*|extension)
+            HSFM_LS_SORTING="-X"
+            var_name="extension"
+           ;;
+        *)
+            echo "Sorting Options: none/size/time/version/extension"
+            return 0
+            ;;
+    esac
+    fterminal_redraw full
+    flog_msg "Sorting: ${var_name}"
+}
 cmd_cd()
 {
     if test -d $@
@@ -2062,17 +2146,19 @@ cmd_select()
         fterminal_print 'File list: %s files slected.\n' ${#VAR_TERM_SELECTION_FILE_LIST[@]}
         for each_file in "${VAR_TERM_SELECTION_FILE_LIST[@]}"
         do
-            if test -e ${each_file}
+            if test -e "${each_file}"
             then
                 # fterminal_print '%s\n' "$(ls -ld ${each_file})"
                 fterminal_print '    %s\n' "${each_file}"
+            else
+                fterminal_print '    %s => Not found.\n' "${each_file}"
             fi
         done
     }
     fterminal_draw_tab_line
     fterminal_draw_status_line
     # read -ern 1
-    fcommand_line_interact "Enter Any Key To Continue..." "wait"
+    fcommand_line_interact "Press Enter Key To Continue..." "wait" "q"
     fterminal_redraw
 }
 cmd_stat()
@@ -2086,7 +2172,49 @@ cmd_stat()
     stat "$*"
     fterminal_draw_tab_line
     fterminal_draw_status_line
-    fcommand_line_interact "Enter Any Key To Continue..." "wait"
+    fcommand_line_interact "Press Enter Key To Continue..." "wait" "q"
+    fterminal_redraw
+}
+cmd_dump()
+{
+    fterminal_clear
+    fterminal_draw_tab_line
+    local var_print_cnt=0
+    fterminal_print '\e[%sH' "$((VAR_TERM_TAB_LINE_HEIGHT + 1 + var_print_cnt++))"
+    ################################################################
+    fterminal_print '\e[%sH\r## %s' "$((VAR_TERM_TAB_LINE_HEIGHT + 1 + var_print_cnt++))" "HSFM_PATH"
+    for each_var in ${!HSFM_PATH_@}
+    do
+        if [[ ${var_print_cnt} -gt ${VAR_TERM_CONTENT_MAX_CNT} ]]
+        then
+            break
+        fi
+        fterminal_print '\e[%sH\r    %- 24s: %s' "$((VAR_TERM_TAB_LINE_HEIGHT + 1 + var_print_cnt++))" "${each_var}" "${!each_var}"
+    done
+
+    fterminal_print '\e[%sH\r## %s' "$((VAR_TERM_TAB_LINE_HEIGHT + 1 + var_print_cnt++))" "HSFM_FILE"
+    for each_var in ${!HSFM_FILE_@}
+    do
+        if [[ ${var_print_cnt} -gt ${VAR_TERM_CONTENT_MAX_CNT} ]]
+        then
+            break
+        fi
+        fterminal_print '\e[%sH\r    %- 24s: %s' "$((VAR_TERM_TAB_LINE_HEIGHT + 1 + var_print_cnt++))" "${each_var}" "${!each_var}"
+    done
+
+    fterminal_print '\e[%sH\r## %s' "$((VAR_TERM_TAB_LINE_HEIGHT + 1 + var_print_cnt++))" "HSFM_FAV"
+    for each_var in ${!HSFM_FAV@}
+    do
+        if [[ ${var_print_cnt} -gt ${VAR_TERM_CONTENT_MAX_CNT} ]]
+        then
+            break
+        fi
+        fterminal_print '\e[%sH\r    %- 24s: %s' "$((VAR_TERM_TAB_LINE_HEIGHT + 1 + var_print_cnt++))" "${each_var}" "${!each_var}"
+    done
+    ################################################################
+    fterminal_draw_tab_line
+    fterminal_draw_status_line
+    fcommand_line_interact "Press Enter Key To Continue..." "wait" "q"
     fterminal_redraw
 }
 cmd_help()
@@ -2096,7 +2224,7 @@ cmd_help()
     fterminal_draw_status_line "Help info"
     fterminal_print '\e[%sH' "$((VAR_TERM_TAB_LINE_HEIGHT + 1))"
     fHelp $@
-    fcommand_line_interact "Enter Any Key To Continue..." "wait"
+    fcommand_line_interact "Press Enter Key To Continue..." "wait" "q"
     fterminal_redraw
 }
 cmd_test()
@@ -2112,17 +2240,17 @@ cmd_test()
     # VAR_TERM_MSGWIN_BUFFER=$(stat $*)
     VAR_TERM_MSGWIN_BUFFER="$(stat $*)"
     # printf -v VAR_TERM_MSGWIN_BUFFER "%s\n%s\n" $(stat $*)
-    fterminal_redraw full
+    fterminal_redraw
 }
 cmd_exit()
 {
-    : "${HSFM_CD_FILE}"
+    : "${HSFM_FILE_CD_HISTORY}"
 
-    [[ -w $HSFM_CD_FILE ]] &&
-        rm "$HSFM_CD_FILE"
+    [[ -w $HSFM_FILE_CD_HISTORY ]] &&
+        rm "$HSFM_FILE_CD_HISTORY"
 
     [[ ${HSFM_CD_ON_EXIT:=1} == 1 ]] &&
-        fterminal_print '%s\n' "$PWD" > "$HSFM_CD_FILE"
+        fterminal_print '%s\n' "$PWD" > "$HSFM_FILE_CD_HISTORY"
 
     exit 0
 }
@@ -2213,7 +2341,14 @@ fselect_execute()
 
         stty echo
         # fterminal_print '\e[1mhsfm\e[m: %s\n' "Running ${VAR_TERM_FILE_PROGRAM[0]}"
-        "${VAR_TERM_FILE_PROGRAM[@]}" "${VAR_TERM_SELECTION_FILE_LIST[@]}" .
+        local tmp_cmd="${VAR_TERM_FILE_PROGRAM[@]} "
+        for each_file in "${VAR_TERM_SELECTION_FILE_LIST[@]}"
+        do
+            tmp_cmd+="'${each_file}' "
+        done
+        tmp_cmd+="./"
+        eval "${tmp_cmd}"
+        # "${VAR_TERM_FILE_PROGRAM[@]}" "${VAR_TERM_SELECTION_FILE_LIST[@]}" .
         stty -echo
 
         # VAR_TERM_SELECTION_FILE_LIST=()
@@ -2224,11 +2359,11 @@ fselect_execute()
 }
 fselect_remove() {
     # Trash a file.
-    if [[ ${#VAR_TERM_SELECTION_FILE_LIST[@]} == 1 ]] 
+    if [[ $(($#-1)) == 1 ]] 
     then
-        fcommand_line_interact "trash [${VAR_TERM_SELECTION_FILE_LIST[@]}] items? [y/n]: " y n
+        fcommand_line_interact "trash [$(($#-1))] items? [y/n]: " y n
     else
-        fcommand_line_interact "trash [${#VAR_TERM_SELECTION_FILE_LIST[@]}] items? [y/n]: " y n
+        fcommand_line_interact "trash [$(($#-1))] items? [y/n]: " y n
     fi
 
     [[ $VAR_TERM_CMD_INPUT_BUFFER != y ]] &&
@@ -2241,17 +2376,21 @@ fselect_remove() {
         command "$HSFM_TRASH_CMD" "${@:1:$#-1}"
 
     else
-        test -d "${HSFM_TRASH}" || mkdir -p "${HSFM_TRASH}"
-        cd "$HSFM_TRASH" || flog_msg "error: Can't cd to trash directory."
+        # FIXME, don't trash on different device/big file size
+        rm -r "${@:1:$#-1}"
 
-        if cp -alf "$@" &>/dev/null; then
-            rm -r "${@:1:$#-1}"
-        else
-            mv -f "$@"
-        fi
-
-        # Go back to where we were.
-        cd "$OLDPWD" ||:
+        # test -d "${HSFM_PATH_TRASH}" || mkdir -p "${HSFM_PATH_TRASH}"
+        # cd "$HSFM_PATH_TRASH" || flog_msg "error: Can't cd to trash directory."
+        #
+        # if cp -alf "$@" &>/dev/null; then
+        #     rm -r "${@:1:$#-1}"
+        # else
+        #     flog_msg "mv -f $@"
+        #     mv -f "$@"
+        # fi
+        #
+        # # Go back to where we were.
+        # cd "$OLDPWD" ||:
     fi
 }
 
@@ -2328,6 +2467,11 @@ fsetup_osenv() {
 }
 
 fsetup_options() {
+
+    # source config file if exist.
+    test -f ${HSFM_FILE_CONFIG} && {
+        source ${HSFM_FILE_CONFIG}
+    }
     # Some options require some setup.
     # This function is called once on open to parse
     # select options so the operation isn't repeated
@@ -2355,8 +2499,10 @@ fsetup_options() {
     # Setup bookmark
     for each_fav in "${!HSFM_FAV@}"
     do
-        if ! test -d ${!each_fav}
+        if eval "test -d \"${!each_fav}\""
         then
+            eval "${each_fav}='${!each_fav%%/}'"
+        else
             eval "${each_fav}=''"
         fi
     done
@@ -2368,19 +2514,23 @@ fsave_settings() {
         return 0
     fi
 
-    if test -f ${HSFM_SESSION_FILE}
+    if test -f ${HSFM_FILE_SESSION}
     then
-        rm ${HSFM_SESSION_FILE}
+        rm ${HSFM_FILE_SESSION}
     fi
 
-    echo "export VAR_TERM_TAB_LINE_IDX=(${VAR_TERM_TAB_LINE_IDX})" >> ${HSFM_SESSION_FILE}
-    echo "export VAR_TERM_TAB_LINE_LIST=(${VAR_TERM_TAB_LINE_LIST[@]})" >> ${HSFM_SESSION_FILE}
-    echo "cd ${PWD}" >> ${HSFM_SESSION_FILE}
+    echo "export VAR_TERM_TAB_LINE_IDX=(${VAR_TERM_TAB_LINE_IDX})" >> ${HSFM_FILE_SESSION}
+    echo "export VAR_TERM_TAB_LINE_LIST=()" >> ${HSFM_FILE_SESSION}
+    for each_tab in "${VAR_TERM_TAB_LINE_LIST[@]}"
+    do
+        echo "VAR_TERM_TAB_LINE_LIST+=(\"${each_tab}\")" >> ${HSFM_FILE_SESSION}
+    done
+    echo "cd ${PWD}" >> ${HSFM_FILE_SESSION}
 }
 fload_settings() {
-    if test -f ${HSFM_SESSION_FILE}
+    if test -f ${HSFM_FILE_SESSION}
     then
-        source ${HSFM_SESSION_FILE}
+        source ${HSFM_FILE_SESSION}
     fi
 }
 
@@ -2471,6 +2621,7 @@ fHelp_keymap() {
 fHelp_commands() {
     echo "FileManager"
     fterminal_print "[Options]\n"
+    fterminal_print "    %- 16s\t%s\n" "-s|-setup   " "Copy hsfm config file."
     fterminal_print "    %- 16s\t%s\n" "-d|--debug  " "Enable debug flag."
     fterminal_print "    %- 16s\t%s\n" "-r|--restore" "restore previous session."
     fterminal_print "    %- 16s\t%s\n" "--history   " "Store history."
@@ -2527,7 +2678,7 @@ function fCore() {
         shopt -s dotglob
 
     # Create the trash and cache directory if they don't exist.
-    mkdir -p "${HSFM_STORE_PATH}"
+    mkdir -p "${HSFM_PATH_CACHE}"
 
     # 'nocaseglob': Glob case insensitively (Used for case insensitive search).
     # 'nullglob':   Don't expand non-matching globs to themselves.
@@ -2563,6 +2714,8 @@ function fCore() {
                     fnormal_mode_handler "$REPLY"
                     ;;
                 esac
+                # Discard following input
+                read -t 0 -rsn 10000 _
             }
 
         # Exit if there is no longer a terminal attached.
@@ -2589,6 +2742,17 @@ function fMain()
                 ;;
             -r|-restore)
                 fload_settings
+                ;;
+            -s|-setup)
+                if ! test -f "${HSFM_FILE_CONFIG}"
+                then
+                    cp $(dirname ${BASH_SOURCE[0]})/hsfm_template.sh ${HSFM_FILE_CONFIG}
+                    echo "File copied."
+                    return 0
+                else
+                    echo "File exits."
+                    exit 1
+                fi
                 ;;
             # Options
             -v|--verbose)

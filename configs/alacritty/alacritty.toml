@@ -18,12 +18,16 @@
 # I put the file alacritty.toml in $HOME/.config/alacritty. However it can be kept anywhere among the places mentioned in
 # https://github.com/alacritty/alacritty/tree/master#configuration
 
+[env]
+TERM = "xterm-256color"
+
+
 [window]
 
 opacity = 0.9
 
-padding.x = 10
-padding.y = 10
+# padding.x = 2
+# padding.y = 2
 
 decorations = "Full"
 decorations_theme_variant = "Light" # "Dark"
@@ -35,7 +39,7 @@ decorations_theme_variant = "Light" # "Dark"
 # italic.family = "Cascadia Code PL"
 # bold_italic.family = "Cascadia Code PL"
 
-size = 16.0
+size = 14.0
 
 # Tip: for inspiration, look for values in the source code files of your favorite VS Code themes, and use the color picker in
 # Google to test colors before setting a value, or simply using an editor such as VS Code where colors are displayed in a 
@@ -43,5 +47,16 @@ size = 16.0
 # NOTE. It's more like a patch to me.
 [keyboard]
 bindings = [
-  { key = "Slash", mods = "Control", chars = "\u001f" }
+    { key = "Slash", mods = "Control", chars = "\u001f" },
+    { action = "SpawnNewInstance", key = "Return", mods = "Control|Shift"} ,
+    { action = "Paste", key = "Paste"} ,
+    { action = "Copy", key = "Copy"} ,
+    { action = "Paste", key = "V", mods = "Alt"} ,
+    { action = "Copy", key = "C", mods = "Alt"} ,
+    { action = "SearchForward", key = "F", mode = "~Search", mods = "Control|Shift"} ,
+    { action = "SearchBackward", key = "B", mode = "~Search", mods = "Control|Shift"} ,
+    { action = "ClearSelection", key = "C", mode = "Vi|~Search", mods = "Control|Shift"} ,
+    { action = "PasteSelection", key = "Insert", mods = "Shift"} ,
+    { action = "Copy", key = "Insert", mods = "Control"}
 ]
+

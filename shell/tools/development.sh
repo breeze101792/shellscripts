@@ -1216,80 +1216,6 @@ function xcd()
                 # shift 2
                 break
                 ;;
-            -s|--hs-script|hs)
-                target_path=${HS_PATH_LIB}
-                ;;
-            -w|--work-script|work)
-                target_path=${HS_PATH_WORK}
-                ;;
-            -i|--vim-ide|ide)
-                target_path=${HS_PATH_IDE}
-                ;;
-            --slink|slink)
-                target_path=${HS_PATH_SLINK}
-                ;;
-            -c|--document|doc|document)
-                target_path=${HS_PATH_DOCUMENT}
-                ;;
-            -d|--download|dl|download|down)
-                target_path=${HS_PATH_DOWNLOAD}
-                ;;
-            --log|log)
-                target_path=${HS_PATH_LOG}
-                ;;
-            -l|--lab|lab)
-                target_path=${HS_PATH_LAB}
-                if [ ! -d "${target_path}" ]
-                then
-                    mkdir ${target_path}
-                fi
-                ;;
-            -b|--build|build)
-                target_path=${HS_PATH_BUILD}
-                ;;
-            ${HS_VAR_ECD_NAME_0}) target_path=${HS_PATH_ECD_0} ;;
-            ${HS_VAR_ECD_NAME_1}) target_path=${HS_PATH_ECD_1} ;;
-            ${HS_VAR_ECD_NAME_2}) target_path=${HS_PATH_ECD_2} ;;
-            ${HS_VAR_ECD_NAME_3}) target_path=${HS_PATH_ECD_3} ;;
-            ${HS_VAR_ECD_NAME_4}) target_path=${HS_PATH_ECD_4} ;;
-            ${HS_VAR_ECD_NAME_5}) target_path=${HS_PATH_ECD_5} ;;
-            ${HS_VAR_ECD_NAME_6}) target_path=${HS_PATH_ECD_6} ;;
-            ${HS_VAR_ECD_NAME_7}) target_path=${HS_PATH_ECD_7} ;;
-            ${HS_VAR_ECD_NAME_8}) target_path=${HS_PATH_ECD_8} ;;
-            ${HS_VAR_ECD_NAME_9}) target_path=${HS_PATH_ECD_9} ;;
-
-            ${HS_VAR_ECD_NAME_10}) target_path=${HS_PATH_ECD_10} ;;
-            ${HS_VAR_ECD_NAME_11}) target_path=${HS_PATH_ECD_11} ;;
-            ${HS_VAR_ECD_NAME_12}) target_path=${HS_PATH_ECD_12} ;;
-            ${HS_VAR_ECD_NAME_13}) target_path=${HS_PATH_ECD_13} ;;
-            ${HS_VAR_ECD_NAME_14}) target_path=${HS_PATH_ECD_14} ;;
-            ${HS_VAR_ECD_NAME_15}) target_path=${HS_PATH_ECD_15} ;;
-            ${HS_VAR_ECD_NAME_16}) target_path=${HS_PATH_ECD_16} ;;
-            ${HS_VAR_ECD_NAME_17}) target_path=${HS_PATH_ECD_17} ;;
-            ${HS_VAR_ECD_NAME_18}) target_path=${HS_PATH_ECD_18} ;;
-            ${HS_VAR_ECD_NAME_19}) target_path=${HS_PATH_ECD_19} ;;
-
-            ${HS_VAR_ECD_NAME_20}) target_path=${HS_PATH_ECD_20} ;;
-            ${HS_VAR_ECD_NAME_21}) target_path=${HS_PATH_ECD_21} ;;
-            ${HS_VAR_ECD_NAME_22}) target_path=${HS_PATH_ECD_22} ;;
-            ${HS_VAR_ECD_NAME_23}) target_path=${HS_PATH_ECD_23} ;;
-            ${HS_VAR_ECD_NAME_24}) target_path=${HS_PATH_ECD_24} ;;
-            ${HS_VAR_ECD_NAME_25}) target_path=${HS_PATH_ECD_25} ;;
-            ${HS_VAR_ECD_NAME_26}) target_path=${HS_PATH_ECD_26} ;;
-            ${HS_VAR_ECD_NAME_27}) target_path=${HS_PATH_ECD_27} ;;
-            ${HS_VAR_ECD_NAME_28}) target_path=${HS_PATH_ECD_28} ;;
-            ${HS_VAR_ECD_NAME_29}) target_path=${HS_PATH_ECD_29} ;;
-            -p|--proj|proj|project|projects)
-                local tmp_path=$(echo ${HS_PATH_PROJ})
-                if [ -n "${2}" ] && test -d $(realpath ${tmp_path}/*${2}*)
-                then
-                    # target_path=${tmp_path}/*${2}*
-                    target_path=$(realpath ${tmp_path}/*${2}*)
-                    # echo "HAL to ${2}"
-                else
-                    target_path=${tmp_path}
-                fi
-                ;;
             -h|--help)
                 cli_helper -c "xcd" -cd "Enchanced cd function"
                 cli_helper -t "SYNOPSIS"
@@ -1307,6 +1233,10 @@ function xcd()
                 cli_helper -o "-d|--download|dl|download|down)" -d "cd to ${HS_PATH_DOWNLOAD}"
                 cli_helper -o "-c|--document|doc|document)" -d "cd to ${HS_PATH_DOCUMENT}"
                 cli_helper -o "-h|--help" -d "Print help function "
+                cli_helper -t "Example"
+                cli_helper -d "You could use xcdadd to add new path setting."
+                cli_helper -d "If multiple map please use. '@(tmp|t)'"
+                cli_helper -d "xcdadd '@(tmp|t)' '/tmp'"
 
                 cli_helper -t "Customization Options"
                 [ ! -z ${HS_VAR_ECD_NAME_0} ] && cli_helper -o  "$(echo ${HS_VAR_ECD_NAME_0} | sed 's/[()@]//g')" -d "cd to ${HS_PATH_ECD_0}"
@@ -1344,6 +1274,81 @@ function xcd()
                 return 0
                 ;;
 
+            ${HS_VAR_ECD_NAME_0}) target_path="${HS_PATH_ECD_0}" ;;
+            ${HS_VAR_ECD_NAME_1}) target_path="${HS_PATH_ECD_1}" ;;
+            ${HS_VAR_ECD_NAME_2}) target_path="${HS_PATH_ECD_2}" ;;
+            ${HS_VAR_ECD_NAME_3}) target_path="${HS_PATH_ECD_3}" ;;
+            ${HS_VAR_ECD_NAME_4}) target_path="${HS_PATH_ECD_4}" ;;
+            ${HS_VAR_ECD_NAME_5}) target_path="${HS_PATH_ECD_5}" ;;
+            ${HS_VAR_ECD_NAME_6}) target_path="${HS_PATH_ECD_6}" ;;
+            ${HS_VAR_ECD_NAME_7}) target_path="${HS_PATH_ECD_7}" ;;
+            ${HS_VAR_ECD_NAME_8}) target_path="${HS_PATH_ECD_8}" ;;
+            ${HS_VAR_ECD_NAME_9}) target_path="${HS_PATH_ECD_9}" ;;
+
+            ${HS_VAR_ECD_NAME_10}) target_path="${HS_PATH_ECD_10}" ;;
+            ${HS_VAR_ECD_NAME_11}) target_path="${HS_PATH_ECD_11}" ;;
+            ${HS_VAR_ECD_NAME_12}) target_path="${HS_PATH_ECD_12}" ;;
+            ${HS_VAR_ECD_NAME_13}) target_path="${HS_PATH_ECD_13}" ;;
+            ${HS_VAR_ECD_NAME_14}) target_path="${HS_PATH_ECD_14}" ;;
+            ${HS_VAR_ECD_NAME_15}) target_path="${HS_PATH_ECD_15}" ;;
+            ${HS_VAR_ECD_NAME_16}) target_path="${HS_PATH_ECD_16}" ;;
+            ${HS_VAR_ECD_NAME_17}) target_path="${HS_PATH_ECD_17}" ;;
+            ${HS_VAR_ECD_NAME_18}) target_path="${HS_PATH_ECD_18}" ;;
+            ${HS_VAR_ECD_NAME_19}) target_path="${HS_PATH_ECD_19}" ;;
+
+            ${HS_VAR_ECD_NAME_20}) target_path="${HS_PATH_ECD_20}" ;;
+            ${HS_VAR_ECD_NAME_21}) target_path="${HS_PATH_ECD_21}" ;;
+            ${HS_VAR_ECD_NAME_22}) target_path="${HS_PATH_ECD_22}" ;;
+            ${HS_VAR_ECD_NAME_23}) target_path="${HS_PATH_ECD_23}" ;;
+            ${HS_VAR_ECD_NAME_24}) target_path="${HS_PATH_ECD_24}" ;;
+            ${HS_VAR_ECD_NAME_25}) target_path="${HS_PATH_ECD_25}" ;;
+            ${HS_VAR_ECD_NAME_26}) target_path="${HS_PATH_ECD_26}" ;;
+            ${HS_VAR_ECD_NAME_27}) target_path="${HS_PATH_ECD_27}" ;;
+            ${HS_VAR_ECD_NAME_28}) target_path="${HS_PATH_ECD_28}" ;;
+            ${HS_VAR_ECD_NAME_29}) target_path="${HS_PATH_ECD_29}" ;;
+            # NOTE. Default path settings, it will gbe replace by custom settings.
+            -s|--hs-script|hs)
+                target_path=${HS_PATH_LIB}
+                ;;
+            -w|--work-script|work)
+                target_path=${HS_PATH_WORK}
+                ;;
+            -i|--vim-ide|ide)
+                target_path=${HS_PATH_IDE}
+                ;;
+            --slink|slink)
+                target_path=${HS_PATH_SLINK}
+                ;;
+            -c|--document|doc|document)
+                target_path=${HS_PATH_DOCUMENT}
+                ;;
+            -d|--download|dl|download|down)
+                target_path=${HS_PATH_DOWNLOAD}
+                ;;
+            --log|log)
+                target_path=${HS_PATH_LOG}
+                ;;
+            -l|--lab|lab)
+                target_path=${HS_PATH_LAB}
+                if [ ! -d "${target_path}" ]
+                then
+                    mkdir ${target_path}
+                fi
+                ;;
+            -b|--build|build)
+                target_path=${HS_PATH_BUILD}
+                ;;
+            -p|--proj|proj|project|projects)
+                local tmp_path=$(echo ${HS_PATH_PROJ})
+                if [ -n "${2}" ] && test -d $(realpath ${tmp_path}/*${2}*)
+                then
+                    # target_path=${tmp_path}/*${2}*
+                    target_path=$(realpath ${tmp_path}/*${2}*)
+                    # echo "HAL to ${2}"
+                else
+                    target_path=${tmp_path}
+                fi
+                ;;
             *)
                 tmp_args=$@
                 if [ -z "${target_path}" ]
@@ -1401,7 +1406,7 @@ function xcd()
             export var_cnt=$((${var_cnt} + 1))
         done
     else
-        if [ -d "${target_path}" ]
+        if eval "test -d ${target_path}"
         then
             echo goto ${target_path} | mark -s green ${target_path}
             eval "cd ${target_path}"
@@ -1412,7 +1417,7 @@ function xcd()
             fi
             ls
             return 0
-        elif [ ! -z "${target_path}" ]
+        elif test -n "${target_path}" 
         then
             echo "Can't find ${target_path}"
             cd ${cpath}
@@ -1422,8 +1427,6 @@ function xcd()
         fi
 
     fi
-
-
 }
 function fcd()
 {
