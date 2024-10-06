@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+export PATH_SCRIPT_ROOT="$(realpath $(dirname ${BASH_SOURCE[0]}))"
 ###########################################################
 ## Flags
 ###########################################################
@@ -66,9 +67,9 @@ export VAR_TERM_FILE_PROGRAM=()
 
 # log win
 export VAR_TERM_MSGWIN_SHOW=false
-export VAR_TERM_MSGWIN_BUFFER="MSG Buffer..."
+export VAR_TERM_MSGWIN_BUFFER="$(printf '%s\n%s' 'Msg Buffer' 'test content')"
 export VAR_TERM_MSGWIN_SCROLL_IDX=""
-export VAR_TERM_MSGWIN_HEIGHT="10"
+export VAR_TERM_MSGWIN_HEIGHT="15"
 
 # Cmd line
 export VAR_TERM_CMD_INPUT_BUFFER=""
@@ -252,6 +253,11 @@ export HSFM_KEY_PASTE="p"
 # Mode switch
 export HSFM_KEY_VISUAL_SELECT="V"
 export HSFM_KEY_SELECTION="s"
+
+###########################################################
+## Source file
+###########################################################
+source ${PATH_SCRIPT_ROOT}/winmgr.sh
 
 ###########################################################
 ## Terminal Functions
@@ -713,68 +719,20 @@ fterminal_draw_status_line() {
            "$VAR_TERM_LINE_CNT"
 }
 
-fterminal_draw_msgwin_bak() {
-
-    fterminal_print '\e7\e[%sH\e[%s;%sm%*s\r MSG Win %s \e[m\n' \
-           "$((1 + ${VAR_TERM_TAB_LINE_HEIGHT} + ${VAR_TERM_CONTENT_MAX_CNT}))" \
-           "${HSFM_COLOR_TAB_BOOKMARK_FG}" \
-           "${HSFM_COLOR_TAB_BOOKMARK_BG}" \
-           "${VAR_TERM_COLUMN_CNT}"
-           # "${tmp_bookmark_buf}"
-    # fterminal_print '\e[%s;%sH' "$((1 + ${VAR_TERM_TAB_LINE_HEIGHT} + ${VAR_TERM_CONTENT_MAX_CNT}))" "${var_col_offset}"
-
-    # fterminal_print "%s\n" "${VAR_TERM_MSGWIN_BUFFER}"
-    fterminal_print "%s" "$(printf "${VAR_TERM_MSGWIN_BUFFER}" | tail -n $((${VAR_TERM_MSGWIN_HEIGHT} - 1)))"
-
-    fterminal_print '\e8'
-}
 fterminal_draw_msgwin() {
-    local var_width=${VAR_TERM_COLUMN_CNT}
-    local var_height=${VAR_TERM_MSGWIN_HEIGHT}
-    local var_start_line=$((1 + ${VAR_TERM_TAB_LINE_HEIGHT} + ${VAR_TERM_CONTENT_MAX_CNT}))
-    local var_start_col=0
-
-    local var_line_buf=""
-
-    fterminal_print '\e7'
-
-    var_line_buf="MSG Win"
-    fterminal_print '\e[%sH\e[%sm%*s\e[m' \
-           "${var_start_line};${var_start_col}" \
-           "${HSFM_COLOR_TAB_BOOKMARK_FG};${HSFM_COLOR_TAB_BOOKMARK_BG}" \
-           "${var_width}"
-    fterminal_print '\e[%sH\e[%sm %s \e[m' \
-           "${var_start_line};${var_start_col}" \
-           "${HSFM_COLOR_TAB_BOOKMARK_FG};${HSFM_COLOR_TAB_BOOKMARK_BG}" \
-           "${var_line_buf}"
-
+    fwinmgr_draw_window
+    # fterminal_print '\e7\e[%sH\e[%s;%sm%*s\r MSG Win %s \e[m\n' \
+    #        "$((1 + ${VAR_TERM_TAB_LINE_HEIGHT} + ${VAR_TERM_CONTENT_MAX_CNT}))" \
+    #        "${HSFM_COLOR_TAB_BOOKMARK_FG}" \
+    #        "${HSFM_COLOR_TAB_BOOKMARK_BG}" \
+    #        "${VAR_TERM_COLUMN_CNT}"
+    #        # "${tmp_bookmark_buf}"
+    # # fterminal_print '\e[%s;%sH' "$((1 + ${VAR_TERM_TAB_LINE_HEIGHT} + ${VAR_TERM_CONTENT_MAX_CNT}))" "${var_col_offset}"
+    #
+    # # fterminal_print "%s\n" "${VAR_TERM_MSGWIN_BUFFER}"
     # fterminal_print "%s" "$(printf "${VAR_TERM_MSGWIN_BUFFER}" | tail -n $((${VAR_TERM_MSGWIN_HEIGHT} - 1)))"
-
-    # local var_line_list=("${VAR_TERM_MSGWIN_BUFFER[@]}")
-    read -a var_line_list <<< "${VAR_TERM_MSGWIN_BUFFER[@]}"
-
-    printf -v var_line_list "%s" "$(printf "${VAR_TERM_MSGWIN_BUFFER}" | tail -n $((${VAR_TERM_MSGWIN_HEIGHT} - 1)))"
-    local var_line_cnt=${#var_line_list[@]}
-
-    for ((idx=0;idx < var_height - 1;idx++)); {
-        var_line_buf=""
-        # clean lines
-        fterminal_print '\e[%sH\e[%sm%*s\e[m' \
-            "$((var_start_line + 1 + idx));${var_start_col}" \
-            "${HSFM_COLOR_TAB_BOOKMARK_FG};${HSFM_COLOR_TAB_BOOKMARK_BG}" \
-            "${var_width}"
-
-        # if (( idx < var_line_cnt ))
-        # then
-            # Draw lines
-            fterminal_print '\e[%sH\e[%sm %s \e[m' \
-            "$((var_start_line + 1 + idx));${var_start_col}" \
-                "${HSFM_COLOR_TAB_BOOKMARK_FG};${HSFM_COLOR_TAB_BOOKMARK_BG}" \
-                "${idx}: ${var_line_list[${idx}]}"
-        # fi
-    }
-
-    fterminal_print '\e8'
+    #
+    # fterminal_print '\e8'
 }
 
 fterminal_mark_toggle() {
@@ -2238,8 +2196,8 @@ cmd_test()
 
     shift 1
     # VAR_TERM_MSGWIN_BUFFER=$(stat $*)
-    VAR_TERM_MSGWIN_BUFFER="$(stat $*)"
-    # printf -v VAR_TERM_MSGWIN_BUFFER "%s\n%s\n" $(stat $*)
+    # VAR_TERM_MSGWIN_BUFFER="$(stat $*)"
+    printf -v VAR_TERM_MSGWIN_BUFFER "%s\n" $(stat $*)
     fterminal_redraw
 }
 cmd_exit()
