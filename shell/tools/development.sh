@@ -903,7 +903,9 @@ function session()
                 # ps -ef |grep 'tmux\|session' |grep "\/$each_session "
                 if ps -ef |grep 'tmux\|session' | grep "/$each_session " > /dev/null
                 then
-                    printf "%s@%s:%s\n" "$(eval ${var_cmd[@]} -S ${var_session_tmp_path}/${each_session} ls|cut -d ':' -f 1)" "${each_session}" "$(eval ${var_cmd[@]} -S ${var_session_tmp_path}/${each_session} ls|cut -d ':' -f 2-)"
+                    local tmp_buf="$(eval ${var_cmd[@]} -S ${var_session_tmp_path}/${each_session} ls)"
+                    # printf "%s@%s:%s\n" "$(eval ${var_cmd[@]} -S ${var_session_tmp_path}/${each_session} ls|cut -d ':' -f 1)" "${each_session}" "$(eval ${var_cmd[@]} -S ${var_session_tmp_path}/${each_session} ls|cut -d ':' -f 2-)"
+                    printf "% 24s:%s\n" "${each_session}@${tmp_buf%%:*}" "${tmp_buf#*:}"
                 fi
             done
         else

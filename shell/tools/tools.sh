@@ -1322,7 +1322,9 @@ function doloop()
     local var_idx=0
     for each_input in $(eval ${var_list_cmd})
     do
-        local tmp_cmd=$(printf "$(echo ${var_cmd} | sed 's/%p/%s/g' )" "${each_input}")
+        # local tmp_cmd=$(printf "$(echo ${var_cmd} | sed 's/%p/%s/g' )" "${each_input}")
+        local tmp_cmd=$(echo ${var_cmd} | sed "s|%p|${each_input}|g" )
+        # local tmp_cmd=$(printf $(echo ${var_cmd} | sed "s/%p/${each_input}/g" ))
         local tmp_buf=""
 
         tmp_buf+="[${var_idx}@$(tstamp)]:\"${each_input}\":\"${tmp_cmd}\"\n"
