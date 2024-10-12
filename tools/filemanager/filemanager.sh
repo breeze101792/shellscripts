@@ -46,6 +46,8 @@ export VAR_TERM_FILE_ARGS=""
 export VAR_TERM_PRINT_BUFFER_ENABLE=false
 export VAR_TERM_PRINT_BUFFER=""
 export VAR_TERM_KEY_CURRENT_INPUT=""
+# export VAR_TERM_KEY_PREVIOUS_INPUT=""
+# export VAR_TERM_KEY_SECOND_LEVE_KEY_LIST=("q")
 
 # Marks
 export VAR_TERM_FILE_PRE=""
@@ -74,7 +76,7 @@ export VAR_TERM_FILE_PROGRAM=()
 export VAR_TERM_MSGWIN_SHOW=false
 export VAR_TERM_MSGWIN_BUFFER=()
 export VAR_TERM_MSGWIN_SCROLL_IDX=""
-export VAR_TERM_MSGWIN_HEIGHT="15"
+export VAR_TERM_MSGWIN_HEIGHT="12"
 
 # Cmd line
 export VAR_TERM_CMD_INPUT_BUFFER=""
@@ -263,7 +265,7 @@ export HSFM_KEY_SELECTION="s"
 ###########################################################
 ## Source file
 ###########################################################
-source ${PATH_SCRIPT_ROOT}/winmgr.sh
+# source ${PATH_SCRIPT_ROOT}/winmgr.sh
 
 ###########################################################
 ## Terminal Functions
@@ -351,6 +353,73 @@ fHSFM_exit()
     fterminal_reset
     fterminal_print "FM finished.\n"
     # exit 0
+}
+
+###########################################################
+## raw draw Functions
+###########################################################
+fterminal_draw_window() {
+    #  6 Args with order
+    local var_start_line=$((1 + ${VAR_TERM_TAB_LINE_HEIGHT} + ${VAR_TERM_CONTENT_MAX_CNT}))
+    local var_start_col=0
+    local var_width=${VAR_TERM_COLUMN_CNT}
+    local var_height=${VAR_TERM_MSGWIN_HEIGHT}
+    local var_win_title="[MSG WIN]"
+    local var_buffer=("${VAR_TERM_MSGWIN_BUFFER[@]}")
+
+    # Test center
+    ############################################################################
+    # var_width=$((${VAR_TERM_COLUMN_CNT}/2))
+    # var_height=$((${VAR_TERM_LINE_CNT}/2))
+    # var_start_line=$((${VAR_TERM_LINE_CNT}/4))
+    # var_start_col=$((${VAR_TERM_COLUMN_CNT}/4))
+    # flog_msg "ORI WH: ${VAR_TERM_LINE_CNT}/${VAR_TERM_COLUMN_CNT}, WH: ${var_width}/${var_height}, POS: ${var_start_line}/${var_start_col}"
+    ############################################################################
+
+    # Update length, only print the latest lines. 
+    if [[ ${#var_buffer[@]} -gt $((var_height - 1)) ]]
+    then
+        var_buffer=("${var_buffer[@]: -$((var_height - 1))}")
+    else
+        var_buffer=("${var_buffer[@]}")
+    fi
+
+    fterminal_print '\e7'
+
+    fterminal_print '\e[%sH\e[%sm%*s\e[m' \
+           "${var_start_line};${var_start_col}" \
+           "${HSFM_COLOR_TAB_BOOKMARK_FG};${HSFM_COLOR_TAB_BOOKMARK_BG}" \
+           "${var_width}"
+    fterminal_print '\e[%sH\e[%sm %s \e[m' \
+           "${var_start_line};${var_start_col}" \
+           "${HSFM_COLOR_TAB_BOOKMARK_FG};${HSFM_COLOR_TAB_BOOKMARK_BG}" \
+           "${var_win_title}"
+
+    local var_content_max=$((var_height - 1))
+    local var_cnt=0
+    while read each_line || ((var_cnt < var_height - 1));
+    do
+        local var_line_buf=""
+        # clean lines
+        fterminal_print '\e[%sH\e[%sm%*s\e[m' \
+            "$((var_start_line + 1 + var_cnt));${var_start_col}" \
+            "${HSFM_COLOR_TAB_BOOKMARK_FG};${HSFM_COLOR_TAB_BOOKMARK_BG}" \
+            "${var_width}"
+
+        # Draw lines
+        if test -n "${each_line}"
+        then
+            fterminal_print '\e[%sH\e[%sm%s\e[m' \
+                "$((var_start_line + 1 + var_cnt));${var_start_col}" \
+                "${HSFM_COLOR_TAB_BOOKMARK_FG};${HSFM_COLOR_TAB_BOOKMARK_BG}" \
+                " ${each_line:0:$((var_width - 2))} "
+        fi
+        ((var_cnt++))
+    done << EOF
+$(for each_line in "${var_buffer[@]}"; do printf "${each_line}\n"; done)
+EOF
+
+    fterminal_print '\e8'
 }
 
 ###########################################################
@@ -771,20 +840,9 @@ fterminal_draw_status_line() {
            "$VAR_TERM_LINE_CNT"
 }
 
-fterminal_draw_msgwin() {
-    fwinmgr_draw_window
-    # fterminal_print '\e7\e[%sH\e[%s;%sm%*s\r MSG Win %s \e[m\n' \
-    #        "$((1 + ${VAR_TERM_TAB_LINE_HEIGHT} + ${VAR_TERM_CONTENT_MAX_CNT}))" \
-    #        "${HSFM_COLOR_TAB_BOOKMARK_FG}" \
-    #        "${HSFM_COLOR_TAB_BOOKMARK_BG}" \
-    #        "${VAR_TERM_COLUMN_CNT}"
-    #        # "${tmp_bookmark_buf}"
-    # # fterminal_print '\e[%s;%sH' "$((1 + ${VAR_TERM_TAB_LINE_HEIGHT} + ${VAR_TERM_CONTENT_MAX_CNT}))" "${var_col_offset}"
-    #
-    # # fterminal_print "%s\n" "${VAR_TERM_MSGWIN_BUFFER}"
-    # fterminal_print "%s" "$(printf "${VAR_TERM_MSGWIN_BUFFER}" | tail -n $((${VAR_TERM_MSGWIN_HEIGHT} - 1)))"
-    #
-    # fterminal_print '\e8'
+fterminal_draw_msgwin()
+{
+    fterminal_draw_window
 }
 
 fterminal_mark_toggle() {
@@ -1003,6 +1061,7 @@ EOF
 }
 
 fterminal_read_key() {
+    # local REPLY
     read "${VAR_TERM_READ_FLAGS[@]}" -srn 1
     local ret_value=$?
     if [[ ${REPLY} == $'\e' ]]
@@ -1022,6 +1081,28 @@ fterminal_read_key() {
         VAR_TERM_KEY_CURRENT_INPUT="${REPLY}"
     else
         VAR_TERM_KEY_CURRENT_INPUT=""
+    fi
+
+    if test -n "${REPLY}"
+    then
+        fterminal_draw_status_line
+    fi
+
+    return ${ret_value}
+}
+fterminal_read_key_timeout() {
+    local var_input_timeout=${1:-1}
+
+    read -t ${var_input_timeout} -srn 1
+    local ret_value=$?
+
+    if [[ ${ret_value} ]]
+    then
+        VAR_TERM_KEY_CURRENT_INPUT+="${REPLY}"
+    fi
+    if test -n "${REPLY}"
+    then
+        fterminal_draw_status_line
     fi
     return ${ret_value}
 }
@@ -1631,12 +1712,16 @@ fnormal_mode_handler() {
             fselect_execute
             ;;
 
-        # Quit and store current directory in a file for CD on exit.
-        # Don't allow user to redefine 'q' so a bad keybinding doesn't
-        # remove the option to quit.
+        ## Second level list
         q)
-            cmd_exit
-        ;;
+            fterminal_read_key_timeout 1
+            case ${REPLY} in
+                q)
+                    fgui_tab_close
+                    # cmd_exit
+                    ;;
+            esac
+            ;;
     esac
     fterminal_flush
 }
@@ -1728,7 +1813,7 @@ fvisual_mode_handler() {
             VAR_TERM_MARKED_FILE_LIST=()
             fselect_execute
             ;;
-        q)
+        q|$'\e')
             fmode_setup "n"
             fterminal_redraw
         ;;
@@ -1827,7 +1912,7 @@ fselection_mode_handler() {
             VAR_TERM_MARKED_FILE_LIST=()
             fselect_execute
             ;;
-        q)
+        q|$'\e')
             fmode_setup "n"
             fterminal_redraw
         ;;

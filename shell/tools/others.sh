@@ -449,7 +449,7 @@ function sysinfo()
 }
 function xcaffine()
 {
-    local var_action=""
+    local var_action="default"
 
     while [[ "$#" != 0 ]]
     do
@@ -476,6 +476,8 @@ function xcaffine()
                 cli_helper -o "-e|--enable" -d "enable caffine"
                 cli_helper -o "-s|--show" -d "show xset settings"
                 cli_helper -o "-h|--help" -d "Print help function "
+                cli_helper -t "Options"
+                cli_helper -d "Default do whil caffeinate"
                 return 0
                 ;;
             *)
@@ -486,9 +488,28 @@ function xcaffine()
         shift 1
     done
 
-    if [ "${var_action}" = "on" ]
+    if [ "${var_action}" = "default" ]
     then
-        echo "var_action: ${var_action}"
+        echo "action: On"
+        xset -dpms
+        xset s off
+        xset dpms 0 0 0
+
+        while true
+        do
+            printf "\r[%s] caffeinating..." "$(date)"
+            sleep 60
+        done
+
+        echo "action: Off"
+        xset +dpms
+        xset s on # if you also want to disable the screen saver
+
+        # You could also customize your Standby, Suspend and Off times with something like:
+        xset dpms 900 3600 4000
+    elif [ "${var_action}" = "on" ]
+    then
+        echo "action: ${var_action}"
         xset -dpms
         # if you also want to disable the screen saver
         xset s off
@@ -497,7 +518,7 @@ function xcaffine()
         xset dpms 0 0 0
     elif [ "${var_action}" = "off" ]
     then
-        echo "var_action: ${var_action}"
+        echo "action: ${var_action}"
         xset +dpms
         xset s on # if you also want to disable the screen saver
 
@@ -505,7 +526,7 @@ function xcaffine()
         xset dpms 900 3600 4000
     elif [ "${var_action}" = "show" ]
     then
-        echo "var_action: ${var_action}"
+        echo "action: ${var_action}"
         xset q
     fi
 
