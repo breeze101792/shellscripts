@@ -2774,8 +2774,6 @@ fexport_ls_colors() {
     # locally. 'declare -g' is not available in 'bash 3'.
     # 'export' is a viable alternative.
     export "${ls_cols[@]}" &>/dev/null
-    echo "${ls_cols[@]}" 
-    exit 0
 }
 
 fHelp_keymap() {
