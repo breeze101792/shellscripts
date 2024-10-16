@@ -1180,17 +1180,17 @@ fterminal_tab_swap_contex() {
     local tmp_start_idx
     local tmp_idx
 
-    tmp_path = ${VAR_TERM_TAB_LINE_LIST_PATH[var_tab_id_a]}
-    tmp_start_idx = ${VAR_TERM_TAB_LINE_LIST_START_IDX[var_tab_id_a]}
-    tmp_idx = ${VAR_TERM_TAB_LINE_LIST_IDX[var_tab_id_a]}
+    tmp_path=${VAR_TERM_TAB_LINE_LIST_PATH[${var_tab_id_a}]}
+    tmp_start_idx=${VAR_TERM_TAB_LINE_LIST_START_IDX[${var_tab_id_a}]}
+    tmp_idx=${VAR_TERM_TAB_LINE_LIST_IDX[${var_tab_id_a}]}
 
-    VAR_TERM_TAB_LINE_LIST_PATH[var_tab_id_a] = ${VAR_TERM_TAB_LINE_LIST_PATH[var_tab_id_b]}
-    VAR_TERM_TAB_LINE_LIST_START_IDX[var_tab_id_a] = ${VAR_TERM_TAB_LINE_LIST_START_IDX[var_tab_id_b]}
-    VAR_TERM_TAB_LINE_LIST_IDX[var_tab_id_a] = ${VAR_TERM_TAB_LINE_LIST_IDX[var_tab_id_b]}
+    VAR_TERM_TAB_LINE_LIST_PATH[${var_tab_id_a}]=${VAR_TERM_TAB_LINE_LIST_PATH[${var_tab_id_b}]}
+    VAR_TERM_TAB_LINE_LIST_START_IDX[${var_tab_id_a}]=${VAR_TERM_TAB_LINE_LIST_START_IDX[${var_tab_id_b}]}
+    VAR_TERM_TAB_LINE_LIST_IDX[${var_tab_id_a}]=${VAR_TERM_TAB_LINE_LIST_IDX[${var_tab_id_b}]}
 
-    VAR_TERM_TAB_LINE_LIST_PATH[var_tab_id_a] = ${tmp_path}
-    VAR_TERM_TAB_LINE_LIST_START_IDX[var_tab_id_a] = ${tmp_start_idx}
-    VAR_TERM_TAB_LINE_LIST_IDX[var_tab_id_a] = ${tmp_idx}
+    VAR_TERM_TAB_LINE_LIST_PATH[${var_tab_id_b}]=${tmp_path}
+    VAR_TERM_TAB_LINE_LIST_START_IDX[${var_tab_id_b}]=${tmp_start_idx}
+    VAR_TERM_TAB_LINE_LIST_IDX[${var_tab_id_b}]=${tmp_idx}
 }
 
 ###########################################################
@@ -1374,6 +1374,7 @@ fgui_tab_move_previous()
         flog_msg "MOVE_PREVIOUS_TAB ignored."
         return
     else
+        fterminal_tab_save_contex ${VAR_TERM_TAB_LINE_IDX}
         fterminal_tab_swap_contex ${VAR_TERM_TAB_LINE_IDX} $(($VAR_TERM_TAB_LINE_IDX - 1))
         # tmp_preserved_path=${VAR_TERM_TAB_LINE_LIST_PATH[$((${VAR_TERM_TAB_LINE_IDX}-1))]}
         # VAR_TERM_TAB_LINE_LIST_PATH[$((${VAR_TERM_TAB_LINE_IDX} - 1))]="$(realpath .)"
@@ -1394,6 +1395,7 @@ fgui_tab_move_next()
         flog_msg "MOVE_NEXT_TAB ignored."
         return
     else
+        fterminal_tab_save_contex ${VAR_TERM_TAB_LINE_IDX}
         fterminal_tab_swap_contex ${VAR_TERM_TAB_LINE_IDX} $(($VAR_TERM_TAB_LINE_IDX + 1))
         # tmp_preserved_path=${VAR_TERM_TAB_LINE_LIST_PATH[$((${VAR_TERM_TAB_LINE_IDX}+1))]}
         # VAR_TERM_TAB_LINE_LIST_PATH[$((${VAR_TERM_TAB_LINE_IDX}+1))]="$(realpath .)"
@@ -1719,6 +1721,9 @@ fnormal_mode_handler() {
                 q)
                     fgui_tab_close
                     # cmd_exit
+                    ;;
+                a)
+                    cmd_exit
                     ;;
             esac
             ;;
