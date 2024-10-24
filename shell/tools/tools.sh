@@ -147,8 +147,12 @@ function purify()
 
         if [ "${flag_rename_all}" = true ]
         then
-            file_list=($(printf "%s\n" *))
+            # file_list=($(printf "%s\n" *))
             # tmp_cmd_list="printf '%s\n' *"
+            for tmp_file in "$PWD"/*; do
+                # purify -n "${tmp_file}"
+                file_list+=("${tmp_file##*/}")
+            done
         fi
 
         IFS=$'\n' file_list=(${file_list[@]})
@@ -168,7 +172,7 @@ function purify()
             if [ ${flag_purify} = true ]
             then
                 tmp_taget_name=$(echo "${tmp_taget_name}" | sed "s/ /_/g")
-                tmp_taget_name=$(echo "${tmp_taget_name}" | sed -r "s/[^0-9a-zA-Z.]/_/g")
+                tmp_taget_name=$(echo "${tmp_taget_name}" | sed -r "s/[^0-9a-zA-Z._-]/_/g")
                 tmp_taget_name=$(echo "${tmp_taget_name}" | sed -r "s/\[_\]\+/_/g")
                 tmp_taget_name=$(echo "${tmp_taget_name}" | sed -r "s/^_//g")
                 tmp_taget_name=$(echo "${tmp_taget_name}" | sed -r "s/_$//g")
@@ -600,6 +604,44 @@ function bkfile()
         mv "${var_bk_file}" "${var_bk_name}"
     fi
 }
+function xsh()
+{
+    local var_args=('')
+    local var_host=""
+    local flag_renew=false
+
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -R|--renew|renew)
+                flag_renew=true
+                var_host=$2
+                shift 1
+                ;;
+            -h|--help)
+                cli_helper -c "xsh" -cd "xsh(real link) function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "xsh [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-R|--renew|renew" -d "Renew known host, -R [host-name]"
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                var_args+=($@)
+                break
+                # echo "Wrong args, %@"
+                # return -1
+                ;;
+        esac
+        shift 1
+    done
+
+    if [ ${flag_renew} = true ]
+    then
+        ssh-keygen -f "${HOME}/.ssh/known_hosts" -R "${var_host}"
+    fi
+}
 function rln()
 {
     local var_args=('')
@@ -608,7 +650,7 @@ function rln()
     while [[ "$#" != 0 ]]
     do
         case $1 in
-            -h|--hard)
+            -H|--hard)
                 flag_mode="hard"
                 ;;
             -s|--soft)
@@ -619,7 +661,7 @@ function rln()
                 cli_helper -t "SYNOPSIS"
                 cli_helper -d "rln [Options] [Value]"
                 cli_helper -t "Options"
-                cli_helper -o "-h|--hard" -d "hard link, default behavior"
+                cli_helper -o "-H|--hard" -d "hard link, default behavior"
                 cli_helper -o "-s|--soft" -d "soft link"
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0

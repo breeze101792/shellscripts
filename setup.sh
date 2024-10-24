@@ -96,6 +96,17 @@ function setup_shell_lite()
         echo 'HS Already install'
     fi
 }
+function setup_inputrc()
+{
+    local rc_script="${HOME}/.inputrc"
+    if test -e "${rc_script}"
+    then
+        echo "${rc_script} already exist."
+    else
+        echo "link ${rc_script}"
+        ln -s "${HS_SCRIPT_PATH}/configs/home/inputrc" "${rc_script}"
+    fi
+}
 function setup_tmux()
 {
     if ! command -v bc > /dev/null
@@ -104,6 +115,7 @@ function setup_tmux()
         exit -1
     fi
     ln -sf ${HS_SCRIPT_PATH}/configs/tmux/tmux.conf ${HOME}/.tmux.conf
+    ln -sf ${HS_SCRIPT_PATH}/configs/home/screenrc ${HOME}/.screenrc
 }
 function setup_git()
 {
@@ -228,15 +240,19 @@ function setup()
             -t|--tmux)
                 setup_tmux
                 ;;
+            -i|--inputrc)
+                setup_inputrc
+                ;;
             -g|--git)
                 setup_git
                 ;;
-            -h|--shell-setup)
+            -hs|--shell-setup)
                 setup_shell
                 ;;
             -s|--setup)
                 setup_shell
                 setup_config
+                setup_inputrc
                 setup_usr
                 setup_tmux
                 setup_git
@@ -260,20 +276,22 @@ function setup()
                 ;;
             -h|--help)
                 echo "Setup Usage"
-                printf "    %s%s%s\n" "-t|--tmux" "->" "Setup tmux"
-                printf "    %s%s%s\n" "-g|--git" "->" "Setup git"
-                printf "    %s%s%s\n" "-s|--setup" "->" "Setup all"
-                printf "    %s%s%s\n" "-hs|--shell-setup" "->" "Setup shell"
-                printf "    %s%s%s\n" "-l|--lite" "->" "Setup lite shell"
-                printf "    %s%s%s\n" "-c|--config" "->" "Setup config"
-                printf "    %s%s%s\n" "-u|--usr" "->" "setup local usr"
-                printf "    %s%s%s\n" "-hs|--hs-excute" "->" "Create hs excutable on .usr/bin"
-                printf "    %s%s%s\n" "-x|--excute" "->" "Excute with hs env"
-                printf "    %s%s%s\n" "-h|--help" "->" "Help me"
+                printf "    %- 32s\n            %s\n" "-i|--inputrc" "Setup inputrc"
+                printf "    %- 32s\n            %s\n" "-t|--tmux" "Setup tmux"
+                printf "    %- 32s\n            %s\n" "-g|--git" "Setup git"
+                printf "    %- 32s\n            %s\n" "-s|--setup" "Setup all"
+                printf "    %- 32s\n            %s\n" "-hs|--shell-setup" "Setup shell"
+                printf "    %- 32s\n            %s\n" "-l|--lite" "Setup lite shell"
+                printf "    %- 32s\n            %s\n" "-c|--config" "Setup config"
+                printf "    %- 32s\n            %s\n" "-u|--usr" "setup local usr"
+                printf "    %- 32s\n            %s\n" "-hs|--hs-excute" "Create hs excutable on .usr/bin"
+                printf "    %- 32s\n            %s\n" "-x|--excute" "Excute with hs env"
+                printf "    %- 32s\n            %s\n" "-h|--help" "Help me"
                 return 0
                 ;;
             *)
-                setup_shell
+                echo "Unknow args: $@"
+                exit 1
                 ;;
         esac
         shift 1

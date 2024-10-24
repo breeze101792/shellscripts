@@ -70,6 +70,17 @@ set mark-symlinked-directories on
 # Use GNU ls colors when tab-completing files
 set colored-stats on
 
+## VI Mode
+################################################################
+# Set vi mode
+set -o vi
+# for ESC timeout
+export KEYTIMEOUT=1
+# patch for clear scree
+bind -m vi-insert "\C-l":clear-screen
+
+# reset cursor shape
+echo -ne '\e[2 q' # Use | shape cursor on startup.
 
 # Edit with Vi keybindings
 set editing-mode vi
