@@ -32,8 +32,9 @@ prompt walters
 #zle -N up-line-or-beginning-search
 #zle -N down-line-or-beginning-search
 
-# For mode settings
-
+#------------------------------
+# VI mode
+#------------------------------
 #Enable vi mode
 set -o vi
 
@@ -42,6 +43,43 @@ bindkey -v
 
 # for ESC timeout
 export KEYTIMEOUT=1
+
+# For vi mode patch
+function clear-screen-but-not-scrollback() {
+  builtin echoti civis >"$TTY"
+  builtin print -rn -- $'\e[H\e[2J' >"$TTY"
+  builtin zle .reset-prompt
+  builtin zle -R
+  builtin echoti cnorm >"$TTY"
+}
+zle -N clear-screen-but-not-scrollback
+
+# Change cursor shape for different vi modes.
+function zle-keymap-select {
+  if [[ ${KEYMAP} == vicmd ]] ||
+     [[ $1 = 'block' ]]; then
+    echo -ne '\e[2 q'
+  elif [[ ${KEYMAP} == main ]] ||
+       [[ ${KEYMAP} == viins ]] ||
+       [[ ${KEYMAP} = '' ]] ||
+       [[ $1 = 'beam' ]]; then
+    echo -ne '\e[6 q'
+  fi
+}
+zle -N zle-keymap-select
+zle-line-init() {
+    zle -K viins # initiate `vi insert` as keymap (can be removed if `bindkey -V` has been set elsewhere)
+    echo -ne "\e[6 q"
+}
+zle -N zle-line-init
+
+bindkey '^L' clear-screen-but-not-scrollback
+echo -ne '\e[6 q' # Use beam shape cursor on startup.
+
+# preexec Executed just after a command has been read and is about to be executed. The string that the user typed is passed as the first argument.
+# precmd Executed just before each prompt. Equivalent to PROMPT_COMMAND, but more flexible and resilient.
+preexec() { echo -ne '\e[2 q' ;}
+precmd() { echo -ne '\e[6 q' ;}
 
 #------------------------------
 # Key Settings
@@ -102,42 +140,6 @@ bindkey "^[[4~" end-of-line
 
 # bindkey ";5C" forward-word
 # bindkey ";5D" backward-word
-
-#------------------------------
-# VI mode
-#------------------------------
-# For vi mode patch
-function clear-screen-but-not-scrollback() {
-  builtin echoti civis >"$TTY"
-  builtin print -rn -- $'\e[H\e[2J' >"$TTY"
-  builtin zle .reset-prompt
-  builtin zle -R
-  builtin echoti cnorm >"$TTY"
-}
-zle -N clear-screen-but-not-scrollback
-
-# Change cursor shape for different vi modes.
-function zle-keymap-select {
-  if [[ ${KEYMAP} == vicmd ]] ||
-     [[ $1 = 'block' ]]; then
-    echo -ne '\e[1 q'
-  elif [[ ${KEYMAP} == main ]] ||
-       [[ ${KEYMAP} == viins ]] ||
-       [[ ${KEYMAP} = '' ]] ||
-       [[ $1 = 'beam' ]]; then
-    echo -ne '\e[5 q'
-  fi
-}
-zle -N zle-keymap-select
-zle-line-init() {
-    zle -K viins # initiate `vi insert` as keymap (can be removed if `bindkey -V` has been set elsewhere)
-    echo -ne "\e[5 q"
-}
-zle -N zle-line-init
-
-bindkey '^L' clear-screen-but-not-scrollback
-echo -ne '\e[5 q' # Use beam shape cursor on startup.
-preexec() { echo -ne '\e[5 q' ;} # Use beam shape cursor for each new prompt.
 
 #------------------------------
 # Prompt

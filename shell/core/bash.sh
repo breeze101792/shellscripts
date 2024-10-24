@@ -80,11 +80,22 @@ export KEYTIMEOUT=1
 bind -m vi-insert "\C-l":clear-screen
 
 # reset cursor shape
+# "Cursor settings:
+#  1 -> blinking block
+#  2 -> solid block 
+#  3 -> blinking underscore
+#  4 -> solid underscore
+#  5 -> blinking vertical bar
+#  6 -> solid vertical bar
 echo -ne '\e[2 q' # Use | shape cursor on startup.
 
 # Edit with Vi keybindings
 set editing-mode vi
 set keymap vi
+
+# Needs bash-preexec.sh for following function on bash
+# preexec() { echo -ne '\e[2 q' ;}
+# precmd() { echo -ne '\e[6 q' ;}
 
 ## Shaun Config
 ################################################################
