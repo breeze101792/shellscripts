@@ -10,32 +10,79 @@
 ########################################################
 function pureshell()
 {
+    local var_shell='bash'
+
     local env_term=xterm-256color
     local env_home="${HOME}"
     local env_vars="export TERM=${env_term} && export HOME=${env_home}"
     local pureshell_rc=~/.purebashrc
-    if [ "${#}" = "0" ]
+    local excute_cmd=""
+
+    if [[ "$#" = "0" ]]
     then
-        echo "Pure bash"
-        if [ -f ~/.purebashrc ]
+        echo "Default action"
+    fi
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -s|--shell)
+                var_shell="$2"
+                shift 1
+                ;;
+            -h|--help)
+                cli_helper -c "template" -cd "template function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "template [Options] [Other commands]"
+                cli_helper -t "Options"
+                cli_helper -o "-s|--shell" -d "Specify shell, zsh/bash"
+                cli_helper -o "-v|--verbose" -d "Verbose print "
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                excute_cmd="$*"
+                break
+                ;;
+        esac
+        shift 1
+    done
+
+    if [ "${var_shell}" = "bash" ]
+    then
+        # echo "Pure bash"
+        # if [ -f ~/.purebashrc ]
+        # then
+        #     # the purebashrc shour contain execu
+        #     env -i bash -c "${env_vars} && source ${pureshell_rc} && bash --norc"
+        #     # env -i bash -c "${env_vars} && bash --rcfile  ${pureshell_rc}"
+        # else
+        #     env -i bash -c "${env_vars} && bash --norc"
+        # fi
+        if test -n "${excute_cmd}"
         then
-            # the purebashrc shour contain execu
-            env -i bash -c "${env_vars} && source ${pureshell_rc} && bash --norc"
-            # env -i bash -c "${env_vars} && bash --rcfile  ${pureshell_rc}"
+            env -i bash -c "export TERM=${env_term} && export HOME=${env_home} && bash --norc -c \"${excute_cmd}\""
         else
             env -i bash -c "${env_vars} && bash --norc"
         fi
-    else
-        echo "Pure bash"
-        local excute_cmd=$@
-        if [ -f ${pureshell_rc} ]
+    elif [ "${var_shell}" = "zsh" ]
+    then
+        if test -n "${excute_cmd}"
         then
-            # the purebashrc shour contain execu
-            env -i bash -c "${env_vars} && source ${pureshell_rc} && bash --norc -c \"${excute_cmd}\""
-            # env -i bash -c "${env_vars} && bash --rcfile  ${pureshell_rc}"
+            env -i zsh -c "export TERM=${env_term} && export HOME=${env_home} && zsh --no-rcs -c \"${excute_cmd}\""
         else
-            env -i bash -c "export TERM=${env_term} && export HOME=${env_home} && bash --norc -c \"${excute_cmd}\""
+            env -i zsh -c "${env_vars} && zsh --no-rcs"
         fi
+    # else
+    #     echo "Pure bash"
+    #     local excute_cmd=$@
+    #     if [ -f ${pureshell_rc} ]
+    #     then
+    #         # the purebashrc shour contain execu
+    #         env -i bash -c "${env_vars} && source ${pureshell_rc} && bash --norc -c \"${excute_cmd}\""
+    #         # env -i bash -c "${env_vars} && bash --rcfile  ${pureshell_rc}"
+    #     else
+    #         env -i bash -c "export TERM=${env_term} && export HOME=${env_home} && bash --norc -c \"${excute_cmd}\""
+    #     fi
     fi
 
 }

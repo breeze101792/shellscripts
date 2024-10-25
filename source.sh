@@ -59,7 +59,7 @@ else
         fi
     fi
 fi
-HS_SCRIPT_PATH=$(realpath ${HS_SCRIPT_PATH})
+test -n "${HS_SCRIPT_PATH}" && HS_SCRIPT_PATH=$(realpath ${HS_SCRIPT_PATH})
 
 if [ "${HS_STARTUP_DEBUG}" = 'y' ]
 then
