@@ -72,11 +72,18 @@ export VAR_TERM_MARK_DIR=""
 export VAR_TERM_SELECTION_FILE_LIST=()
 export VAR_TERM_FILE_PROGRAM=()
 
+## Windows
 # log win
 export VAR_TERM_MSGWIN_SHOW=false
 export VAR_TERM_MSGWIN_BUFFER=()
 export VAR_TERM_MSGWIN_SCROLL_IDX=""
 export VAR_TERM_MSGWIN_HEIGHT="12"
+
+# log win
+export VAR_TERM_TASKWIN_SHOW=false
+export VAR_TERM_TASKWIN_BUFFER=("Main task running.")
+export VAR_TERM_TASKWIN_SCROLL_IDX=""
+export VAR_TERM_TASKWIN_HEIGHT="12"
 
 # Cmd line
 export VAR_TERM_CMD_INPUT_BUFFER=""
@@ -241,6 +248,9 @@ export HSFM_KEY_MOVE_TAB_NEXT='L'
 # Toggle message win.
 export HSFM_KEY_TOGGLE_MSGWIN="m"
 
+# Toggle task win.
+export HSFM_KEY_TOGGLE_TASKWIN="T"
+
 ### Miscellaneous
 # Show file attributes.
 export HSFM_KEY_ATTRIBUTES="i"
@@ -367,6 +377,19 @@ fterminal_draw_window() {
     local var_win_title="[MSG WIN]"
     local var_buffer=("${VAR_TERM_MSGWIN_BUFFER[@]}")
 
+    flog_msg "windo args: ${@}"
+    # sleep 1
+    if [[ "${#}" -ge "5" ]]
+    then
+        var_start_line=${1}
+        var_start_col=${2}
+        var_width=${3}
+        var_height=${4}
+        var_win_title="[${5}]"
+        shift 5
+        var_buffer=("${@}")
+    fi
+
     # Test center
     ############################################################################
     # var_width=$((${VAR_TERM_COLUMN_CNT}/2))
@@ -448,6 +471,9 @@ fterminal_redraw() {
     if [ ${VAR_TERM_MSGWIN_SHOW} = true ]
     then
         VAR_TERM_STATUS_LINE_CNT=$((${VAR_TERM_MSGWIN_HEIGHT} + 2))
+    elif [ ${VAR_TERM_TASKWIN_SHOW} = true ]
+    then
+        VAR_TERM_STATUS_LINE_CNT=$((${VAR_TERM_TASKWIN_HEIGHT} + 2))
     else
         VAR_TERM_STATUS_LINE_CNT=2
     fi
@@ -461,6 +487,9 @@ fterminal_redraw() {
     if [ ${VAR_TERM_MSGWIN_SHOW} = true ]
     then
         fterminal_draw_msgwin
+    elif [ ${VAR_TERM_TASKWIN_SHOW} = true ]
+    then
+        fterminal_draw_taskwin
     fi
 
     fterminal_flush
@@ -479,16 +508,30 @@ fterminal_draw_dir() {
         ((VAR_TERM_CONTENT_SCROLL_IDX=previous_index))
         # ((VAR_TERM_CONTENT_SCROLL_START_IDX=previous_index))
 
-
         # Clear the directory history. We're here now.
         VAR_TERM_FLAG_FIND_PREVIOUS=0
     fi
-    if [[ ${VAR_TERM_CONTENT_SCROLL_IDX} -gt ${#VAR_TERM_DIR_FILE_LIST[@]} ]]
+
+    # Update idx for previous store.
+    if [[ ${VAR_TERM_CONTENT_SCROLL_IDX} -ge ${#VAR_TERM_DIR_FILE_LIST[@]} ]]
     then
-        VAR_TERM_CONTENT_SCROLL_IDX=0
-        VAR_TERM_CONTENT_SCROLL_START_IDX=0
-        VAR_TERM_WIN_CURRENT_CURSOR=0
+        if [[ ${VAR_TERM_CONTENT_MAX_CNT} -gt ${#VAR_TERM_DIR_FILE_LIST[@]} ]]
+        then
+            VAR_TERM_CONTENT_SCROLL_IDX=$(( ${#VAR_TERM_DIR_FILE_LIST[@]} -1 ))
+            VAR_TERM_CONTENT_SCROLL_START_IDX=0
+            VAR_TERM_WIN_CURRENT_CURSOR=0
+        else
+            VAR_TERM_CONTENT_SCROLL_IDX=$(( ${#VAR_TERM_DIR_FILE_LIST[@]} -1 ))
+            VAR_TERM_CONTENT_SCROLL_START_IDX=0
+            VAR_TERM_WIN_CURRENT_CURSOR=${VAR_TERM_CONTENT_SCROLL_IDX}
+        fi
+    # elif [[ ${VAR_TERM_CONTENT_SCROLL_IDX} -gt ${#VAR_TERM_DIR_FILE_LIST[@]} ]]
+    # then
+    #     VAR_TERM_CONTENT_SCROLL_IDX=0
+    #     VAR_TERM_CONTENT_SCROLL_START_IDX=0
+    #     VAR_TERM_WIN_CURRENT_CURSOR=0
     fi
+    # flog_msg_debug "${VAR_TERM_CONTENT_SCROLL_IDX} -gt ${#VAR_TERM_DIR_FILE_LIST[@]}"
     # local dbg_case="0"
 
     # Update scroll idx
@@ -842,7 +885,25 @@ fterminal_draw_status_line() {
 
 fterminal_draw_msgwin()
 {
-    fterminal_draw_window
+    local var_start_line=$((1 + ${VAR_TERM_TAB_LINE_HEIGHT} + ${VAR_TERM_CONTENT_MAX_CNT}))
+    local var_start_col=0
+    local var_width=${VAR_TERM_COLUMN_CNT}
+    local var_height=${VAR_TERM_MSGWIN_HEIGHT}
+    local var_win_title="Message WIN"
+    local var_buffer=("${VAR_TERM_MSGWIN_BUFFER[@]}")
+
+    fterminal_draw_window ${var_start_line} ${var_start_col} ${var_width} ${var_height} "${var_win_title}" "${var_buffer[@]}"
+}
+fterminal_draw_taskwin()
+{
+    local var_start_line=$((1 + ${VAR_TERM_TAB_LINE_HEIGHT} + ${VAR_TERM_CONTENT_MAX_CNT}))
+    local var_start_col=0
+    local var_width=${VAR_TERM_COLUMN_CNT}
+    local var_height=${VAR_TERM_MSGWIN_HEIGHT}
+    local var_win_title="Task WIN"
+    local var_buffer=("${VAR_TERM_TASKWIN_BUFFER[@]}")
+
+    fterminal_draw_window ${var_start_line} ${var_start_col} ${var_width} ${var_height} "${var_win_title}" "${var_buffer[@]}"
 }
 
 fterminal_mark_toggle() {
@@ -881,7 +942,7 @@ fterminal_mark_toggle() {
 
     # Find the program to use.
     # case "$2" in
-    #     ${HSFM_KEY_YANK:=y}|${HSFM_KEY_YANK_ALL:=Y}) VAR_TERM_FILE_PROGRAM=(cp -iR) ;;
+    #     ${HSFM_KEY_YANK:=y}|${HSFM_KEY_YANK_ALL:=Y}) VAR_TERM_FILE_PROGRAM=(fselect_copy) ;;
     #     ${HSFM_KEY_CUT:=m}|${HSFM_KEY_MOVE_ALL:=M}) VAR_TERM_FILE_PROGRAM=(mv -i)  ;;
     #     ${HSFM_KEY_LINK:=s}|${HSFM_KEY_LINK_ALL:=S}) VAR_TERM_FILE_PROGRAM=(ln -s)  ;;
     #
@@ -1681,6 +1742,15 @@ fnormal_mode_handler() {
             fi
             fterminal_redraw
         ;;
+        ${HSFM_KEY_TOGGLE_TASKWIN})
+            if [ ${VAR_TERM_TASKWIN_SHOW} = true ]
+            then
+                VAR_TERM_TASKWIN_SHOW=false
+            else
+                VAR_TERM_TASKWIN_SHOW=true
+            fi
+            fterminal_redraw
+        ;;
 
         # Directory favourites.
         [1-9])
@@ -1693,7 +1763,7 @@ fnormal_mode_handler() {
 
         # File operation
         ${HSFM_KEY_YANK:=y})
-            VAR_TERM_FILE_PROGRAM=(cp -iR)
+            VAR_TERM_FILE_PROGRAM=(fselect_copy)
             VAR_TERM_SELECTION_FILE_LIST=("${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}")
             fterminal_redraw
             flog_msg "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]} yanked."
@@ -1794,7 +1864,7 @@ fvisual_mode_handler() {
 
         # File operstions
         ${HSFM_KEY_YANK:=y})
-            VAR_TERM_FILE_PROGRAM=(cp -iR)
+            VAR_TERM_FILE_PROGRAM=(fselect_copy)
             VAR_TERM_SELECTION_FILE_LIST=("${VAR_TERM_MARKED_FILE_LIST[@]}")
 
             VAR_TERM_MARKED_FILE_LIST=()
@@ -1893,7 +1963,7 @@ fselection_mode_handler() {
 
         # File operstions
         ${HSFM_KEY_YANK:=y})
-            VAR_TERM_FILE_PROGRAM=(cp -iR)
+            VAR_TERM_FILE_PROGRAM=(fselect_copy)
             VAR_TERM_SELECTION_FILE_LIST=("${VAR_TERM_MARKED_FILE_LIST[@]}")
 
             VAR_TERM_MARKED_FILE_LIST=()
@@ -2408,6 +2478,35 @@ cmd_help()
     fcommand_line_interact "Press Enter Key To Continue..." "wait" "q"
     fterminal_redraw
 }
+cmd_msg_debug()
+{
+    if [ ${VAR_TERM_MSGWIN_SHOW} = true ]
+    then
+        VAR_TERM_MSGWIN_SHOW=false
+    else
+        VAR_TERM_MSGWIN_SHOW=true
+    fi
+
+    shift 1
+    # VAR_TERM_MSGWIN_BUFFER=$(stat $*)
+    # VAR_TERM_MSGWIN_BUFFER="$(stat $*)"
+    printf -v VAR_TERM_MSGWIN_BUFFER "%s\n" $(stat $*)
+    fterminal_redraw
+}
+cmd_task_debug()
+{
+    if [ ${VAR_TERM_TASKWIN_SHOW} = true ]
+    then
+        VAR_TERM_TASKWIN_SHOW=false
+    else
+        VAR_TERM_TASKWIN_SHOW=true
+    fi
+
+    shift 1
+
+    printf -v VAR_TERM_TASKWIN_BUFFER "%s\n" $(stat $*)
+    fterminal_redraw
+}
 cmd_test()
 {
     if [ ${VAR_TERM_MSGWIN_SHOW} = true ]
@@ -2492,6 +2591,47 @@ fsys_open() {
 ###########################################################
 fselect_execute()
 {
+    local flag_block=true
+    if [ ${flag_block} = true ]
+    then
+        fselect_execute_block
+    else
+        # FIXME, we'll ask thing on UI, it will block background execute.
+        fselect_execute_background
+    fi
+}
+fselect_execute_background()
+{
+    [[ ${VAR_TERM_SELECTION_FILE_LIST[*]} ]] && {
+        [[ ! -w $PWD ]] && {
+            flog_msg "warn: no write access to dir."
+            return
+        }
+
+        # fterminal_print '\e[1mhsfm\e[m: %s\n' "Running ${VAR_TERM_FILE_PROGRAM[0]}"
+        local tmp_cmd="${VAR_TERM_FILE_PROGRAM[@]} "
+        for each_file in "${VAR_TERM_SELECTION_FILE_LIST[@]}"
+        do
+            tmp_cmd+="'${each_file}' "
+        done
+        tmp_cmd+="./"
+
+        #==========================
+        {
+            flog_msg "${VAR_TERM_FILE_PROGRAM} started."
+            eval "${tmp_cmd}"
+            flog_msg "${VAR_TERM_FILE_PROGRAM} finished."
+        } &
+        #==========================
+
+        # VAR_TERM_SELECTION_FILE_LIST=()
+        fmode_setup "n"
+        fterminal_setup
+        fterminal_redraw full
+    }
+}
+fselect_execute_block()
+{
     [[ ${VAR_TERM_SELECTION_FILE_LIST[*]} ]] && {
         [[ ! -w $PWD ]] && {
             flog_msg "warn: no write access to dir."
@@ -2510,6 +2650,7 @@ fselect_execute()
             tmp_cmd+="'${each_file}' "
         done
         tmp_cmd+="./"
+        flog_msg "${VAR_TERM_FILE_PROGRAM} started."
         eval "${tmp_cmd}"
         # "${VAR_TERM_FILE_PROGRAM[@]}" "${VAR_TERM_SELECTION_FILE_LIST[@]}" .
         stty -echo
@@ -2518,6 +2659,60 @@ fselect_execute()
         fmode_setup "n"
         fterminal_setup
         fterminal_redraw full
+        flog_msg "${VAR_TERM_FILE_PROGRAM} finished."
+    }
+}
+fselect_copy() {
+    local flag_overwrite=false
+    local flag_duplicate=false
+    local var_target_folder=${@:$#}
+
+    # flog_msg_debug "Arsgs: ${#},${@}, => ${@:1}, |=> ${var_target_folder}"
+    # FIXME, don't trash on different device/big file size
+    for ((i=1;i<${#};i++)); {
+        local tmp_file="${@:i:1}"
+        if test -e "${tmp_file##*/}"
+        then
+
+            if [ ${flag_overwrite} = false ] && [ ${flag_duplicate} = false ]
+            then
+                fcommand_line_interact "${tmp_file##*/} exist. Overwrite(a.all/y.yes/d.duplicate/n.no/c.cancel/s.skip)? " y n
+
+                case $VAR_TERM_CMD_INPUT_BUFFER in
+                    'y'|'Y')
+                        cp -R -f "${tmp_file}" "${var_target_folder}"
+                        ;;
+                    'c'|'C')
+                        flog_msg_debug "Copy Abort."
+                        break
+                        ;;
+                    's'|'S')
+                        flog_msg_debug "Skip copy ${tmp_file} to $(realpath ${var_target_folder})"
+                        continue
+                        ;;
+                    'a'|'A')
+                        cp -R -f "${tmp_file}" "${var_target_folder}"
+                        flag_overwrite=true
+                        ;;
+                    *|'d'|'D')
+                        cp -R "${tmp_file}" "${var_target_folder}/copy_$(date +%s)_${tmp_file##*/}"
+                        flag_duplicate=true
+                        ;;
+                    *|'n'|'N')
+                        cp -R "${tmp_file}" "${var_target_folder}/copy_$(date +%s)_${tmp_file##*/}"
+                        ;;
+                esac
+            elif [ ${flag_overwrite} = true ]
+            then
+                cp -R -f "${tmp_file}" "${var_target_folder}"
+            else
+                cp -R "${tmp_file}" "${var_target_folder}/copy_$(date +%s)_${tmp_file##*/}"
+            fi
+        else
+            # flog_msg_debug "No exist: ${tmp_file}"
+            cp -iR "${tmp_file}" "${var_target_folder}"
+        fi
+        flog_msg_debug "Copy: ${tmp_file} to $(realpath ${var_target_folder})"
     }
 }
 fselect_remove() {
