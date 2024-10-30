@@ -3,7 +3,7 @@ export PATH_SCRIPT_ROOT="$(realpath $(dirname ${BASH_SOURCE[0]}))"
 ###########################################################
 ## Flags
 ###########################################################
-export HSFM_RUNNING=1
+test -z ${HSFM_RUNNING} && export HSFM_RUNNING=0
 export HSFM_DEBUG=false
 
 # Use LS_COLORS to color hsfm.
@@ -89,7 +89,7 @@ export VAR_TERM_TASKWIN_HEIGHT="12"
 export VAR_TERM_CMD_INPUT_BUFFER=""
 export VAR_TERM_CMD_LIST=( "redraw" "fullredraw" "help" "info" "exit" "select" "shell" "dump" "test")
 VAR_TERM_CMD_LIST+=( "mkdir" "mkfile" "touch" "rename" "search" )
-VAR_TERM_CMD_LIST+=( "quit" "tab" )
+VAR_TERM_CMD_LIST+=( "quit" "tab" "quitngo")
 VAR_TERM_CMD_LIST+=( "open" "editor" "vim" "media" "play" "image" "preview")
 
 # Mode
@@ -112,7 +112,7 @@ export HSFM_FILE_CONFIG="${HOME}/.hsfm.sh"
 #          If not using XDG, '${HOME}/.cache/hsfm/hsfm.d' is used.
 export HSFM_PATH_CACHE="${HOME}/.cache/hsfm"
 export HSFM_FILE_SESSION=${HSFM_PATH_CACHE}/hsfm_session.sh
-export HSFM_FILE_CD_HISTORY=${HSFM_PATH_CACHE}/hsfm_history.log
+export HSFM_FILE_CD_LASTPATH=${HSFM_PATH_CACHE}/hsfm_last.sh
 export HSFM_FILE_MESSAGE=${HSFM_PATH_CACHE}/hsfm_message.log
 
 # Trash Directory
@@ -377,8 +377,6 @@ fterminal_draw_window() {
     local var_win_title="[MSG WIN]"
     local var_buffer=("${VAR_TERM_MSGWIN_BUFFER[@]}")
 
-    flog_msg "windo args: ${@}"
-    # sleep 1
     if [[ "${#}" -ge "5" ]]
     then
         var_start_line=${1}
@@ -1014,6 +1012,10 @@ fterminal_read_dir() {
     local var_dirs
     local var_files
     local var_item_index=0
+
+    local tmp_file_list=()
+    local tmp_file_info_list=()
+
     VAR_TERM_DIR_FILE_LIST=()
     VAR_TERM_DIR_FILE_INFO_LIST=()
     # NOTE. Clear VAR_TERM_DIR_FILE_LIST & use it directly to avoid VAR_TERM_DIR_FILE_LIST index issue on BSD
@@ -1074,14 +1076,29 @@ fterminal_read_dir() {
             then
                 continue
             fi
+            if [[ ${each_line} =~ ^ls:* ]]
+            then
+                # Access fail
+                each_line="${each_line/: Permission denied/}"
+                each_line="${each_line/cannot access /}"
+#
+                info="Permission denied"
+                # item=${each_line/#*[0-9]? \//\/}
+                item=${each_line/*: /}
+                item=${item//\'/}
 
-            each_line="${each_line%% ->*}"
+                tmp_file_list+=("$item")
+                tmp_file_info_list+=("$info")
 
-            info="${each_line%% /*}"
-            # item="${each_line/* \'/}"
-            # item="${each_line/* /}"
+                flog_msg_debug "${item}"
+                continue
+            else
+                each_line="${each_line%% ->*}"
 
-            item=${each_line/#*[0-9]? \//\/}
+                info="${each_line%% /*}"
+                item=${each_line/#*[0-9]? \//\/}
+            fi
+
 
             if [[ -d $item ]]; then
                 # var_dirs+=("$item")
@@ -1104,8 +1121,14 @@ fterminal_read_dir() {
             fi
             ((var_item_index++))
         done << EOF
-$(ls ${var_ls_args[@]} "${PWD}"/${var_pattern})
+$(ls ${var_ls_args[@]} "${PWD}"/${var_pattern} 2>&1)
 EOF
+    fi
+
+    if [[ ${#tmp_file_list[@]} -ge 1 ]]
+    then
+        VAR_TERM_DIR_FILE_LIST+=("${tmp_file_list[@]}")
+        VAR_TERM_DIR_FILE_INFO_LIST+=("${tmp_file_info_list[@]}")
     fi
 
     # sort for dir first
@@ -1565,7 +1588,7 @@ fnormal_mode_handler() {
                 # flog_msg "File info(${tmp_mine%%;*}):$(file "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" | tail -n 1 | cut -d ':' -f2)"
                 flog_msg "File info(${tmp_mine%%;*}):${tmp_info##*:}"
             else
-                flog_msg "No file found."
+                flog_msg "File access failed."
             fi
         ;;
 
@@ -1790,6 +1813,11 @@ fnormal_mode_handler() {
             case ${REPLY} in
                 q)
                     fgui_tab_close
+                    # cmd_exit
+                    ;;
+                g)
+                    # quit & go
+                    cmd_quitngo
                     # cmd_exit
                     ;;
                 a)
@@ -2064,7 +2092,37 @@ fcommand_line_interact() {
     # '\r\e[K': Redraw the read prompt on every keypress.
     #           This is mimicking what happens normally.
     while IFS= read -rsn 1 -p $'\r\e[K'"${var_cmd_prefix}${VAR_TERM_CMD_INPUT_BUFFER}" read_reply; do
+        if [[ ${read_reply} == $'\e' ]]
+        then
+            local tmp_buffer="${read_reply}"
+            read "${VAR_TERM_READ_FLAGS[@]}" -rsn 2 read_reply
+
+            # Handle a normal escape key press.
+            [[ ${tmp_buffer}${read_reply} == $'\e\e['* ]] &&
+                read "${VAR_TERM_READ_FLAGS[@]}" -rsn 1 _
+
+            read_reply=${tmp_buffer}${read_reply}
+        fi
         case $read_reply in
+            # Control UI
+            # Move backward
+            $'\e[C')
+            continue
+            ;;
+            # Move forward
+            $'\e[D')
+            continue
+            ;;
+            # Scroll down
+            $'\e[B')
+            continue
+            ;;
+
+            # Scroll up.
+            $'\e[A')
+            continue
+            ;;
+
             # Backspace.
             $'\177'|$'\b')
                 VAR_TERM_CMD_INPUT_BUFFER=${VAR_TERM_CMD_INPUT_BUFFER%?}
@@ -2162,17 +2220,19 @@ fcommand_line_interact() {
             ;;
 
             # Custom 'yes' value (used as a replacement for '-n 1').
-            ${2:-null})
-                VAR_TERM_CMD_INPUT_BUFFER=$read_reply
-                break
-            ;;
+            # ${2:-null})
+            #     VAR_TERM_CMD_INPUT_BUFFER=$read_reply
+            #     break
+            # ;;
 
             # Escape / Custom 'no' value (used as a replacement for '-n 1').
-            $'\e'|${3:-null})
+            # $'\e'|${3:-null})
+            $'\e')
                 read "${VAR_TERM_READ_FLAGS[@]}" -rsn 2
                 VAR_TERM_CMD_INPUT_BUFFER=
 
-                fterminal_print '\e[?25l\e8'
+                # clear cli line, and exit.
+                fterminal_print '\r\e[K\e[?25l\e8'
                 break
             ;;
 
@@ -2336,7 +2396,8 @@ cmd_shell()
     fterminal_clear
     fterminal_reset
 
-    bash
+    # Add hsfm on ps1
+    bash --init-file <(echo ". \"$HOME/.bashrc\"; export HSFM_RUNNING=1; export PS1=\"[HSFM]\$PS1\"")
 
     fterminal_setup
     fterminal_redraw
@@ -2385,6 +2446,8 @@ cmd_cd()
         # backup cursor
         # NOTE. It's a patch for storing cursor position, cuse fcommand_handler will restore it.
         fterminal_print '\e7'
+    else
+        flog_msg "$@ not found."
     fi
 }
 cmd_select()
@@ -2526,16 +2589,20 @@ cmd_quit()
 {
     fgui_tab_close
 }
-cmd_exit()
+cmd_quitngo()
 {
-    : "${HSFM_FILE_CD_HISTORY}"
+    : "${HSFM_FILE_CD_LASTPATH}"
 
-    [[ -w $HSFM_FILE_CD_HISTORY ]] &&
-        rm "$HSFM_FILE_CD_HISTORY"
+    [[ -w $HSFM_FILE_CD_LASTPATH ]] &&
+        rm "$HSFM_FILE_CD_LASTPATH"
 
     [[ ${HSFM_CD_ON_EXIT:=1} == 1 ]] &&
-        fterminal_print '%s\n' "$PWD" > "$HSFM_FILE_CD_HISTORY"
+        fterminal_print '%s\n' "$PWD" > "$HSFM_FILE_CD_LASTPATH"
 
+    exit 0
+}
+cmd_exit()
+{
     exit 0
 }
 
@@ -3024,6 +3091,7 @@ fHelp_commands() {
     fterminal_print "    %- 16s\t%s\n" "-s|-setup   " "Copy hsfm config file."
     fterminal_print "    %- 16s\t%s\n" "-d|--debug  " "Enable debug flag."
     fterminal_print "    %- 16s\t%s\n" "-r|--restore" "restore previous session."
+    fterminal_print "    %- 16s\t%s\n" "-l|--last   " "Print last path & remove the last path file."
     fterminal_print "    %- 16s\t%s\n" "--history   " "Store history."
     fterminal_print "[Commands]\n"
     fterminal_print "    % -16s: %s\n"  "redraw" "Commands."
@@ -3062,6 +3130,7 @@ function fCore() {
 
     flog_msg_debug "HSFM initialized."
 
+    HSFM_RUNNING=1
     # Vintage infinite loop.
     for ((;HSFM_RUNNING;)); {
         # read "${VAR_TERM_READ_FLAGS[@]}" -srn 1 && {
@@ -3095,6 +3164,32 @@ function fMain()
     while [[ $# != 0 ]]
     do
         case $1 in
+            -l|--last-path)
+                if [[ "${#}" -ge "2" ]] && ! [[ $2 =~ -.* ]]
+                then
+                    if test -f "${HSFM_FILE_CD_LASTPATH}"
+                    then
+                        cat ${HSFM_FILE_CD_LASTPATH}
+
+                        if [[ "$2" = "flush" ]]
+                        then
+                            rm ${HSFM_FILE_CD_LASTPATH}
+                        fi
+                    else
+                        exit 1
+                    fi
+                else
+                    # Don't print to stdio, some will use it for cd.
+                    if cat ${HSFM_FILE_CD_LASTPATH} 2> /dev/null
+                    then
+                        exit 0
+                    else
+                        exit 1
+                    fi
+                fi
+                exit 0
+
+                ;;
             -d|--debug)
                 HSFM_DEBUG=true
                 ;;
@@ -3141,7 +3236,13 @@ function fMain()
         fInfo; fErrControl ${FUNCNAME[0]} ${LINENO}
     fi
 
-    fCore
+    if [[ $HSFM_RUNNING = 1 ]]
+    then
+        echo "HSFM is running. Status: $HSFM_RUNNING"
+        exit 1
+    else
+        fCore
+    fi
 }
 
 fMain $@

@@ -741,6 +741,19 @@ function hstemp()
     var_cmd=("cp" "${var_temp_file}" "${var_target_file}")
     erun --eval ${var_cmd[@]}
 }
+
+function xfm()
+{
+    ${HS_PATH_LIB}/tools/filemanager/filemanager.sh $@
+    local tmp_path=$(${HS_PATH_LIB}/tools/filemanager/filemanager.sh -l flush)
+    # if ${HS_PATH_LIB}/tools/filemanager/filemanager.sh -l 2> /dev/null
+    # then
+    if test -d "${tmp_path}"
+    then
+        echo goto path:${tmp_path}
+        cd ${tmp_path}
+    fi
+}
 function retitle()
 {
     # print -Pn "\e]0;$@\a"

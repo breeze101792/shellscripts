@@ -3,6 +3,7 @@ testnset -e -v HS_PROJ_LINUX   -c y
 testnset -e -v HS_PROJ_DARWIN   -c y
 testnset -e -v HS_PROJ_FPGA    -c y
 testnset -e -v HS_PROJ_ZERO    -c y
+testnset -e -v HS_PROJ_WSL    -c n
 
 if [ "${HS_PROJ_ANDROID}" = "y" ]
 then
@@ -27,4 +28,9 @@ fi
 if [ "${HS_PROJ_ZERO}" = "y" ]
 then
     source ${HS_PATH_LIB}/projects/zero/zero.sh
+fi
+
+if [ "${HS_PROJ_WSL}" = "y" ]
+then
+    source ${HS_PATH_LIB}/projects/wsl/wsl.sh
 fi

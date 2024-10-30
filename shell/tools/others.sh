@@ -316,7 +316,7 @@ function sed_replace()
     local pattern=$1
     local target_string=$2
 
-    for each_file in $(grep -rn ${pattern} | cut -d ":" -f 1 | sort | uniq)
+    for each_file in $(grep --exclude-dir='.*' -rn ${pattern} | cut -d ":" -f 1 | sort | uniq)
     do
         echo "Replacing ${pattern} with ${target_string} in ${each_file}"
         sed -i "s/${pattern}/${target_string}/g" $(realpath ${each_file})

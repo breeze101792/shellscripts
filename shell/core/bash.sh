@@ -101,6 +101,8 @@ set keymap vi
 ################################################################
 # On some build server, it will not exit by ctrl-d. so use this to override original settings
 # if shopt -q login_shell; then IGNOREEOF=0; else IGNOREEOF=10; fi
-if shopt -q login_shell; then IGNOREEOF=0; fi
+# if shopt -q login_shell; then IGNOREEOF=0; fi
+# or juse use
+# set +o ignoreeof
 
 shell_setup bash

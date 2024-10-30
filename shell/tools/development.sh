@@ -18,6 +18,7 @@ function sdebug()
     local session_name="Debug"
     local serial_log_path="${HS_PATH_LOG}/serial"
     local var_prefix=""
+    local flag_root=false
 
     while true
     do
@@ -33,6 +34,9 @@ function sdebug()
             -b|--baud-rate)
                 baud_rate=$2
                 shift 1
+                ;;
+            -r|--root)
+                flag_root=true
                 ;;
             -s|--session-name)
                 session_name=$2
@@ -50,6 +54,7 @@ function sdebug()
                 cli_helper -o "-d|--device" -d "Set device"
                 cli_helper -o "-b|--baud-rate" -d "Set Baud Rate, Other: 115200, 1500000"
                 cli_helper -o "-s|--session-name" -d "Set Session Name"
+                cli_helper -o "-r|--root" -d "Enable root permission"
                 cli_helper -o "-p|--prefix" -d "Add prefix before program, usually use sudo"
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
@@ -61,6 +66,7 @@ function sdebug()
         esac
         shift 1
     done
+
     if ! $(test -c "${target_dev}")
     then
         if ls /dev/ttyACM*
@@ -75,7 +81,13 @@ function sdebug()
     fi
     retitle ${session_name}-${target_dev}
     [ ! -d ${serial_log_path} ] && mkdir -p ${serial_log_path} && echo "Create ${serial_log_path}"
+
     var_cmd="${var_prefix} screen -S ${session_name} -L -Logfile ${serial_log_path}/debug_$(tstamp).log ${target_dev} ${baud_rate}"
+
+    if [ ${flag_root} = true ]
+    then
+        var_cmd="sudo ${var_cmd}" 
+    fi
     echo "${var_cmd}"
     eval "${var_cmd}"
     echo "${var_cmd}"
