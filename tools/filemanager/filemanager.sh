@@ -87,12 +87,15 @@ export VAR_TERM_TASKWIN_HEIGHT="12"
 
 # Cmd line
 export VAR_TERM_CMD_HISTORY_MAX=100
-export VAR_TERM_CMD_HISTORY=("test")
+export VAR_TERM_CMD_HISTORY
+export VAR_TERM_SEARCH_HISTORY
+
 export VAR_TERM_CMD_INPUT_BUFFER=""
-export VAR_TERM_CMD_LIST=( "redraw" "fullredraw" "help" "info" "exit" "select" "shell" "dump" "test")
+export VAR_TERM_CMD_LIST=( "redraw" "fullredraw" "help" "info" "exit" "select" "shell" )
 VAR_TERM_CMD_LIST+=( "mkdir" "mkfile" "touch" "rename" "search" )
 VAR_TERM_CMD_LIST+=( "quit" "tab" "quitngo")
 VAR_TERM_CMD_LIST+=( "open" "editor" "vim" "media" "play" "image" "preview")
+VAR_TERM_CMD_LIST+=( "debug" "eval" "dump" "test")
 
 # Mode
 export VAR_TERM_VISUAL_START_IDX=0
@@ -113,9 +116,11 @@ export HSFM_FILE_CONFIG="${HOME}/.hsfm.sh"
 # Default: '${XDG_CACHE_HOME}/hsfm/hsfm.d'
 #          If not using XDG, '${HOME}/.cache/hsfm/hsfm.d' is used.
 export HSFM_PATH_CACHE="${HOME}/.cache/hsfm"
+export HSFM_FILE_RUNTIME_ENV=${HSFM_PATH_CACHE}/hsfm_runtimeenv.sh
 export HSFM_FILE_SESSION=${HSFM_PATH_CACHE}/hsfm_session.sh
 export HSFM_FILE_CD_LASTPATH=${HSFM_PATH_CACHE}/hsfm_last.sh
 export HSFM_FILE_MESSAGE=${HSFM_PATH_CACHE}/hsfm_message.log
+export HSFM_FILE_LOGS=${HSFM_PATH_CACHE}/hsfm_logs.sh
 
 # Trash Directory
 # Default: '${XDG_DATA_HOME}/hsfm/trash'
@@ -294,7 +299,7 @@ fterminal_print() {
     fi
 }
 fterminal_flush() {
-    printf "${VAR_TERM_PRINT_BUFFER}"
+    printf "%s" "${VAR_TERM_PRINT_BUFFER}"
     VAR_TERM_PRINT_BUFFER_ENABLE=false
     VAR_TERM_PRINT_BUFFER=""
 }
@@ -2094,12 +2099,13 @@ fcommand_line_interact() {
 
     VAR_TERM_CMD_INPUT_BUFFER=""
 
-    local var_post_input_buffer="$"
+    local var_input_buffer=""
+    local var_post_input_buffer=""
 
     fterminal_print '\e7\e[%sH\e[?25h' "$VAR_TERM_LINE_CNT"
     # '\r\e[K': Redraw the read prompt on every keypress.
     #           This is mimicking what happens normally.
-    while IFS= read -rsn 1 -p $'\r\e[K'"${var_cmd_prefix}${VAR_TERM_CMD_INPUT_BUFFER}${var_post_input_buffer}"$'\b' read_reply; do
+    while IFS= read -rsn 1 -p $'\r\e[K'"${var_cmd_prefix}${var_input_buffer}${var_post_input_buffer} $(printf "\e[%dD" $((${#var_post_input_buffer}+1)))" read_reply 2>&1; do
         if [[ ${read_reply} == $'\e' ]]
         then
             local tmp_buffer="${read_reply}"
@@ -2115,12 +2121,28 @@ fcommand_line_interact() {
             # Control UI
             # Move backward
             $'\e[C')
-            continue
-            ;;
+                local tmp_post_buf_cnt=${#var_post_input_buffer}
+
+                if [[ "${tmp_post_buf_cnt}" -eq "0" ]]
+                then
+                    continue
+                fi
+                var_input_buffer+="${var_post_input_buffer:0:1}"
+                var_post_input_buffer=${var_post_input_buffer:1:$tmp_post_buf_cnt -1}
+                ;;
             # Move forward
             $'\e[D')
-            continue
-            ;;
+                local tmp_buf_cnt=${#var_input_buffer}
+
+                if [[ "${tmp_buf_cnt}" -eq "0" ]]
+                then
+                    continue
+                fi
+
+                # var_post_input_buffer="${var_input_buffer:1:#}${var_post_input_buffer}"
+                var_post_input_buffer="${var_input_buffer:$tmp_buf_cnt - 1:1}${var_post_input_buffer}"
+                var_input_buffer=${var_input_buffer:0:$tmp_buf_cnt -1}
+                ;;
             # Scroll down
             $'\e[B')
                 if [[ "${var_cmd_history_idx}" = "0" ]]
@@ -2128,16 +2150,28 @@ fcommand_line_interact() {
                     continue
                 elif [[ "${var_cmd_history_idx}" = "1" ]]
                 then
-                    VAR_TERM_CMD_INPUT_BUFFER=${var_cmd_backup_buffer}
+                    var_input_buffer=${var_cmd_backup_buffer}
+                    var_post_input_buffer=""
                     ((var_cmd_history_idx--))
                     continue
                 fi
 
-                if [[ $((${var_cmd_history_idx} - 1)) -le ${#VAR_TERM_CMD_HISTORY[@]} ]]
-                then
-                    ((var_cmd_history_idx--))
-                    local tmp_history_idx=$((${#VAR_TERM_CMD_HISTORY[@]} - ${var_cmd_history_idx}))
-                    VAR_TERM_CMD_INPUT_BUFFER=${VAR_TERM_CMD_HISTORY[${tmp_history_idx}]}
+                if [[ ${var_cmd_function} = "search" ]]; then
+                    if [[ $((${var_cmd_history_idx} - 1)) -le ${#VAR_TERM_SEARCH_HISTORY[@]} ]]
+                    then
+                        ((var_cmd_history_idx--))
+                        local tmp_history_idx=$((${#VAR_TERM_SEARCH_HISTORY[@]} - ${var_cmd_history_idx}))
+                        var_input_buffer=${VAR_TERM_SEARCH_HISTORY[${tmp_history_idx}]}
+                        var_post_input_buffer=""
+                    fi
+                else
+                    if [[ $((${var_cmd_history_idx} - 1)) -le ${#VAR_TERM_CMD_HISTORY[@]} ]]
+                    then
+                        ((var_cmd_history_idx--))
+                        local tmp_history_idx=$((${#VAR_TERM_CMD_HISTORY[@]} - ${var_cmd_history_idx}))
+                        var_input_buffer=${VAR_TERM_CMD_HISTORY[${tmp_history_idx}]}
+                        var_post_input_buffer=""
+                    fi
                 fi
             ;;
 
@@ -2146,19 +2180,30 @@ fcommand_line_interact() {
 
                 if [[ "${var_cmd_history_idx}" = "0" ]]
                 then
-                    var_cmd_backup_buffer=${VAR_TERM_CMD_INPUT_BUFFER}
+                    var_cmd_backup_buffer="${var_input_buffer}${var_post_input_buffer}"
                 fi
-                if [[ $((${var_cmd_history_idx} + 1)) -le ${#VAR_TERM_CMD_HISTORY[@]} ]]
-                then
-                    ((var_cmd_history_idx++))
-                    local tmp_history_idx=$((${#VAR_TERM_CMD_HISTORY[@]} - ${var_cmd_history_idx}))
-                    VAR_TERM_CMD_INPUT_BUFFER=${VAR_TERM_CMD_HISTORY[${tmp_history_idx}]}
+                if [[ ${var_cmd_function} = "search" ]]; then
+                    if [[ $((${var_cmd_history_idx} + 1)) -le ${#VAR_TERM_SEARCH_HISTORY[@]} ]]
+                    then
+                        ((var_cmd_history_idx++))
+                        local tmp_history_idx=$((${#VAR_TERM_SEARCH_HISTORY[@]} - ${var_cmd_history_idx}))
+                        var_input_buffer=${VAR_TERM_SEARCH_HISTORY[${tmp_history_idx}]}
+                        var_post_input_buffer=""
+                    fi
+                else
+                    if [[ $((${var_cmd_history_idx} + 1)) -le ${#VAR_TERM_CMD_HISTORY[@]} ]]
+                    then
+                        ((var_cmd_history_idx++))
+                        local tmp_history_idx=$((${#VAR_TERM_CMD_HISTORY[@]} - ${var_cmd_history_idx}))
+                        var_input_buffer=${VAR_TERM_CMD_HISTORY[${tmp_history_idx}]}
+                        var_post_input_buffer=""
+                    fi
                 fi
             ;;
 
             # Backspace.
             $'\177'|$'\b')
-                VAR_TERM_CMD_INPUT_BUFFER=${VAR_TERM_CMD_INPUT_BUFFER%?}
+                var_input_buffer=${var_input_buffer%?}
 
                 # Clear tab-completion.
                 unset comp c
@@ -2166,11 +2211,11 @@ fcommand_line_interact() {
 
             # Tab.
             $'\t')
-                comp_glob="$VAR_TERM_CMD_INPUT_BUFFER*"
+                comp_glob="$var_input_buffer*"
 
                 # Pass the argument dirs to limit completion to directories.
                 # [[ $2 == dirs ]] &&
-                #     comp_glob="$VAR_TERM_CMD_INPUT_BUFFER*/"
+                #     comp_glob="$var_input_buffer*/"
 
                 # Generate a completion list once.
                 # [[ -z ${comp[0]} ]] &&
@@ -2179,28 +2224,45 @@ fcommand_line_interact() {
                 if [[ -z ${comp[0]} ]]
                 then
                     # IFS=$'\n' read -d "" -ra globpat < <(compgen -G "$comp_glob")
-                    IFS=$'\n' read -d "" -ra wordlist < <(compgen -W "${VAR_TERM_CMD_LIST[*]}" ${VAR_TERM_CMD_INPUT_BUFFER})
+                    IFS=$'\n' read -d "" -ra wordlist < <(compgen -W "${VAR_TERM_CMD_LIST[*]}" ${var_input_buffer})
                     # comp=$globpat
                     comp+=$wordlist
                 fi
 
                 # On each tab press, cycle through the completion list.
                 [[ -n ${comp[c]} ]] && {
-                    VAR_TERM_CMD_INPUT_BUFFER=${comp[c]}
+                    var_input_buffer=${comp[c]}
                     ((c=c >= ${#comp[@]}-1 ? 0 : ++c))
                 }
             ;;
 
             # Enter/Return.
             "")
-                [[ ${var_cmd_function} != command ]] && {
+               VAR_TERM_CMD_INPUT_BUFFER="${var_input_buffer}${var_post_input_buffer}"
+                if [[ ${var_cmd_function} = "search" ]]; then
+
+                    if test -z "${VAR_TERM_CMD_INPUT_BUFFER}"
+                    then
+                        break
+                    elif [[ ${#VAR_TERM_SEARCH_HISTORY[@]} -gt  ${VAR_TERM_CMD_HISTORY_MAX} ]]
+                    then
+                        local tmp_start_idx=$((${#VAR_TERM_SEARCH_HISTORY[@]} - ${VAR_TERM_CMD_HISTORY_MAX}))
+                        VAR_TERM_SEARCH_HISTORY="${VAR_TERM_SEARCH_HISTORY[@]:${tmp_start_idx}:${VAR_TERM_CMD_HISTORY_MAX}}"
+
+                    else
+                        VAR_TERM_SEARCH_HISTORY+=("${VAR_TERM_CMD_INPUT_BUFFER}")
+                    fi
                     # # Unset tab completion variables since we're done.
                     # unset comp c
                     # return
                     break
-                }
-
-                if test -z ${VAR_TERM_CMD_INPUT_BUFFER}
+                elif [[ ${var_cmd_function} != "command" ]] ; then
+                    # # Unset tab completion variables since we're done.
+                    # unset comp c
+                    # return
+                    break
+                fi
+                if test -z "${VAR_TERM_CMD_INPUT_BUFFER}"
                 then
                     fterminal_print '\r\e[K\e[?25l\e8'
                     break
@@ -2282,19 +2344,24 @@ fcommand_line_interact() {
                 read "${VAR_TERM_READ_FLAGS[@]}" -rsn 2
                 VAR_TERM_CMD_INPUT_BUFFER=
 
-                # clear cli line, and exit.
-                fterminal_print '\r\e[K\e[?25l\e8'
+
+                if [[ ${var_cmd_function} == "search" ]]; then
+                    fterminal_redraw full
+                else
+                    # clear cli line, and exit.
+                    fterminal_print '\r\e[K\e[?25l\e8'
+                fi
                 break
             ;;
 
             # Replace '~' with '$HOME'.
             "~")
-                VAR_TERM_CMD_INPUT_BUFFER+=$HOME
+                var_input_buffer+=$HOME
             ;;
 
             # Anything else, add it to read reply.
             *)
-                VAR_TERM_CMD_INPUT_BUFFER+=$read_reply
+                var_input_buffer+=$read_reply
 
                 # Clear tab-completion.
                 unset comp c
@@ -2302,6 +2369,7 @@ fcommand_line_interact() {
         esac
 
         [[ ${var_cmd_function} == "search" ]] && {
+            VAR_TERM_CMD_INPUT_BUFFER="${var_input_buffer}${var_post_input_buffer}"
             cmd_search "${VAR_TERM_CMD_INPUT_BUFFER}"
         }
 
@@ -2621,6 +2689,22 @@ cmd_task_debug()
     printf -v VAR_TERM_TASKWIN_BUFFER "%s\n" $(stat $*)
     fterminal_redraw
 }
+cmd_debug()
+{
+    if [ ${1} = on ]
+    then
+        HSFM_DEBUG=true
+    else
+        HSFM_DEBUG=false
+    fi
+}
+cmd_eval()
+{
+    if [[ "${#}" -ge "1" ]]
+    then
+        eval "$@"
+    fi
+}
 cmd_test()
 {
     if [ ${VAR_TERM_MSGWIN_SHOW} = true ]
@@ -2914,6 +2998,74 @@ fselect_rename() {
     fterminal_setup
 }
 
+###########################################################
+## Load/Save session
+###########################################################
+fsave_env() {
+    if test -f ${HSFM_FILE_RUNTIME_ENV}
+    then
+        rm ${HSFM_FILE_RUNTIME_ENV}
+    fi
+    ## Save history
+    if [[ "${#VAR_TERM_CMD_HISTORY[@]}" -ge "1" ]]
+    then
+        echo "#!/bin/bash" >> ${HSFM_FILE_RUNTIME_ENV}
+        echo "export VAR_TERM_CMD_HISTORY" >> ${HSFM_FILE_RUNTIME_ENV}
+        for each_history in "${VAR_TERM_CMD_HISTORY[@]}"
+        do
+            echo "VAR_TERM_CMD_HISTORY+=(\"${each_history}\")" >> ${HSFM_FILE_RUNTIME_ENV}
+        done
+    fi
+
+    ## Save history
+    if [[ "${#VAR_TERM_SEARCH_HISTORY[@]}" -ge "1" ]]
+    then
+        echo "export VAR_TERM_SEARCH_HISTORY" >> ${HSFM_FILE_RUNTIME_ENV}
+        for each_history in "${VAR_TERM_SEARCH_HISTORY[@]}"
+        do
+            echo "VAR_TERM_SEARCH_HISTORY+=(\"${each_history}\")" >> ${HSFM_FILE_RUNTIME_ENV}
+        done
+    fi
+
+}
+fsave_session() {
+    ## Save tab 
+    if [[ ${#VAR_TERM_TAB_LINE_LIST_PATH[@]} -eq 1 ]]
+    then
+        return 0
+    fi
+
+    if test -f ${HSFM_FILE_SESSION}
+    then
+        rm ${HSFM_FILE_SESSION}
+    fi
+
+    echo "#!/bin/bash" >> ${HSFM_FILE_SESSION}
+
+    echo "export VAR_TERM_TAB_LINE_IDX=${VAR_TERM_TAB_LINE_IDX}" >> ${HSFM_FILE_SESSION}
+    echo "export VAR_TERM_TAB_LINE_LIST_PATH" >> ${HSFM_FILE_SESSION}
+    for each_tab in "${VAR_TERM_TAB_LINE_LIST_PATH[@]}"
+    do
+        echo "VAR_TERM_TAB_LINE_LIST_PATH+=(\"${each_tab}\")" >> ${HSFM_FILE_SESSION}
+    done
+    echo "cd ${PWD}" >> ${HSFM_FILE_SESSION}
+}
+fload_session() {
+    if test -f ${HSFM_FILE_SESSION}
+    then
+        source ${HSFM_FILE_SESSION}
+    fi
+}
+fload_env() {
+    if test -f ${HSFM_FILE_RUNTIME_ENV}
+    then
+        source ${HSFM_FILE_RUNTIME_ENV}
+    fi
+}
+fsave_settings() {
+    fsave_env
+    fsave_session
+}
 
 ###########################################################
 ## Others
@@ -3025,33 +3177,6 @@ fsetup_shell()
     # Trap the window resize signal (handle window resize events).
     trap 'fterminal_resize_win' WINCH
 }
-
-fsave_settings() {
-    if [[ ${#VAR_TERM_TAB_LINE_LIST_PATH[@]} -eq 1 ]]
-    then
-        return 0
-    fi
-
-    if test -f ${HSFM_FILE_SESSION}
-    then
-        rm ${HSFM_FILE_SESSION}
-    fi
-
-    echo "export VAR_TERM_TAB_LINE_IDX=(${VAR_TERM_TAB_LINE_IDX})" >> ${HSFM_FILE_SESSION}
-    echo "export VAR_TERM_TAB_LINE_LIST_PATH=()" >> ${HSFM_FILE_SESSION}
-    for each_tab in "${VAR_TERM_TAB_LINE_LIST_PATH[@]}"
-    do
-        echo "VAR_TERM_TAB_LINE_LIST_PATH+=(\"${each_tab}\")" >> ${HSFM_FILE_SESSION}
-    done
-    echo "cd ${PWD}" >> ${HSFM_FILE_SESSION}
-}
-fload_settings() {
-    if test -f ${HSFM_FILE_SESSION}
-    then
-        source ${HSFM_FILE_SESSION}
-    fi
-}
-
 fexport_ls_colors() {
     # Parse the LS_COLORS variable and declare each file type
     # as a separate variable.
@@ -3171,6 +3296,9 @@ fHelp() {
 ## Core Function
 ###########################################################
 function fCore() {
+    # restore runtime env.
+    fload_env
+
     fsetup_osenv
     fsetup_options
     fsetup_shell
@@ -3250,7 +3378,7 @@ function fMain()
                 HSFM_FILE_PICKER=1
                 ;;
             -r|-restore)
-                fload_settings
+                fload_session
                 ;;
             -s|-setup)
                 if ! test -f "${HSFM_FILE_CONFIG}"
@@ -3291,6 +3419,10 @@ function fMain()
     then
         echo "HSFM is running. Status: $HSFM_RUNNING"
         exit 1
+    elif [[ $HSFM_DEBUG = true ]]
+    then
+        # Record stderr
+        fCore 2> >(tee ${HSFM_FILE_LOGS} >&2)
     else
         fCore
     fi
