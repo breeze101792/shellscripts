@@ -86,6 +86,8 @@ export VAR_TERM_TASKWIN_SCROLL_IDX=""
 export VAR_TERM_TASKWIN_HEIGHT="12"
 
 # Cmd line
+export VAR_TERM_CMD_HISTORY_MAX=100
+export VAR_TERM_CMD_HISTORY=("test")
 export VAR_TERM_CMD_INPUT_BUFFER=""
 export VAR_TERM_CMD_LIST=( "redraw" "fullredraw" "help" "info" "exit" "select" "shell" "dump" "test")
 VAR_TERM_CMD_LIST+=( "mkdir" "mkfile" "touch" "rename" "search" )
@@ -2074,6 +2076,10 @@ fcommand_handler()
 
 }
 fcommand_line_interact() {
+    # cmd history
+    local var_cmd_history_idx=0
+    local var_cmd_backup_buffer=""
+
     # Write to the command_line (under fterminal_draw_status_line).
     local var_cmd_prefix=${1}
     local var_cmd_function=${2:=""}
@@ -2088,10 +2094,12 @@ fcommand_line_interact() {
 
     VAR_TERM_CMD_INPUT_BUFFER=""
 
+    local var_post_input_buffer="$"
+
     fterminal_print '\e7\e[%sH\e[?25h' "$VAR_TERM_LINE_CNT"
     # '\r\e[K': Redraw the read prompt on every keypress.
     #           This is mimicking what happens normally.
-    while IFS= read -rsn 1 -p $'\r\e[K'"${var_cmd_prefix}${VAR_TERM_CMD_INPUT_BUFFER}" read_reply; do
+    while IFS= read -rsn 1 -p $'\r\e[K'"${var_cmd_prefix}${VAR_TERM_CMD_INPUT_BUFFER}${var_post_input_buffer}"$'\b' read_reply; do
         if [[ ${read_reply} == $'\e' ]]
         then
             local tmp_buffer="${read_reply}"
@@ -2115,12 +2123,37 @@ fcommand_line_interact() {
             ;;
             # Scroll down
             $'\e[B')
-            continue
+                if [[ "${var_cmd_history_idx}" = "0" ]]
+                then
+                    continue
+                elif [[ "${var_cmd_history_idx}" = "1" ]]
+                then
+                    VAR_TERM_CMD_INPUT_BUFFER=${var_cmd_backup_buffer}
+                    ((var_cmd_history_idx--))
+                    continue
+                fi
+
+                if [[ $((${var_cmd_history_idx} - 1)) -le ${#VAR_TERM_CMD_HISTORY[@]} ]]
+                then
+                    ((var_cmd_history_idx--))
+                    local tmp_history_idx=$((${#VAR_TERM_CMD_HISTORY[@]} - ${var_cmd_history_idx}))
+                    VAR_TERM_CMD_INPUT_BUFFER=${VAR_TERM_CMD_HISTORY[${tmp_history_idx}]}
+                fi
             ;;
 
             # Scroll up.
             $'\e[A')
-            continue
+
+                if [[ "${var_cmd_history_idx}" = "0" ]]
+                then
+                    var_cmd_backup_buffer=${VAR_TERM_CMD_INPUT_BUFFER}
+                fi
+                if [[ $((${var_cmd_history_idx} + 1)) -le ${#VAR_TERM_CMD_HISTORY[@]} ]]
+                then
+                    ((var_cmd_history_idx++))
+                    local tmp_history_idx=$((${#VAR_TERM_CMD_HISTORY[@]} - ${var_cmd_history_idx}))
+                    VAR_TERM_CMD_INPUT_BUFFER=${VAR_TERM_CMD_HISTORY[${tmp_history_idx}]}
+                fi
             ;;
 
             # Backspace.
@@ -2167,6 +2200,19 @@ fcommand_line_interact() {
                     break
                 }
 
+                if test -z ${VAR_TERM_CMD_INPUT_BUFFER}
+                then
+                    fterminal_print '\r\e[K\e[?25l\e8'
+                    break
+                elif [[ ${#VAR_TERM_CMD_HISTORY[@]} -gt  ${VAR_TERM_CMD_HISTORY_MAX} ]]
+                then
+                    local tmp_start_idx=$((${#VAR_TERM_CMD_HISTORY[@]} - ${VAR_TERM_CMD_HISTORY_MAX}))
+                    VAR_TERM_CMD_HISTORY="${VAR_TERM_CMD_HISTORY[@]:${tmp_start_idx}:${VAR_TERM_CMD_HISTORY_MAX}}"
+
+                else
+                    VAR_TERM_CMD_HISTORY+=("${VAR_TERM_CMD_INPUT_BUFFER}")
+                fi
+
                 tmp_command=$(echo ${VAR_TERM_CMD_INPUT_BUFFER} | tr -s ' ' |sed 's/^ //g' | cut -d ' ' -f 1)
                 tmp_args=$(echo ${VAR_TERM_CMD_INPUT_BUFFER} | tr -s ' ' |sed 's/^ //g' | cut -d ' ' -f 2-)
                 # fterminal_print "\r\e[2K%s" ${tmp_command}
@@ -2207,8 +2253,13 @@ fcommand_line_interact() {
                         ;;
                     *)
                         # flog_msg "Unknown commands: ${tmp_command} ${tmp_args}"
-                        cmd_${tmp_command} ${tmp_args}
-                        fterminal_print '\e[?25l\e8'
+                        if command -v cmd_${tmp_command}
+                        then
+                            cmd_${tmp_command} ${tmp_args}
+                            fterminal_print '\r\e[K\e[?25l\e8'
+                        else
+                            fterminal_print '\r\e[K Command "'${tmp_command}'" not found.\e[?25l\e8'
+                        fi
                         ;;
                 esac
 
