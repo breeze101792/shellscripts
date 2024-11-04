@@ -13,11 +13,15 @@ export HSFM_LS_COLORS=1
 
 # Show/Hide hidden files on open.
 # (On by default)
-export HSFM_ENABLE_HIDDEN=0
+export HSFM_ENABLE_HIDDEN=1
 
 export HSFM_FILE_PICKER=0
 
 export HSFM_READ_WITH_LS=1
+
+## Env
+# this is only work on run time.
+export HSFM_ENV_LEFT_HAND_MODE=0
 
 ## TERMINAL Vars Options
 ###########################################################
@@ -597,20 +601,51 @@ fterminal_draw_dir() {
     # fterminal_print '\e[H'
     # fterminal_print '\e[%s;%sH' "$((1 + ${VAR_TERM_TAB_LINE_HEIGHT}))" "${var_col_offset}"
 
-    for ((idx=0;idx<=var_scroll_len;idx++)); {
-        # Don't print one too many newlines.
-        # if ((idx > 0))
-        # then
-        #     fterminal_print '\e[%s;%sH' "$((1 + ${VAR_TERM_TAB_LINE_HEIGHT} + idx))" "${var_col_offset}"
-        #     # fterminal_print '\n'
-        # fi
+    # FIXME, impl current window
+    # if true; then
+    if false; then
+        ################################################################
+        # Test
+        for ((idx=0;idx<=var_scroll_len;idx++)); {
 
-        if [[ -z ${VAR_TERM_DIR_FILE_LIST[$((var_scroll_new_start + idx))]} ]]; then
-            break
-        fi
+            if [[ -z ${VAR_TERM_DIR_FILE_LIST[$((var_scroll_new_start + idx))]} ]]; then
+                break
+            fi
 
-        fterminal_draw_file_line "$((var_scroll_new_start + idx))"
-    }
+            flog_msg_debug "fterminal_draw_file_line $((${VAR_TERM_COLUMN_CNT}/2)) 0 80 $((var_scroll_new_start + idx))"
+            # fterminal_draw_file_line "$((${VAR_TERM_COLUMN_CNT}/2))" 0 80 "$((var_scroll_new_start + idx))"
+            # fterminal_draw_file_line 80 0 80 "$((var_scroll_new_start + idx))"
+            fterminal_draw_file_line "$((var_scroll_new_start + idx))" 0 0 $((${VAR_TERM_COLUMN_CNT} / 2))
+        }
+        for ((idx=0;idx<=var_scroll_len;idx++)); {
+
+            if [[ -z ${VAR_TERM_DIR_FILE_LIST[$((var_scroll_new_start + idx))]} ]]; then
+                break
+            fi
+
+            flog_msg_debug "fterminal_draw_file_line $((${VAR_TERM_COLUMN_CNT}/2)) 0 80 $((var_scroll_new_start + idx))"
+            # fterminal_draw_file_line "$((${VAR_TERM_COLUMN_CNT}/2))" 0 80 "$((var_scroll_new_start + idx))"
+            # fterminal_draw_file_line 80 0 80 "$((var_scroll_new_start + idx))"
+            fterminal_draw_file_line "$((var_scroll_new_start + idx))" $((${VAR_TERM_COLUMN_CNT} / 2)) 0 $((${VAR_TERM_COLUMN_CNT} / 2))
+        }
+
+    else
+        ################################################################
+        for ((idx=0;idx<=var_scroll_len;idx++)); {
+            # Don't print one too many newlines.
+            # if ((idx > 0))
+            # then
+            #     fterminal_print '\e[%s;%sH' "$((1 + ${VAR_TERM_TAB_LINE_HEIGHT} + idx))" "${var_col_offset}"
+            #     # fterminal_print '\n'
+            # fi
+
+            if [[ -z ${VAR_TERM_DIR_FILE_LIST[$((var_scroll_new_start + idx))]} ]]; then
+                break
+            fi
+
+            fterminal_draw_file_line "$((var_scroll_new_start + idx))"
+        }
+    fi
 
     # Move the cursor to its new position if it changed.
     # If the variable 'var_win_new_cursor' is empty, the cursor
@@ -626,17 +661,29 @@ fterminal_draw_file_line() {
     if [[ -z ${VAR_TERM_DIR_FILE_LIST[$1]} ]]; then
         return
     fi
-
     # Format the VAR_TERM_DIR_FILE_LIST item and print it.
     local var_content_idx=$1
+
+    # args max width
+    if [[ ${#} -ge 4 ]]
+    then
+        local args_col_offset=${2}
+        local args_line_offset=${3}
+        local args_content_width=${4}
+    else
+        local args_col_offset=0
+        local args_line_offset=0
+        local args_content_width=${VAR_TERM_COLUMN_CNT}
+    fi
+
     local var_file_name=${VAR_TERM_DIR_FILE_LIST[$var_content_idx]##*/}
     # local var_file_name=${VAR_TERM_DIR_FILE_LIST[$var_content_idx]}
     local var_file_ext=${var_file_name##*.}
     local var_format
     local var_postfix
     local var_prefix
-    # local file_info="$(ls -al $PWD | grep ${var_file_name}\$ | sed 's/ [^ ]\+$//')"
-    local file_info="${VAR_TERM_DIR_FILE_INFO_LIST[$var_content_idx]}"
+    # local var_file_info="$(ls -al $PWD | grep ${var_file_name}\$ | sed 's/ [^ ]\+$//')"
+    local var_file_info="${VAR_TERM_DIR_FILE_INFO_LIST[$var_content_idx]}"
 
     # Directory.
     if [[ -d "${VAR_TERM_DIR_FILE_LIST[$var_content_idx]}" ]]; then
@@ -707,25 +754,28 @@ fterminal_draw_file_line() {
     # Remove all non-printable characters.
     var_file_name=${var_file_name//[^[:print:]]/^[}
 
-    local var_col_offset=0
-    local var_line_offset=0
     if ((var_content_idx - VAR_TERM_CONTENT_SCROLL_START_IDX >= VAR_TERM_CONTENT_MAX_CNT))
     then
         ((VAR_TERM_CONTENT_SCROLL_START_IDX=$var_content_idx-$VAR_TERM_CONTENT_MAX_CNT+1))
-        var_line_offset=$((${VAR_TERM_TAB_LINE_HEIGHT} + ${VAR_TERM_CONTENT_MAX_CNT}))
+        args_line_offset=$((${VAR_TERM_TAB_LINE_HEIGHT} + ${VAR_TERM_CONTENT_MAX_CNT}))
     elif ((var_content_idx < VAR_TERM_CONTENT_SCROLL_START_IDX))
     then
         ((VAR_TERM_CONTENT_SCROLL_START_IDX=var_content_idx))
-        var_line_offset=$((1 + ${VAR_TERM_TAB_LINE_HEIGHT}))
+        args_line_offset=$((1 + ${VAR_TERM_TAB_LINE_HEIGHT}))
     else
-        var_line_offset=$((1 + ${VAR_TERM_TAB_LINE_HEIGHT} + ${var_content_idx} - ${VAR_TERM_CONTENT_SCROLL_START_IDX}))
+        args_line_offset=$((1 + ${VAR_TERM_TAB_LINE_HEIGHT} + ${var_content_idx} - ${VAR_TERM_CONTENT_SCROLL_START_IDX}))
     fi
 
-    fterminal_print '\e[%s;%sH' "${var_line_offset}" "${var_col_offset}"
+    fterminal_print '\e[%s;%sH' "${args_line_offset}" "${args_col_offset}"
 
-    fterminal_print '%b%s\e[m\e[K\r' \
-        " ${VAR_TERM_FILE_PRE}${var_format}" \
-        "${file_info} ${var_prefix}${var_file_name}${var_postfix}${VAR_TERM_FILE_POST}"
+    # fterminal_print '%b%s\e[m\e[K\r' \
+    #     " ${VAR_TERM_FILE_PRE}${var_format}" \
+    #     "${var_file_info} ${var_prefix}${var_file_name}${var_postfix}${VAR_TERM_FILE_POST}"
+
+    local tmp_content="${VAR_TERM_FILE_PRE}${var_file_info} ${var_prefix}${var_file_name}${var_postfix}${VAR_TERM_FILE_POST}"
+    fterminal_print "%b%- ${args_content_width}s\e[m" \
+        "${var_format}" \
+        "${tmp_content:0:${args_content_width}}"
 }
 
 fterminal_draw_tab_line() {
@@ -737,7 +787,8 @@ fterminal_draw_tab_line() {
     # Escape the directory string.
     # Remove all non-printable characters.
     # PWD_escaped=${PWD//[^[:print:]]/^[}
-    VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]="$(realpath .)"
+    # VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]="$(realpath .)"
+    VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]="${PWD}"
 
     for each_idx in "${!VAR_TERM_TAB_LINE_LIST_PATH[@]}"
     do
@@ -1038,6 +1089,10 @@ fterminal_read_dir() {
     # If '$PWD' is '/', unset it to avoid '//'.
     [[ $PWD == / ]] && PWD=
 
+    # set flags.
+    shopt_flags=(s u)
+    shopt -"${shopt_flags[$HSFM_ENABLE_HIDDEN]}" dotglob
+
     if [[ $HSFM_READ_WITH_LS == 0 ]]
     then
         # for some reason, we should sort in seperate loop.
@@ -1063,11 +1118,6 @@ fterminal_read_dir() {
         done
     else
         local var_ls_args=(${VAR_TERM_DIR_LS_ARGS[@]})
-        if [[ ${HSFM_ENABLE_HIDDEN} -eq 0 ]]
-        then
-            var_ls_args+=("-A")
-        fi
-
         if test -n "${HSFM_LS_SORTING}"
         then
             var_ls_args+=("${HSFM_LS_SORTING}")
@@ -1088,7 +1138,7 @@ fterminal_read_dir() {
                 # Access fail
                 each_line="${each_line/: Permission denied/}"
                 each_line="${each_line/cannot access /}"
-#
+
                 info="Permission denied"
                 # item=${each_line/#*[0-9]? \//\/}
                 item=${each_line/*: /}
@@ -1282,6 +1332,35 @@ fterminal_tab_swap_contex() {
     VAR_TERM_TAB_LINE_LIST_PATH[${var_tab_id_b}]=${tmp_path}
     VAR_TERM_TAB_LINE_LIST_START_IDX[${var_tab_id_b}]=${tmp_start_idx}
     VAR_TERM_TAB_LINE_LIST_IDX[${var_tab_id_b}]=${tmp_idx}
+}
+
+###########################################################
+## Env Functions
+###########################################################
+fenv_left_hande_mode() {
+    if [ "${args_value}" = "on" ]
+    then
+        HSFM_ENV_LEFT_HAND_MODE=1
+
+        # to left hande
+        HSFM_KEY_CHILD1="g"
+        HSFM_KEY_PARENT1="s"
+        HSFM_KEY_SCROLL_DOWN1="f"
+        HSFM_KEY_SCROLL_UP1="d"
+    elif [ "${args_value}" = "off" ]
+    then
+        HSFM_ENV_LEFT_HAND_MODE=0
+
+        # restore to right hand
+        HSFM_KEY_CHILD1="l"
+        HSFM_KEY_PARENT1="h"
+        HSFM_KEY_SCROLL_DOWN1="j"
+        HSFM_KEY_SCROLL_UP1="k"
+    else
+        flog_msg "Unknown value: ${args_value}"
+        return -1
+    fi
+    return 0
 }
 
 ###########################################################
@@ -1569,14 +1648,6 @@ fnormal_mode_handler() {
         ${HSFM_KEY_CHILD3:=""})
             fsys_open "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
         ;;
-        ${HSFM_KEY_VISUAL_SELECT:="V"})
-            fmode_setup "v"
-            # fterminal_redraw
-        ;;
-        ${HSFM_KEY_SELECTION})
-            fmode_setup "s"
-            # fterminal_redraw
-        ;;
         # Open VAR_TERM_DIR_FILE_LIST item.
         # 'C' is what bash sees when the right arrow is pressed
         # ('\e[C' or '\eOC').
@@ -1676,6 +1747,15 @@ fnormal_mode_handler() {
             fgui_tab_close
         ;;
 
+        ${HSFM_KEY_VISUAL_SELECT:="V"})
+            fmode_setup "v"
+            # fterminal_redraw
+        ;;
+        ${HSFM_KEY_SELECTION})
+            fmode_setup "s"
+            # fterminal_redraw
+        ;;
+
         # Show hidden files.
         ${HSFM_KEY_HIDDEN:=.})
             # 'a=a>0?0:++a': Toggle between both values of 'shopt_flags'.
@@ -1687,8 +1767,8 @@ fnormal_mode_handler() {
             else
                 HSFM_ENABLE_HIDDEN=0
             fi
-            shopt_flags=(u s)
-            shopt -"${shopt_flags[$HSFM_ENABLE_HIDDEN]}" dotglob
+            # shopt_flags=(u s)
+            # shopt -"${shopt_flags[$HSFM_ENABLE_HIDDEN]}" dotglob
             fterminal_redraw full
             # flog_msg "Hidden: $HSFM_ENABLE_HIDDEN/${shopt_flags[$HSFM_ENABLE_HIDDEN]}"
         ;;
@@ -2315,10 +2395,11 @@ fcommand_line_interact() {
                         ;;
                     *)
                         # flog_msg "Unknown commands: ${tmp_command} ${tmp_args}"
-                        if command -v cmd_${tmp_command}
+                        if command -v cmd_${tmp_command} > /dev/null
                         then
                             cmd_${tmp_command} ${tmp_args}
-                            fterminal_print '\r\e[K\e[?25l\e8'
+                            # We should not clear msg, after running.
+                            fterminal_print '\e[?25l\e8'
                         else
                             fterminal_print '\r\e[K Command "'${tmp_command}'" not found.\e[?25l\e8'
                         fi
@@ -2704,6 +2785,54 @@ cmd_eval()
     then
         eval "$@"
     fi
+}
+cmd_set()
+{
+    if [[ "${#}" -lt "2" ]]
+    then
+        flog_msg "No enough args number."
+        return -1
+    fi
+    local args_variable=$1
+    local args_value=$2
+
+    case ${args_variable} in
+        ls)
+            if [ "${args_value}" = "on" ]
+            then
+                HSFM_READ_WITH_LS=1
+            elif [ "${args_value}" = "off" ]
+            then
+                HSFM_READ_WITH_LS=0
+            else
+                flog_msg "Unknown value: ${args_value}"
+                return -1
+            fi
+            ;;
+        hidden)
+            if [ "${args_value}" = "on" ]
+            then
+                HSFM_ENABLE_HIDDEN=1
+            elif [ "${args_value}" = "off" ]
+            then
+                HSFM_ENABLE_HIDDEN=0
+            else
+                flog_msg "Unknown value: ${args_value}"
+                return -1
+            fi
+            ;;
+        left)
+            if fenv_left_hande_mode "${args_value}"; then
+                return -1
+            fi
+            ;;
+        *)
+            flog_msg "Unknown variable name: ${args_variable}"
+            return -1
+            ;;
+    esac
+    fterminal_redraw full
+    flog_msg "Set ${args_variable} ${args_value}"
 }
 cmd_test()
 {
@@ -3159,8 +3288,9 @@ fsetup_shell()
     ((${HSFM_LS_COLORS:=1} == 1)) &&
         fexport_ls_colors
 
-    ((${HSFM_ENABLE_HIDDEN:=0} == 1)) &&
-        shopt -s dotglob
+    # Move to read dir to set opt.
+    # ((${HSFM_ENABLE_HIDDEN:=0} == 1)) &&
+    #     shopt -s dotglob
 
     # Create the trash and cache directory if they don't exist.
     mkdir -p "${HSFM_PATH_CACHE}"
