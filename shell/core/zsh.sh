@@ -81,6 +81,17 @@ echo -ne '\e[6 q' # Use beam shape cursor on startup.
 preexec() { echo -ne '\e[2 q' ;}
 precmd() { echo -ne '\e[6 q' ;}
 
+# copy & pates
+clipAppend () {
+    text_to_add=$(clip -g)
+    RBUFFER=${RBUFFER}${text_to_add}
+}
+clipCopy () {
+    clip -s ${RBUFFER}
+}
+zle -N clipAppend
+zle -N clipCopy
+
 #------------------------------
 # Key Settings
 #------------------------------

@@ -98,8 +98,11 @@ export VAR_TERM_CMD_INPUT_BUFFER=""
 export VAR_TERM_CMD_LIST=( "redraw" "fullredraw" "help" "info" "exit" "select" "shell" )
 VAR_TERM_CMD_LIST+=( "mkdir" "mkfile" "touch" "rename" "search" )
 VAR_TERM_CMD_LIST+=( "quit" "tab" "quitngo")
-VAR_TERM_CMD_LIST+=( "open" "editor" "vim" "media" "play" "image" "preview")
+VAR_TERM_CMD_LIST+=( "open" "editor" "vim" "media" "play" "image" "preview" "unzip" "extract")
 VAR_TERM_CMD_LIST+=( "debug" "eval" "dump" "test")
+
+export VAR_TERM_SELECT_CMD_LIST=( "compress" )
+# VAR_TERM_SELECT_CMD_LIST+=( "copy" "remove" "paste" )
 
 # Mode
 export VAR_TERM_VISUAL_START_IDX=0
@@ -1443,11 +1446,11 @@ fgui_scroll_up_visual() {
     if ((VAR_TERM_CONTENT_SCROLL_IDX > 0))
     then
         VAR_TERM_PRINT_BUFFER_ENABLE=true
-        ((VAR_TERM_CONTENT_SCROLL_IDX--))
         if [ "${VAR_TERM_OPS_MODE}" = 'v' ] && [[ $VAR_TERM_CONTENT_SCROLL_IDX -gt $VAR_TERM_VISUAL_START_IDX ]]
         then
             fterminal_mark_remove "$VAR_TERM_CONTENT_SCROLL_IDX"
         fi
+        ((VAR_TERM_CONTENT_SCROLL_IDX--))
 
         fterminal_draw_file_line "$((VAR_TERM_CONTENT_SCROLL_IDX+1))"
 
@@ -1647,20 +1650,18 @@ fnormal_mode_handler() {
         # '' is what bash sees when the enter/return key is pressed.
         ${HSFM_KEY_CHILD3:=""})
             fsys_open "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
-        ;;
+            ;;
         # Open VAR_TERM_DIR_FILE_LIST item.
         # 'C' is what bash sees when the right arrow is pressed
         # ('\e[C' or '\eOC').
-        ${HSFM_KEY_CHILD1:=l}|\
-        ${HSFM_KEY_CHILD2:=$'\e[C'}|\
-        ${HSFM_KEY_CHILD4:=$'\eOC'})
+        ${HSFM_KEY_CHILD1:=l} | \
+            ${HSFM_KEY_CHILD2:=$'\e[C'} | \
+            ${HSFM_KEY_CHILD4:=$'\eOC'})
             # only check if it's directory.
-            if test -d "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
-            then
+            if test -d "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"; then
                 VAR_TERM_FLAG_RESET_IDX=true
                 fsys_open "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
-            elif test -f "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
-            then
+            elif test -f "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"; then
                 local tmp_mine=$(fprase_mime_type "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}")
                 local tmp_info=$(file "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}")
                 # flog_msg "File info(${tmp_mine%%;*}):$(file "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" | tail -n 1 | cut -d ':' -f2)"
@@ -1668,18 +1669,18 @@ fnormal_mode_handler() {
             else
                 flog_msg "File access failed."
             fi
-        ;;
+            ;;
 
         # Go to the parent directory.
         # 'D' is what bash sees when the left arrow is pressed
         # ('\e[D' or '\eOD').
         # '\177' and '\b' are what bash sometimes sees when the backspace
         # key is pressed.
-        ${HSFM_KEY_PARENT1:=h}|\
-        ${HSFM_KEY_PARENT2:=$'\e[D'}|\
-        ${HSFM_KEY_PARENT3:=$'\177'}|\
-        ${HSFM_KEY_PARENT4:=$'\b'}|\
-        ${HSFM_KEY_PARENT5:=$'\eOD'})
+        ${HSFM_KEY_PARENT1:=h} | \
+            ${HSFM_KEY_PARENT2:=$'\e[D'} | \
+            ${HSFM_KEY_PARENT3:=$'\177'} | \
+            ${HSFM_KEY_PARENT4:=$'\b'} | \
+            ${HSFM_KEY_PARENT5:=$'\eOD'})
             # If a search was done, clear the results and open the current dir.
             if ((VAR_SEARCH_MODE == 1 && VAR_TERM_SEARCH_END_EARLY != 1)); then
                 fsys_open "$PWD"
@@ -1689,25 +1690,25 @@ fnormal_mode_handler() {
                 VAR_TERM_FLAG_FIND_PREVIOUS=1
                 fsys_open "${PWD%/*}"
             fi
-        ;;
+            ;;
 
         # Scroll down.
         # 'B' is what bash sees when the down arrow is pressed
         # ('\e[B' or '\eOB').
-        ${HSFM_KEY_SCROLL_DOWN1:=j}|\
-        ${HSFM_KEY_SCROLL_DOWN2:=$'\e[B'}|\
-        ${HSFM_KEY_SCROLL_DOWN3:=$'\eOB'})
-                fgui_scroll_down
-        ;;
+        ${HSFM_KEY_SCROLL_DOWN1:=j} | \
+            ${HSFM_KEY_SCROLL_DOWN2:=$'\e[B'} | \
+            ${HSFM_KEY_SCROLL_DOWN3:=$'\eOB'})
+            fgui_scroll_down
+            ;;
 
         # Scroll up.
         # 'A' is what bash sees when the up arrow is pressed
         # ('\e[A' or '\eOA').
-        ${HSFM_KEY_SCROLL_UP1:=k}|\
-        ${HSFM_KEY_SCROLL_UP2:=$'\e[A'}|\
-        ${HSFM_KEY_SCROLL_UP3:=$'\eOA'})
-                fgui_scroll_up
-        ;;
+        ${HSFM_KEY_SCROLL_UP1:=k} | \
+            ${HSFM_KEY_SCROLL_UP2:=$'\e[A'} | \
+            ${HSFM_KEY_SCROLL_UP3:=$'\eOA'})
+            fgui_scroll_up
+            ;;
 
         # Go to top.
         ${HSFM_KEY_TO_TOP:=g})
@@ -1715,54 +1716,53 @@ fnormal_mode_handler() {
                 VAR_TERM_CONTENT_SCROLL_IDX=0
                 fterminal_redraw
             }
-        ;;
+            ;;
 
         # Go to bottom.
         ${HSFM_KEY_TO_BOTTOM:=G})
             ((VAR_TERM_CONTENT_SCROLL_IDX != VAR_TERM_DIR_LIST_CNT)) && {
-                ((VAR_TERM_CONTENT_SCROLL_IDX=VAR_TERM_DIR_LIST_CNT))
+                ((VAR_TERM_CONTENT_SCROLL_IDX = VAR_TERM_DIR_LIST_CNT))
                 fterminal_redraw
             }
-        ;;
+            ;;
 
         # Tab selcet
         ${HSFM_KEY_GO_PREVIOUS_TAB})
             fgui_tab_go_previous
-        ;;
+            ;;
 
         ${HSFM_KEY_GO_NEXT_TAB})
             fgui_tab_go_next
-        ;;
+            ;;
         ${HSFM_KEY_MOVE_TAB_PREVIOUS})
             fgui_tab_move_previous
-        ;;
+            ;;
 
         ${HSFM_KEY_MOVE_TAB_NEXT})
             fgui_tab_move_next
-        ;;
+            ;;
         ${HSFM_KEY_OPEN_TAB})
             fgui_tab_open
-        ;;
+            ;;
         ${HSFM_KEY_CLOSE_TAB})
             fgui_tab_close
-        ;;
+            ;;
 
         ${HSFM_KEY_VISUAL_SELECT:="V"})
             fmode_setup "v"
             # fterminal_redraw
-        ;;
+            ;;
         ${HSFM_KEY_SELECTION})
             fmode_setup "s"
             # fterminal_redraw
-        ;;
+            ;;
 
         # Show hidden files.
         ${HSFM_KEY_HIDDEN:=.})
             # 'a=a>0?0:++a': Toggle between both values of 'shopt_flags'.
             #                This also works for '3' or more values with
             #                some modification.
-            if [[ ${HSFM_ENABLE_HIDDEN} == 0 ]]
-            then
+            if [[ ${HSFM_ENABLE_HIDDEN} == 0 ]]; then
                 HSFM_ENABLE_HIDDEN=1
             else
                 HSFM_ENABLE_HIDDEN=0
@@ -1771,18 +1771,17 @@ fnormal_mode_handler() {
             # shopt -"${shopt_flags[$HSFM_ENABLE_HIDDEN]}" dotglob
             fterminal_redraw full
             # flog_msg "Hidden: $HSFM_ENABLE_HIDDEN/${shopt_flags[$HSFM_ENABLE_HIDDEN]}"
-        ;;
+            ;;
         # Toggle sorting method
         ${HSFM_KEY_SORTING})
-            if [ "${HSFM_LS_SORTING}" = "" ]
-            then
+            if [ "${HSFM_LS_SORTING}" = "" ]; then
                 HSFM_LS_SORTING="-t"
             else
                 HSFM_LS_SORTING=""
             fi
             fterminal_redraw full
             flog_msg "Sorting: ${HSFM_LS_SORTING}"
-        ;;
+            ;;
 
         # Search.
         ${HSFM_KEY_SEARCH:=/})
@@ -1791,76 +1790,74 @@ fnormal_mode_handler() {
             # If the search came up empty, fterminal_redraw the current dir.
             if [[ -z ${VAR_TERM_DIR_FILE_LIST[*]} ]]; then
                 VAR_TERM_DIR_FILE_LIST=("${cur_list[@]}")
-                ((VAR_TERM_DIR_LIST_CNT=${#VAR_TERM_DIR_FILE_LIST[@]}-1))
+                ((VAR_TERM_DIR_LIST_CNT = ${#VAR_TERM_DIR_FILE_LIST[@]} - 1))
                 fterminal_redraw
                 VAR_SEARCH_MODE=
             else
                 VAR_SEARCH_MODE=1
             fi
-        ;;
+            ;;
 
         # Spawn a shell.
         ${HSFM_KEY_SHELL:=!})
             cmd_shell
-        ;;
+            ;;
 
         # open file with command
         ${HSFM_KEY_OPEN_CMD:=:})
             # FIXME, if command change cursor pos, it will be resotre to wier position
             fcommand_handler "command" "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]##*/}"
-        ;;
+            ;;
 
         # Show file attributes.
         ${HSFM_KEY_ATTRIBUTES:=x})
             [[ -e "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" ]] && {
                 cmd_stat "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
             }
-        ;;
+            ;;
 
         # Show help info.
         ${HSFM_KEY_HELP:=H})
             # fcommand_handler "help" "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]##*/}"
             cmd_help "$@"
-        ;;
+            ;;
 
         # Go to '$HOME'.
         ${HSFM_KEY_GO_HOME:='~'})
             fsys_open ~
-        ;;
+            ;;
 
         # Go to trash.
         ${HSFM_KEY_GO_TRASH:=t})
             fsys_open "$HSFM_PATH_TRASH"
-        ;;
+            ;;
 
         # Go to previous dir.
         ${HSFM_KEY_PREVIOUS:=-})
             fsys_open "$OLDPWD"
-        ;;
+            ;;
 
         # # Refresh current dir.
         ${HSFM_KEY_REFRESH:=r})
             fterminal_redraw
             flog_msg "Window Refreshed."
-        ;;
+            ;;
         ${HSFM_KEY_TOGGLE_MSGWIN})
-            if [ ${VAR_TERM_MSGWIN_SHOW} = true ]
-            then
+            if [ ${VAR_TERM_MSGWIN_SHOW} = true ]; then
                 VAR_TERM_MSGWIN_SHOW=false
             else
                 VAR_TERM_MSGWIN_SHOW=true
             fi
             fterminal_redraw
-        ;;
+            ;;
         ${HSFM_KEY_TOGGLE_TASKWIN})
-            if [ ${VAR_TERM_TASKWIN_SHOW} = true ]
-            then
+            if [ ${VAR_TERM_TASKWIN_SHOW} = true ]; then
                 VAR_TERM_TASKWIN_SHOW=false
             else
                 VAR_TERM_TASKWIN_SHOW=true
             fi
             fterminal_redraw
-        ;;
+            ;;
 
         # Directory favourites.
         [1-9])
@@ -1869,7 +1866,7 @@ fnormal_mode_handler() {
 
             [[ $tmp_favorite ]] &&
                 fsys_open "$tmp_favorite"
-        ;;
+            ;;
 
         # File operation
         ${HSFM_KEY_YANK:=y})
@@ -1921,33 +1918,32 @@ fvisual_mode_handler() {
         # '' is what bash sees when the enter/return key is pressed.
         ${HSFM_KEY_CHILD3:=""})
             fmode_setup "n"
-        ;;
+            ;;
         # Open VAR_TERM_DIR_FILE_LIST item.
         # 'C' is what bash sees when the right arrow is pressed
         # ('\e[C' or '\eOC').
-        ${HSFM_KEY_CHILD1:=l}|\
-        ${HSFM_KEY_CHILD2:=$'\e[C'}|\
-        ${HSFM_KEY_CHILD4:=$'\eOC'})
+        ${HSFM_KEY_CHILD1:=l} | \
+            ${HSFM_KEY_CHILD2:=$'\e[C'} | \
+            ${HSFM_KEY_CHILD4:=$'\eOC'})
             # only check if it's directory.
-            if test -d "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]##*/}"
-            then
+            if test -d "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]##*/}"; then
                 fsys_open "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
             else
                 # flog_msg $(file "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" | tail -n 1)
                 flog_msg "File type: $(file "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" | tail -n 1 | cut -d ':' -f2)"
             fi
-        ;;
+            ;;
 
         # Go to the parent directory.
         # 'D' is what bash sees when the left arrow is pressed
         # ('\e[D' or '\eOD').
         # '\177' and '\b' are what bash sometimes sees when the backspace
         # key is pressed.
-        ${HSFM_KEY_PARENT1:=h}|\
-        ${HSFM_KEY_PARENT2:=$'\e[D'}|\
-        ${HSFM_KEY_PARENT3:=$'\177'}|\
-        ${HSFM_KEY_PARENT4:=$'\b'}|\
-        ${HSFM_KEY_PARENT5:=$'\eOD'})
+        ${HSFM_KEY_PARENT1:=h} | \
+            ${HSFM_KEY_PARENT2:=$'\e[D'} | \
+            ${HSFM_KEY_PARENT3:=$'\177'} | \
+            ${HSFM_KEY_PARENT4:=$'\b'} | \
+            ${HSFM_KEY_PARENT5:=$'\eOD'})
             # If a search was done, clear the results and open the current dir.
             if ((VAR_SEARCH_MODE == 1 && VAR_TERM_SEARCH_END_EARLY != 1)); then
                 fsys_open "$PWD"
@@ -1957,25 +1953,31 @@ fvisual_mode_handler() {
                 VAR_TERM_FLAG_FIND_PREVIOUS=1
                 fsys_open "${PWD%/*}"
             fi
-        ;;
+            ;;
 
         # Scroll down.
         # 'B' is what bash sees when the down arrow is pressed
         # ('\e[B' or '\eOB').
-        ${HSFM_KEY_SCROLL_DOWN1:=j}|\
-        ${HSFM_KEY_SCROLL_DOWN2:=$'\e[B'}|\
-        ${HSFM_KEY_SCROLL_DOWN3:=$'\eOB'})
-                fgui_scroll_down_visual
-        ;;
+        ${HSFM_KEY_SCROLL_DOWN1:=j} | \
+            ${HSFM_KEY_SCROLL_DOWN2:=$'\e[B'} | \
+            ${HSFM_KEY_SCROLL_DOWN3:=$'\eOB'})
+            fgui_scroll_down_visual
+            ;;
 
         # Scroll up.
         # 'A' is what bash sees when the up arrow is pressed
         # ('\e[A' or '\eOA').
-        ${HSFM_KEY_SCROLL_UP1:=k}|\
-        ${HSFM_KEY_SCROLL_UP2:=$'\e[A'}|\
-        ${HSFM_KEY_SCROLL_UP3:=$'\eOA'})
-                fgui_scroll_up_visual
-        ;;
+        ${HSFM_KEY_SCROLL_UP1:=k} | \
+            ${HSFM_KEY_SCROLL_UP2:=$'\e[A'} | \
+            ${HSFM_KEY_SCROLL_UP3:=$'\eOA'})
+            fgui_scroll_up_visual
+            ;;
+        # open file with command
+        ${HSFM_KEY_OPEN_CMD:=:})
+            # FIXME, if command change cursor pos, it will be resotre to wier position
+            VAR_TERM_SELECTION_FILE_LIST=("${VAR_TERM_MARKED_FILE_LIST[@]}")
+            fcommand_handler "command" "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]##*/}"
+            ;;
 
         # File operstions
         ${HSFM_KEY_YANK:=y})
@@ -2003,10 +2005,10 @@ fvisual_mode_handler() {
             VAR_TERM_MARKED_FILE_LIST=()
             fselect_execute
             ;;
-        q|$'\e')
+        q | $'\e')
             fmode_setup "n"
             fterminal_redraw
-        ;;
+            ;;
     esac
 }
 fselection_mode_handler() {
@@ -2015,34 +2017,33 @@ fselection_mode_handler() {
         # '' is what bash sees when the enter/return key is pressed.
         ${HSFM_KEY_CHILD3:=""})
             fmode_setup "n"
-        ;;
+            ;;
         # Open VAR_TERM_DIR_FILE_LIST item.
         # 'C' is what bash sees when the right arrow is pressed
         # ('\e[C' or '\eOC').
-        ${HSFM_KEY_CHILD1:=l}|\
-        ${HSFM_KEY_CHILD2:=$'\e[C'}|\
-        ${HSFM_KEY_CHILD4:=$'\eOC'})
+        ${HSFM_KEY_CHILD1:=l} | \
+            ${HSFM_KEY_CHILD2:=$'\e[C'} | \
+            ${HSFM_KEY_CHILD4:=$'\eOC'})
             # only check if it's directory.
-            if test -d "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]##*/}"
-            then
+            if test -d "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]##*/}"; then
                 fsys_open "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
             else
                 # flog_msg $(file "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" | tail -n 1)
                 local tmp_file_info=($(file "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" | tail -n 1 | cut -d ':' -f2))
                 flog_msg "File type: ${tmp_file_info[@]}"
             fi
-        ;;
+            ;;
 
         # Go to the parent directory.
         # 'D' is what bash sees when the left arrow is pressed
         # ('\e[D' or '\eOD').
         # '\177' and '\b' are what bash sometimes sees when the backspace
         # key is pressed.
-        ${HSFM_KEY_PARENT1:=h}|\
-        ${HSFM_KEY_PARENT2:=$'\e[D'}|\
-        ${HSFM_KEY_PARENT3:=$'\177'}|\
-        ${HSFM_KEY_PARENT4:=$'\b'}|\
-        ${HSFM_KEY_PARENT5:=$'\eOD'})
+        ${HSFM_KEY_PARENT1:=h} | \
+            ${HSFM_KEY_PARENT2:=$'\e[D'} | \
+            ${HSFM_KEY_PARENT3:=$'\177'} | \
+            ${HSFM_KEY_PARENT4:=$'\b'} | \
+            ${HSFM_KEY_PARENT5:=$'\eOD'})
             # If a search was done, clear the results and open the current dir.
             if ((VAR_SEARCH_MODE == 1 && VAR_TERM_SEARCH_END_EARLY != 1)); then
                 fsys_open "$PWD"
@@ -2052,29 +2053,35 @@ fselection_mode_handler() {
                 VAR_TERM_FLAG_FIND_PREVIOUS=1
                 fsys_open "${PWD%/*}"
             fi
-        ;;
+            ;;
 
         # Scroll down.
         # 'B' is what bash sees when the down arrow is pressed
         # ('\e[B' or '\eOB').
-        ${HSFM_KEY_SCROLL_DOWN1:=j}|\
-        ${HSFM_KEY_SCROLL_DOWN2:=$'\e[B'}|\
-        ${HSFM_KEY_SCROLL_DOWN3:=$'\eOB'})
-                fgui_scroll_down
-        ;;
+        ${HSFM_KEY_SCROLL_DOWN1:=j} | \
+            ${HSFM_KEY_SCROLL_DOWN2:=$'\e[B'} | \
+            ${HSFM_KEY_SCROLL_DOWN3:=$'\eOB'})
+            fgui_scroll_down
+            ;;
 
         # Scroll up.
         # 'A' is what bash sees when the up arrow is pressed
         # ('\e[A' or '\eOA').
-        ${HSFM_KEY_SCROLL_UP1:=k}|\
-        ${HSFM_KEY_SCROLL_UP2:=$'\e[A'}|\
-        ${HSFM_KEY_SCROLL_UP3:=$'\eOA'})
-                fgui_scroll_up
-        ;;
+        ${HSFM_KEY_SCROLL_UP1:=k} | \
+            ${HSFM_KEY_SCROLL_UP2:=$'\e[A'} | \
+            ${HSFM_KEY_SCROLL_UP3:=$'\eOA'})
+            fgui_scroll_up
+            ;;
 
         ${HSFM_KEY_SELECTION})
             fterminal_mark_toggle "$VAR_TERM_CONTENT_SCROLL_IDX" "$1"
-        ;;
+            ;;
+
+        # open file with command
+        ${HSFM_KEY_OPEN_CMD:=:})
+            # FIXME, if command change cursor pos, it will be resotre to wier position
+            fcommand_handler "command" "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]##*/}"
+            ;;
 
         # File operstions
         ${HSFM_KEY_YANK:=y})
@@ -2102,10 +2109,10 @@ fselection_mode_handler() {
             VAR_TERM_MARKED_FILE_LIST=()
             fselect_execute
             ;;
-        q|$'\e')
+        q | $'\e')
             fmode_setup "n"
             fterminal_redraw
-        ;;
+            ;;
     esac
 }
 
@@ -2170,8 +2177,7 @@ fcommand_line_interact() {
     local var_cmd_function=${2:=""}
     # local var_cmd_file=${3:=""}
 
-    if [[ "${#}" -eq "3" ]]
-    then
+    if [[ "${#}" -eq "3" ]]; then
         local var_cmd_file=${3:=""}
     else
         local var_cmd_file=""
@@ -2185,109 +2191,110 @@ fcommand_line_interact() {
     fterminal_print '\e7\e[%sH\e[?25h' "$VAR_TERM_LINE_CNT"
     # '\r\e[K': Redraw the read prompt on every keypress.
     #           This is mimicking what happens normally.
-    while IFS= read -rsn 1 -p $'\r\e[K'"${var_cmd_prefix}${var_input_buffer}${var_post_input_buffer} $(printf "\e[%dD" $((${#var_post_input_buffer}+1)))" read_reply 2>&1; do
-        if [[ ${read_reply} == $'\e' ]]
-        then
+    while IFS= read -rsn 1 -p $'\r\e[K'"${var_cmd_prefix}${var_input_buffer}${var_post_input_buffer} $(printf "\e[%dD" $((${#var_post_input_buffer} + 1)))" read_reply 2>&1; do
+        if [[ ${read_reply} == $'\e' ]]; then
             local tmp_buffer="${read_reply}"
-            read "${VAR_TERM_READ_FLAGS[@]}" -rsn 2 read_reply
+            local var_read_flag=(-t 0.02)
+            read "${var_read_flag[@]}" -rsn 2 read_reply
 
             # Handle a normal escape key press.
             [[ ${tmp_buffer}${read_reply} == $'\e\e['* ]] &&
-                read "${VAR_TERM_READ_FLAGS[@]}" -rsn 1 _
+                read "${var_read_flag[@]}" -rsn 2 _
+
+            if [[ ${tmp_buffer}${read_reply} == $'\e['* ]]; then
+                # read "${var_read_flag[@]}" -rsn 2 _
+                tmp_buffer+="${read_reply}"
+                read "${var_read_flag[@]}" -rsn 2 read_reply
+            fi
 
             read_reply=${tmp_buffer}${read_reply}
+            # Flush others
+            # read "${var_read_flag[@]}" -rsn 5 _
         fi
+
         case $read_reply in
             # Control UI
             # Move backward
             $'\e[C')
                 local tmp_post_buf_cnt=${#var_post_input_buffer}
 
-                if [[ "${tmp_post_buf_cnt}" -eq "0" ]]
-                then
-                    continue
+                if [[ "${tmp_post_buf_cnt}" -ne "0" ]]; then
+                    var_input_buffer+="${var_post_input_buffer:0:1}"
+                    var_post_input_buffer=${var_post_input_buffer:1:$tmp_post_buf_cnt-1}
                 fi
-                var_input_buffer+="${var_post_input_buffer:0:1}"
-                var_post_input_buffer=${var_post_input_buffer:1:$tmp_post_buf_cnt -1}
                 ;;
             # Move forward
             $'\e[D')
                 local tmp_buf_cnt=${#var_input_buffer}
 
-                if [[ "${tmp_buf_cnt}" -eq "0" ]]
-                then
-                    continue
+                if [[ "${tmp_buf_cnt}" -ne "0" ]]; then
+                    # var_post_input_buffer="${var_input_buffer:1:#}${var_post_input_buffer}"
+                    var_post_input_buffer="${var_input_buffer:$tmp_buf_cnt-1:1}${var_post_input_buffer}"
+                    var_input_buffer=${var_input_buffer:0:$tmp_buf_cnt-1}
                 fi
 
-                # var_post_input_buffer="${var_input_buffer:1:#}${var_post_input_buffer}"
-                var_post_input_buffer="${var_input_buffer:$tmp_buf_cnt - 1:1}${var_post_input_buffer}"
-                var_input_buffer=${var_input_buffer:0:$tmp_buf_cnt -1}
                 ;;
             # Scroll down
             $'\e[B')
-                if [[ "${var_cmd_history_idx}" = "0" ]]
-                then
-                    continue
-                elif [[ "${var_cmd_history_idx}" = "1" ]]
-                then
+                if [[ "${var_cmd_history_idx}" = "1" ]]; then
                     var_input_buffer=${var_cmd_backup_buffer}
                     var_post_input_buffer=""
                     ((var_cmd_history_idx--))
-                    continue
-                fi
-
-                if [[ ${var_cmd_function} = "search" ]]; then
-                    if [[ $((${var_cmd_history_idx} - 1)) -le ${#VAR_TERM_SEARCH_HISTORY[@]} ]]
-                    then
-                        ((var_cmd_history_idx--))
-                        local tmp_history_idx=$((${#VAR_TERM_SEARCH_HISTORY[@]} - ${var_cmd_history_idx}))
-                        var_input_buffer=${VAR_TERM_SEARCH_HISTORY[${tmp_history_idx}]}
-                        var_post_input_buffer=""
-                    fi
-                else
-                    if [[ $((${var_cmd_history_idx} - 1)) -le ${#VAR_TERM_CMD_HISTORY[@]} ]]
-                    then
-                        ((var_cmd_history_idx--))
-                        local tmp_history_idx=$((${#VAR_TERM_CMD_HISTORY[@]} - ${var_cmd_history_idx}))
-                        var_input_buffer=${VAR_TERM_CMD_HISTORY[${tmp_history_idx}]}
-                        var_post_input_buffer=""
+                elif [[ "${var_cmd_history_idx}" != "0" ]]; then
+                    if [[ ${var_cmd_function} = "search" ]]; then
+                        if [[ $((${var_cmd_history_idx} - 1)) -le ${#VAR_TERM_SEARCH_HISTORY[@]} ]]; then
+                            ((var_cmd_history_idx--))
+                            local tmp_history_idx=$((${#VAR_TERM_SEARCH_HISTORY[@]} - ${var_cmd_history_idx}))
+                            var_input_buffer=${VAR_TERM_SEARCH_HISTORY[${tmp_history_idx}]}
+                            var_post_input_buffer=""
+                        fi
+                    else
+                        if [[ $((${var_cmd_history_idx} - 1)) -le ${#VAR_TERM_CMD_HISTORY[@]} ]]; then
+                            ((var_cmd_history_idx--))
+                            local tmp_history_idx=$((${#VAR_TERM_CMD_HISTORY[@]} - ${var_cmd_history_idx}))
+                            var_input_buffer=${VAR_TERM_CMD_HISTORY[${tmp_history_idx}]}
+                            var_post_input_buffer=""
+                        fi
                     fi
                 fi
-            ;;
+                ;;
 
             # Scroll up.
             $'\e[A')
 
-                if [[ "${var_cmd_history_idx}" = "0" ]]
-                then
+                if [[ "${var_cmd_history_idx}" = "0" ]]; then
                     var_cmd_backup_buffer="${var_input_buffer}${var_post_input_buffer}"
                 fi
                 if [[ ${var_cmd_function} = "search" ]]; then
-                    if [[ $((${var_cmd_history_idx} + 1)) -le ${#VAR_TERM_SEARCH_HISTORY[@]} ]]
-                    then
+                    if [[ $((${var_cmd_history_idx} + 1)) -le ${#VAR_TERM_SEARCH_HISTORY[@]} ]]; then
                         ((var_cmd_history_idx++))
                         local tmp_history_idx=$((${#VAR_TERM_SEARCH_HISTORY[@]} - ${var_cmd_history_idx}))
                         var_input_buffer=${VAR_TERM_SEARCH_HISTORY[${tmp_history_idx}]}
                         var_post_input_buffer=""
                     fi
                 else
-                    if [[ $((${var_cmd_history_idx} + 1)) -le ${#VAR_TERM_CMD_HISTORY[@]} ]]
-                    then
+                    if [[ $((${var_cmd_history_idx} + 1)) -le ${#VAR_TERM_CMD_HISTORY[@]} ]]; then
                         ((var_cmd_history_idx++))
                         local tmp_history_idx=$((${#VAR_TERM_CMD_HISTORY[@]} - ${var_cmd_history_idx}))
                         var_input_buffer=${VAR_TERM_CMD_HISTORY[${tmp_history_idx}]}
                         var_post_input_buffer=""
                     fi
                 fi
-            ;;
+                ;;
 
+            # : to clear buffer
+            ":")
+                if [[ ${var_cmd_function} = "command" ]]; then
+                    var_input_buffer=""
+                fi
+                ;;
             # Backspace.
-            $'\177'|$'\b')
+            $'\177' | $'\b')
                 var_input_buffer=${var_input_buffer%?}
 
                 # Clear tab-completion.
                 unset comp c
-            ;;
+                ;;
 
             # Tab.
             $'\t')
@@ -2300,32 +2307,40 @@ fcommand_line_interact() {
                 # Generate a completion list once.
                 # [[ -z ${comp[0]} ]] &&
                 #     IFS=$'\n' read -d "" -ra comp < <(compgen -G "$comp_glob")
-                    # IFS=$'\n' read -d "" -ra comp < <(compgen -G -W "fterminal_redraw search" "$comp_glob")
-                if [[ -z ${comp[0]} ]]
-                then
-                    # IFS=$'\n' read -d "" -ra globpat < <(compgen -G "$comp_glob")
-                    IFS=$'\n' read -d "" -ra wordlist < <(compgen -W "${VAR_TERM_CMD_LIST[*]}" ${var_input_buffer})
-                    # comp=$globpat
-                    comp+=$wordlist
+                # IFS=$'\n' read -d "" -ra comp < <(compgen -G -W "fterminal_redraw search" "$comp_glob")
+                #
+
+                if [ "$VAR_TERM_OPS_MODE" = "n" ]; then
+                    if [[ -z ${comp[0]} ]]; then
+                        # IFS=$'\n' read -d "" -ra globpat < <(compgen -G "$comp_glob")
+                        IFS=$'\n' read -d "" -ra wordlist < <(compgen -W "${VAR_TERM_CMD_LIST[*]}" ${var_input_buffer})
+                        # comp=$globpat
+                        comp+=$wordlist
+                    fi
+                else
+                    if [[ -z ${comp[0]} ]]; then
+                        # IFS=$'\n' read -d "" -ra globpat < <(compgen -G "$comp_glob")
+                        IFS=$'\n' read -d "" -ra wordlist < <(compgen -W "${VAR_TERM_SELECT_CMD_LIST[*]}" ${var_input_buffer})
+                        # comp=$globpat
+                        comp+=$wordlist
+                    fi
                 fi
 
                 # On each tab press, cycle through the completion list.
                 [[ -n ${comp[c]} ]] && {
                     var_input_buffer=${comp[c]}
-                    ((c=c >= ${#comp[@]}-1 ? 0 : ++c))
+                    ((c = c >= ${#comp[@]} - 1 ? 0 : ++c))
                 }
-            ;;
+                ;;
 
             # Enter/Return.
             "")
-               VAR_TERM_CMD_INPUT_BUFFER="${var_input_buffer}${var_post_input_buffer}"
+                VAR_TERM_CMD_INPUT_BUFFER="${var_input_buffer}${var_post_input_buffer}"
                 if [[ ${var_cmd_function} = "search" ]]; then
 
-                    if test -z "${VAR_TERM_CMD_INPUT_BUFFER}"
-                    then
+                    if test -z "${VAR_TERM_CMD_INPUT_BUFFER}"; then
                         break
-                    elif [[ ${#VAR_TERM_SEARCH_HISTORY[@]} -gt  ${VAR_TERM_CMD_HISTORY_MAX} ]]
-                    then
+                    elif [[ ${#VAR_TERM_SEARCH_HISTORY[@]} -gt ${VAR_TERM_CMD_HISTORY_MAX} ]]; then
                         local tmp_start_idx=$((${#VAR_TERM_SEARCH_HISTORY[@]} - ${VAR_TERM_CMD_HISTORY_MAX}))
                         VAR_TERM_SEARCH_HISTORY="${VAR_TERM_SEARCH_HISTORY[@]:${tmp_start_idx}:${VAR_TERM_CMD_HISTORY_MAX}}"
 
@@ -2336,18 +2351,16 @@ fcommand_line_interact() {
                     # unset comp c
                     # return
                     break
-                elif [[ ${var_cmd_function} != "command" ]] ; then
+                elif [[ ${var_cmd_function} != "command" ]]; then
                     # # Unset tab completion variables since we're done.
                     # unset comp c
                     # return
                     break
                 fi
-                if test -z "${VAR_TERM_CMD_INPUT_BUFFER}"
-                then
+                if test -z "${VAR_TERM_CMD_INPUT_BUFFER}"; then
                     fterminal_print '\r\e[K\e[?25l\e8'
                     break
-                elif [[ ${#VAR_TERM_CMD_HISTORY[@]} -gt  ${VAR_TERM_CMD_HISTORY_MAX} ]]
-                then
+                elif [[ ${#VAR_TERM_CMD_HISTORY[@]} -gt ${VAR_TERM_CMD_HISTORY_MAX} ]]; then
                     local tmp_start_idx=$((${#VAR_TERM_CMD_HISTORY[@]} - ${VAR_TERM_CMD_HISTORY_MAX}))
                     VAR_TERM_CMD_HISTORY="${VAR_TERM_CMD_HISTORY[@]:${tmp_start_idx}:${VAR_TERM_CMD_HISTORY_MAX}}"
 
@@ -2355,63 +2368,80 @@ fcommand_line_interact() {
                     VAR_TERM_CMD_HISTORY+=("${VAR_TERM_CMD_INPUT_BUFFER}")
                 fi
 
-                tmp_command=$(echo ${VAR_TERM_CMD_INPUT_BUFFER} | tr -s ' ' |sed 's/^ //g' | cut -d ' ' -f 1)
-                tmp_args=$(echo ${VAR_TERM_CMD_INPUT_BUFFER} | tr -s ' ' |sed 's/^ //g' | cut -d ' ' -f 2-)
+                tmp_command=$(echo ${VAR_TERM_CMD_INPUT_BUFFER} | tr -s ' ' | sed 's/^ //g' | cut -d ' ' -f 1)
+                # space is for workaround.
+                tmp_args=$(echo "${VAR_TERM_CMD_INPUT_BUFFER} " | tr -s ' ' | sed 's/^ //g' | cut -d ' ' -f 2-)
+                # flog_msg_debug "${tmp_args}/$VAR_TERM_CMD_INPUT_BUFFER"
                 # fterminal_print "\r\e[2K%s" ${tmp_command}
-                case ${tmp_command} in
-                    "fullredraw")
-                        fterminal_redraw full
-                        ;;
-                    "redraw")
-                        fterminal_redraw full
-                        ;;
-                    "open")
-                        fsys_open ${tmp_args}
-                        ;;
-                    "cd")
-                        cmd_cd ${tmp_args}
-                        ;;
-                    "file"|"info")
-                        cmd_stat "${var_cmd_file}"
-                        ;;
+                if [ "$VAR_TERM_OPS_MODE" = "n" ] ; then
+                    case ${tmp_command} in
+                        "fullredraw")
+                            fterminal_redraw full
+                            ;;
+                        "redraw")
+                            fterminal_redraw full
+                            ;;
+                        "open")
+                            fsys_open ${tmp_args}
+                            ;;
+                        "file" | "info")
+                            cmd_stat "${var_cmd_file}"
+                            ;;
 
-                    "vim"|"edit")
-                        cmd_editor "${var_cmd_file}"
-                        ;;
-                    "media"|"play")
-                        cmd_media "${var_cmd_file}"
-                        ;;
-                    "image"|"preview")
-                        cmd_media "${var_cmd_file}"
-                        ;;
-                    "mkfile"|"touch")
-                        cmd_mkfile "${tmp_args}"
-                        ;;
-                    "echo")
-                        flog_msg "${tmp_args}"
-                        ;;
-                    "test")
-                        cmd_test "${tmp_args}" "${var_cmd_file}"
-                        ;;
-                    *)
-                        # flog_msg "Unknown commands: ${tmp_command} ${tmp_args}"
-                        if command -v cmd_${tmp_command} > /dev/null
-                        then
-                            cmd_${tmp_command} ${tmp_args}
-                            # We should not clear msg, after running.
-                            fterminal_print '\e[?25l\e8'
-                        else
-                            fterminal_print '\r\e[K Command "'${tmp_command}'" not found.\e[?25l\e8'
-                        fi
-                        ;;
-                esac
+                        "vim" | "edit")
+                            cmd_editor "${var_cmd_file}"
+                            ;;
+                        "media" | "play")
+                            cmd_media "${var_cmd_file}"
+                            ;;
+                        "image" | "preview")
+                            cmd_media "${var_cmd_file}"
+                            ;;
+                        "mkfile" | "touch")
+                            cmd_mkfile "${tmp_args}"
+                            ;;
+                        "test")
+                            cmd_test "${tmp_args}" "${var_cmd_file}"
+                            ;;
+                        "echo")
+                            flog_msg "${tmp_args}"
+                            ;;
+                        # "cd")
+                        #     cmd_cd ${tmp_args}
+                        #     ;;
+                        *)
+                            # flog_msg "Unknown commands: ${tmp_command} ${tmp_args}"
+                            if command -v cmd_${tmp_command} >/dev/null; then
+                                cmd_${tmp_command} ${tmp_args}
+                                # We should not clear msg, after running.
+                                fterminal_print '\e[?25l\e8'
+                            else
+                                fterminal_print '\r\e[K Command "'${tmp_command}'" not found.\e[?25l\e8'
+                            fi
+                            ;;
+                    esac
+                else
+                    case ${tmp_command} in
+                        *)
+                            # flog_msg "Unknown commands: ${tmp_command} ${tmp_args}"
+                            if command -v vcmd_${tmp_command} >/dev/null; then
+                                vcmd_${tmp_command} ${tmp_args}
+                                # We should not clear msg, after running.
+                                fterminal_print '\e[?25l\e8'
+                            else
+                                fterminal_print '\r\e[K Command "'${tmp_command}'" not found.\e[?25l\e8'
+                            fi
+                            ;;
+                    esac
+
+                fi
 
                 # [[ $1 == :  ]] && {
                 #     nohup "${VAR_TERM_CMD_INPUT_BUFFER}" "$2" &>/dev/null &
                 # }
 
                 break
-            ;;
+                ;;
 
             # Custom 'yes' value (used as a replacement for '-n 1').
             # ${2:-null})
@@ -2425,7 +2455,6 @@ fcommand_line_interact() {
                 read "${VAR_TERM_READ_FLAGS[@]}" -rsn 2
                 VAR_TERM_CMD_INPUT_BUFFER=
 
-
                 if [[ ${var_cmd_function} == "search" ]]; then
                     fterminal_redraw full
                 else
@@ -2433,12 +2462,15 @@ fcommand_line_interact() {
                     fterminal_print '\r\e[K\e[?25l\e8'
                 fi
                 break
-            ;;
+                ;;
+            $'\e'*)
+                # ignore
+                ;;
 
             # Replace '~' with '$HOME'.
             "~")
                 var_input_buffer+=$HOME
-            ;;
+                ;;
 
             # Anything else, add it to read reply.
             *)
@@ -2446,13 +2478,16 @@ fcommand_line_interact() {
 
                 # Clear tab-completion.
                 unset comp c
-            ;;
+                ;;
         esac
 
         [[ ${var_cmd_function} == "search" ]] && {
             VAR_TERM_CMD_INPUT_BUFFER="${var_input_buffer}${var_post_input_buffer}"
             cmd_search "${VAR_TERM_CMD_INPUT_BUFFER}"
         }
+
+        # Flush others
+        read -t 0 -rsn 100 _
 
     done
 
@@ -2576,6 +2611,7 @@ cmd_media()
     local var_file="$@"
     if [[ -f "${var_file}" ]]; then
         nohup "${HSFM_MEDIA_PLAYER}" "${var_file}" &>/dev/null &
+        disown
     else
         flog_msg "warn: '${var_file}' not opened"
     fi
@@ -2585,8 +2621,144 @@ cmd_image()
     local var_file="$@"
     if [[ -f "${var_file}" ]]; then
         nohup "${HSFM_PICTURE_VIEWER}" "${var_file}" &>/dev/null &
+        disown
     else
         flog_msg "warn: '${var_file}' not opened"
+    fi
+}
+cmd_unzip()
+{
+    local var_file="$@"
+    if [[ -f "${var_file}" ]]; then
+
+        if [[ -d "${var_file%%.zip}" ]]; then
+            fcommand_line_interact "${tmp_file##*/} exist. Overwrite(y.yes/n.no)? " y n
+            if [ "${VAR_TERM_CMD_INPUT_BUFFER}" = "y" ]
+            then
+                unzip -f -d "${var_file%%.zip}" "${var_file}" > /dev/null
+            else
+                flog_msg "skip unzip '$var_file'"
+                return 0
+            fi
+        else
+            unzip -d "${var_file%%.zip}" "${var_file}" > /dev/null
+        fi
+
+        if [[ -d "${var_file%%.zip}" ]]; then
+            fterminal_redraw full
+        fi
+    else
+        flog_msg "warn: '$var_file' not opened"
+    fi
+}
+cmd_untar()
+{
+    local var_file="$@"
+    if [[ -f "${var_file}" ]]; then
+
+        if [[ -d "${var_file%%.zip}" ]]; then
+            fcommand_line_interact "${tmp_file##*/} exist. Overwrite(y.yes/n.no)? " y n
+            if [ "${VAR_TERM_CMD_INPUT_BUFFER}" = "y" ]
+            then
+                unzip -f -d "${var_file%%.zip}" "${var_file}" > /dev/null
+            else
+                flog_msg "skip unzip '$var_file'"
+                return 0
+            fi
+        else
+            unzip -d "${var_file%%.zip}" "${var_file}" > /dev/null
+        fi
+
+        if [[ -d "${var_file%%.zip}" ]]; then
+            fterminal_redraw full
+        fi
+    else
+        flog_msg "warn: '$var_file' not opened"
+    fi
+}
+cmd_extract()
+{
+    local var_file=""
+    local var_file_type=""
+    local var_cmd=""
+
+    if [[ "${#}" -ge "2" ]]
+    then
+        var_file_type="${1}"
+        var_file="${2}"
+    else
+        var_file_type="${1}"
+        var_file="${1}"
+    fi
+
+    if [ -f "${var_file}" ] ; then
+        var_file="$(realpath ${var_file})"
+    else
+        flog_msg "'${var_file}' is not a valid file!"
+        return 1
+    fi
+    case ${var_file_type} in
+        *tar.bz2|*tbz2)
+            var_cmd="tar xvjf $var_file"
+            ;;
+        *tar.gz|*tgz)
+            var_cmd="tar xvzf $var_file"
+            ;;
+        *tar.xz)
+            var_cmd="tar xvJf $var_file"
+            ;;
+        *bz2)
+            var_cmd="bunzip2 $var_file"
+            ;;
+        *rar)
+            var_cmd="unrar x $var_file"
+            ;;
+        *gz)
+            var_cmd="gunzip $var_file"
+            ;;
+        *zip)
+            var_cmd="unzip $var_file"
+            ;;
+        *Z)
+            var_cmd="uncompress $var_file"
+            ;;
+        *tar)
+            var_cmd="tar xvf $var_file"
+            ;;
+        *7z)
+            var_cmd="7z x $var_file"
+            ;;
+        *)
+            flog_msg "Unknown file type, use 7z to extract it"
+            var_cmd="7z x $var_file"
+            ;;
+    esac
+
+    local tmp_extrace_path="${var_file%.*}"
+    flog_msg "Starting extract file ${var_file}."
+    if [[ -d "${var_file%.*}" ]]; then
+        local tmp_time=$(date +%s)
+        local tmp_extrace_path="${var_file%.*}_${tmp_time}"
+        mkdir "${tmp_extrace_path}"
+        pushd "${tmp_extrace_path}" > /dev/null
+        if ! eval ${var_cmd} > /dev/null; then
+            rm -rf "${tmp_extrace_path}"
+        fi
+        popd > /dev/null
+    else
+        mkdir "${tmp_extrace_path}"
+        pushd "${tmp_extrace_path}" > /dev/null
+        if ! eval ${var_cmd} > /dev/null; then
+            rm -rf "${tmp_extrace_path}"
+        fi
+        popd > /dev/null
+    fi
+
+    if [[ -d "${var_file%.*}" ]]; then
+        fterminal_redraw full
+        flog_msg "Extract file to '${tmp_extrace_path}'"
+    else
+        flog_msg "Extract file fail '${tmp_extrace_path}'"
     fi
 }
 cmd_shell()
@@ -2597,7 +2769,7 @@ cmd_shell()
     fterminal_reset
 
     # Add hsfm on ps1
-    bash --init-file <(echo ". \"$HOME/.bashrc\"; export HSFM_RUNNING=1; export PS1=\"[HSFM]\$PS1\"")
+    bash --init-file <(echo ". \"$HOME/.bashrc\"; export HSFM_RUNNING=1; export PS1=\"[HSFM]\$PS1\"; cd ${PWD}")
 
     fterminal_setup
     fterminal_redraw
@@ -2658,10 +2830,8 @@ cmd_select()
     {
         fterminal_print 'Program: %s\n' "${VAR_TERM_FILE_PROGRAM}"
         fterminal_print 'File list: %s files slected.\n' ${#VAR_TERM_SELECTION_FILE_LIST[@]}
-        for each_file in "${VAR_TERM_SELECTION_FILE_LIST[@]}"
-        do
-            if test -e "${each_file}"
-            then
+        for each_file in "${VAR_TERM_SELECTION_FILE_LIST[@]}"; do
+            if test -e "${each_file}"; then
                 # fterminal_print '%s\n' "$(ls -ld ${each_file})"
                 fterminal_print '    %s\n' "${each_file}"
             else
@@ -2836,18 +3006,13 @@ cmd_set()
 }
 cmd_test()
 {
-    if [ ${VAR_TERM_MSGWIN_SHOW} = true ]
-    then
-        VAR_TERM_MSGWIN_SHOW=false
-    else
-        VAR_TERM_MSGWIN_SHOW=true
-    fi
-
-    shift 1
-    # VAR_TERM_MSGWIN_BUFFER=$(stat $*)
-    # VAR_TERM_MSGWIN_BUFFER="$(stat $*)"
-    printf -v VAR_TERM_MSGWIN_BUFFER "%s\n" $(stat $*)
-    fterminal_redraw
+    local tmp_cmd="sleep 5"
+    flog_msg_debug "${tmp_cmd} Entered."
+    {
+        flog_msg_debug "${tmp_cmd} started."
+        eval "${tmp_cmd}"
+        flog_msg_debug "${tmp_cmd} finished."
+    } &
 }
 cmd_quit()
 {
@@ -2869,7 +3034,6 @@ cmd_exit()
 {
     exit 0
 }
-
 fsys_open() {
     # Open directories and files.
     if [[ -d $1/ ]]; then
@@ -2891,31 +3055,116 @@ fsys_open() {
         case "$(fprase_mime_type $1)" in
             audio/*)
                 cmd_media "$1"
+                return 0
             ;;
             video/*)
                 cmd_media "$1"
+                return 0
             ;;
             image/*)
                 cmd_image "$1"
+                return 0
             ;;
             text/*|*x-empty*|*json*)
                 cmd_editor "$1"
+                return 0
             ;;
-
-            *)
-                # 'nohup':  Make the process immune to hangups.
-                # '&':      Send it to the background.
-                # 'disown': Detach it from the shell.
-                if command -v ${HSFM_OPENER} > /dev/null
-                then
-                    nohup "${HSFM_OPENER}" "$1" &>/dev/null &
-                    disown
-                else
-                    flog_msg "Unknown file type: $1"
-                fi
+            application/zip*)
+                # cmd_unzip "$1"
+                cmd_extract "zip" "$1"
+                return 0
+            ;;
+            application/x-tar*|application/x-xz*)
+                cmd_extract "tar" "$1"
+                return 0
             ;;
         esac
+
+        # Try with file extension.
+        case "${1##*.}" in
+            tar|Z|xz|zip|7z|gz|rar|tbz2|tgz)
+                cmd_extract "$1"
+                return 0
+            ;;
+        esac
+
+        # 'nohup':  Make the process immune to hangups.
+        # '&':      Send it to the background.
+        # 'disown': Detach it from the shell.
+        if command -v ${HSFM_OPENER} > /dev/null
+        then
+            flog_msg_debug "Open file via ${HSFM_OPENER}"
+            nohup "${HSFM_OPENER}" "$1" &>/dev/null &
+            disown
+        else
+            flog_msg "Unknown file type: '$(fprase_mime_type $1)'"
+        fi
     fi
+}
+## Visual CMD Function
+###########################################################
+# IMPL, it's an template command function for both vcmd/cmd
+vcmd_compress()
+{
+    # currently only take one args.
+    local arg_file_name="${1: }"
+    # flog_msg_debug "compress:$@"
+    local var_compress_cmd=""
+    local var_file_ext=""
+    if command -v "zip"
+    then
+        var_compress_cmd="zip -j"
+        var_file_ext="zip"
+    elif command -v "tar"
+    then
+        var_compress_cmd="tar -C ${PWD} -cvJf "
+        var_file_ext="txz"
+    else
+        flog_msg "No zip or tar/xz found."
+        return -1
+    fi
+
+    [[ ${VAR_TERM_SELECTION_FILE_LIST[*]} ]] && {
+        [[ ! -w $PWD ]] && {
+        flog_msg "warn: no write access to dir."
+            return -1
+        }
+        if test -z "${arg_file_name}"
+        then
+            if [[ "${VAR_TERM_SELECTION_FILE_LIST[@]}" -eq "1" ]]
+            then
+                arg_file_name="${VAR_TERM_SELECTION_FILE_LIST%%.*}.${var_file_ext}"
+            else
+                arg_file_name="${PWD##*/}.${var_file_ext}"
+            fi
+        fi
+
+        if test -e ${arg_file_name}
+        then
+            flog_msg "${arg_file_name} exist, skip compression."
+            return 0
+        fi
+
+        local tmp_cmd="${var_compress_cmd} ${arg_file_name} "
+        for each_file in "${VAR_TERM_SELECTION_FILE_LIST[@]}"
+        do
+            tmp_cmd+="'${each_file}' "
+        done
+        # tmp_cmd+="./"
+        flog_msg "${VAR_TERM_FILE_PROGRAM} started."
+        flog_msg_debug "excute: ${tmp_cmd}"
+        eval "${tmp_cmd}"
+        if [ $? != 0 ]
+        then
+            flog_msg "File compression fail."
+            return -1
+        fi
+
+        fmode_setup "n"
+        fterminal_setup
+        fterminal_redraw full
+        flog_msg "${VAR_TERM_FILE_PROGRAM} finished."
+    }
 }
 
 ## File Operation Function
@@ -2949,13 +3198,13 @@ fselect_execute_background()
 
         #==========================
         {
-            flog_msg "${VAR_TERM_FILE_PROGRAM} started."
+            flog_msg_debug "${VAR_TERM_FILE_PROGRAM} started."
             eval "${tmp_cmd}"
-            flog_msg "${VAR_TERM_FILE_PROGRAM} finished."
+            flog_msg_debug "${VAR_TERM_FILE_PROGRAM} finished."
         } &
         #==========================
 
-        # VAR_TERM_SELECTION_FILE_LIST=()
+        VAR_TERM_SELECTION_FILE_LIST=()
         fmode_setup "n"
         fterminal_setup
         fterminal_redraw full
@@ -3205,7 +3454,7 @@ fsetup_osenv() {
     case $OSTYPE in
         # Mac OS X / macOS.
         darwin*)
-            HSFM_OPENER=fsys_open
+            HSFM_OPENER=""
             VAR_TERM_FILE_ARGS=bIL
 
             VAR_TERM_DIR_LS_ARGS=("--color=none")
@@ -3213,7 +3462,7 @@ fsetup_osenv() {
         ;;
 
         linux*|*)
-            HSFM_OPENER=fsys_open
+            # HSFM_OPENER=
             VAR_TERM_FILE_ARGS=biL
 
             VAR_TERM_DIR_LS_ARGS=("--color=none")

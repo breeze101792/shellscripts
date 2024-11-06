@@ -396,6 +396,9 @@ function clip()
                 elif [[ ${#} = 1 ]] && [ -e ${1} ]
                 then
                     hs_varconfig -s "${var_clipboard}" "$(realpath ${1})"
+                elif [[ ${#} = 1 ]]
+                then
+                    hs_varconfig -s "${var_clipboard}" "${@}"
                 # elif [[ ${#} = 0 ]]
                 # then
                 #     hs_varconfig -s "${var_clipboard}" "$(realpath .)"
