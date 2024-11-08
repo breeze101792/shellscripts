@@ -95,8 +95,8 @@ export VAR_TERM_CMD_HISTORY
 export VAR_TERM_SEARCH_HISTORY
 
 export VAR_TERM_CMD_INPUT_BUFFER=""
-export VAR_TERM_CMD_LIST=( "redraw" "fullredraw" "help" "info" "exit" "select" "shell" )
-VAR_TERM_CMD_LIST+=( "mkdir" "mkfile" "touch" "rename" "search" )
+export VAR_TERM_CMD_LIST=( "redraw" "help" "info" "exit" "select" "shell" )
+VAR_TERM_CMD_LIST+=( "mkdir" "touch" "rename" "search" )
 VAR_TERM_CMD_LIST+=( "quit" "tab" "quitngo")
 VAR_TERM_CMD_LIST+=( "open" "editor" "vim" "media" "play" "image" "preview" "unzip" "extract")
 VAR_TERM_CMD_LIST+=( "debug" "eval" "dump" "test")
@@ -190,6 +190,12 @@ export HSFM_FAV6=~/documents
 export HSFM_FAV7=~/downloads
 export HSFM_FAV8=~/media
 export HSFM_FAV9=${HSFM_PATH_CACHE}
+
+# Dir alias
+# FIXME, only work on command cd
+declare -A HSFM_DIR_ALIAS
+HSFM_DIR_ALIAS["home"]="${HOME}"
+HSFM_DIR_ALIAS["log"]="/var/log"
 
 # File format.
 # Customize the item string.
@@ -942,6 +948,21 @@ fterminal_draw_status_line() {
            "$VAR_TERM_LINE_CNT"
 }
 
+# FIXME, need impl a way to acept win type, for input purpose.
+fterminal_draw_miniwin()
+{
+    local var_start_line=$((${VAR_TERM_LINE_CNT}/4))
+    local var_start_col=$((${VAR_TERM_COLUMN_CNT}/4))
+    local var_width=$((${VAR_TERM_COLUMN_CNT}/2))
+    local var_height=$((${VAR_TERM_LINE_CNT}/2))
+    local var_win_title="Action WIN"
+    local var_buffer=()
+    var_buffer+=("Action ongoing")
+    var_buffer+=("$@")
+
+    fterminal_draw_window ${var_start_line} ${var_start_col} ${var_width} ${var_height} "${var_win_title}" "${var_buffer[@]}"
+}
+
 fterminal_draw_msgwin()
 {
     local var_start_line=$((1 + ${VAR_TERM_TAB_LINE_HEIGHT} + ${VAR_TERM_CONTENT_MAX_CNT}))
@@ -1377,10 +1398,6 @@ fgui_scroll_up() {
     then
         VAR_TERM_PRINT_BUFFER_ENABLE=true
         ((VAR_TERM_CONTENT_SCROLL_IDX--))
-        # if [ "${VAR_TERM_OPS_MODE}" = 'v' ] && [[ $VAR_TERM_CONTENT_SCROLL_IDX -gt $VAR_TERM_VISUAL_START_IDX ]]
-        # then
-        #     fterminal_mark_remove "$VAR_TERM_CONTENT_SCROLL_IDX"
-        # fi
 
         fterminal_draw_file_line "$((VAR_TERM_CONTENT_SCROLL_IDX+1))"
 
@@ -1393,10 +1410,7 @@ fgui_scroll_up() {
             ((VAR_TERM_WIN_CURRENT_CURSOR--))
         fi
         fterminal_draw_file_line $VAR_TERM_CONTENT_SCROLL_IDX
-        # if [ "${VAR_TERM_OPS_MODE}" = 'v' ] && [[ $VAR_TERM_CONTENT_SCROLL_IDX -lt $VAR_TERM_VISUAL_START_IDX ]]
-        # then
-        #     fterminal_mark_add "$VAR_TERM_CONTENT_SCROLL_IDX"
-        # fi
+
         # fterminal_draw_tab_line
         fterminal_draw_status_line
         fterminal_flush
@@ -1407,16 +1421,7 @@ fgui_scroll_down() {
     then
         VAR_TERM_PRINT_BUFFER_ENABLE=true
 
-        # We need to mark on visula mode
-        # if [ "${VAR_TERM_OPS_MODE}" = 'v' ] && [[ ${VAR_TERM_CONTENT_SCROLL_IDX} -lt ${VAR_TERM_VISUAL_START_IDX} ]]
-        # then
-        #     fterminal_mark_remove "$VAR_TERM_CONTENT_SCROLL_IDX"
-        # fi
         ((VAR_TERM_CONTENT_SCROLL_IDX++))
-        # if [ "${VAR_TERM_OPS_MODE}" = 'v' ] && [[ $VAR_TERM_CONTENT_SCROLL_IDX -gt $VAR_TERM_VISUAL_START_IDX ]]
-        # then
-        #     fterminal_mark_add "$VAR_TERM_CONTENT_SCROLL_IDX"
-        # fi
 
         if ((VAR_TERM_WIN_CURRENT_CURSOR + 1 < VAR_TERM_CONTENT_MAX_CNT))
         then
@@ -1688,7 +1693,11 @@ fnormal_mode_handler() {
             # If '$PWD' is '/', do nothing.
             elif [[ $PWD && $PWD != / ]]; then
                 VAR_TERM_FLAG_FIND_PREVIOUS=1
-                fsys_open "${PWD%/*}"
+                if test -z "${PWD%/*}"; then
+                    fsys_open "/"
+                else
+                    fsys_open "${PWD%/*}"
+                fi
             fi
             ;;
 
@@ -1919,42 +1928,6 @@ fvisual_mode_handler() {
         ${HSFM_KEY_CHILD3:=""})
             fmode_setup "n"
             ;;
-        # Open VAR_TERM_DIR_FILE_LIST item.
-        # 'C' is what bash sees when the right arrow is pressed
-        # ('\e[C' or '\eOC').
-        ${HSFM_KEY_CHILD1:=l} | \
-            ${HSFM_KEY_CHILD2:=$'\e[C'} | \
-            ${HSFM_KEY_CHILD4:=$'\eOC'})
-            # only check if it's directory.
-            if test -d "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]##*/}"; then
-                fsys_open "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
-            else
-                # flog_msg $(file "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" | tail -n 1)
-                flog_msg "File type: $(file "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" | tail -n 1 | cut -d ':' -f2)"
-            fi
-            ;;
-
-        # Go to the parent directory.
-        # 'D' is what bash sees when the left arrow is pressed
-        # ('\e[D' or '\eOD').
-        # '\177' and '\b' are what bash sometimes sees when the backspace
-        # key is pressed.
-        ${HSFM_KEY_PARENT1:=h} | \
-            ${HSFM_KEY_PARENT2:=$'\e[D'} | \
-            ${HSFM_KEY_PARENT3:=$'\177'} | \
-            ${HSFM_KEY_PARENT4:=$'\b'} | \
-            ${HSFM_KEY_PARENT5:=$'\eOD'})
-            # If a search was done, clear the results and open the current dir.
-            if ((VAR_SEARCH_MODE == 1 && VAR_TERM_SEARCH_END_EARLY != 1)); then
-                fsys_open "$PWD"
-
-            # If '$PWD' is '/', do nothing.
-            elif [[ $PWD && $PWD != / ]]; then
-                VAR_TERM_FLAG_FIND_PREVIOUS=1
-                fsys_open "${PWD%/*}"
-            fi
-            ;;
-
         # Scroll down.
         # 'B' is what bash sees when the down arrow is pressed
         # ('\e[B' or '\eOB').
@@ -2018,43 +1991,6 @@ fselection_mode_handler() {
         ${HSFM_KEY_CHILD3:=""})
             fmode_setup "n"
             ;;
-        # Open VAR_TERM_DIR_FILE_LIST item.
-        # 'C' is what bash sees when the right arrow is pressed
-        # ('\e[C' or '\eOC').
-        ${HSFM_KEY_CHILD1:=l} | \
-            ${HSFM_KEY_CHILD2:=$'\e[C'} | \
-            ${HSFM_KEY_CHILD4:=$'\eOC'})
-            # only check if it's directory.
-            if test -d "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]##*/}"; then
-                fsys_open "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
-            else
-                # flog_msg $(file "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" | tail -n 1)
-                local tmp_file_info=($(file "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" | tail -n 1 | cut -d ':' -f2))
-                flog_msg "File type: ${tmp_file_info[@]}"
-            fi
-            ;;
-
-        # Go to the parent directory.
-        # 'D' is what bash sees when the left arrow is pressed
-        # ('\e[D' or '\eOD').
-        # '\177' and '\b' are what bash sometimes sees when the backspace
-        # key is pressed.
-        ${HSFM_KEY_PARENT1:=h} | \
-            ${HSFM_KEY_PARENT2:=$'\e[D'} | \
-            ${HSFM_KEY_PARENT3:=$'\177'} | \
-            ${HSFM_KEY_PARENT4:=$'\b'} | \
-            ${HSFM_KEY_PARENT5:=$'\eOD'})
-            # If a search was done, clear the results and open the current dir.
-            if ((VAR_SEARCH_MODE == 1 && VAR_TERM_SEARCH_END_EARLY != 1)); then
-                fsys_open "$PWD"
-
-            # If '$PWD' is '/', do nothing.
-            elif [[ $PWD && $PWD != / ]]; then
-                VAR_TERM_FLAG_FIND_PREVIOUS=1
-                fsys_open "${PWD%/*}"
-            fi
-            ;;
-
         # Scroll down.
         # 'B' is what bash sees when the down arrow is pressed
         # ('\e[B' or '\eOB').
@@ -2375,41 +2311,40 @@ fcommand_line_interact() {
                 # fterminal_print "\r\e[2K%s" ${tmp_command}
                 if [ "$VAR_TERM_OPS_MODE" = "n" ] ; then
                     case ${tmp_command} in
-                        "fullredraw")
-                            fterminal_redraw full
-                            ;;
+                        # NOTE. only build-in commands can list here.
                         "redraw")
                             fterminal_redraw full
                             ;;
                         "open")
                             fsys_open ${tmp_args}
                             ;;
-                        "file" | "info")
-                            cmd_stat "${var_cmd_file}"
-                            ;;
-
                         "vim" | "edit")
-                            cmd_editor "${var_cmd_file}"
+                            cmd_editor "${tmp_args}"
                             ;;
                         "media" | "play")
-                            cmd_media "${var_cmd_file}"
+                            cmd_media "${tmp_args}"
                             ;;
                         "image" | "preview")
-                            cmd_media "${var_cmd_file}"
+                            cmd_media "${tmp_args}"
                             ;;
-                        "mkfile" | "touch")
-                            cmd_mkfile "${tmp_args}"
-                            ;;
-                        "test")
-                            cmd_test "${tmp_args}" "${var_cmd_file}"
-                            ;;
+
+                        # "mkfile" | "touch")
+                        #     cmd_touch "${tmp_args}"
+                        #     ;;
                         "echo")
                             flog_msg "${tmp_args}"
                             ;;
+                        # "test")
+                        #     cmd_test "${tmp_args}"
+                        #     ;;
+                        # "file" | "info")
+                        #     cmd_stat "${tmp_args}"
+                        #     ;;
                         # "cd")
                         #     cmd_cd ${tmp_args}
                         #     ;;
                         *)
+                            # This if for build in commands.
                             # flog_msg "Unknown commands: ${tmp_command} ${tmp_args}"
                             if command -v cmd_${tmp_command} >/dev/null; then
                                 cmd_${tmp_command} ${tmp_args}
@@ -2578,7 +2513,7 @@ cmd_mkdir()
         flog_msg "warn: no write access to dir."
     fi
 }
-cmd_mkfile()
+cmd_touch()
 {
     local var_dir_name="$@"
     if [[ -e $var_dir_name ]]; then
@@ -2594,7 +2529,14 @@ cmd_mkfile()
 }
 cmd_editor()
 {
-    local var_file="$@"
+    local var_file=""
+    if test -f "$*"
+    then
+        var_file="${*}"
+    else
+        var_file="$(fget_cursor_file)"
+    fi
+
     if [[ -f "${var_file}" ]]; then
         fterminal_reset
 
@@ -2608,7 +2550,13 @@ cmd_editor()
 }
 cmd_media()
 {
-    local var_file="$@"
+    local var_file=""
+    if test -f "$*"
+    then
+        var_file="${*}"
+    else
+        var_file="$(fget_cursor_file)"
+    fi
     if [[ -f "${var_file}" ]]; then
         nohup "${HSFM_MEDIA_PLAYER}" "${var_file}" &>/dev/null &
         disown
@@ -2618,7 +2566,13 @@ cmd_media()
 }
 cmd_image()
 {
-    local var_file="$@"
+    local var_file=""
+    if test -f "$*"
+    then
+        var_file="${*}"
+    else
+        var_file="$(fget_cursor_file)"
+    fi
     if [[ -f "${var_file}" ]]; then
         nohup "${HSFM_PICTURE_VIEWER}" "${var_file}" &>/dev/null &
         disown
@@ -2626,56 +2580,31 @@ cmd_image()
         flog_msg "warn: '${var_file}' not opened"
     fi
 }
-cmd_unzip()
-{
-    local var_file="$@"
-    if [[ -f "${var_file}" ]]; then
-
-        if [[ -d "${var_file%%.zip}" ]]; then
-            fcommand_line_interact "${tmp_file##*/} exist. Overwrite(y.yes/n.no)? " y n
-            if [ "${VAR_TERM_CMD_INPUT_BUFFER}" = "y" ]
-            then
-                unzip -f -d "${var_file%%.zip}" "${var_file}" > /dev/null
-            else
-                flog_msg "skip unzip '$var_file'"
-                return 0
-            fi
-        else
-            unzip -d "${var_file%%.zip}" "${var_file}" > /dev/null
-        fi
-
-        if [[ -d "${var_file%%.zip}" ]]; then
-            fterminal_redraw full
-        fi
-    else
-        flog_msg "warn: '$var_file' not opened"
-    fi
-}
-cmd_untar()
-{
-    local var_file="$@"
-    if [[ -f "${var_file}" ]]; then
-
-        if [[ -d "${var_file%%.zip}" ]]; then
-            fcommand_line_interact "${tmp_file##*/} exist. Overwrite(y.yes/n.no)? " y n
-            if [ "${VAR_TERM_CMD_INPUT_BUFFER}" = "y" ]
-            then
-                unzip -f -d "${var_file%%.zip}" "${var_file}" > /dev/null
-            else
-                flog_msg "skip unzip '$var_file'"
-                return 0
-            fi
-        else
-            unzip -d "${var_file%%.zip}" "${var_file}" > /dev/null
-        fi
-
-        if [[ -d "${var_file%%.zip}" ]]; then
-            fterminal_redraw full
-        fi
-    else
-        flog_msg "warn: '$var_file' not opened"
-    fi
-}
+# cmd_unzip()
+# {
+#     local var_file="$@"
+#     if [[ -f "${var_file}" ]]; then
+#
+#         if [[ -d "${var_file%%.zip}" ]]; then
+#             fcommand_line_interact "${tmp_file##*/} exist. Overwrite(y.yes/n.no)? " y n
+#             if [ "${VAR_TERM_CMD_INPUT_BUFFER}" = "y" ]
+#             then
+#                 unzip -f -d "${var_file%%.zip}" "${var_file}" > /dev/null
+#             else
+#                 flog_msg "skip unzip '$var_file'"
+#                 return 0
+#             fi
+#         else
+#             unzip -d "${var_file%%.zip}" "${var_file}" > /dev/null
+#         fi
+#
+#         if [[ -d "${var_file%%.zip}" ]]; then
+#             fterminal_redraw full
+#         fi
+#     else
+#         flog_msg "warn: '$var_file' not opened"
+#     fi
+# }
 cmd_extract()
 {
     local var_file=""
@@ -2686,9 +2615,13 @@ cmd_extract()
     then
         var_file_type="${1}"
         var_file="${2}"
-    else
+    elif [[ "${#}" -ge "1" ]] && test -f "$1"
+    then
         var_file_type="${1}"
         var_file="${1}"
+    else
+        var_file_type="${1}"
+        var_file="$(fget_cursor_file)"
     fi
 
     if [ -f "${var_file}" ] ; then
@@ -2808,19 +2741,40 @@ cmd_sort()
 }
 cmd_cd()
 {
-    if test -d $@
+    local var_dir_path="$*"
+    if test -d "${var_dir_path}"
     then
-        # fterminal_clear
-        fterminal_draw_status_line "Change dir to: $@"
         # cd $@
-        fsys_open "$@"
-        # fterminal_redraw full
+        fsys_open "${var_dir_path}"
+
         # backup cursor
         # NOTE. It's a patch for storing cursor position, cuse fcommand_handler will restore it.
         fterminal_print '\e7'
+
+        flog_msg "Change dir to: ${var_dir_path}"
     else
-        flog_msg "$@ not found."
+        for each_key in  "${!HSFM_DIR_ALIAS[@]}"; do
+            # flog_msg_debug "Key: '${each_key}'/'${var_dir_path}'/'${HSFM_DIR_ALIAS[$each_key]}'"
+
+            if [ "${each_key}" = "${var_dir_path}" ] && test -d "${HSFM_DIR_ALIAS[$each_key]}"
+            then
+                local tmp_dir_path="${HSFM_DIR_ALIAS[$each_key]}"
+
+                fsys_open "${tmp_dir_path}"
+
+                # backup cursor
+                # NOTE. It's a patch for storing cursor position, cuse fcommand_handler will restore it.
+                fterminal_print '\e7'
+
+                flog_msg "Change dir to: '${each_key}' -> '${tmp_dir_path}'"
+                return 0
+            fi
+        done
+
+        flog_msg "${var_dir_path} not found."
+        return 1
     fi
+    return 0
 }
 cmd_select()
 {
@@ -2853,7 +2807,7 @@ cmd_stat()
     # fterminal_print "\n"
     # fHelp $@
     fterminal_print '\e[%sH' "$((VAR_TERM_TAB_LINE_HEIGHT + 1))"
-    stat "$*"
+    stat "$(fget_cursor_file)"
     fterminal_draw_tab_line
     fterminal_draw_status_line
     fcommand_line_interact "Press Enter Key To Continue..." "wait" "q"
@@ -3035,55 +2989,63 @@ cmd_exit()
     exit 0
 }
 fsys_open() {
+    local var_file=""
+    # flog_msg_debug "Open '$*'"
+    if test -e "$*"; then
+        var_file="${*}"
+    else
+        var_file="$(fget_cursor_file)"
+    fi
+
     # Open directories and files.
-    if [[ -d $1/ ]]; then
+    if [[ -d $var_file/ ]]; then
         VAR_SEARCH_MODE=
         VAR_TERM_SEARCH_END_EARLY=
-        if test -r "${1:-/}"
+        if test -r "${var_file:-/}"
         then
-            cd "${1:-/}" ||:
-            flog_msg_debug "Enter $1"
+            cd "${var_file:-/}" ||:
+            flog_msg_debug "Enter $var_file"
             fterminal_redraw full
         else
-            flog_msg "Access fail on: ${1:-/}"
+            flog_msg "Access fail on: ${var_file:-/}"
         fi
 
-    elif [[ -f $1 ]]; then
+    elif [[ -f $var_file ]]; then
         # Figure out what kind of file we're working with.
         # Open all text-based files in '$EDITOR'.
         # Everything else goes through 'xdg-open'/'open'.
-        case "$(fprase_mime_type $1)" in
+        case "$(fprase_mime_type $var_file)" in
             audio/*)
-                cmd_media "$1"
+                cmd_media "$var_file"
                 return 0
             ;;
             video/*)
-                cmd_media "$1"
+                cmd_media "$var_file"
                 return 0
             ;;
             image/*)
-                cmd_image "$1"
+                cmd_image "$var_file"
                 return 0
             ;;
             text/*|*x-empty*|*json*)
-                cmd_editor "$1"
+                cmd_editor "$var_file"
                 return 0
             ;;
             application/zip*)
-                # cmd_unzip "$1"
-                cmd_extract "zip" "$1"
+                # cmd_unzip "$var_file"
+                cmd_extract "zip" "$var_file"
                 return 0
             ;;
             application/x-tar*|application/x-xz*)
-                cmd_extract "tar" "$1"
+                cmd_extract "tar" "$var_file"
                 return 0
             ;;
         esac
 
         # Try with file extension.
-        case "${1##*.}" in
+        case "${var_file##*.}" in
             tar|Z|xz|zip|7z|gz|rar|tbz2|tgz)
-                cmd_extract "$1"
+                cmd_extract "$var_file"
                 return 0
             ;;
         esac
@@ -3094,10 +3056,10 @@ fsys_open() {
         if command -v ${HSFM_OPENER} > /dev/null
         then
             flog_msg_debug "Open file via ${HSFM_OPENER}"
-            nohup "${HSFM_OPENER}" "$1" &>/dev/null &
+            nohup "${HSFM_OPENER}" "$var_file" &>/dev/null &
             disown
         else
-            flog_msg "Unknown file type: '$(fprase_mime_type $1)'"
+            flog_msg "Unknown file type: '$(fprase_mime_type $var_file)'"
         fi
     fi
 }
@@ -3151,8 +3113,10 @@ vcmd_compress()
             tmp_cmd+="'${each_file}' "
         done
         # tmp_cmd+="./"
-        flog_msg "${VAR_TERM_FILE_PROGRAM} started."
+        flog_msg "Compress started."
         flog_msg_debug "excute: ${tmp_cmd}"
+        fterminal_draw_miniwin "Start Compress files."
+        sleep 5
         eval "${tmp_cmd}"
         if [ $? != 0 ]
         then
@@ -3163,7 +3127,7 @@ vcmd_compress()
         fmode_setup "n"
         fterminal_setup
         fterminal_redraw full
-        flog_msg "${VAR_TERM_FILE_PROGRAM} finished."
+        flog_msg "Compress finished."
     }
 }
 
@@ -3231,6 +3195,7 @@ fselect_execute_block()
         done
         tmp_cmd+="./"
         flog_msg "${VAR_TERM_FILE_PROGRAM} started."
+        fterminal_draw_miniwin "Start ${VAR_TERM_FILE_PROGRAM}"
         eval "${tmp_cmd}"
         # "${VAR_TERM_FILE_PROGRAM[@]}" "${VAR_TERM_SELECTION_FILE_LIST[@]}" .
         stty -echo
