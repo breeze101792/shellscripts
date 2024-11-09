@@ -184,12 +184,49 @@ function fConfigBIOS()
 {
     if [ "${CONFIG_BIOS_MODE}" == "uefi" ]
     then
-        if [ ! -f "./OVMF_VARS.fd" ]
+        # Only edk2-ovmf works.
+        local var_ovmf_path=/usr/share/edk2/x64
+        # local var_ovmf_path=/usr/share/edk2-ovmf/x64
+
+        # not working
+        # local var_ovmf_path=/usr/share/ovmf/x64
+        # local var_ovmf_path=/usr/share/OVMF/x64
+
+        local var_local_ovmf_path="./ovmf"
+        local var_ovmf_code_fd="OVMF_CODE.4m.fd"
+        # local var_ovmf_code_fd="MICROVM.4m.fd"
+        local var_ovmf_vars_fd="OVMF_VARS.4m.fd"
+        # MICROVM.4m.fd  OVMF.4m.fd  OVMF_CODE.4m.fd  OVMF_CODE.secboot.4m.fd  OVMF_VARS.4m.fd 
+
+        if [ ! -d "${var_ovmf_path}" ]
         then
-            cp /usr/share/ovmf/x64/OVMF_VARS.fd .
+            echo "OVMF not found."
+            exit 1
         fi
-        QEMU_BIOS+=("-drive if=pflash,format=raw,file=./OVMF_VARS.fd")
-        QEMU_BIOS=("-drive if=pflash,format=raw,readonly=on,file=/usr/share/ovmf/x64/OVMF_CODE.fd")
+
+        if [ ! -d "${var_local_ovmf_path}" ]
+        then
+            mkdir -p ${var_local_ovmf_path}
+        else
+            rm -rf ${var_local_ovmf_path}
+            mkdir -p ${var_local_ovmf_path}
+        fi
+
+
+        # code
+        if [ ! -f "${var_local_ovmf_path}/${var_ovmf_code_fd}" ]
+        then
+            cp ${var_ovmf_path}/${var_ovmf_code_fd} ${var_local_ovmf_path}/
+        fi
+        QEMU_BIOS+=("-drive if=pflash,format=raw,file=${var_local_ovmf_path}/${var_ovmf_code_fd}")
+        # QEMU_BIOS+=("-drive if=pflash,format=raw,file=${var_ovmf_path}/${var_ovmf_code_fd}")
+
+        # Vars
+        if [ ! -f "${var_local_ovmf_path}/${var_ovmf_vars_fd}" ]
+        then
+            cp ${var_ovmf_path}/${var_ovmf_vars_fd} ${var_local_ovmf_path}/
+        fi
+        QEMU_BIOS+=("-drive if=pflash,format=raw,file=${var_local_ovmf_path}/${var_ovmf_vars_fd}")
     # elif [ "${CONFIG_BIOS_MODE}" == "bios" ]
     # then
     #     echo "Use Bios"
@@ -289,6 +326,7 @@ function fRunSpice()
     local exec_str="remote-viewer spice://127.0.0.1:${G_MONITOR_SPICE_PORT}"
     if [ "${G_MONITOR_TYPE}" == "spice" ]
     then
+        echo "run: ${exec_str}"
         exec ${exec_str}
     fi
 }
