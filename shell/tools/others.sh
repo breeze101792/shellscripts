@@ -84,14 +84,14 @@ function ai()
         echo ">> ${var_msg}"
     fi
 
-    # eval "${var_cmd}" 
+    # eval "${var_cmd}"
     # eval "${var_cmd}" | awk 'BEGIN { RS="\n"; FS="\"response\":\"" } { split($2, a, "\",\""); print a[1] }' | while read -r each_line;
     # eval "${var_cmd}" | awk -W interactive -F'"response":"' '{print $2}' | awk -W interactive -F'","' '{print $1}' | while read -r each_line;
     # eval "${var_cmd}" | grep --line-buffered -o '"response":"[^"]*"' | grep --line-buffered  -o '"[^"]*"$' | while read -r each_line;
     # do
     #     tmp_print_cmd="printf '${each_line}'"
     #     eval "${tmp_print_cmd}"
-    #     # printf "%s " ${each_line} 
+    #     # printf "%s " ${each_line}
     # done
     # function print_char_by_char() {
     #     local input_string="$1"
@@ -122,7 +122,7 @@ function ai()
     # printf "${tmp_buff[@]}"
     printf "\n"
 
-    # json='{"access_token":"kjdshfsd", "key2":"value"}' 
+    # json='{"access_token":"kjdshfsd", "key2":"value"}'
     # echo $json | grep -o '"access_token":"[^"]*' | grep -o '[^"]*$'
     # echo $json | grep -o '"access_token":"[^"]*"' | grep -o '"[^"]*"$'
 }
@@ -838,10 +838,76 @@ function i3_reload()
 }
 function lg_patch
 {
-    cvt --reduced 2440 1028 60
-    xrandr --newmode "2440x1028R"  164.75  2440 2488 2520 2600  1028 1031 1041 1058 +hsync -vsync
-    xrandr --addmode HDMI-0 "2440x1028R"
+    local var_monitor="HDMI-0"
+    # local var_resolution="2440 1028 60"
+    local var_resolution="2560 1080 60"
+    local flag_reduced=false
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -l|--list)
+                xrandr --listmonitors
+                return 0
+                ;;
+            -m|--monitor)
+                var_monitor=$2
+                shift 1
+                ;;
+            -r|--resolution)
+                var_resolution=$2
+                shift 1
+                ;;
+            --reduced)
+                flag_reduced=true
+                ;;
+            219)
+                var_resolution="2560 1080 60"
+                ;;
+            hd)
+                var_resolution="1920 1080 60"
+		;;
+            vm)
+                var_resolution="1920 1000 60"
+                ;;
+            -h|--help)
+                cli_helper -c "template" -cd "template function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "template [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-l|--list" -d "List monitor"
+                cli_helper -o "-m|--monitor" -d "Specify monitor"
+                cli_helper -o "-r|--resolution" -d "Specify Monitor resolution, ex. -r 2560 1080 60"
+                cli_helper -o "-v|--verbose" -d "Verbose print "
+                cli_helper -o "-h|--help" -d "Print help function "
+                cli_helper -t "Resolution"
+                cli_helper -d "219: 2560x1080 60hz"
+                cli_helper -d "1080: 1920x1080 60hz"
+                cli_helper -d "vm: 1920x1000 60hz"
+                return 0
+                ;;
+            *)
+                echo "Wrong args, $@"
+                return -1
+                ;;
+        esac
+        shift 1
+    done
+    if xrandr --listmonitors |grep ${var_monitor}
+    then
+        local tmp_cvt_ret
+        if [ ${flag_reduced} = true ]; then
+            tmp_cvt_ret=$(cvt --reduced ${var_resolution} | tail -n 1)
+        else
+            tmp_cvt_ret=$(cvt ${var_resolution} | tail -n 1)
+        fi
+        xrandr --newmode $(echo $tmp_cvt_ret|cut -d ' ' -f2-)
+        xrandr --addmode ${var_monitor} "$(echo $tmp_cvt_ret|cut -d ' ' -f2)"
+        echo "All set. for ${var_resolution}"
+    else
+        echo "Monitor not found.${var_monitor}, please do -l "
+    fi
 }
+
 function lab_addMode()
 {
     export width=$1
@@ -1228,7 +1294,7 @@ function sshfs_mount()
 
     echo "sshfs ${var_sshfs_options[@]} ${var_server_name}:${var_remote_path} ${var_mount_path} -p ${var_port}"
     eval sshfs "${var_sshfs_options[@]}" ${var_server_name}:${var_remote_path} ${var_mount_path} -p ${var_port}
-} 
+}
 function join_by()
 {
     local IFS="$1"; shift; echo "$*";
