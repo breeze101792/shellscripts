@@ -502,6 +502,7 @@ fterminal_redraw() {
     fterminal_draw_dir
     fterminal_draw_tab_line
     fterminal_draw_status_line
+    fterminal_draw_command_line
     if [ ${VAR_TERM_MSGWIN_SHOW} = true ]
     then
         fterminal_draw_msgwin
@@ -946,6 +947,15 @@ fterminal_draw_status_line() {
            "${var_spacing}" \
            "${var_right}" \
            "$VAR_TERM_LINE_CNT"
+}
+
+fterminal_draw_command_line() {
+
+    if [ "${VAR_TERM_OPS_MODE}" = 'c' ] || [ "${VAR_TERM_OPS_MODE}" = 'C' ]; then
+        fterminal_print '\e[%sH\e[?25h' "$VAR_TERM_LINE_CNT"
+
+        fterminal_print $'\r\e[K'"${var_cmd_prefix}${var_input_buffer}${var_post_input_buffer} $(printf "\e[%dD" $((${#var_post_input_buffer} + 1)))"
+    fi
 }
 
 # FIXME, need impl a way to acept win type, for input purpose.
@@ -1643,6 +1653,28 @@ fmode_setup()
             fterminal_mark_add "$VAR_TERM_CONTENT_SCROLL_IDX"
             VAR_TERM_SELECTION_FILE_LIST=()
             ;;
+        'C'|'c')
+            VAR_TERM_OPS_MODE='c'
+            # setup selection mode
+            # fterminal_mark_add "$VAR_TERM_CONTENT_SCROLL_IDX"
+            # VAR_TERM_SELECTION_FILE_LIST=()
+
+            var_cmd_history_idx=0
+            var_cmd_backup_buffer=""
+
+            # Write to the command_line (under fterminal_draw_status_line).
+            var_cmd_prefix=":"
+            var_cmd_function="command"
+
+            var_input_buffer=""
+            var_post_input_buffer=""
+
+            VAR_TERM_CMD_INPUT_BUFFER=""
+
+            # FIXME, it's just a workaround.
+            # flog_msg ":"
+            fterminal_draw_command_line
+            ;;
         *|'N'|'n')
             VAR_TERM_OPS_MODE='n'
             fterminal_mark_reset
@@ -1763,6 +1795,10 @@ fnormal_mode_handler() {
             ;;
         ${HSFM_KEY_SELECTION})
             fmode_setup "s"
+            # fterminal_redraw
+            ;;
+        C)
+            fmode_setup "c"
             # fterminal_redraw
             ;;
 
@@ -2050,6 +2086,330 @@ fselection_mode_handler() {
             fterminal_redraw
             ;;
     esac
+}
+
+fcommand_mode_handler() {
+    local var_key_press="$@"
+    # if false; then
+    #     local var_cmd_history_idx=0
+    #     local var_cmd_backup_buffer=""
+    #
+    #     # Write to the command_line (under fterminal_draw_status_line).
+    #     local var_cmd_prefix=${1}
+    #     local var_cmd_function=${2:=""}
+    #
+    #     local var_input_buffer=""
+    #     local var_post_input_buffer=""
+    # # else
+    # #     var_cmd_history_idx=0
+    # #     var_cmd_backup_buffer=""
+    # #
+    # #     # Write to the command_line (under fterminal_draw_status_line).
+    # #     var_cmd_prefix=${1}
+    # #     var_cmd_function=${2:=""}
+    # #
+    # #     var_input_buffer=""
+    # #     var_post_input_buffer=""
+    # fi
+
+    # VAR_TERM_CMD_INPUT_BUFFER=""
+
+    fterminal_print '\e[%sH\e[?25h' "$VAR_TERM_LINE_CNT"
+
+    # fterminal_print $'\r\e[K'"${var_cmd_prefix}${var_input_buffer}${var_post_input_buffer} $(printf "\e[%dD" $((${#var_post_input_buffer} + 1)))"
+    fterminal_print "${var_cmd_prefix}${var_input_buffer}"
+
+    case ${var_key_press} in
+        # Control UI
+        # Move backward
+        $'\e[C')
+            local tmp_post_buf_cnt=${#var_post_input_buffer}
+
+            if [[ "${tmp_post_buf_cnt}" -ne "0" ]]; then
+                var_input_buffer+="${var_post_input_buffer:0:1}"
+                var_post_input_buffer=${var_post_input_buffer:1:$tmp_post_buf_cnt-1}
+            fi
+            ;;
+        # Move forward
+        $'\e[D')
+            local tmp_buf_cnt=${#var_input_buffer}
+
+            if [[ "${tmp_buf_cnt}" -ne "0" ]]; then
+                # var_post_input_buffer="${var_input_buffer:1:#}${var_post_input_buffer}"
+                var_post_input_buffer="${var_input_buffer:$tmp_buf_cnt-1:1}${var_post_input_buffer}"
+                var_input_buffer=${var_input_buffer:0:$tmp_buf_cnt-1}
+            fi
+
+            ;;
+        # Scroll down
+        $'\e[B')
+            if [[ "${var_cmd_history_idx}" = "1" ]]; then
+                var_input_buffer=${var_cmd_backup_buffer}
+                var_post_input_buffer=""
+                ((var_cmd_history_idx--))
+            elif [[ "${var_cmd_history_idx}" != "0" ]]; then
+                if [[ ${var_cmd_function} = "search" ]]; then
+                    if [[ $((${var_cmd_history_idx} - 1)) -le ${#VAR_TERM_SEARCH_HISTORY[@]} ]]; then
+                        ((var_cmd_history_idx--))
+                        local tmp_history_idx=$((${#VAR_TERM_SEARCH_HISTORY[@]} - ${var_cmd_history_idx}))
+                        var_input_buffer=${VAR_TERM_SEARCH_HISTORY[${tmp_history_idx}]}
+                        var_post_input_buffer=""
+                    fi
+                else
+                    if [[ $((${var_cmd_history_idx} - 1)) -le ${#VAR_TERM_CMD_HISTORY[@]} ]]; then
+                        ((var_cmd_history_idx--))
+                        local tmp_history_idx=$((${#VAR_TERM_CMD_HISTORY[@]} - ${var_cmd_history_idx}))
+                        var_input_buffer=${VAR_TERM_CMD_HISTORY[${tmp_history_idx}]}
+                        var_post_input_buffer=""
+                    fi
+                fi
+            fi
+            ;;
+
+        # Scroll up.
+        $'\e[A')
+
+            if [[ "${var_cmd_history_idx}" = "0" ]]; then
+                var_cmd_backup_buffer="${var_input_buffer}${var_post_input_buffer}"
+            fi
+            if [[ ${var_cmd_function} = "search" ]]; then
+                if [[ $((${var_cmd_history_idx} + 1)) -le ${#VAR_TERM_SEARCH_HISTORY[@]} ]]; then
+                    ((var_cmd_history_idx++))
+                    local tmp_history_idx=$((${#VAR_TERM_SEARCH_HISTORY[@]} - ${var_cmd_history_idx}))
+                    var_input_buffer=${VAR_TERM_SEARCH_HISTORY[${tmp_history_idx}]}
+                    var_post_input_buffer=""
+                fi
+            else
+                if [[ $((${var_cmd_history_idx} + 1)) -le ${#VAR_TERM_CMD_HISTORY[@]} ]]; then
+                    ((var_cmd_history_idx++))
+                    local tmp_history_idx=$((${#VAR_TERM_CMD_HISTORY[@]} - ${var_cmd_history_idx}))
+                    var_input_buffer=${VAR_TERM_CMD_HISTORY[${tmp_history_idx}]}
+                    var_post_input_buffer=""
+                fi
+            fi
+            ;;
+
+        # : to clear buffer
+        ":")
+            if [[ ${var_cmd_function} = "command" ]]; then
+                var_input_buffer=""
+            fi
+            ;;
+        # Backspace.
+        $'\177' | $'\b')
+            var_input_buffer=${var_input_buffer%?}
+
+            # Clear tab-completion.
+            unset comp c
+            ;;
+
+        # Tab.
+        $'\t')
+            comp_glob="$var_input_buffer*"
+
+            # Pass the argument dirs to limit completion to directories.
+            # [[ $2 == dirs ]] &&
+            #     comp_glob="$var_input_buffer*/"
+
+            # Generate a completion list once.
+            # [[ -z ${comp[0]} ]] &&
+            #     IFS=$'\n' read -d "" -ra comp < <(compgen -G "$comp_glob")
+            # IFS=$'\n' read -d "" -ra comp < <(compgen -G -W "fterminal_redraw search" "$comp_glob")
+            #
+
+            if [ "$VAR_TERM_OPS_MODE" = "n" ]; then
+                if [[ -z ${comp[0]} ]]; then
+                    # IFS=$'\n' read -d "" -ra globpat < <(compgen -G "$comp_glob")
+                    IFS=$'\n' read -d "" -ra wordlist < <(compgen -W "${VAR_TERM_CMD_LIST[*]}" ${var_input_buffer})
+                    # comp=$globpat
+                    comp+=$wordlist
+                fi
+            else
+                if [[ -z ${comp[0]} ]]; then
+                    # IFS=$'\n' read -d "" -ra globpat < <(compgen -G "$comp_glob")
+                    IFS=$'\n' read -d "" -ra wordlist < <(compgen -W "${VAR_TERM_SELECT_CMD_LIST[*]}" ${var_input_buffer})
+                    # comp=$globpat
+                    comp+=$wordlist
+                fi
+            fi
+
+            # On each tab press, cycle through the completion list.
+            [[ -n ${comp[c]} ]] && {
+                var_input_buffer=${comp[c]}
+                ((c = c >= ${#comp[@]} - 1 ? 0 : ++c))
+            }
+            ;;
+
+        # Enter/Return.
+        "")
+            VAR_TERM_CMD_INPUT_BUFFER="${var_input_buffer}${var_post_input_buffer}"
+            if [[ ${var_cmd_function} = "search" ]]; then
+
+                if test -z "${VAR_TERM_CMD_INPUT_BUFFER}"; then
+                    return 0
+                elif [[ ${#VAR_TERM_SEARCH_HISTORY[@]} -gt ${VAR_TERM_CMD_HISTORY_MAX} ]]; then
+                    local tmp_start_idx=$((${#VAR_TERM_SEARCH_HISTORY[@]} - ${VAR_TERM_CMD_HISTORY_MAX}))
+                    VAR_TERM_SEARCH_HISTORY="${VAR_TERM_SEARCH_HISTORY[@]:${tmp_start_idx}:${VAR_TERM_CMD_HISTORY_MAX}}"
+
+                else
+                    VAR_TERM_SEARCH_HISTORY+=("${VAR_TERM_CMD_INPUT_BUFFER}")
+                fi
+                # # Unset tab completion variables since we're done.
+                # unset comp c
+                # return
+                return 0
+            elif [[ ${var_cmd_function} != "command" ]]; then
+                # # Unset tab completion variables since we're done.
+                # unset comp c
+                # return
+                return 0
+            fi
+            if test -z "${VAR_TERM_CMD_INPUT_BUFFER}"; then
+                fterminal_print '\r\e[K\e[?25l'
+                return 0
+            elif [[ ${#VAR_TERM_CMD_HISTORY[@]} -gt ${VAR_TERM_CMD_HISTORY_MAX} ]]; then
+                local tmp_start_idx=$((${#VAR_TERM_CMD_HISTORY[@]} - ${VAR_TERM_CMD_HISTORY_MAX}))
+                VAR_TERM_CMD_HISTORY="${VAR_TERM_CMD_HISTORY[@]:${tmp_start_idx}:${VAR_TERM_CMD_HISTORY_MAX}}"
+
+            else
+                VAR_TERM_CMD_HISTORY+=("${VAR_TERM_CMD_INPUT_BUFFER}")
+            fi
+
+            tmp_command=$(echo ${VAR_TERM_CMD_INPUT_BUFFER} | tr -s ' ' | sed 's/^ //g' | cut -d ' ' -f 1)
+            # space is for workaround.
+            tmp_args=$(echo "${VAR_TERM_CMD_INPUT_BUFFER} " | tr -s ' ' | sed 's/^ //g' | cut -d ' ' -f 2-)
+            # flog_msg_debug "${tmp_args}/$VAR_TERM_CMD_INPUT_BUFFER"
+            # fterminal_print "\r\e[2K%s" ${tmp_command}
+            if [ "$VAR_TERM_OPS_MODE" = "n" ] ; then
+                case ${tmp_command} in
+                    # NOTE. only build-in commands can list here.
+                    "redraw")
+                        fterminal_redraw full
+                        ;;
+                    "open")
+                        fsys_open ${tmp_args}
+                        ;;
+                    "vim" | "edit")
+                        cmd_editor "${tmp_args}"
+                        ;;
+                    "media" | "play")
+                        cmd_media "${tmp_args}"
+                        ;;
+                    "image" | "preview")
+                        cmd_media "${tmp_args}"
+                        ;;
+
+                    # "mkfile" | "touch")
+                    #     cmd_touch "${tmp_args}"
+                    #     ;;
+                    "echo")
+                        flog_msg "${tmp_args}"
+                        ;;
+                    # "test")
+                    #     cmd_test "${tmp_args}"
+                    #     ;;
+                    # "file" | "info")
+                    #     cmd_stat "${tmp_args}"
+                    #     ;;
+                    # "cd")
+                    #     cmd_cd ${tmp_args}
+                    #     ;;
+                    *)
+                        # This if for build in commands.
+                        # flog_msg "Unknown commands: ${tmp_command} ${tmp_args}"
+                        if command -v cmd_${tmp_command} >/dev/null; then
+                            cmd_${tmp_command} ${tmp_args}
+                            # We should not clear msg, after running.
+                            fterminal_print '\e[?25l'
+                        else
+                            fterminal_print '\r\e[K Command "'${tmp_command}'" not found.\e[?25l\e8'
+                        fi
+                        ;;
+                esac
+            else
+                case ${tmp_command} in
+                    *)
+                        # flog_msg "Unknown commands: ${tmp_command} ${tmp_args}"
+                        if command -v vcmd_${tmp_command} >/dev/null; then
+                            vcmd_${tmp_command} ${tmp_args}
+                            # We should not clear msg, after running.
+                            fterminal_print '\e[?25l'
+                        else
+                            fterminal_print '\r\e[K Command "'${tmp_command}'" not found.\e[?25l\e8'
+                        fi
+                        ;;
+                esac
+
+            fi
+            fmode_setup "n"
+
+            # [[ $1 == :  ]] && {
+            #     nohup "${VAR_TERM_CMD_INPUT_BUFFER}" "$2" &>/dev/null &
+            # }
+
+            return 0
+            ;;
+
+        # Custom 'yes' value (used as a replacement for '-n 1').
+        # ${2:-null})
+        #     VAR_TERM_CMD_INPUT_BUFFER=$read_reply
+        #     return 0
+        # ;;
+
+        # Escape / Custom 'no' value (used as a replacement for '-n 1').
+        # $'\e'|${3:-null})
+        $'\e')
+            read "${VAR_TERM_READ_FLAGS[@]}" -rsn 2
+            VAR_TERM_CMD_INPUT_BUFFER=
+            fmode_setup "n"
+
+            if [[ ${var_cmd_function} == "search" ]]; then
+                fterminal_redraw full
+            else
+                # clear cli line, and exit.
+                fterminal_print '\r\e[K\e[?25l'
+            fi
+            return 0
+            ;;
+        $'\e'*)
+            # ignore
+            ;;
+
+        # Replace '~' with '$HOME'.
+        "~")
+            var_input_buffer+=$HOME
+            ;;
+
+        # Anything else, add it to read reply.
+        *)
+            var_input_buffer+=${var_key_press}
+
+            # Clear tab-completion.
+            unset comp c
+            ;;
+    esac
+
+    [[ ${var_cmd_function} == "search" ]] && {
+        VAR_TERM_CMD_INPUT_BUFFER="${var_input_buffer}${var_post_input_buffer}"
+        cmd_search "${VAR_TERM_CMD_INPUT_BUFFER}"
+    }
+
+    #==========================================================================
+    #==========================================================================
+    #==========================================================================
+    #==========================================================================
+    #==========================================================================
+    #==========================================================================
+    #==========================================================================
+    #==========================================================================
+    #==========================================================================
+    #==========================================================================
+    #==========================================================================
+
+
+    return 0
+    # Unset tab completion variables since we're done.
+    unset comp c
 }
 
 fprase_mime_type() {
@@ -3664,6 +4024,9 @@ function fCore() {
                     ;;
                 's')
                     fselection_mode_handler "$REPLY"
+                    ;;
+                'c')
+                    fcommand_mode_handler "$REPLY"
                     ;;
                 *|'n')
                     fnormal_mode_handler "$REPLY"
