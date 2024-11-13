@@ -95,7 +95,7 @@ export VAR_TERM_CMD_HISTORY
 export VAR_TERM_SEARCH_HISTORY
 
 export VAR_TERM_CMD_INPUT_BUFFER=""
-export VAR_TERM_CMD_LIST=( "redraw" "help" "info" "exit" "select" "shell" )
+export VAR_TERM_CMD_LIST=( "redraw" "help" "stat" "exit" "select" "shell" "cd" )
 VAR_TERM_CMD_LIST+=( "mkdir" "touch" "rename" "search" )
 VAR_TERM_CMD_LIST+=( "quit" "tab" "quitngo")
 VAR_TERM_CMD_LIST+=( "open" "editor" "vim" "media" "play" "image" "preview" "unzip" "extract")
@@ -142,28 +142,58 @@ export HSFM_PATH_TRASH="${HOME}/.trash"
 
 ## Themes & colors
 ###########################################################
-# Directory color [0\-9]
-export HSFM_COLOR_DIR=32
+# FG                                # BG
+# Code 	Color                       # Code 	Color
+# 39 	Default foreground color    # 49 	Default background color
+# 30 	Black                       # 40 	Black
+# 31 	Red                         # 41 	Red
+# 32 	Green                       # 42 	Green
+# 33 	Yellow                      # 43 	Yellow
+# 34 	Blue                        # 44 	Blue
+# 35 	Magenta                     # 45 	Magenta
+# 36 	Cyan                        # 46 	Cyan
+# 37 	Light gray                  # 47 	Light gray
+# 90 	Dark gray                   # 100 	Dark gray
+# 91 	Light red                   # 101 	Light red
+# 92 	Light green                 # 102 	Light green
+# 93 	Light yellow                # 103 	Light yellow
+# 94 	Light blue                  # 104 	Light blue
+# 95 	Light magenta               # 105 	Light magenta
+# 96 	Light cyan                  # 106 	Light cyan
+# 97 	White                       # 107 	White
+###########################################################
+# Cursor color [0\-9]
+export HSFM_COLOR_CURSOR=37
 
 # Selection color [0\-9] (copied/moved files)
 export HSFM_COLOR_SELECTION=100
 
-export HSFM_COLOR_TAB_SELECTION_FG=97
-export HSFM_COLOR_TAB_SELECTION_BG=100
+# Title
+export HSFM_COLOR_TITLE_FG=30
+export HSFM_COLOR_TITLE_BG=104
 
+# tab bar
+export HSFM_COLOR_TAB_FG=97
+export HSFM_COLOR_TAB_BG=100
+export HSFM_COLOR_TAB_SELECTION_FG=30
+export HSFM_COLOR_TAB_SELECTION_BG=43
+export HSFM_COLOR_TAB_LEBEL_FG=97
+export HSFM_COLOR_TAB_LEBEL_BG=100
+
+# bookmark bar
 export HSFM_COLOR_TAB_BOOKMARK_FG=97
-export HSFM_COLOR_TAB_BOOKMARK_BG=100
+export HSFM_COLOR_TAB_BOOKMARK_BG=40
 
-# Cursor color [0\-9]
-# export HSFM_COL4=1
-export HSFM_COLOR_CURSOR=37
+# Status bar
+export HSFM_COLOR_STATUS_FG=97
+export HSFM_COLOR_STATUS_BG=100
+export HSFM_COLOR_STATUS_LABEL_FG=30
+export HSFM_COLOR_STATUS_LABEL_BG=43
 
-# Status color
-export HSFM_COLOR_STATUS_FG=30
-export HSFM_COLOR_STATUS_BG=43
-
-## Others
+## HSFM ENV
 ###########################################################
+export HSFM_ENV_TITLE="HSFM"
+
 # Text Editor
 export EDITOR="vim"
 export HSFM_MEDIA_PLAYER="vlc"
@@ -703,7 +733,7 @@ fterminal_draw_file_line() {
 
     # Directory.
     if [[ -d "${VAR_TERM_DIR_FILE_LIST[$var_content_idx]}" ]]; then
-        var_format+=\\e[${di:-1;${HSFM_COLOR_DIR:-32}}m
+        var_format+=\\e[${di:-1;-32}m
         var_postfix+=/
 
     # Block special file.
@@ -795,10 +825,21 @@ fterminal_draw_file_line() {
 }
 
 fterminal_draw_tab_line() {
+    local var_left=""
+    local var_center=" "
+    local var_left_cnt=""
+    local var_right=" "
+    local var_right_cnt=""
+    local var_spacing=""
+    local var_content_cnt=""
+
+
     # Status_line to print when files are marked for operation.
-    local var_tab_list_buf=""
+    local var_tab_selected_buf=""
     local var_tab_list_pre_buf=""
     local var_tab_list_post_buf=""
+    local var_tab_seperator="|"
+    local def_tab_start_line=1
     # PWD_escaped=${PWD//[^[:print:]]/^[}
     # Escape the directory string.
     # Remove all non-printable characters.
@@ -814,19 +855,31 @@ fterminal_draw_tab_line() {
         fi
         if [ "${VAR_TERM_TAB_LINE_IDX}" = "${each_idx}" ]
         then
-            var_tab_list_buf=${var_tab_list_buf}"${each_idx}: ${VAR_TERM_TAB_LINE_LIST_PATH[${each_idx}]##*/}"
+            var_tab_selected_buf=" ${each_idx} ${VAR_TERM_TAB_LINE_LIST_PATH[${each_idx}]##*/} "
+            var_right="$((${each_idx} + 1))/${#VAR_TERM_TAB_LINE_LIST_PATH[@]}"
         elif [[ "${VAR_TERM_TAB_LINE_IDX}" -gt "${each_idx}" ]]
         then
-            var_tab_list_pre_buf=${var_tab_list_pre_buf}"${each_idx}: ${VAR_TERM_TAB_LINE_LIST_PATH[${each_idx}]##*/}|"
+            var_tab_list_pre_buf=${var_tab_list_pre_buf}" ${each_idx} ${VAR_TERM_TAB_LINE_LIST_PATH[${each_idx}]##*/} ${var_tab_seperator}"
         else
-            var_tab_list_post_buf=${var_tab_list_post_buf}"${each_idx}: ${VAR_TERM_TAB_LINE_LIST_PATH[${each_idx}]##*/}|"
+            var_tab_list_post_buf=${var_tab_list_post_buf}"${var_tab_seperator} ${each_idx} ${VAR_TERM_TAB_LINE_LIST_PATH[${each_idx}]##*/} "
         fi
     done
+
+    var_left+=" ${HSFM_ENV_TITLE} "
+
+    # update buffer
+    var_left_cnt="$((${#var_left} + ${#var_tab_list_pre_buf}+ ${#var_tab_selected_buf} + ${#var_tab_list_post_buf}))"
+    var_right_cnt="${#var_right}"
+    ((var_content_cnt=VAR_TERM_COLUMN_CNT-var_left_cnt-var_right_cnt))
+    [[ ${var_content_cnt} < 0 ]] && ((${var_content_cnt}=0))
+    # flog_msg "test-> ${var_content_cnt}/$VAR_TERM_COLUMN_CNT"
+    var_spacing=$(printf "% ${var_content_cnt}s" "")
+
 
     # Escape the directory string.
     # Remove all non-printable characters.
     # PWD_escaped=${PWD//[^[:print:]]/^[}
-    local var_pwd_escaped=${PWD//[^[:print:]]/^[}
+    # local var_pwd_escaped=${PWD//[^[:print:]]/^[}
 
     # '\e7':       Save cursor position.
     #              This is more widely supported than '\e[s'.
@@ -842,23 +895,63 @@ fterminal_draw_tab_line() {
     #              This is more widely supported than '\e[u'.
     # fterminal_print '\e7\e[%sH\e[%s;%sm%*s\r%s %s%s\e[m\e[%sH\e[K\e8' \
 
-    fterminal_print '\e7\e[%sH\e[%s;%sm%*s\rFM %s\e[%s;%sm%s\e[%s;%sm%s\e[m\e8' \
-           "$((1))" \
-           "${HSFM_COLOR_STATUS_FG}" \
-           "${HSFM_COLOR_STATUS_BG}" \
-           "$VAR_TERM_COLUMN_CNT" "" \
-           "|${var_tab_list_pre_buf}" \
-           "${HSFM_COLOR_TAB_SELECTION_FG}" \
-           "${HSFM_COLOR_TAB_SELECTION_BG}" \
-           "${var_tab_list_buf}" \
-           "${HSFM_COLOR_STATUS_FG}" \
-           "${HSFM_COLOR_STATUS_BG}" \
-           "|${var_tab_list_post_buf}"
-           # "|${1:-${var_pwd_escaped:-/}}|${var_tab_list_buf[@]}"
+    # fterminal_print '\e7\e[%sH\e[%s;%sm%*s\rFM %s\e[%s;%sm%s\e[%s;%sm%s\e[m\e8' \
+    #        "$((1))" \
+    #        "${HSFM_COLOR_TAB_FG}" \
+    #        "${HSFM_COLOR_TAB_BG}" \
+    #        "$VAR_TERM_COLUMN_CNT" "" \
+    #        "|${var_tab_list_pre_buf}" \
+    #        "${HSFM_COLOR_TAB_SELECTION_FG}" \
+    #        "${HSFM_COLOR_TAB_SELECTION_BG}" \
+    #        "${var_tab_selected_buf}" \
+    #        "${HSFM_COLOR_TAB_FG}" \
+    #        "${HSFM_COLOR_TAB_BG}" \
+    #        "|${var_tab_list_post_buf}"
+
+    # fterminal_print '\e7\e[%sH\e[%sm%*s\r\e[%sm%s\e[%sm%s\e[%sm%s\e[%sm%s\e[m\e8' \
+    #        "${def_tab_start_line}" \
+    #        "${HSFM_COLOR_TAB_FG};${HSFM_COLOR_TAB_BG}" \
+    #        "$VAR_TERM_COLUMN_CNT" "" \
+    #        "${HSFM_COLOR_TITLE_FG};${HSFM_COLOR_TITLE_BG}" \
+    #        " $HSFM_ENV_TITLE " \
+    #        "${HSFM_COLOR_TAB_FG};${HSFM_COLOR_TAB_BG}" \
+    #        "${var_tab_list_pre_buf}" \
+    #        "${HSFM_COLOR_TAB_SELECTION_FG};${HSFM_COLOR_TAB_SELECTION_BG}" \
+    #        "${var_tab_selected_buf}" \
+    #        "${HSFM_COLOR_TAB_FG};${HSFM_COLOR_TAB_BG}" \
+    #        "|${var_tab_list_post_buf}"
+    #
+    # fterminal_print '\e7\e[%sH\e[%sm%*s\r\e[%sm%s\e[%sm%s\e[%sm%s\e[%sm%s\e[m\e8' \
+    #        "${def_tab_start_line}" \
+    #        "${HSFM_COLOR_TAB_FG};${HSFM_COLOR_TAB_BG}" \
+    #        "$VAR_TERM_COLUMN_CNT" "" \
+    #        "${HSFM_COLOR_TITLE_FG};${HSFM_COLOR_TITLE_BG}" \
+    #        " $HSFM_ENV_TITLE " \
+    #        "${HSFM_COLOR_TAB_FG};${HSFM_COLOR_TAB_BG}" \
+    #        "${var_tab_list_pre_buf}" \
+    #        "${HSFM_COLOR_TAB_SELECTION_FG};${HSFM_COLOR_TAB_SELECTION_BG}" \
+    #        "${var_tab_selected_buf}" \
+    #        "${HSFM_COLOR_TAB_FG};${HSFM_COLOR_TAB_BG}" \
+    #        "|${var_tab_list_post_buf}"
+
+    fterminal_print "\e7\e[%sH\r\e[%sm%s\e[%sm%s\e[%sm%s\e[%sm%s\e[%sm%s\e[m\e8" \
+           "$((def_tab_start_line))" \
+           "${HSFM_COLOR_TITLE_FG:-30};${HSFM_COLOR_TITLE_BG:-41}" \
+           "${var_left}" \
+           "${HSFM_COLOR_TAB_FG:-30};${HSFM_COLOR_TAB_BG:-41}" \
+           "${var_tab_list_pre_buf}" \
+           "${HSFM_COLOR_TAB_SELECTION_FG:-30};${HSFM_COLOR_TAB_SELECTION_BG:-41}" \
+           "${var_tab_selected_buf}" \
+           "${HSFM_COLOR_TAB_FG:-30};${HSFM_COLOR_TAB_BG:-41}" \
+           "${var_tab_list_post_buf}${var_spacing}" \
+           "${HSFM_COLOR_TAB_LEBEL_FG:-30};${HSFM_COLOR_TAB_LEBEL_BG:-41}" \
+           "${var_right}"
+
     fterminal_draw_bookmark_line
 }
 fterminal_draw_bookmark_line() {
     # bookmark bar
+    local def_bookmark_start_line=2
     local tmp_bookmark_buf=""
     local tmp_cnt=1
     for each_fav in "${!HSFM_FAV@}"
@@ -871,7 +964,7 @@ fterminal_draw_bookmark_line() {
     done
 
     fterminal_print '\e7\e[%sH\e[%s;%sm%*s\rBM |%s \e[m\e8' \
-           "$((2))" \
+           "${def_bookmark_start_line}" \
            "${HSFM_COLOR_TAB_BOOKMARK_FG}" \
            "${HSFM_COLOR_TAB_BOOKMARK_BG}" \
            "${VAR_TERM_COLUMN_CNT}" "" \
@@ -883,8 +976,9 @@ fterminal_draw_status_line() {
     # Status_line to print when files are marked for operation.
     local var_mark_ui="[${#VAR_TERM_MARKED_FILE_LIST[@]} selected]"
     local var_left=""
+    local var_center=" "
     local var_left_cnt=""
-    local var_right=""
+    local var_right=" "
     local var_right_cnt=""
     local var_spacing=""
     local var_content_cnt=""
@@ -896,7 +990,7 @@ fterminal_draw_status_line() {
     ## Update content
     var_left=[${VAR_TERM_MODE_CURRENT}]
     var_left+="${VAR_TERM_MARKED_FILE_LIST[*]:+${var_mark_ui}}"
-    var_left+="${1:-${var_pwd_escaped:-/}}"
+    var_center+="${1:-${var_pwd_escaped:-/}}"
 
     if [[ ${#VAR_TERM_KEY_CURRENT_INPUT} -ne 0 ]]
     then
@@ -913,7 +1007,7 @@ fterminal_draw_status_line() {
     # var_right+="$(date '+%Y/%m/%d')"
 
     ## calc spacing
-    var_left_cnt="${#var_left}"
+    var_left_cnt="$((${#var_left} + ${#var_center}))"
     var_right_cnt="${#var_right}"
     ((var_content_cnt=VAR_TERM_COLUMN_CNT-var_left_cnt-var_right_cnt))
     [[ ${var_content_cnt} < 0 ]] && ((${var_content_cnt}=0))
@@ -944,13 +1038,22 @@ fterminal_draw_status_line() {
     #        "${var_right}" \
     #        "$VAR_TERM_LINE_CNT"
 
-    fterminal_print "\e7\e[%sH\e[%s;%sm%*s\r%s%s%s\e[m\e8" \
+    # fterminal_print "\e7\e[%sH\e[%s;%sm%*s\r%s%s%s\e[m\e8" \
+    #        "$((VAR_TERM_LINE_CNT-1))" \
+    #        "${HSFM_COLOR_STATUS_FG:-30}" \
+    #        "${HSFM_COLOR_STATUS_BG:-41}" \
+    #        "$VAR_TERM_COLUMN_CNT" "" \
+    #        "${var_left}" \
+    #        "${var_spacing}" \
+    #        "${var_right}"
+
+    fterminal_print "\e7\e[%sH\r\e[%sm%s\e[%sm%s\e[%sm%s\e[m\e8" \
            "$((VAR_TERM_LINE_CNT-1))" \
-           "${HSFM_COLOR_STATUS_FG:-30}" \
-           "${HSFM_COLOR_STATUS_BG:-41}" \
-           "$VAR_TERM_COLUMN_CNT" "" \
+           "${HSFM_COLOR_STATUS_LABEL_FG:-30};${HSFM_COLOR_STATUS_LABEL_BG:-41}" \
            "${var_left}" \
-           "${var_spacing}" \
+           "${HSFM_COLOR_STATUS_FG:-30};${HSFM_COLOR_STATUS_BG:-41}" \
+           "${var_center}${var_spacing}" \
+           "${HSFM_COLOR_STATUS_LABEL_FG:-30};${HSFM_COLOR_STATUS_LABEL_BG:-41}" \
            "${var_right}"
 }
 
@@ -979,6 +1082,24 @@ fterminal_draw_miniwin()
     var_buffer+=("$@")
 
     fterminal_draw_window ${var_start_line} ${var_start_col} ${var_width} ${var_height} "${var_win_title}" "${var_buffer[@]}"
+}
+# its an exp miniwin.
+fterminal_draw_checkwin() {
+
+    local var_start_line=$((${VAR_TERM_LINE_CNT}/4))
+    local var_start_col=$((${VAR_TERM_COLUMN_CNT}/4))
+    local var_width=$((${VAR_TERM_COLUMN_CNT}/2))
+    local var_height=$((${VAR_TERM_LINE_CNT}/2))
+    local var_win_title="Check WIN"
+    local var_buffer=()
+    var_buffer+=("Action ongoing")
+    var_buffer+=("$@")
+
+    fterminal_draw_window ${var_start_line} ${var_start_col} ${var_width} ${var_height} "${var_win_title}" "${var_buffer[@]}"
+    # sleep 2
+
+    fterminal_redraw full
+    return 0
 }
 
 fterminal_draw_msgwin()
@@ -2243,33 +2364,40 @@ fcommand_mode_handler() {
                 # FIXME, only firs args can be completion with path.
                 if [ "${VAR_TERM_MODE_CURRENT}" = "${DEF_TERM_MODE_COMMAND}" ]; then
                     local tmp_cmd="${var_input_buffer%% *}"
+                    local tmp_args="${var_input_buffer##${tmp_cmd}}"
+                    # flog_msg_debug "Command comp list.'${var_input_buffer}'/'${tmp_cmd}'/'${tmp_args}'"
 
-                    if test -n "${tmp_cmd}"; then
+                    # local tmp_cmd="${var_input_buffer%% *}"
+                    if test -n "${tmp_cmd}" && test -n "${tmp_args}"; then
+                        # flog_msg_debug "Path comp list.'${tmp_args}'"
                         local tmp_path=${var_input_buffer#* }
                         if test -n "${tmp_path}" && test -e ${tmp_path%/*}; then
                             # IFS=$'\n' read -d "" -ra globpat < <(compgen -G "$comp_glob")
                             IFS=$'\n' read -d "" -ra wordlist < <(compgen -f ${tmp_path})
                             # static_var_comp_list=$globpat
-                            static_var_comp_list+=("${wordlist[@]}")
+                            static_var_comp_list+=("${wordlist[@]}" "${tmp_path}" )
 
                             static_var_comp_path_cmd="${tmp_cmd}"
                         fi
 
                     else
+                        # flog_msg_debug "Command comp list.'${var_input_buffer}'"
                         # IFS=$'\n' read -d "" -ra globpat < <(compgen -G "$comp_glob")
                         IFS=$'\n' read -d "" -ra wordlist < <(compgen -W "${VAR_TERM_CMD_LIST[*]}" ${var_input_buffer})
                         # static_var_comp_list=$globpat
-                        static_var_comp_list+=("${wordlist[@]}")
+                        static_var_comp_list+=("${wordlist[@]}" "${var_input_buffer}")
                     fi
 
                 else
+                    # flog_msg_debug "Select comp list.'${var_input_buffer}'"
                     # IFS=$'\n' read -d "" -ra globpat < <(compgen -G "$comp_glob")
                     IFS=$'\n' read -d "" -ra wordlist < <(compgen -W "${VAR_TERM_SELECT_CMD_LIST[*]}" ${var_input_buffer})
                     # static_var_comp_list=$globpat
-                    static_var_comp_list+=("${wordlist[@]}")
+                    static_var_comp_list+=("${wordlist[@]}" "${var_input_buffer}")
                 fi
             fi
 
+            # flog_msg_debug "Completion: ${static_var_comp_idx}-> '${static_var_comp_list[static_var_comp_idx]}'"
             # On each tab press, cycle through the completion list.
             [[ -n ${static_var_comp_list[static_var_comp_idx]} ]] && {
 
@@ -3079,8 +3207,9 @@ cmd_extract()
         popd > /dev/null
     fi
 
+    # for redraw miniwin, we must redraw.
+    fterminal_redraw full
     if [[ -d "${var_file%.*}" ]]; then
-        fterminal_redraw full
         flog_msg "Extract file to '${tmp_extrace_path}'"
     else
         flog_msg "Extract file fail '${tmp_extrace_path}'"
@@ -3352,13 +3481,14 @@ cmd_set()
 }
 cmd_test()
 {
-    local tmp_cmd="sleep 5"
-    flog_msg_debug "${tmp_cmd} Entered."
-    {
-        flog_msg_debug "${tmp_cmd} started."
-        eval "${tmp_cmd}"
-        flog_msg_debug "${tmp_cmd} finished."
-    } &
+    # local tmp_cmd="sleep 5"
+    # flog_msg_debug "${tmp_cmd} Entered."
+    # {
+    #     flog_msg_debug "${tmp_cmd} started."
+    #     eval "${tmp_cmd}"
+    #     flog_msg_debug "${tmp_cmd} finished."
+    # } &
+    fterminal_draw_checkwin
 }
 cmd_quit()
 {
@@ -3508,16 +3638,16 @@ vcmd_compress()
         flog_msg "Compress started."
         flog_msg_debug "excute: ${tmp_cmd}"
         fterminal_draw_miniwin "Start Compress files."
-        sleep 5
         eval "${tmp_cmd}"
         if [ $? != 0 ]
         then
+            fterminal_redraw full
             flog_msg "File compression fail."
             return -1
         fi
 
         fmode_setup "${DEF_TERM_MODE_NORMAL}"
-        fterminal_setup
+        # fterminal_setup
         fterminal_redraw full
         flog_msg "Compress finished."
     }
@@ -3919,7 +4049,9 @@ fexport_ls_colors() {
     # Format: ':.ext=0;0:*.jpg=0;0;0:*png=0;0;0;0:'
     [[ -z $LS_COLORS ]] && {
         HSFM_LS_COLORS=0
-        return
+        flog_msg_debug "LS_COLORS is empty. use default one."
+        local LS_COLORS="rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=00:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.avif=01;35:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:*~=00;90:*#=00;90:*.bak=00;90:*.crdownload=00;90:*.dpkg-dist=00;90:*.dpkg-new=00;90:*.dpkg-old=00;90:*.dpkg-tmp=00;90:*.old=00;90:*.orig=00;90:*.part=00;90:*.rej=00;90:*.rpmnew=00;90:*.rpmorig=00;90:*.rpmsave=00;90:*.swp=00;90:*.tmp=00;90:*.ucf-dist=00;90:*.ucf-new=00;90:*.ucf-old=00;90:"
+        # return
     }
 
     # Turn $LS_COLORS into an array.
@@ -4017,7 +4149,17 @@ fHelp_commands() {
     fterminal_print "    % -16s: %s\n"  "more  " "Commands."
     fterminal_print "    % -16s: %s\n"  "help  " "Commands. Accept option for key/map"
     fterminal_print "[Other commands]\n"
-    fterminal_print "    % -16s: %s\n"  "${VAR_TERM_CMD_LIST[@]}"
+    # fterminal_print "    % -16s: %s\n" ""  "${VAR_TERM_CMD_LIST[@]}"
+    fterminal_print "    % -16s: " "Normal Command"
+    fterminal_print "%s, "   "${VAR_TERM_CMD_LIST[@]}"
+    fterminal_print "\n"
+    fterminal_print "    % -16s: " "Selction Command"
+    fterminal_print "%s, "   "${VAR_TERM_SELECT_CMD_LIST[@]}"
+    fterminal_print "\n"
+    fterminal_print "[TODO Funcion]\n"
+    fterminal_print "    %s\n"  "The following function is under constructure."
+    fterminal_print "    %s\n"  "#. Mini window, collecting various window. replace check in command line."
+    fterminal_print "    %s\n"  "#. Background task & task manager."
 }
 fHelp() {
     local help_type=$1
