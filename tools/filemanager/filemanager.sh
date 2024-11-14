@@ -2609,8 +2609,8 @@ fcommand_mode_handler() {
                     "media" | "play")
                         cmd_media "${tmp_args}"
                         ;;
-                    "image" | "preview")
-                        cmd_media "${tmp_args}"
+                    "image")
+                        cmd_image "${tmp_args}"
                         ;;
 
                     "echo")
@@ -3252,6 +3252,29 @@ cmd_image()
         flog_msg "warn: '${var_file}' not opened"
     fi
 }
+cmd_preview()
+{
+    local var_file=""
+    if test -f "$*"
+    then
+        var_file="${*}"
+    else
+        var_file="$(fget_cursor_file)"
+    fi
+
+    fterminal_clear
+    fterminal_draw_tab_line
+    fterminal_print '\e[%sH' "$((VAR_TERM_TAB_LINE_HEIGHT + 1))"
+    if command -v "catimg" 2>&1 /dev/null; then
+        catimg -H ${VAR_TERM_LINE_CNT} "${var_file}"
+    else
+        echo "Please install catimg."
+    fi
+    fterminal_draw_tab_line
+    fterminal_draw_status_line
+    fcommand_line_interact "Press Enter Key To Continue..." "wait" "q"
+    fterminal_redraw
+}
 # cmd_unzip()
 # {
 #     local var_file="$@"
@@ -3699,32 +3722,46 @@ fsys_open() {
         # Figure out what kind of file we're working with.
         # Open all text-based files in '$EDITOR'.
         # Everything else goes through 'xdg-open'/'open'.
+        if [[ $DISPLAY ]]; then
+            case "$(fprase_mime_type $var_file)" in
+                audio/*)
+                    cmd_media "$var_file"
+                    return 0
+                    ;;
+                video/*)
+                    cmd_media "$var_file"
+                    return 0
+                    ;;
+                image/*)
+                    cmd_image "$var_file"
+                    return 0
+                    ;;
+                # text/*|*x-empty*|*json*)
+                #     cmd_editor "$var_file"
+                #     return 0
+                #     ;;
+            esac
+        fi
+
+        # cli preview
         case "$(fprase_mime_type $var_file)" in
-            audio/*)
-                cmd_media "$var_file"
-                return 0
-            ;;
-            video/*)
-                cmd_media "$var_file"
-                return 0
-            ;;
             image/*)
-                cmd_image "$var_file"
+                cmd_preview "$var_file"
                 return 0
-            ;;
+                ;;
             text/*|*x-empty*|*json*)
                 cmd_editor "$var_file"
                 return 0
-            ;;
+                ;;
             application/zip*)
                 # cmd_unzip "$var_file"
                 cmd_extract "zip" "$var_file"
                 return 0
-            ;;
+                ;;
             application/x-tar*|application/x-xz*)
                 cmd_extract "tar" "$var_file"
                 return 0
-            ;;
+                ;;
         esac
 
         # Try with file extension.
