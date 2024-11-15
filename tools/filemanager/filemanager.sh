@@ -238,7 +238,9 @@ export HSFM_FAV9=${HSFM_PATH_CACHE}
 
 # Dir alias
 # FIXME, only work on command cd
-declare -A HSFM_DIR_ALIAS
+if command -v declare 2>&1 >/dev/null; then
+    declare -A HSFM_DIR_ALIAS
+fi
 HSFM_DIR_ALIAS["home"]="${HOME}"
 HSFM_DIR_ALIAS["log"]="/var/log"
 
@@ -2610,6 +2612,9 @@ fcommand_mode_handler() {
             if [ "$VAR_TERM_MODE_CURRENT" = "${DEF_TERM_MODE_COMMAND}" ] ; then
                 case ${tmp_command} in
                     # NOTE. only build-in commands can list here.
+                    !*)
+                        cmd_eval "${VAR_TERM_CMD_INPUT_BUFFER#!}"
+                        ;;
                     "redraw")
                         fterminal_redraw full
                         ;;
@@ -2684,6 +2689,14 @@ fcommand_mode_handler() {
             # ignore
             ;;
 
+        $'\x12')
+            fterminal_read_key_timeout 1
+            case ${REPLY} in
+                \")
+                    var_input_buffer+=$(fget_selection_file)
+                    ;;
+            esac
+            ;;
         # Replace '~' with '$HOME'.
         "~")
             var_input_buffer+=$HOME
@@ -3444,14 +3457,16 @@ cmd_cd()
         # cd $@
         fsys_open "${var_dir_path}"
 
+        # FIXME, it didn't use anymore, remove it.
         # backup cursor
         # NOTE. It's a patch for storing cursor position, cuse fcommand_handler will restore it.
         fterminal_print '\e7'
 
         flog_msg "Change dir to: ${var_dir_path}"
     else
+        # some bash not support finding with declar array, so it just don't work.
         for each_key in  "${!HSFM_DIR_ALIAS[@]}"; do
-            flog_msg_debug "Key: '${each_key}'/'${var_dir_path}'/'${HSFM_DIR_ALIAS[$each_key]}'"
+            flog_msg_debug "Key: '${each_key}'|'${var_dir_path}'|'${HSFM_DIR_ALIAS[$each_key]}'"
 
             if [ "${each_key}" = "${var_dir_path}" ] && test -d "${HSFM_DIR_ALIAS[$each_key]}"
             then
@@ -3505,6 +3520,20 @@ cmd_stat()
     # fHelp $@
     fterminal_print '\e[%sH' "$((VAR_TERM_TAB_LINE_HEIGHT + 1))"
     stat "$(fget_cursor_file)"
+    fterminal_draw_tab_line
+    fterminal_draw_status_line
+    fcommand_line_interact "Press Enter Key To Continue..." "wait" "q"
+    fterminal_redraw
+}
+cmd_disk()
+{
+    fterminal_clear
+    fterminal_draw_tab_line
+    # fterminal_draw_status_line "File info"
+    # fterminal_print "\n"
+    # fHelp $@
+    fterminal_print '\e[%sH' "$((VAR_TERM_TAB_LINE_HEIGHT + 1))"
+    df -h
     fterminal_draw_tab_line
     fterminal_draw_status_line
     fcommand_line_interact "Press Enter Key To Continue..." "wait" "q"
@@ -3602,10 +3631,31 @@ cmd_debug()
 }
 cmd_eval()
 {
-    if [[ "${#}" -ge "1" ]]
+    local var_cmd=""
+    if [[ "${#}" -eq "0" ]]
     then
-        eval "$@"
+        flog_msg "No command specify."
+        return 0
+    elif ! command -v $1 2>&1 > /dev/null
+    then
+        flog_msg "No command ${1} found."
+        return 0
     fi
+
+    fterminal_clear
+    fterminal_draw_tab_line
+    # fterminal_draw_status_line "File info"
+    # fterminal_print "\n"
+    # fHelp $@
+    fterminal_print '\e[%sH' "$((VAR_TERM_TAB_LINE_HEIGHT + 1))"
+    printf "Excute: '%s'\n" "${*}"
+    printf "%s\n" "################################################################################"
+    eval ${@}
+
+    fterminal_draw_tab_line
+    fterminal_draw_status_line
+    fcommand_line_interact "Press Enter Key To Continue..." "wait" "q"
+    fterminal_redraw
 }
 cmd_title()
 {
