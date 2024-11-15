@@ -2198,6 +2198,10 @@ fnormal_mode_handler() {
         '\')
             fterminal_read_key_timeout 1
             case ${REPLY} in
+                a)
+                    fterminal_mark_toggle "all"
+                    fmode_setup "${DEF_TERM_MODE_SELECT}"
+                    ;;
                 d)
                     fgui_tab_duplicate
                     ;;
@@ -3262,44 +3266,25 @@ cmd_preview()
         var_file="$(fget_cursor_file)"
     fi
 
+    VAR_TERM_PRINT_BUFFER_ENABLE=true
     fterminal_clear
+
     fterminal_draw_tab_line
-    fterminal_print '\e[%sH' "$((VAR_TERM_TAB_LINE_HEIGHT + 1))"
+    fterminal_draw_status_line
+    fterminal_flush
+
+    fterminal_print '\e[%sH\r' "$((VAR_TERM_TAB_LINE_HEIGHT + 1))"
     if command -v "catimg" 2>&1 /dev/null; then
-        catimg -H ${VAR_TERM_LINE_CNT} "${var_file}"
+        local tmp_padding=3
+        catimg -c -H "$((${VAR_TERM_LINE_CNT} - ${tmp_padding} - ${VAR_TERM_TAB_LINE_HEIGHT} - ${VAR_TERM_STATUS_LINE_CNT}))" "${var_file}"
+        fterminal_print '\e[%sH\rPreview File: %s\e[K\n' "$((VAR_TERM_TAB_LINE_HEIGHT + 1))" "${var_file}"
     else
         echo "Please install catimg."
     fi
-    fterminal_draw_tab_line
-    fterminal_draw_status_line
+
     fcommand_line_interact "Press Enter Key To Continue..." "wait" "q"
     fterminal_redraw
 }
-# cmd_unzip()
-# {
-#     local var_file="$@"
-#     if [[ -f "${var_file}" ]]; then
-#
-#         if [[ -d "${var_file%%.zip}" ]]; then
-#             fcommand_line_interact "${tmp_file##*/} exist. Overwrite(y.yes/n.no)? " y n
-#             if [ "${VAR_TERM_CMD_INPUT_BUFFER}" = "y" ]
-#             then
-#                 unzip -f -d "${var_file%%.zip}" "${var_file}" > /dev/null
-#             else
-#                 flog_msg "skip unzip '$var_file'"
-#                 return 0
-#             fi
-#         else
-#             unzip -d "${var_file%%.zip}" "${var_file}" > /dev/null
-#         fi
-#
-#         if [[ -d "${var_file%%.zip}" ]]; then
-#             fterminal_redraw full
-#         fi
-#     else
-#         flog_msg "warn: '$var_file' not opened"
-#     fi
-# }
 cmd_extract()
 {
     local var_file=""
