@@ -47,6 +47,8 @@ export VAR_TERM_DIR_LIST_CNT=0
 export VAR_TERM_DIR_FILE_LIST=()
 export VAR_TERM_DIR_FILE_INFO_LIST=()
 
+export VAR_TERM_OPEN_FILE=""
+
 export VAR_TERM_DIR_LS_ARGS=()
 export VAR_TERM_FILE_ARGS=""
 
@@ -960,10 +962,17 @@ fterminal_draw_status_line() {
     local var_right_cnt=""
     local var_spacing=""
     local var_content_cnt=""
+    local var_pwd_escaped=""
 
     # Escape the directory string.
     # Remove all non-printable characters.
-    local var_pwd_escaped=${PWD//[^[:print:]]/^[}
+    if test -n "${VAR_TERM_OPEN_FILE}" && test -f "${VAR_TERM_OPEN_FILE}"
+    then
+        var_pwd_escaped=${VAR_TERM_OPEN_FILE//[^[:print:]]/^[}
+    else
+        var_pwd_escaped=${PWD//[^[:print:]]/^[}
+    fi
+
     if [ ${HSFM_PERFORMANCE_DEBUG} = true ]
     then
         flog_msg_debug "Enter fterminal_draw_status_line, $((var_run_status_cnt++))"
@@ -3274,12 +3283,18 @@ cmd_preview()
     fterminal_flush
 
     fterminal_print '\e[%sH\r' "$((VAR_TERM_TAB_LINE_HEIGHT + 1))"
-    if command -v "catimg" 2>&1 /dev/null; then
-        local tmp_padding=3
-        catimg -c -H "$((${VAR_TERM_LINE_CNT} - ${tmp_padding} - ${VAR_TERM_TAB_LINE_HEIGHT} - ${VAR_TERM_STATUS_LINE_CNT}))" "${var_file}"
-        fterminal_print '\e[%sH\rPreview File: %s\e[K\n' "$((VAR_TERM_TAB_LINE_HEIGHT + 1))" "${var_file}"
+    # fterminal_print '\e[%sH\rPreview File: %s\e[K\n' "$((VAR_TERM_TAB_LINE_HEIGHT + 1))" "${var_file}"
+    if command -v "catimg" 2>&1 > /dev/null; then
+        local tmp_padding=1
+        local tmp_height=$((${VAR_TERM_LINE_CNT} - ${tmp_padding} - ${VAR_TERM_TAB_LINE_HEIGHT} - ${VAR_TERM_STATUS_LINE_CNT}))
+        local tmp_args=("")
+
+        # FIXME, disable true color, only for preview.
+        tmp_args+=("-t")
+
+        printf "$(catimg ${tmp_args[@]} -c -H ${tmp_height} ${var_file})"
     else
-        echo "Please install catimg."
+        printf "catimg not found. Please install catimg.\n"
     fi
 
     fcommand_line_interact "Press Enter Key To Continue..." "wait" "q"
@@ -3694,9 +3709,8 @@ fsys_open() {
     if [[ -d $var_file/ ]]; then
         VAR_SEARCH_MODE=
         VAR_TERM_SEARCH_END_EARLY=
-        if test -r "${var_file:-/}"
-        then
-            cd "${var_file:-/}" ||:
+        if test -r "${var_file:-/}"; then
+            cd "${var_file:-/}" || :
             flog_msg_debug "Enter $var_file"
             fterminal_redraw full
         else
@@ -3704,71 +3718,75 @@ fsys_open() {
         fi
 
     elif [[ -f $var_file ]]; then
-        # Figure out what kind of file we're working with.
-        # Open all text-based files in '$EDITOR'.
-        # Everything else goes through 'xdg-open'/'open'.
-        if [[ $DISPLAY ]]; then
+        VAR_TERM_OPEN_FILE=""
+        while test -z "${VAR_TERM_OPEN_FILE}"; do
+            VAR_TERM_OPEN_FILE="${var_file}"
+            # Figure out what kind of file we're working with.
+            # Open all text-based files in '$EDITOR'.
+            # Everything else goes through 'xdg-open'/'open'.
+            if [[ $DISPLAY ]]; then
+                case "$(fprase_mime_type $var_file)" in
+                    audio/*)
+                        cmd_media "$var_file"
+                        break
+                        ;;
+                    video/*)
+                        cmd_media "$var_file"
+                        break
+                        ;;
+                    image/*)
+                        cmd_image "$var_file"
+                        break
+                        ;;
+                        # text/*|*x-empty*|*json*)
+                        #     cmd_editor "$var_file"
+                        #     break
+                        #     ;;
+                esac
+            fi
+
+            # cli preview
             case "$(fprase_mime_type $var_file)" in
-                audio/*)
-                    cmd_media "$var_file"
-                    return 0
-                    ;;
-                video/*)
-                    cmd_media "$var_file"
-                    return 0
-                    ;;
                 image/*)
-                    cmd_image "$var_file"
-                    return 0
+                    cmd_preview "$var_file"
+                    break
                     ;;
-                # text/*|*x-empty*|*json*)
-                #     cmd_editor "$var_file"
-                #     return 0
-                #     ;;
+                text/* | *x-empty* | *json*)
+                    cmd_editor "$var_file"
+                    break
+                    ;;
+                application/zip*)
+                    # cmd_unzip "$var_file"
+                    cmd_extract "zip" "$var_file"
+                    break
+                    ;;
+                application/x-tar* | application/x-xz*)
+                    cmd_extract "tar" "$var_file"
+                    break
+                    ;;
             esac
-        fi
 
-        # cli preview
-        case "$(fprase_mime_type $var_file)" in
-            image/*)
-                cmd_preview "$var_file"
-                return 0
-                ;;
-            text/*|*x-empty*|*json*)
-                cmd_editor "$var_file"
-                return 0
-                ;;
-            application/zip*)
-                # cmd_unzip "$var_file"
-                cmd_extract "zip" "$var_file"
-                return 0
-                ;;
-            application/x-tar*|application/x-xz*)
-                cmd_extract "tar" "$var_file"
-                return 0
-                ;;
-        esac
+            # Try with file extension.
+            case "${var_file##*.}" in
+                tar | Z | xz | zip | 7z | gz | rar | tbz2 | tgz)
+                    cmd_extract "$var_file"
+                    break
+                    ;;
+            esac
 
-        # Try with file extension.
-        case "${var_file##*.}" in
-            tar|Z|xz|zip|7z|gz|rar|tbz2|tgz)
-                cmd_extract "$var_file"
-                return 0
-            ;;
-        esac
-
-        # 'nohup':  Make the process immune to hangups.
-        # '&':      Send it to the background.
-        # 'disown': Detach it from the shell.
-        if command -v ${HSFM_OPENER} > /dev/null
-        then
-            flog_msg_debug "Open file via ${HSFM_OPENER}"
-            nohup "${HSFM_OPENER}" "$var_file" &>/dev/null &
-            disown
-        else
-            flog_msg "Unknown file type: '$(fprase_mime_type $var_file)'"
-        fi
+            # 'nohup':  Make the process immune to hangups.
+            # '&':      Send it to the background.
+            # 'disown': Detach it from the shell.
+            if command -v ${HSFM_OPENER} >/dev/null; then
+                flog_msg_debug "Open file via ${HSFM_OPENER}"
+                nohup "${HSFM_OPENER}" "$var_file" &>/dev/null &
+                disown
+            else
+                flog_msg "Unknown file type: '$(fprase_mime_type $var_file)'"
+            fi
+        done
     fi
+    VAR_TERM_OPEN_FILE=""
 }
 ## Visual CMD Function
 ###########################################################

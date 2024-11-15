@@ -63,6 +63,8 @@ bind } history
 # ------------------------------------------------------------------------------
 # TERMINAL SETTINGS
 # ------------------------------------------------------------------------------
+# Enable true color
+truecolor on
 
 # The vt100 description does not mention "dl". *sigh*
 termcapinfo vt100 dl=5\E[M
