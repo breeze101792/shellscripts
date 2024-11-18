@@ -38,7 +38,7 @@ test -z "${HS_ENV_MAIL}" && export HS_ENV_MAIL=""
 test -z "${HS_CONFIG_ADVANCED_PROMOTE}" && export HS_CONFIG_ADVANCED_PROMOTE=y
 test -z "${HS_CONFIG_CHANGE_DIR}" && export HS_CONFIG_CHANGE_DIR=y
 test -z "${HS_CONFIG_SHELL_GIT_PARSE}" && export HS_CONFIG_SHELL_GIT_PARSE=y
-test -z "${HS_CONFIG_SAFE_COMMAND_REPLACEMENT}" && export HS_CONFIG_SAFE_COMMAND_REPLACEMENT=y
+test -z "${HS_CONFIG_SAFE_COMMAND_REPLACEMENT}" && export HS_CONFIG_SAFE_COMMAND_REPLACEMENT=n
 # Only work on bash
 test -z "${HS_CONFIG_FUNCTION_EXPORT}" && export HS_CONFIG_FUNCTION_EXPORT=n
 ########################################################

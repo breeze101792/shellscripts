@@ -237,8 +237,9 @@ export HSFM_FAV8=~/media
 export HSFM_FAV9=${HSFM_PATH_CACHE}
 
 # Dir alias
-# FIXME, only work on command cd
-if command -v declare 2>&1 >/dev/null; then
+# FIXME, only work on command cd, and newer bash
+if [[ ${BASH_VERSINFO} -gt 4 ]]; then
+    # FIXME, I don't which version support it, so set to 4
     declare -A HSFM_DIR_ALIAS
 fi
 HSFM_DIR_ALIAS["home"]="${HOME}"
@@ -716,7 +717,7 @@ fterminal_draw_dir() {
 fterminal_draw_file_line() {
 
     # If the dir item doesn't exist, end here.
-    if [[ -z ${VAR_TERM_DIR_FILE_LIST[$1]} ]]; then
+    if [[ ${#VAR_TERM_DIR_FILE_LIST[@]} -eq 0 ]] || [[ -z ${VAR_TERM_DIR_FILE_LIST[$1]} ]]; then
         return
     fi
     # Format the VAR_TERM_DIR_FILE_LIST item and print it.
@@ -862,23 +863,31 @@ fterminal_draw_tab_line() {
     # Remove all non-printable characters.
     # PWD_escaped=${PWD//[^[:print:]]/^[}
     # VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]="$(realpath .)"
-    VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]="${PWD}"
 
+    # FIXME, when in /, PWD return empty, so default give it /.
+    VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]="${PWD:-/}"
+    # VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]="$(pwd)"
+
+    # flog_msg_debug "[${PWD}]$VAR_TERM_TAB_LINE_IDX-${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}"
     for each_idx in "${!VAR_TERM_TAB_LINE_LIST_PATH[@]}"
     do
+        # flog_msg_debug "${each_idx}-${VAR_TERM_TAB_LINE_LIST_PATH[${each_idx}]##*/}"
         if ! test -d "${VAR_TERM_TAB_LINE_LIST_PATH[${each_idx}]}"
         then
-            continue
+            flog_msg "Empty idx found. ${each_idx}-${VAR_TERM_TAB_LINE_LIST_PATH[${each_idx}]}"
+            VAR_TERM_TAB_LINE_LIST_PATH[${each_idx}]="${HOME}"
+            # continue
         fi
+        local tmp_path=${VAR_TERM_TAB_LINE_LIST_PATH[${each_idx}]##*/}
         if [ "${VAR_TERM_TAB_LINE_IDX}" = "${each_idx}" ]
         then
-            var_tab_selected_buf=" ${each_idx} ${VAR_TERM_TAB_LINE_LIST_PATH[${each_idx}]##*/} "
+            var_tab_selected_buf=" ${each_idx} ${tmp_path:-/} "
             var_right=" $((${each_idx} + 1))/${#VAR_TERM_TAB_LINE_LIST_PATH[@]} "
         elif [[ "${VAR_TERM_TAB_LINE_IDX}" -gt "${each_idx}" ]]
         then
-            var_tab_list_pre_buf=${var_tab_list_pre_buf}" ${each_idx} ${VAR_TERM_TAB_LINE_LIST_PATH[${each_idx}]##*/} ${var_tab_seperator}"
+            var_tab_list_pre_buf=${var_tab_list_pre_buf}" ${each_idx} ${tmp_path:-/} ${var_tab_seperator}"
         else
-            var_tab_list_post_buf=${var_tab_list_post_buf}"${var_tab_seperator} ${each_idx} ${VAR_TERM_TAB_LINE_LIST_PATH[${each_idx}]##*/} "
+            var_tab_list_post_buf=${var_tab_list_post_buf}"${var_tab_seperator} ${each_idx} ${tmp_path:-/} "
         fi
     done
 
@@ -1004,7 +1013,7 @@ fterminal_draw_status_line() {
     var_left_cnt="$((${#var_left} + ${#var_center}))"
     var_right_cnt="${#var_right}"
     ((var_content_cnt=VAR_TERM_COLUMN_CNT-var_left_cnt-var_right_cnt))
-    [[ ${var_content_cnt} < 0 ]] && ((${var_content_cnt}=0))
+    [[ ${var_content_cnt} < 0 ]] && var_content_cnt=0
     # flog_msg "test-> ${var_content_cnt}/$VAR_TERM_COLUMN_CNT"
     var_spacing=$(printf "% ${var_content_cnt}s" "")
 
