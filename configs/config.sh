@@ -154,25 +154,34 @@ function fexample()
 function fSetup()
 {
     fPrintHeader ${FUNCNAME[0]}
-
-    if ! test -d "${ARG_TARGET_PATH}"; then
-        mkdir "${ARG_TARGET_PATH}" || echo "Can't create ${ARG_TARGET_PATH}" && exit 1
+    var_root_path=${PATH_ROOT}
+    var_template_file="${PATH_ROOT}/${ARG_CONFIG_TEMPLATE_PATH}"
+    if test -e "${var_template_file}"; then
+        var_template_file="${var_template_file}"
+    else
+        echo "Config file not exist. ${var_template_file}"
+        exit 1
     fi
 
-    if ! test -e "${ARG_TARGET_PATH}/${ARG_TARGET_CONFIG_NAME}"; then
-        fEval ln -s "${var_root_path}/${ARG_CONFIG_TEMPLATE_PATH}" "${ARG_TARGET_PATH}/${ARG_TARGET_CONFIG_NAME}"
-    else
+    if ! test -d "${ARG_TARGET_PATH}"; then
+        mkdir "${ARG_TARGET_PATH}" || $(echo "Can't create ${ARG_TARGET_PATH}"; exit 1)
+    fi
+
+    echo "Check ${ARG_TARGET_PATH}/${ARG_TARGET_CONFIG_NAME}"
+    if test -e "${ARG_TARGET_PATH}/${ARG_TARGET_CONFIG_NAME}" || test -L "${ARG_TARGET_PATH}/${ARG_TARGET_CONFIG_NAME}"; then
         printf "%s exist, overwrite it?(y/N)" "${ARG_TARGET_PATH}/${ARG_TARGET_CONFIG_NAME}"
         read var_ans
         if [ "${var_ans}" = "y" ]; then
             # backup
-            mv "${var_root_path}/${ARG_CONFIG_TEMPLATE_PATH}" "${var_root_path}/${ARG_CONFIG_TEMPLATE_PATH}_backup_$(date +$s)"
+            mv "${ARG_TARGET_PATH}/${ARG_TARGET_CONFIG_NAME}" "${ARG_TARGET_PATH}/${ARG_TARGET_CONFIG_NAME}_backup_$(date +%s)"
 
             echo "Overwrite ${ARG_TARGET_CONFIG_NAME}"
-            fEval ln -sf "${var_root_path}/${ARG_CONFIG_TEMPLATE_PATH}" "${ARG_TARGET_PATH}/${ARG_TARGET_CONFIG_NAME}"
+            fEval ln -sf "${var_template_file}" "${ARG_TARGET_PATH}/${ARG_TARGET_CONFIG_NAME}"
         else
             echo "Ignore settings."
         fi
+    else
+        fEval ln -s "${var_template_file}" "${ARG_TARGET_PATH}/${ARG_TARGET_CONFIG_NAME}"
     fi
 
     echo -e "${DEF_COLOR_GREEN}!!! ${ARG_PROGRAM_NAME} Setup finished. !!!${DEF_COLOR_NORMAL}"
@@ -192,10 +201,18 @@ function fMain()
                 if test -f "${2}"; then
                     ARG_CONFIG_DESCRIPTION_FILE="${2}"
                     source "${ARG_CONFIG_DESCRIPTION_FILE}"
+                    shift 1
                 elif test -f "${2}/setup.conf"; then
                     ARG_CONFIG_DESCRIPTION_FILE="${2}/setup.conf"
                     source "${ARG_CONFIG_DESCRIPTION_FILE}"
+                    shift 1
+                else
+                    echo "Please specify setup.conf."
                 fi
+                ;;
+            *)
+                # skip 
+                break
                 ;;
         esac
         shift 1

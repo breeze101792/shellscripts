@@ -1278,7 +1278,7 @@ function sshfs_mount()
         shift 1
     done
 
-    local var_sshfs_options=("-o allow_other,default_permissions,uid=${uid},gid=${gid},${var_permission}")
+    local var_sshfs_options=("-o reconnect,allow_other,default_permissions,uid=${uid},gid=${gid},${var_permission}")
 
     ##################################
 

@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 export PATH_SCRIPT_ROOT="$(realpath $(dirname ${BASH_SOURCE[0]}))"
+
+export HSFM_NAME="HSFM"
 ###########################################################
 ## Flags
 ###########################################################
@@ -104,9 +106,13 @@ export VAR_TERM_FIND_HISTORY
 export VAR_TERM_CMD_INPUT_BUFFER=""
 export VAR_TERM_CMD_LIST=( "redraw" "help" "exit" "shell" "cd" )
 VAR_TERM_CMD_LIST+=( "set" "title" )
+# Debug
 VAR_TERM_CMD_LIST+=( "debug" "select" "stat" "eval" "dump" "test")
+# File operation
 VAR_TERM_CMD_LIST+=( "mkdir" "touch" "rename" "search" "find" "sort" )
-VAR_TERM_CMD_LIST+=( "quit" "tab" "quitngo")
+# Tab operation
+VAR_TERM_CMD_LIST+=( "quitngo" "tabclose" "tabcloseright" "tabcloseleft" "tabcloseothers")
+# Open ralted.
 VAR_TERM_CMD_LIST+=( "open" "editor" "vim" "media" "play" "image" "preview" "unzip" "extract")
 
 export VAR_TERM_SELECT_CMD_LIST=( "compress" )
@@ -1266,7 +1272,9 @@ fterminal_read_dir() {
     then
         # for some reason, we should sort in seperate loop.
         # sort for dir first
-        for item in "$PWD"/*; do
+        # for item in "$PWD"/*; do
+        for item in "$PWD"/${var_pattern}; do
+
             if [[ -d $item ]]; then
                 var_dirs+=("$item")
                 VAR_TERM_DIR_FILE_LIST+=("$item")
@@ -1850,10 +1858,69 @@ fgui_tab_duplicate()
 }
 fgui_tab_close()
 {
+    local var_action=${1:- }
     if [[ ${#VAR_TERM_TAB_LINE_LIST_PATH[@]} -eq 1 ]]
     then
         # flog_msg "CLOSE_TAB ignored."
         exit 0
+    elif [ "${var_action}" = "right" ];then
+        # flog_msg "CLOSE_TAB_RIGHT."
+        tmp_current_idx=$((${VAR_TERM_TAB_LINE_IDX} + 1))
+        if (( tmp_current_idx >= ${#VAR_TERM_TAB_LINE_LIST_PATH[@]} ));then
+            flog_msg "Ignore CLOSE_TAB_RIGHT."
+            return 0
+        fi
+        # flog_msg_debug ${tmp_current_idx} < ${#VAR_TERM_TAB_LINE_LIST_PATH[@]}
+        while ((tmp_current_idx < ${#VAR_TERM_TAB_LINE_LIST_PATH[@]}));do
+            flog_msg_debug "${tmp_current_idx}: ${VAR_TERM_TAB_LINE_LIST_PATH[tmp_current_idx]}"
+
+            fterminal_tab_remove ${tmp_current_idx}
+            ((tmp_current_idx = tmp_current_idx + 1))
+        done
+
+        # fterminal_redraw full
+        # flog_msg "Tab closed."
+    elif [ "${var_action}" = "left" ];then
+        # flog_msg "CLOSE_TAB_LEFT."
+        tmp_current_idx=$((${VAR_TERM_TAB_LINE_IDX} - 1))
+        if (( VAR_TERM_TAB_LINE_IDX <= 0));then
+            flog_msg "Ignore CLOSE_TAB_LEFT."
+            return 0
+        fi
+        # flog_msg_debug ${tmp_current_idx} < ${#VAR_TERM_TAB_LINE_LIST_PATH[@]}
+        while ((tmp_current_idx >= 0));do
+            flog_msg_debug "${tmp_current_idx}: ${VAR_TERM_TAB_LINE_LIST_PATH[tmp_current_idx]}"
+
+            fterminal_tab_remove ${tmp_current_idx}
+            ((tmp_current_idx = tmp_current_idx - 1))
+        done
+
+        VAR_TERM_TAB_LINE_IDX=0
+        # fterminal_tab_load_contex ${VAR_TERM_TAB_LINE_IDX}
+        # cd ${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}
+        #
+        # fterminal_redraw full
+        # flog_msg "Tab closed."
+    elif [ "${var_action}" = "others" ];then
+        # flog_msg_debug "Right: ${VAR_TERM_TAB_LINE_IDX} / ${#VAR_TERM_TAB_LINE_LIST_PATH[@]}"
+        tmp_current_idx=$((${#VAR_TERM_TAB_LINE_LIST_PATH[@]} - 1))
+
+        while ((tmp_current_idx >= 0));do
+            # flog_msg_debug "${tmp_current_idx}: ${VAR_TERM_TAB_LINE_LIST_PATH[tmp_current_idx]}"
+            if (( tmp_current_idx != VAR_TERM_TAB_LINE_IDX ));then
+                fterminal_tab_remove ${tmp_current_idx}
+            # else
+            #     flog_msg_debug "Skip current tab."
+            fi
+            ((tmp_current_idx = tmp_current_idx - 1))
+        done
+
+        VAR_TERM_TAB_LINE_IDX=0
+        # fterminal_tab_load_contex ${VAR_TERM_TAB_LINE_IDX}
+        # cd ${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}
+        #
+        # fterminal_redraw full
+        # flog_msg "Tab closed."
     else
         fterminal_tab_remove ${VAR_TERM_TAB_LINE_IDX}
 
@@ -1861,12 +1928,19 @@ fgui_tab_close()
         then
             VAR_TERM_TAB_LINE_IDX=$((VAR_TERM_TAB_LINE_IDX - 1 ))
         fi
-        fterminal_tab_load_contex ${VAR_TERM_TAB_LINE_IDX}
 
-        cd ${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}
-        fterminal_redraw full
-        flog_msg "Tab closed."
+        # fterminal_tab_load_contex ${VAR_TERM_TAB_LINE_IDX}
+        # cd ${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}
+        #
+        # fterminal_redraw full
+        # flog_msg "Tab closed."
     fi
+
+    fterminal_tab_load_contex ${VAR_TERM_TAB_LINE_IDX}
+    cd ${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}
+
+    fterminal_redraw full
+    flog_msg "Tab closed."
 }
 
 fmode_setup()
@@ -3247,7 +3321,14 @@ cmd_editor()
     if [[ -f "${var_file}" ]]; then
         fterminal_reset
 
-        vim "${var_file}"
+        if command -v xim 2>&1 > /dev/null;then
+            {
+                export VIDE_SH_TITLE=${HSFM_NAME}
+                xim "${var_file}"
+            }
+        else
+            vim "${var_file}"
+        fi
 
         fterminal_setup
         fterminal_redraw
@@ -3735,9 +3816,21 @@ cmd_test()
     # } &
     fterminal_draw_checkwin
 }
-cmd_quit()
+cmd_tabclose()
 {
     fgui_tab_close
+}
+cmd_tabcloseright()
+{
+    fgui_tab_close right
+}
+cmd_tabcloseleft()
+{
+    fgui_tab_close left
+}
+cmd_tabcloseothers()
+{
+    fgui_tab_close others
 }
 cmd_quitngo()
 {
@@ -4405,7 +4498,8 @@ fHelp_commands() {
     fterminal_print "[Options]\n"
     fterminal_print "    %- 16s\t%s\n" "-s|-setup   " "Copy hsfm config file."
     fterminal_print "    %- 16s\t%s\n" "-d|--debug  " "Enable debug flag."
-    fterminal_print "    %- 16s\t%s\n" "-r|--restore" "restore previous session."
+    # fterminal_print "    %- 16s\t%s\n" "-r|--restore" "restore previous session."
+    fterminal_print "    %- 16s\t%s\n" "-n|--new" "Open new session session."
     fterminal_print "    %- 16s\t%s\n" "-l|--last   " "Print last path & remove the last path file."
     fterminal_print "    %- 16s\t%s\n" "--history   " "Store history."
     fterminal_print "[Commands]\n"
@@ -4494,6 +4588,7 @@ function fMain()
 {
     # fPrintHeader "Launch ${VAR_SCRIPT_NAME}"
     local flag_verbose=false
+    local flag_load_session="false"
 
     while [[ $# != 0 ]]
     do
@@ -4531,6 +4626,9 @@ function fMain()
                 # Store file name in a file on open instead of using 'HSFM_OPENER'.
                 # Used in 'hsfm.vim'.
                 HSFM_FILE_PICKER=1
+                ;;
+            -n|--new)
+                flag_load_session=false
                 ;;
             -r|-restore)
                 fload_session
@@ -4574,7 +4672,22 @@ function fMain()
     then
         echo "HSFM is running. Status: $HSFM_RUNNING"
         exit 1
-    elif [[ $HSFM_DEBUG = true ]]
+    fi
+
+    if [ "${flag_load_session}" = "true" ]
+    then
+        fload_session
+    elif [ "${flag_load_session}" = "false" ]
+    then
+        VAR_TERM_TAB_LINE_IDX=0
+        VAR_TERM_TAB_LINE_LIST_PATH+=("${PWD}")
+    else
+        VAR_TERM_TAB_LINE_LIST_PATH+=("${PWD}")
+        fload_session
+        VAR_TERM_TAB_LINE_IDX=0
+    fi
+
+    if [[ $HSFM_DEBUG = true ]]
     then
         # Record stderr
         fCore 2> >(tee ${HSFM_FILE_LOGS} >&2)

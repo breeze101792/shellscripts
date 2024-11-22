@@ -1,6 +1,7 @@
 # Run zellij with scripts.
+
+```
 zellij setup --generate-auto-start <SHELL>.
-
 ```
-
-```
+# config path
+~/.config/zellij/config.kdl

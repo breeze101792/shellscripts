@@ -1,6 +1,15 @@
 # 
 # /etc/fstab: static file system information
 #
+# dump
+#     A number indicating whether and how often the file system should be
+#     backed up by the dump program; a zero indicates the file system will never
+#     be automatically backed up.
+# Pass
+#     0 - do not check
+#     1 - check immediately during boot
+#     2 - check after boot
+
 # <file system>	<dir>	<type>	<options>	<dump>	<pass>
 # UUID=f49ce845-49cd-4015-b03b-103671528cc2
 /dev/sda2           	/         	btrfs     	rw,discard,noatime,nodiratime,ssd,space_cache,subvolid=5,subvol=/	0 0
