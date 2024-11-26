@@ -20,10 +20,15 @@ export HSFM_ENABLE_HIDDEN=1
 
 export HSFM_FILE_PICKER=0
 
-# 0: system mode.
-# 1: ls mode.
-# 3: find mode.
-export HSFM_READ_DIR_MODE=1
+# read dir mode
+# def of read mode
+export DEF_TERM_READ_DIR_MODE_NONE=0
+export DEF_TERM_READ_DIR_MODE_SORT=1
+export DEF_TERM_READ_DIR_MODE_LS=2
+export DEF_TERM_READ_DIR_MODE_EXPERIMENT=99
+export DEF_TERM_READ_DIR_MODE_FIND=10
+# FIXME, default use exp to test stabibility
+export HSFM_READ_DIR_MODE=${DEF_TERM_READ_DIR_MODE_EXPERIMENT}
 
 ## Env
 # this is only work on run time.
@@ -1268,7 +1273,17 @@ fterminal_read_dir() {
     shopt_flags=(s u)
     shopt -"${shopt_flags[$HSFM_ENABLE_HIDDEN]}" dotglob
 
-    if [[ $HSFM_READ_DIR_MODE == 0 ]]
+    if [[ ${HSFM_READ_DIR_MODE} == ${DEF_TERM_READ_DIR_MODE_NONE} ]]
+    then
+        VAR_TERM_DIR_FILE_LIST=("$PWD"/${var_pattern})
+        array_str=$(printf "%s\n" "${VAR_TERM_DIR_FILE_LIST[@]}")
+        index=$(($(echo "$array_str" | grep -n "^$OLDPWD$" | cut -d: -f1) - 1))
+        # flog_msg_debug "Index ${index}"
+        if test -n "${index}";then
+            # flog_msg_debug "set index to ${index}"
+            previous_index=${index}
+        fi
+    elif [[ ${HSFM_READ_DIR_MODE} == ${DEF_TERM_READ_DIR_MODE_SORT} ]]
     then
         # for some reason, we should sort in seperate loop.
         # sort for dir first
@@ -1294,7 +1309,7 @@ fterminal_read_dir() {
             fi
         done
     # with find.
-    elif [[ $HSFM_READ_DIR_MODE == 3 ]]
+    elif [[ $HSFM_READ_DIR_MODE == ${DEF_TERM_READ_DIR_MODE_FIND} ]]
     then
         local var_find_args=("")
 
@@ -1355,7 +1370,9 @@ fterminal_read_dir() {
         done << EOF
 $(timeout 10 find "${PWD}" ${var_find_args[@]} -name "${var_pattern}" 2>&1)
 EOF
-    else
+    elif [[ $HSFM_READ_DIR_MODE == ${DEF_TERM_READ_DIR_MODE_LS} ]]
+    then
+        # ${DEF_TERM_READ_DIR_MODE_LS}
         local var_ls_args=(${VAR_TERM_DIR_LS_ARGS[@]})
         if test -n "${HSFM_LS_SORTING}"
         then
@@ -1419,6 +1436,53 @@ EOF
         done << EOF
 $(ls ${var_ls_args[@]} "${PWD}"/${var_pattern} 2>&1)
 EOF
+    elif [[ $HSFM_READ_DIR_MODE == ${DEF_TERM_READ_DIR_MODE_EXPERIMENT} ]] || true
+    then
+        # ${DEF_TERM_READ_DIR_MODE_LS}
+        local var_ls_args=(${VAR_TERM_DIR_LS_ARGS[@]})
+        if test -n "${HSFM_LS_SORTING}"
+        then
+            var_ls_args+=("${HSFM_LS_SORTING}")
+        fi
+        var_ls_args+=("--time-style=+%Y-%m-%d-%H:%M,")
+        # var_ls_args+=("-quote-name")
+
+        local tmp_ls_output="$(ls ${var_ls_args[*]} ${PWD}/${var_pattern})"
+        # flog_msg_debug "Fast mode:\n${tmp_ls_output}"
+        # flog_msg_debug "LS args: '${var_ls_args[*]}'"
+
+        # mapfile -t tmp_ls_info < <(echo "$tmp_ls_output" | cut -d ',' -f 1)
+        # mapfile -t tmp_ls_file < <(echo "$tmp_ls_output" | cut -d ',' -f 2)
+        mapfile -t tmp_ls_info < <(echo "$tmp_ls_output" | cut -d ',' -f 1)
+        mapfile -t tmp_ls_file < <(echo "$tmp_ls_output" | cut -d ',' -f 2 | sed "s/^ //g" | sed "s/ -> .*$//g")
+
+        # Debug
+        # for each_item in "${tmp_ls_info[@]}";do
+        #     flog_msg_debug "info Item=>${each_item}"
+        # done
+        #
+        # for each_item in "${tmp_ls_file[@]}";do
+        #     flog_msg_debug "file Item=>${each_item}"
+        # done
+
+        # if [[ "${#tmp_ls_file[@]}" -eq "1" ]]
+        if ! ([[ "${#tmp_ls_file[@]}" -eq "1" ]] && [ "${tmp_ls_file[0]}" = "." ])
+        then
+            VAR_TERM_DIR_FILE_LIST+=("${tmp_ls_file[@]}")
+            VAR_TERM_DIR_FILE_INFO_LIST+=("${tmp_ls_info[@]}")
+
+            # Update previous index
+            array_str=$(printf "%s\n" "${VAR_TERM_DIR_FILE_LIST[@]}")
+            index=$(($(echo "$array_str" | grep -n "^$OLDPWD$" | cut -d: -f1) - 1))
+            # flog_msg_debug "Index ${index}"
+            if test -n "${index}";then
+                # flog_msg_debug "set index to ${index}"
+                previous_index=${index}
+            fi
+        # else
+        #     flog_msg_debug "Empty folder"
+        fi
+
     fi
 
     if [[ ${#tmp_file_list[@]} -ge 1 ]]
@@ -3231,7 +3295,7 @@ cmd_find()
 
     local var_read_mode=${HSFM_READ_DIR_MODE}
     # find
-    HSFM_READ_DIR_MODE=3
+    HSFM_READ_DIR_MODE=${DEF_TERM_READ_DIR_MODE_FIND}
     fterminal_read_dir "*${var_pattern}*"
     HSFM_READ_DIR_MODE=${var_read_mode}
 
@@ -3768,13 +3832,19 @@ cmd_set()
     local args_value=$2
 
     case ${args_variable} in
-        ls)
-            if [ "${args_value}" = "on" ]
+        read)
+            if [ "${args_value}" = "ls" ]
             then
-                HSFM_READ_DIR_MODE=1
-            elif [ "${args_value}" = "off" ]
+                HSFM_READ_DIR_MODE=${DEF_TERM_READ_DIR_MODE_LS}
+            elif [ "${args_value}" = "sort" ]
             then
-                HSFM_READ_DIR_MODE=0
+                HSFM_READ_DIR_MODE=${DEF_TERM_READ_DIR_MODE_SORT}
+            elif [ "${args_value}" = "none" ]
+            then
+                HSFM_READ_DIR_MODE=${DEF_TERM_READ_DIR_MODE_NONE}
+            elif [ "${args_value}" = "exp" ]
+            then
+                HSFM_READ_DIR_MODE=${DEF_TERM_READ_DIR_MODE_EXPERIMENT}
             else
                 flog_msg "Unknown value: ${args_value}"
                 return -1
@@ -4310,6 +4380,10 @@ fsetup_osenv() {
 
             VAR_TERM_DIR_LS_ARGS=("--color=none")
             VAR_TERM_DIR_LS_ARGS+=("-h -ld ")
+
+            # FIXME, not tested.
+            # VAR_TERM_DIR_LS_ARGS+=("--time-style=long-iso")
+            # VAR_TERM_DIR_LS_ARGS+=("-quote-name")
         ;;
 
         linux*|*)
@@ -4319,6 +4393,14 @@ fsetup_osenv() {
             VAR_TERM_DIR_LS_ARGS=("--color=none")
             VAR_TERM_DIR_LS_ARGS+=("--group-directories-first")
             VAR_TERM_DIR_LS_ARGS+=("-h -ld ")
+
+            # VAR_TERM_DIR_LS_ARGS+=("--time-style=long-iso")
+            # VAR_TERM_DIR_LS_ARGS+=("--time-style=+%Y-%m-%d-%H:%M,")
+
+            #other args
+            # VAR_TERM_DIR_LS_ARGS+=("-quote-name")
+            # VAR_TERM_DIR_LS_ARGS+=("--tabsize=8")
+            # VAR_TERM_DIR_LS_ARGS+=("-1")
         ;;
     esac
 }
@@ -4647,6 +4729,9 @@ function fMain()
             # Options
             -v|--verbose)
                 flag_verbose=true
+                ;;
+            -t|--test)
+                export HSFM_READ_DIR_MODE=${DEF_TERM_READ_DIR_MODE_EXPERIMENT}
                 ;;
             -h|--help)
                 fHelp
