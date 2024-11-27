@@ -25,10 +25,10 @@ export HSFM_FILE_PICKER=0
 export DEF_TERM_READ_DIR_MODE_NONE=0
 export DEF_TERM_READ_DIR_MODE_SORT=1
 export DEF_TERM_READ_DIR_MODE_LS=2
-export DEF_TERM_READ_DIR_MODE_EXPERIMENT=99
+export DEF_TERM_READ_DIR_MODE_FAST_LS=3
 export DEF_TERM_READ_DIR_MODE_FIND=10
 # FIXME, default use exp to test stabibility
-export HSFM_READ_DIR_MODE=${DEF_TERM_READ_DIR_MODE_EXPERIMENT}
+export HSFM_READ_DIR_MODE=${DEF_TERM_READ_DIR_MODE_FAST_LS}
 
 ## Env
 # this is only work on run time.
@@ -96,7 +96,7 @@ export VAR_TERM_MSGWIN_BUFFER=()
 export VAR_TERM_MSGWIN_SCROLL_IDX=""
 export VAR_TERM_MSGWIN_HEIGHT="12"
 
-# log win
+# task win
 export VAR_TERM_TASKWIN_SHOW=false
 export VAR_TERM_TASKWIN_BUFFER=("Main task running.")
 export VAR_TERM_TASKWIN_SCROLL_IDX=""
@@ -112,7 +112,7 @@ export VAR_TERM_CMD_INPUT_BUFFER=""
 export VAR_TERM_CMD_LIST=( "redraw" "help" "exit" "shell" "cd" )
 VAR_TERM_CMD_LIST+=( "set" "title" )
 # Debug
-VAR_TERM_CMD_LIST+=( "debug" "select" "stat" "eval" "dump" "test")
+VAR_TERM_CMD_LIST+=( "debug" "select" "stat" "eval" "dump" "test" "task" "msg")
 # File operation
 VAR_TERM_CMD_LIST+=( "mkdir" "touch" "rename" "search" "find" "sort" )
 # Tab operation
@@ -449,6 +449,7 @@ fHSFM_exit()
 ## raw draw Functions
 ###########################################################
 fterminal_draw_window() {
+    local def_padding=0
     #  6 Args with order
     local var_start_line=$((1 + ${VAR_TERM_TAB_LINE_HEIGHT} + ${VAR_TERM_CONTENT_MAX_CNT}))
     local var_start_col=0
@@ -478,9 +479,9 @@ fterminal_draw_window() {
     ############################################################################
 
     # Update length, only print the latest lines. 
-    if [[ ${#var_buffer[@]} -gt $((var_height - 1)) ]]
+    if [[ ${#var_buffer[@]} -gt $((var_height - 1 - def_padding)) ]]
     then
-        var_buffer=("${var_buffer[@]: -$((var_height - 1))}")
+        var_buffer=("${var_buffer[@]: -$((var_height - 1 - def_padding))}")
     else
         var_buffer=("${var_buffer[@]}")
     fi
@@ -496,7 +497,6 @@ fterminal_draw_window() {
            "${HSFM_COLOR_TAB_BOOKMARK_FG};${HSFM_COLOR_TAB_BOOKMARK_BG}" \
            "${var_win_title}"
 
-    local var_content_max=$((var_height - 1))
     local var_cnt=0
     while read each_line || ((var_cnt < var_height - 1));
     do
@@ -611,22 +611,22 @@ fterminal_draw_dir() {
     #     VAR_TERM_WIN_CURRENT_CURSOR=0
     fi
     # flog_msg_debug "${VAR_TERM_CONTENT_SCROLL_IDX} -gt ${#VAR_TERM_DIR_FILE_LIST[@]}"
-    # local dbg_case="0"
+    local dbg_case="0"
 
     # Update scroll idx
     # FIXME, i assume this is for turning page
     if ((VAR_TERM_CONTENT_SCROLL_IDX - VAR_TERM_CONTENT_SCROLL_START_IDX < VAR_TERM_CONTENT_MAX_CNT)) && 
         ((VAR_TERM_CONTENT_SCROLL_IDX >= VAR_TERM_CONTENT_SCROLL_START_IDX)); then
-        # No need to update page, sine it could shows all content.
+        # No need to update page, since it could shows all content.
         # also check if if we are going to the previous page
         ((var_scroll_new_start=VAR_TERM_CONTENT_SCROLL_START_IDX))
         ((var_win_new_cursor=VAR_TERM_CONTENT_SCROLL_IDX - VAR_TERM_CONTENT_SCROLL_START_IDX))
-        # dbg_case="0"
+        dbg_case="0"
     elif ((VAR_TERM_CONTENT_SCROLL_IDX - VAR_TERM_CONTENT_SCROLL_START_IDX == VAR_TERM_CONTENT_MAX_CNT)); then
         # Go to next page, add one for conveint
         ((var_scroll_new_start=VAR_TERM_CONTENT_SCROLL_START_IDX + var_scroll_distance + 1))
         ((var_win_new_cursor=VAR_TERM_WIN_CURRENT_CURSOR-var_scroll_distance))
-        # dbg_case="1"
+        dbg_case="1"
     # elif ((VAR_TERM_CONTENT_SCROLL_IDX - VAR_TERM_CONTENT_SCROLL_START_IDX >= VAR_TERM_CONTENT_MAX_CNT)); then
     elif ((VAR_TERM_CONTENT_SCROLL_IDX + 1 == VAR_TERM_CONTENT_SCROLL_START_IDX)); then
         # Go to previous page, add one for conveint
@@ -639,27 +639,37 @@ fterminal_draw_dir() {
             ((var_scroll_new_start=0))
             ((var_win_new_cursor=VAR_TERM_CONTENT_SCROLL_IDX))
         fi
-        # dbg_case="2"
+        dbg_case="2"
     # This will handle other case.
     elif ((VAR_TERM_DIR_LIST_CNT < VAR_TERM_CONTENT_MAX_CNT || VAR_TERM_CONTENT_SCROLL_IDX < VAR_TERM_CONTENT_MAX_CNT)); then
+        # To the top.
         # If the list in shorter then window, or the scroll idx == 0
         ((var_scroll_new_start=0))
         ((var_win_new_cursor=VAR_TERM_CONTENT_SCROLL_IDX))
         # flog_msg "1/$var_scroll_new_start/$var_win_new_cursor"
-        # dbg_case="3"
+        dbg_case="3"
     elif ((VAR_TERM_CONTENT_SCROLL_IDX + VAR_TERM_CONTENT_MAX_CNT > VAR_TERM_DIR_LIST_CNT)); then
+        # To the bottom.
         # If the list is greater then win size, and in the last page
         ((var_scroll_new_start=VAR_TERM_DIR_LIST_CNT-VAR_TERM_CONTENT_MAX_CNT + 1))
         ((var_win_new_cursor=VAR_TERM_CONTENT_SCROLL_IDX - var_scroll_new_start))
         # flog_msg "2/$var_scroll_new_start/$var_win_new_cursor"
-        # dbg_case="4"
+        dbg_case="4"
+    elif ((VAR_TERM_WIN_CURRENT_CURSOR > VAR_TERM_CONTENT_MAX_CNT - 1)); then
+        # handle cursor out of showing screen.
+        # its for redraw and cursor been covered.
+        ((var_scroll_new_start=VAR_TERM_CONTENT_SCROLL_IDX-VAR_TERM_CONTENT_MAX_CNT - 1))
+        ((var_win_new_cursor=VAR_TERM_CONTENT_MAX_CNT - 1))
+        dbg_case="5"
     else
+        # This is for error handle.
         # If in the midddle of the dir list.
         ((var_scroll_new_start=VAR_TERM_CONTENT_SCROLL_IDX-VAR_TERM_WIN_CURRENT_CURSOR))
         ((var_win_new_cursor=VAR_TERM_WIN_CURRENT_CURSOR))
         # flog_msg "else/$var_scroll_new_start/$var_win_new_cursor"
-        # dbg_case="5"
+        dbg_case="others"
     fi
+    # flog_msg_debug "Case: ${dbg_case}, ${var_scroll_new_start}:${var_win_new_cursor}"
 
     # Update Scroll index
     ((VAR_TERM_CONTENT_SCROLL_IDX=var_win_new_cursor+var_scroll_new_start))
@@ -1122,6 +1132,7 @@ fterminal_draw_checkwin() {
 fterminal_draw_msgwin()
 {
     local var_start_line=$((1 + ${VAR_TERM_TAB_LINE_HEIGHT} + ${VAR_TERM_CONTENT_MAX_CNT}))
+    # local var_start_line=20
     local var_start_col=0
     local var_width=${VAR_TERM_COLUMN_CNT}
     local var_height=${VAR_TERM_MSGWIN_HEIGHT}
@@ -1276,12 +1287,43 @@ fterminal_read_dir() {
     if [[ ${HSFM_READ_DIR_MODE} == ${DEF_TERM_READ_DIR_MODE_NONE} ]]
     then
         VAR_TERM_DIR_FILE_LIST=("$PWD"/${var_pattern})
-        array_str=$(printf "%s\n" "${VAR_TERM_DIR_FILE_LIST[@]}")
-        index=$(($(echo "$array_str" | grep -n "^$OLDPWD$" | cut -d: -f1) - 1))
-        # flog_msg_debug "Index ${index}"
-        if test -n "${index}";then
-            # flog_msg_debug "set index to ${index}"
-            previous_index=${index}
+
+        if ! [[ "${#VAR_TERM_DIR_FILE_LIST[@]}" -eq "0" ]]; then
+            ## Update previous index
+            ########################
+            local tmp_array_str=$(printf "%s\n" "${VAR_TERM_DIR_FILE_LIST[@]}")
+            local tmp_index
+            if test -n "${OLDPWD}"; then
+                local tmp_index=$(echo "$tmp_array_str" | grep -n "^$OLDPWD$" | cut -d: -f1)
+
+                if test -z "${tmp_index}"; then
+                    tmp_grep=( "echo \"$tmp_array_str\" | grep -n -F \"$OLDPWD\"")
+                    # flog_msg_debug "${tmp_grep[*]}"
+
+                    test_tmp_index=$(eval "${tmp_grep[*]}" 2> /dev/null)
+                    for each_path in "${test_tmp_index}";do
+                        # flog_msg_debug "$each_path"
+                        if [ "${each_path##*:}" = "${OLDPWD}" ]
+                        then
+                            tmp_index=${each_path%%:*}
+                            break
+                        fi
+                    done
+                    # flog_msg_debug "idx $test_tmp_index"
+                fi
+
+                # flog_msg_debug "Array: '${tmp_array_str}'"
+                # flog_msg_debug "Old path: '^$OLDPWD$'"
+                if test -z "${tmp_index}" ;then
+                    # flog_msg_debug "Fail to get index: ${tmp_index}"
+                    previous_index=0
+                else
+                    previous_index=$((tmp_index - 1))
+                fi
+                # flog_msg_debug "set tmp_index to ${previous_index}"
+            else
+                previous_index=0
+            fi
         fi
     elif [[ ${HSFM_READ_DIR_MODE} == ${DEF_TERM_READ_DIR_MODE_SORT} ]]
     then
@@ -1436,7 +1478,7 @@ EOF
         done << EOF
 $(ls ${var_ls_args[@]} "${PWD}"/${var_pattern} 2>&1)
 EOF
-    elif [[ $HSFM_READ_DIR_MODE == ${DEF_TERM_READ_DIR_MODE_EXPERIMENT} ]] || true
+    elif [[ $HSFM_READ_DIR_MODE == ${DEF_TERM_READ_DIR_MODE_FAST_LS} ]] || true
     then
         # ${DEF_TERM_READ_DIR_MODE_LS}
         local var_ls_args=(${VAR_TERM_DIR_LS_ARGS[@]})
@@ -1444,17 +1486,25 @@ EOF
         then
             var_ls_args+=("${HSFM_LS_SORTING}")
         fi
-        var_ls_args+=("--time-style=+%Y-%m-%d-%H:%M,")
-        # var_ls_args+=("-quote-name")
+        # var_ls_args+=("--time-style=+%Y-%m-%d-%H:%M,")
+        var_ls_args+=("--time-style=+%Y-%m-%d-%H:%M")
+        var_ls_args+=("--quote-name")
 
-        local tmp_ls_output="$(ls ${var_ls_args[*]} ${PWD}/${var_pattern})"
-        # flog_msg_debug "Fast mode:\n${tmp_ls_output}"
+        # local tmp_ls_output="$(ls ${var_ls_args[*]} ${PWD}/${var_pattern})"
+        local tmp_ls_output=$(ls ${var_ls_args[*]} "${PWD}"/${var_pattern})
+        # flog_msg_debug "LS args: 'ls ${var_ls_args[*]} ${PWD}/${var_pattern}'"
+
+        # flog_msg_debug "Fast mode:idx[0]=>'${tmp_ls_output[0]}'"
         # flog_msg_debug "LS args: '${var_ls_args[*]}'"
 
         # mapfile -t tmp_ls_info < <(echo "$tmp_ls_output" | cut -d ',' -f 1)
         # mapfile -t tmp_ls_file < <(echo "$tmp_ls_output" | cut -d ',' -f 2)
-        mapfile -t tmp_ls_info < <(echo "$tmp_ls_output" | cut -d ',' -f 1)
-        mapfile -t tmp_ls_file < <(echo "$tmp_ls_output" | cut -d ',' -f 2 | sed "s/^ //g" | sed "s/ -> .*$//g")
+
+        # mapfile -t tmp_ls_info < <(echo "$tmp_ls_output" | cut -d ',' -f 1)
+        # mapfile -t tmp_ls_file < <(echo "$tmp_ls_output" | cut -d ',' -f 2- | sed "s/^ //g" | sed "s/ -> .*$//g")
+
+        mapfile -t tmp_ls_info < <(echo "$tmp_ls_output" | cut -d '"' -f 1 | sed "s/ $//g")
+        mapfile -t tmp_ls_file < <(echo "$tmp_ls_output" | cut -d '"' -f 2 | sed "s/ -> .*$//g")
 
         # Debug
         # for each_item in "${tmp_ls_info[@]}";do
@@ -1468,16 +1518,43 @@ EOF
         # if [[ "${#tmp_ls_file[@]}" -eq "1" ]]
         if ! ([[ "${#tmp_ls_file[@]}" -eq "1" ]] && [ "${tmp_ls_file[0]}" = "." ])
         then
-            VAR_TERM_DIR_FILE_LIST+=("${tmp_ls_file[@]}")
-            VAR_TERM_DIR_FILE_INFO_LIST+=("${tmp_ls_info[@]}")
+            VAR_TERM_DIR_FILE_LIST=("${tmp_ls_file[@]}")
+            VAR_TERM_DIR_FILE_INFO_LIST=("${tmp_ls_info[@]}")
 
-            # Update previous index
-            array_str=$(printf "%s\n" "${VAR_TERM_DIR_FILE_LIST[@]}")
-            index=$(($(echo "$array_str" | grep -n "^$OLDPWD$" | cut -d: -f1) - 1))
-            # flog_msg_debug "Index ${index}"
-            if test -n "${index}";then
-                # flog_msg_debug "set index to ${index}"
-                previous_index=${index}
+            ## Update previous index
+            ########################
+            local tmp_array_str=$(printf "%s\n" "${VAR_TERM_DIR_FILE_LIST[@]}")
+            local tmp_index
+            if test -n "${OLDPWD}"; then
+                local tmp_index=$(echo "$tmp_array_str" | grep -n "^$OLDPWD$" | cut -d: -f1)
+
+                if test -z "${tmp_index}"; then
+                    tmp_grep=( "echo \"$tmp_array_str\" | grep -n -F \"$OLDPWD\"")
+                    # flog_msg_debug "${tmp_grep[*]}"
+
+                    test_tmp_index=$(eval "${tmp_grep[*]}" 2> /dev/null)
+                    for each_path in "${test_tmp_index}";do
+                        # flog_msg_debug "$each_path"
+                        if [ "${each_path##*:}" = "${OLDPWD}" ]
+                        then
+                            tmp_index=${each_path%%:*}
+                            break
+                        fi
+                    done
+                    # flog_msg_debug "idx $test_tmp_index"
+                fi
+
+                # flog_msg_debug "Array: '${tmp_array_str}'"
+                # flog_msg_debug "Old path: '^$OLDPWD$'"
+                if test -z "${tmp_index}" ;then
+                    # flog_msg_debug "Fail to get index: ${tmp_index}"
+                    previous_index=0
+                else
+                    previous_index=$((tmp_index - 1))
+                fi
+                # flog_msg_debug "set tmp_index to ${previous_index}"
+            else
+                previous_index=0
             fi
         # else
         #     flog_msg_debug "Empty folder"
@@ -3745,7 +3822,7 @@ cmd_help()
     fcommand_line_interact "Press Enter Key To Continue..." "wait" "q"
     fterminal_redraw
 }
-cmd_msg_debug()
+cmd_msg()
 {
     if [ ${VAR_TERM_MSGWIN_SHOW} = true ]
     then
@@ -3757,10 +3834,10 @@ cmd_msg_debug()
     shift 1
     # VAR_TERM_MSGWIN_BUFFER=$(stat $*)
     # VAR_TERM_MSGWIN_BUFFER="$(stat $*)"
-    printf -v VAR_TERM_MSGWIN_BUFFER "%s\n" $(stat $*)
+    # printf -v VAR_TERM_MSGWIN_BUFFER "%s\n" $(stat $*)
     fterminal_redraw
 }
-cmd_task_debug()
+cmd_task()
 {
     if [ ${VAR_TERM_TASKWIN_SHOW} = true ]
     then
@@ -3769,9 +3846,9 @@ cmd_task_debug()
         VAR_TERM_TASKWIN_SHOW=true
     fi
 
-    shift 1
+    # shift 1
 
-    printf -v VAR_TERM_TASKWIN_BUFFER "%s\n" $(stat $*)
+    # printf -v VAR_TERM_TASKWIN_BUFFER "%s\n" $(stat $*)
     fterminal_redraw
 }
 cmd_debug()
@@ -3844,7 +3921,7 @@ cmd_set()
                 HSFM_READ_DIR_MODE=${DEF_TERM_READ_DIR_MODE_NONE}
             elif [ "${args_value}" = "exp" ]
             then
-                HSFM_READ_DIR_MODE=${DEF_TERM_READ_DIR_MODE_EXPERIMENT}
+                HSFM_READ_DIR_MODE=${DEF_TERM_READ_DIR_MODE_FAST_LS}
             else
                 flog_msg "Unknown value: ${args_value}"
                 return -1
@@ -4731,7 +4808,7 @@ function fMain()
                 flag_verbose=true
                 ;;
             -t|--test)
-                export HSFM_READ_DIR_MODE=${DEF_TERM_READ_DIR_MODE_EXPERIMENT}
+                export HSFM_READ_DIR_MODE=${DEF_TERM_READ_DIR_MODE_FAST_LS}
                 ;;
             -h|--help)
                 fHelp
