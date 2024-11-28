@@ -34,19 +34,46 @@ export HSFM_READ_DIR_MODE=${DEF_TERM_READ_DIR_MODE_FAST_LS}
 # this is only work on run time.
 export HSFM_ENV_LEFT_HAND_MODE=0
 
-## TERMINAL Vars Options
+## TERMINAL Args/Size Options
 ###########################################################
+# Terminal Args
+export VAR_TERM_READ_ARGS=()
+export VAR_TERM_DIR_LS_ARGS=()
+export VAR_TERM_FILE_ARGS=""
+
 # Terminal Atrib
-export VAR_TERM_READ_FLAGS=()
+export VAR_TERM_HEIGHT=0
+export VAR_TERM_WIDTH=0
 
 ## Terminal UI control
-export VAR_TERM_WIN_CURRENT_CURSOR=0
 export VAR_TERM_STATUS_LINE_CNT=2
 export VAR_TERM_TAB_LINE_HEIGHT=2
-export VAR_TERM_LINE_CNT=0
-export VAR_TERM_COLUMN_CNT=0
 
-export VAR_TERM_CONTENT_MAX_CNT=0
+# sub win
+export VAR_TERM_SUBWIN_UPPER_SIZE=10
+export VAR_TERM_SUBWIN_BOTTOM_SIZE=14
+
+export VAR_TERM_SUBWIN_RIGHT_SIZE=20
+export VAR_TERM_SUBWIN_LEFT_SIZE=20
+
+# Main window
+export VAR_TERM_MAINWIN_START_IDX=(0,0)
+export VAR_TERM_MAINWIN_HEIGHT=0
+export VAR_TERM_MAINWIN_WIDTH=0
+
+## TERMINAL Vars
+###########################################################
+## Tab Line vars
+#-----------------
+export VAR_TERM_TAB_LINE_IDX=0
+export VAR_TERM_TAB_LINE_BUFFER=""
+export VAR_TERM_TAB_LINE_LIST_PATH
+export VAR_TERM_TAB_LINE_LIST_START_IDX
+export VAR_TERM_TAB_LINE_LIST_IDX
+
+## Main window vars
+#-----------------
+export VAR_TERM_WIN_CURRENT_CURSOR=0
 export VAR_TERM_CONTENT_SCROLL_IDX=0
 export VAR_TERM_CONTENT_SCROLL_START_IDX=0
 
@@ -55,9 +82,6 @@ export VAR_TERM_DIR_FILE_LIST=()
 export VAR_TERM_DIR_FILE_INFO_LIST=()
 
 export VAR_TERM_OPEN_FILE=""
-
-export VAR_TERM_DIR_LS_ARGS=()
-export VAR_TERM_FILE_ARGS=""
 
 # Buffer
 export VAR_TERM_PRINT_BUFFER_ENABLE=false
@@ -72,37 +96,38 @@ export VAR_TERM_FILE_POST=""
 export VAR_TERM_MARK_PRE=""
 export VAR_TERM_MARK_POST=""
 
-## Tab Line
-export VAR_TERM_TAB_LINE_IDX=0
-export VAR_TERM_TAB_LINE_BUFFER=""
-export VAR_TERM_TAB_LINE_LIST_PATH
-export VAR_TERM_TAB_LINE_LIST_START_IDX
-export VAR_TERM_TAB_LINE_LIST_IDX
-
-## Flags
+# Flags
 export VAR_TERM_FLAG_FIND_PREVIOUS=0
 export VAR_TERM_FLAG_RESET_IDX=false
 
+## Sub Windows
+#-----------------
+export DEF_TERM_WIN_TYPE_HIDDEN=0
+export DEF_TERM_WIN_TYPE_MSG=1
+export DEF_TERM_WIN_TYPE_TASK=2
+
+export VAR_TERM_UPPERWIN_SHOW=${DEF_TERM_WIN_TYPE_HIDDEN}
+export VAR_TERM_LEFTWIN_SHOW=${DEF_TERM_WIN_TYPE_HIDDEN}
+export VAR_TERM_RIGHTWIN_SHOW=${DEF_TERM_WIN_TYPE_HIDDEN}
+export VAR_TERM_BOTTOMWIN_SHOW=${DEF_TERM_WIN_TYPE_HIDDEN}
+
+# msg win
+export VAR_TERM_MSGWIN_BUFFER=()
+export VAR_TERM_MSGWIN_SCROLL_IDX=""
+
+# task win
+export VAR_TERM_TASKWIN_BUFFER=("Main task running.")
+export VAR_TERM_TASKWIN_SCROLL_IDX=""
+
 ## Status Line
+#-----------------
 export VAR_TERM_MARKED_FILE_LIST=()
 export VAR_TERM_MARK_DIR=""
 export VAR_TERM_SELECTION_FILE_LIST=()
 export VAR_TERM_FILE_PROGRAM=()
 
-## Windows
-# log win
-export VAR_TERM_MSGWIN_SHOW=false
-export VAR_TERM_MSGWIN_BUFFER=()
-export VAR_TERM_MSGWIN_SCROLL_IDX=""
-export VAR_TERM_MSGWIN_HEIGHT="12"
-
-# task win
-export VAR_TERM_TASKWIN_SHOW=false
-export VAR_TERM_TASKWIN_BUFFER=("Main task running.")
-export VAR_TERM_TASKWIN_SCROLL_IDX=""
-export VAR_TERM_TASKWIN_HEIGHT="12"
-
-# Cmd line
+## Cmd line
+#-----------------
 export VAR_TERM_CMD_HISTORY_MAX=100
 export VAR_TERM_CMD_HISTORY
 export VAR_TERM_SEARCH_HISTORY
@@ -123,7 +148,9 @@ VAR_TERM_CMD_LIST+=( "open" "editor" "vim" "media" "play" "image" "preview" "unz
 export VAR_TERM_SELECT_CMD_LIST=( "compress" )
 # VAR_TERM_SELECT_CMD_LIST+=( "copy" "remove" "paste" )
 
-# Mode
+## Terminal mode
+###########################################################
+## Mode
 export DEF_TERM_MODE_NORMAL='normal'
 export DEF_TERM_MODE_VISUAL='visual'
 export DEF_TERM_MODE_SELECT='select'
@@ -384,7 +411,7 @@ fterminal_setup() {
     # '\e[2J':     Clear the screen.
     # '\e[1;Nr':   Limit scrolling to scrolling area.
     #              Also sets cursor to (0,0).
-    fterminal_print '\e[?1049h\e[?7l\e[?25l\e[2J\e[1;%sr' "$VAR_TERM_CONTENT_MAX_CNT"
+    fterminal_print '\e[?1049h\e[?7l\e[?25l\e[2J\e[1;%sr' "$VAR_TERM_MAINWIN_HEIGHT"
 
     # Hide echoing of user input
     stty -echo
@@ -414,19 +441,46 @@ fterminal_clear() {
     # '\e[1;%sr':  Clearing the screen resets the VAR_TERM_CONTENT_SCROLL_IDX region(?). Re-set it.
     #              Also sets cursor to (0,0).
     # fterminal_print '\e[%sH\e[9999C\e[1J%b\e[1;%sr' \
-    #        "$((VAR_TERM_LINE_CNT-2))" "${TMUX:+\e[2J}" "$VAR_TERM_CONTENT_MAX_CNT"
+    #        "$((VAR_TERM_HEIGHT-2))" "${TMUX:+\e[2J}" "$VAR_TERM_MAINWIN_HEIGHT"
     fterminal_print '\e[%sH\e[9999C\e[1J%b\e[1;%sr' \
-        "$((VAR_TERM_LINE_CNT))" "${TMUX:+\e[2J}" "$(($VAR_TERM_CONTENT_MAX_CNT+$VAR_TERM_TAB_LINE_HEIGHT))"
+        "$((VAR_TERM_HEIGHT))" "${TMUX:+\e[2J}" "$(($VAR_TERM_MAINWIN_HEIGHT+$VAR_TERM_TAB_LINE_HEIGHT))"
 }
 
 fterminal_get_size() {
     # Get terminal size ('stty' is POSIX and always available).
     # This can't be done reliably across all bash versions in pure bash.
-    read -r VAR_TERM_LINE_CNT VAR_TERM_COLUMN_CNT < <(stty size)
+    read -r VAR_TERM_HEIGHT VAR_TERM_WIDTH < <(stty size)
 
     # Max list items that fit in the VAR_TERM_CONTENT_SCROLL_IDX area.
-    # ((VAR_TERM_CONTENT_MAX_CNT=VAR_TERM_LINE_CNT-3))
-    ((VAR_TERM_CONTENT_MAX_CNT=VAR_TERM_LINE_CNT-VAR_TERM_TAB_LINE_HEIGHT-VAR_TERM_STATUS_LINE_CNT))
+    # ((VAR_TERM_MAINWIN_HEIGHT=VAR_TERM_HEIGHT-3))
+    # ((VAR_TERM_MAINWIN_HEIGHT=VAR_TERM_HEIGHT-VAR_TERM_TAB_LINE_HEIGHT-VAR_TERM_STATUS_LINE_CNT))
+
+    ## size calculation.
+    local var_subwin_width=0
+    local var_subwin_height=0
+
+    if [ ${VAR_TERM_UPPERWIN_SHOW} != ${DEF_TERM_WIN_TYPE_HIDDEN} ]
+    then
+        ((var_subwin_height = VAR_TERM_SUBWIN_UPPER_SIZE))
+    fi
+    if [ ${VAR_TERM_LEFTWIN_SHOW} != ${DEF_TERM_WIN_TYPE_HIDDEN} ]
+    then
+        ((var_subwin_width = VAR_TERM_SUBWIN_LEFT_SIZE))
+    fi
+
+    VAR_TERM_MAINWIN_START_IDX=($((1 + var_subwin_width)) $((1 + VAR_TERM_TAB_LINE_HEIGHT + var_subwin_height)) )
+
+    if [ ${VAR_TERM_RIGHTWIN_SHOW} != ${DEF_TERM_WIN_TYPE_HIDDEN} ]
+    then
+        ((var_subwin_width = var_subwin_width + VAR_TERM_SUBWIN_RIGHT_SIZE))
+    fi
+    if [ ${VAR_TERM_BOTTOMWIN_SHOW} != ${DEF_TERM_WIN_TYPE_HIDDEN} ]
+    then
+        ((var_subwin_height = var_subwin_height + VAR_TERM_SUBWIN_BOTTOM_SIZE))
+    fi
+
+    ((VAR_TERM_MAINWIN_WIDTH=VAR_TERM_WIDTH - var_subwin_width))
+    ((VAR_TERM_MAINWIN_HEIGHT=VAR_TERM_HEIGHT-VAR_TERM_TAB_LINE_HEIGHT-VAR_TERM_STATUS_LINE_CNT - var_subwin_height))
 }
 fterminal_resize_win()
 {
@@ -451,10 +505,10 @@ fHSFM_exit()
 fterminal_draw_window() {
     local def_padding=0
     #  6 Args with order
-    local var_start_line=$((1 + ${VAR_TERM_TAB_LINE_HEIGHT} + ${VAR_TERM_CONTENT_MAX_CNT}))
+    local var_start_line=$((1 + ${VAR_TERM_TAB_LINE_HEIGHT} + ${VAR_TERM_MAINWIN_HEIGHT}))
     local var_start_col=0
-    local var_width=${VAR_TERM_COLUMN_CNT}
-    local var_height=${VAR_TERM_MSGWIN_HEIGHT}
+    local var_width=${VAR_TERM_WIDTH}
+    local var_height=${VAR_TERM_SUBWIN_BOTTOM_SIZE}
     local var_win_title="[MSG WIN]"
     local var_buffer=("${VAR_TERM_MSGWIN_BUFFER[@]}")
 
@@ -471,11 +525,11 @@ fterminal_draw_window() {
 
     # Test center
     ############################################################################
-    # var_width=$((${VAR_TERM_COLUMN_CNT}/2))
-    # var_height=$((${VAR_TERM_LINE_CNT}/2))
-    # var_start_line=$((${VAR_TERM_LINE_CNT}/4))
-    # var_start_col=$((${VAR_TERM_COLUMN_CNT}/4))
-    # flog_msg "ORI WH: ${VAR_TERM_LINE_CNT}/${VAR_TERM_COLUMN_CNT}, WH: ${var_width}/${var_height}, POS: ${var_start_line}/${var_start_col}"
+    # var_width=$((${VAR_TERM_WIDTH}/2))
+    # var_height=$((${VAR_TERM_HEIGHT}/2))
+    # var_start_line=$((${VAR_TERM_HEIGHT}/4))
+    # var_start_col=$((${VAR_TERM_WIDTH}/4))
+    # flog_msg "ORI WH: ${VAR_TERM_HEIGHT}/${VAR_TERM_WIDTH}, WH: ${var_width}/${var_height}, POS: ${var_start_line}/${var_start_col}"
     ############################################################################
 
     # Update length, only print the latest lines. 
@@ -546,30 +600,43 @@ fterminal_redraw() {
     VAR_TERM_PRINT_BUFFER_ENABLE=true
 
     # Update status height
-    if [ ${VAR_TERM_MSGWIN_SHOW} = true ]
-    then
-        VAR_TERM_STATUS_LINE_CNT=$((${VAR_TERM_MSGWIN_HEIGHT} + 2))
-    elif [ ${VAR_TERM_TASKWIN_SHOW} = true ]
-    then
-        VAR_TERM_STATUS_LINE_CNT=$((${VAR_TERM_TASKWIN_HEIGHT} + 2))
-    else
-        VAR_TERM_STATUS_LINE_CNT=2
-    fi
-    fterminal_get_size
+    # FIXME, don't use status cnt for calc.
+    # if [ ${VAR_TERM_BOTTOMWIN_SHOW} != ${DEF_TERM_WIN_TYPE_HIDDEN} ]
+    # then
+    #     VAR_TERM_STATUS_LINE_CNT=$((${VAR_TERM_SUBWIN_BOTTOM_SIZE} + 2))
+    # else
+    #     VAR_TERM_STATUS_LINE_CNT=2
+    # fi
 
-    ## Do redraw
+    ## Setup Terminal Env
+    fterminal_get_size
     fterminal_clear
-    fterminal_draw_dir
-    fterminal_draw_tab_line
-    fterminal_draw_status_line
-    fterminal_draw_command_line
-    if [ ${VAR_TERM_MSGWIN_SHOW} = true ]
+
+    ## Draw left vertical win
+    # TODO
+
+    ## Draw right vertical win
+    # TODO
+
+    ## Draw upper win
+    # TODO
+
+    ## Draw bottom win
+    if [ ${VAR_TERM_BOTTOMWIN_SHOW} = ${DEF_TERM_WIN_TYPE_MSG} ]
     then
         fterminal_draw_msgwin
-    elif [ ${VAR_TERM_TASKWIN_SHOW} = true ]
+    elif [ ${VAR_TERM_BOTTOMWIN_SHOW} = ${DEF_TERM_WIN_TYPE_TASK} ]
     then
         fterminal_draw_taskwin
     fi
+
+    ## Draw main win
+    fterminal_draw_dir
+
+    ## Draw control UI
+    fterminal_draw_tab_line
+    fterminal_draw_status_line
+    fterminal_draw_command_line
 
     fterminal_flush
 }
@@ -577,8 +644,8 @@ fterminal_draw_dir() {
     # Print the max directory items that fit in the VAR_TERM_CONTENT_SCROLL_IDX area.
     local var_scroll_new_start
     local var_win_new_cursor
-    local var_scroll_len=$(($VAR_TERM_CONTENT_MAX_CNT - 1))
-    local var_scroll_distance=$(($VAR_TERM_CONTENT_MAX_CNT - 3))
+    local var_scroll_len=$(($VAR_TERM_MAINWIN_HEIGHT - 1))
+    local var_scroll_distance=$(($VAR_TERM_MAINWIN_HEIGHT - 3))
 
     # When going up the directory tree, place the cursor on the position
     # of the previous directory.
@@ -594,7 +661,7 @@ fterminal_draw_dir() {
     # Update idx for previous store.
     if [[ ${VAR_TERM_CONTENT_SCROLL_IDX} -ge ${#VAR_TERM_DIR_FILE_LIST[@]} ]]
     then
-        if [[ ${VAR_TERM_CONTENT_MAX_CNT} -gt ${#VAR_TERM_DIR_FILE_LIST[@]} ]]
+        if [[ ${VAR_TERM_MAINWIN_HEIGHT} -gt ${#VAR_TERM_DIR_FILE_LIST[@]} ]]
         then
             VAR_TERM_CONTENT_SCROLL_IDX=$(( ${#VAR_TERM_DIR_FILE_LIST[@]} -1 ))
             VAR_TERM_CONTENT_SCROLL_START_IDX=0
@@ -615,19 +682,19 @@ fterminal_draw_dir() {
 
     # Update scroll idx
     # FIXME, i assume this is for turning page
-    if ((VAR_TERM_CONTENT_SCROLL_IDX - VAR_TERM_CONTENT_SCROLL_START_IDX < VAR_TERM_CONTENT_MAX_CNT)) && 
+    if ((VAR_TERM_CONTENT_SCROLL_IDX - VAR_TERM_CONTENT_SCROLL_START_IDX < VAR_TERM_MAINWIN_HEIGHT)) && 
         ((VAR_TERM_CONTENT_SCROLL_IDX >= VAR_TERM_CONTENT_SCROLL_START_IDX)); then
         # No need to update page, since it could shows all content.
         # also check if if we are going to the previous page
         ((var_scroll_new_start=VAR_TERM_CONTENT_SCROLL_START_IDX))
         ((var_win_new_cursor=VAR_TERM_CONTENT_SCROLL_IDX - VAR_TERM_CONTENT_SCROLL_START_IDX))
         dbg_case="0"
-    elif ((VAR_TERM_CONTENT_SCROLL_IDX - VAR_TERM_CONTENT_SCROLL_START_IDX == VAR_TERM_CONTENT_MAX_CNT)); then
+    elif ((VAR_TERM_CONTENT_SCROLL_IDX - VAR_TERM_CONTENT_SCROLL_START_IDX == VAR_TERM_MAINWIN_HEIGHT)); then
         # Go to next page, add one for conveint
         ((var_scroll_new_start=VAR_TERM_CONTENT_SCROLL_START_IDX + var_scroll_distance + 1))
         ((var_win_new_cursor=VAR_TERM_WIN_CURRENT_CURSOR-var_scroll_distance))
         dbg_case="1"
-    # elif ((VAR_TERM_CONTENT_SCROLL_IDX - VAR_TERM_CONTENT_SCROLL_START_IDX >= VAR_TERM_CONTENT_MAX_CNT)); then
+    # elif ((VAR_TERM_CONTENT_SCROLL_IDX - VAR_TERM_CONTENT_SCROLL_START_IDX >= VAR_TERM_MAINWIN_HEIGHT)); then
     elif ((VAR_TERM_CONTENT_SCROLL_IDX + 1 == VAR_TERM_CONTENT_SCROLL_START_IDX)); then
         # Go to previous page, add one for conveint
         # check if hit the top.
@@ -641,25 +708,25 @@ fterminal_draw_dir() {
         fi
         dbg_case="2"
     # This will handle other case.
-    elif ((VAR_TERM_DIR_LIST_CNT < VAR_TERM_CONTENT_MAX_CNT || VAR_TERM_CONTENT_SCROLL_IDX < VAR_TERM_CONTENT_MAX_CNT)); then
+    elif ((VAR_TERM_DIR_LIST_CNT < VAR_TERM_MAINWIN_HEIGHT || VAR_TERM_CONTENT_SCROLL_IDX < VAR_TERM_MAINWIN_HEIGHT)); then
         # To the top.
         # If the list in shorter then window, or the scroll idx == 0
         ((var_scroll_new_start=0))
         ((var_win_new_cursor=VAR_TERM_CONTENT_SCROLL_IDX))
         # flog_msg "1/$var_scroll_new_start/$var_win_new_cursor"
         dbg_case="3"
-    elif ((VAR_TERM_CONTENT_SCROLL_IDX + VAR_TERM_CONTENT_MAX_CNT > VAR_TERM_DIR_LIST_CNT)); then
+    elif ((VAR_TERM_CONTENT_SCROLL_IDX + VAR_TERM_MAINWIN_HEIGHT > VAR_TERM_DIR_LIST_CNT)); then
         # To the bottom.
         # If the list is greater then win size, and in the last page
-        ((var_scroll_new_start=VAR_TERM_DIR_LIST_CNT-VAR_TERM_CONTENT_MAX_CNT + 1))
+        ((var_scroll_new_start=VAR_TERM_DIR_LIST_CNT-VAR_TERM_MAINWIN_HEIGHT + 1))
         ((var_win_new_cursor=VAR_TERM_CONTENT_SCROLL_IDX - var_scroll_new_start))
         # flog_msg "2/$var_scroll_new_start/$var_win_new_cursor"
         dbg_case="4"
-    elif ((VAR_TERM_WIN_CURRENT_CURSOR > VAR_TERM_CONTENT_MAX_CNT - 1)); then
+    elif ((VAR_TERM_WIN_CURRENT_CURSOR > VAR_TERM_MAINWIN_HEIGHT - 1)); then
         # handle cursor out of showing screen.
         # its for redraw and cursor been covered.
-        ((var_scroll_new_start=VAR_TERM_CONTENT_SCROLL_IDX-VAR_TERM_CONTENT_MAX_CNT - 1))
-        ((var_win_new_cursor=VAR_TERM_CONTENT_MAX_CNT - 1))
+        ((var_scroll_new_start=VAR_TERM_CONTENT_SCROLL_IDX-VAR_TERM_MAINWIN_HEIGHT - 1))
+        ((var_win_new_cursor=VAR_TERM_MAINWIN_HEIGHT - 1))
         dbg_case="5"
     else
         # This is for error handle.
@@ -692,10 +759,8 @@ fterminal_draw_dir() {
                 break
             fi
 
-            flog_msg_debug "fterminal_draw_file_line $((${VAR_TERM_COLUMN_CNT}/2)) 0 80 $((var_scroll_new_start + idx))"
-            # fterminal_draw_file_line "$((${VAR_TERM_COLUMN_CNT}/2))" 0 80 "$((var_scroll_new_start + idx))"
-            # fterminal_draw_file_line 80 0 80 "$((var_scroll_new_start + idx))"
-            fterminal_draw_file_line "$((var_scroll_new_start + idx))" 0 0 $((${VAR_TERM_COLUMN_CNT} / 2))
+            flog_msg_debug "fterminal_draw_file_line $((${VAR_TERM_WIDTH}/2)) 0 80 $((var_scroll_new_start + idx))"
+            fterminal_draw_file_line "$((var_scroll_new_start + idx))" 0 0
         }
         for ((idx=0;idx<=var_scroll_len;idx++)); {
 
@@ -703,10 +768,8 @@ fterminal_draw_dir() {
                 break
             fi
 
-            flog_msg_debug "fterminal_draw_file_line $((${VAR_TERM_COLUMN_CNT}/2)) 0 80 $((var_scroll_new_start + idx))"
-            # fterminal_draw_file_line "$((${VAR_TERM_COLUMN_CNT}/2))" 0 80 "$((var_scroll_new_start + idx))"
-            # fterminal_draw_file_line 80 0 80 "$((var_scroll_new_start + idx))"
-            fterminal_draw_file_line "$((var_scroll_new_start + idx))" $((${VAR_TERM_COLUMN_CNT} / 2)) 0 $((${VAR_TERM_COLUMN_CNT} / 2))
+            flog_msg_debug "fterminal_draw_file_line $((${VAR_TERM_WIDTH}/2)) 0 80 $((var_scroll_new_start + idx))"
+            fterminal_draw_file_line "$((var_scroll_new_start + idx))" $((${VAR_TERM_WIDTH} / 2)) 0 $((${VAR_TERM_WIDTH} / 2))
         }
 
     else
@@ -745,15 +808,16 @@ fterminal_draw_file_line() {
     local var_content_idx=$1
 
     # args max width
-    if [[ ${#} -ge 4 ]]
+    if [[ ${#} -ge 3 ]]
     then
         local args_col_offset=${2}
         local args_line_offset=${3}
-        local args_content_width=${4}
     else
-        local args_col_offset=0
-        local args_line_offset=0
-        local args_content_width=${VAR_TERM_COLUMN_CNT}
+        local args_col_offset=${VAR_TERM_MAINWIN_START_IDX[0]}
+        local args_line_offset=${VAR_TERM_MAINWIN_START_IDX[1]}
+        # local args_col_offset=0
+        # local args_line_offset=0
+        # flog_msg_debug "${args_col_offset}:${args_line_offset}"
     fi
 
     local var_file_name=${VAR_TERM_DIR_FILE_LIST[$var_content_idx]##*/}
@@ -825,37 +889,45 @@ fterminal_draw_file_line() {
         var_format+="\\e[1;${HSFM_COLOR_CURSOR:-36};7m"
 
     # If the VAR_TERM_DIR_FILE_LIST item is marked for operation.
-    [[ ${VAR_TERM_MARKED_FILE_LIST[$var_content_idx]} == "${VAR_TERM_DIR_FILE_LIST[$var_content_idx]:-null}" ]] && {
+    if [[ ${VAR_TERM_MARKED_FILE_LIST[$var_content_idx]} == "${VAR_TERM_DIR_FILE_LIST[$var_content_idx]:-null}" ]];then
         var_format+=\\e[${HSFM_COLOR_SELECTION}m${VAR_TERM_MARK_PRE}
-        var_prefix+=${VAR_TERM_MARK_POST}
-    }
+        var_prefix=${VAR_TERM_MARK_POST}
+    else
+        var_prefix=$(printf "% ${#VAR_TERM_MARK_POST}s" "")
+    fi
 
     # Escape the directory string.
     # Remove all non-printable characters.
     var_file_name=${var_file_name//[^[:print:]]/^[}
+    tmp_line_offset=0
 
-    if ((var_content_idx - VAR_TERM_CONTENT_SCROLL_START_IDX >= VAR_TERM_CONTENT_MAX_CNT))
+    if ((var_content_idx - VAR_TERM_CONTENT_SCROLL_START_IDX >= VAR_TERM_MAINWIN_HEIGHT))
     then
-        ((VAR_TERM_CONTENT_SCROLL_START_IDX=$var_content_idx-$VAR_TERM_CONTENT_MAX_CNT+1))
-        args_line_offset=$((${VAR_TERM_TAB_LINE_HEIGHT} + ${VAR_TERM_CONTENT_MAX_CNT}))
+        ((VAR_TERM_CONTENT_SCROLL_START_IDX=$var_content_idx-$VAR_TERM_MAINWIN_HEIGHT+1))
+        tmp_line_offset=$((${args_line_offset}))
     elif ((var_content_idx < VAR_TERM_CONTENT_SCROLL_START_IDX))
     then
         ((VAR_TERM_CONTENT_SCROLL_START_IDX=var_content_idx))
-        args_line_offset=$((1 + ${VAR_TERM_TAB_LINE_HEIGHT}))
+        tmp_line_offset=$((${args_line_offset}))
     else
-        args_line_offset=$((1 + ${VAR_TERM_TAB_LINE_HEIGHT} + ${var_content_idx} - ${VAR_TERM_CONTENT_SCROLL_START_IDX}))
+        tmp_line_offset=$((${args_line_offset} + ${var_content_idx} - ${VAR_TERM_CONTENT_SCROLL_START_IDX}))
     fi
 
-    fterminal_print '\e[%s;%sH' "${args_line_offset}" "${args_col_offset}"
+    # flog_msg_debug "${tmp_line_offset}:${args_col_offset}"
+    fterminal_print '\e[%s;%sH' "${tmp_line_offset}" "${args_col_offset}"
 
-    # fterminal_print '%b%s\e[m\e[K\r' \
-    #     " ${VAR_TERM_FILE_PRE}${var_format}" \
-    #     "${var_file_info} ${var_prefix}${var_file_name}${var_postfix}${VAR_TERM_FILE_POST}"
+    local tmp_content="${var_prefix}${var_file_info} ${VAR_TERM_FILE_PRE}${var_file_name}${VAR_TERM_FILE_POST}${var_postfix}"
 
-    local tmp_content="${VAR_TERM_FILE_PRE}${var_file_info} ${var_prefix}${var_file_name}${var_postfix}${VAR_TERM_FILE_POST}"
-    fterminal_print "%b%- ${args_content_width}s\e[m" \
+    local var_content_width=${VAR_TERM_MAINWIN_WIDTH}
+    # if (( ${#tmp_content} > ${VAR_TERM_MAINWIN_WIDTH})); then
+    #     local var_content_width=${VAR_TERM_MAINWIN_WIDTH}
+    # else
+    #     local var_content_width=${#tmp_content}
+    # fi
+
+    fterminal_print "%b%- ${var_content_width}s\e[m" \
         "${var_format}" \
-        "${tmp_content:0:${args_content_width}}"
+        "${tmp_content:0:${var_content_width}}"
 }
 
 fterminal_draw_tab_line() {
@@ -879,6 +951,7 @@ fterminal_draw_tab_line() {
     then
         flog_msg_debug "Enter fterminal_draw_tab_line, $((var_run_tab_cnt++))"
     fi
+    # flog_msg_debug "Tab info: ${VAR_TERM_TAB_LINE_IDX}-${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]##*/}"
     # PWD_escaped=${PWD//[^[:print:]]/^[}
     # Escape the directory string.
     # Remove all non-printable characters.
@@ -892,7 +965,7 @@ fterminal_draw_tab_line() {
     # flog_msg_debug "[${PWD}]$VAR_TERM_TAB_LINE_IDX-${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}"
     for each_idx in "${!VAR_TERM_TAB_LINE_LIST_PATH[@]}"
     do
-        # flog_msg_debug "${each_idx}-${VAR_TERM_TAB_LINE_LIST_PATH[${each_idx}]##*/}"
+        # flog_msg_debug "Tab: ${each_idx}-${VAR_TERM_TAB_LINE_LIST_PATH[${each_idx}]##*/}"
         if ! test -d "${VAR_TERM_TAB_LINE_LIST_PATH[${each_idx}]}"
         then
             flog_msg "Empty idx found. ${each_idx}-${VAR_TERM_TAB_LINE_LIST_PATH[${each_idx}]}"
@@ -917,9 +990,9 @@ fterminal_draw_tab_line() {
     # update buffer
     var_left_cnt="$((${#var_left} + ${#var_tab_list_pre_buf}+ ${#var_tab_selected_buf} + ${#var_tab_list_post_buf}))"
     var_right_cnt="${#var_right}"
-    ((var_content_cnt=VAR_TERM_COLUMN_CNT-var_left_cnt-var_right_cnt))
+    ((var_content_cnt=VAR_TERM_WIDTH-var_left_cnt-var_right_cnt))
     [[ ${var_content_cnt} < 0 ]] && ((${var_content_cnt}=0))
-    # flog_msg "test-> ${var_content_cnt}/$VAR_TERM_COLUMN_CNT"
+    # flog_msg "test-> ${var_content_cnt}/$VAR_TERM_WIDTH"
     var_spacing=$(printf "% ${var_content_cnt}s" "")
 
 
@@ -979,7 +1052,7 @@ fterminal_draw_bookmark_line() {
            "${def_bookmark_start_line}" \
            "${HSFM_COLOR_TAB_BOOKMARK_FG}" \
            "${HSFM_COLOR_TAB_BOOKMARK_BG}" \
-           "${VAR_TERM_COLUMN_CNT}" "" \
+           "${VAR_TERM_WIDTH}" "" \
            "${tmp_bookmark_buf}"
 
            # "1 :${HSFM_FAV1##*/} | 2:${HSFM_FAV2##*/} | 3:${HSFM_FAV3##*/} | 4:${HSFM_FAV4##*/} | 5:${HSFM_FAV5##*/} | 6:${HSFM_FAV6##*/} | 7:${HSFM_FAV7##*/} | 8:${HSFM_FAV8##*/} | 9:${HSFM_FAV9##*/}"
@@ -1031,12 +1104,19 @@ fterminal_draw_status_line() {
     # var_right+="$(date '+%Y/%m/%d')"
 
     ## calc spacing
-    var_left_cnt="$((${#var_left} + ${#var_center}))"
+    var_left_cnt="${#var_left}"
     var_right_cnt="${#var_right}"
-    ((var_content_cnt=VAR_TERM_COLUMN_CNT-var_left_cnt-var_right_cnt))
+    var_center_cnt="${#var_center}"
+    ((var_content_cnt=VAR_TERM_WIDTH-var_left_cnt-var_right_cnt))
     [[ ${var_content_cnt} < 0 ]] && var_content_cnt=0
-    # flog_msg "test-> ${var_content_cnt}/$VAR_TERM_COLUMN_CNT"
-    var_spacing=$(printf "% ${var_content_cnt}s" "")
+
+    if ((var_content_cnt < ${var_center_cnt})); then
+        var_center=${var_center:var_center_cnt-var_content_cnt:var_content_cnt}
+        var_center=${var_center#*/}
+        var_center_cnt="${#var_center}"
+    fi
+    # flog_msg "test-> ${var_content_cnt}/$VAR_TERM_WIDTH"
+    var_spacing=$(printf "% $((var_content_cnt - ${var_center_cnt}))s" "")
 
     ## Update content
     # '\e7':       Save cursor position.
@@ -1053,26 +1133,26 @@ fterminal_draw_status_line() {
     #              This is more widely supported than '\e[u'.
 
     # fterminal_print "\e7\e[%sH\e[%s;%sm%*s\r%s%s%s\e[m\e[%sH\e[K\e8" \
-    #        "$((VAR_TERM_LINE_CNT-1))" \
+    #        "$((VAR_TERM_HEIGHT-1))" \
     #        "${HSFM_COLOR_STATUS_FG:-30}" \
     #        "${HSFM_COLOR_STATUS_BG:-41}" \
-    #        "$VAR_TERM_COLUMN_CNT" "" \
+    #        "$VAR_TERM_WIDTH" "" \
     #        "${var_left}" \
     #        "${var_spacing}" \
     #        "${var_right}" \
-    #        "$VAR_TERM_LINE_CNT"
+    #        "$VAR_TERM_HEIGHT"
 
     # fterminal_print "\e7\e[%sH\e[%s;%sm%*s\r%s%s%s\e[m\e8" \
-    #        "$((VAR_TERM_LINE_CNT-1))" \
+    #        "$((VAR_TERM_HEIGHT-1))" \
     #        "${HSFM_COLOR_STATUS_FG:-30}" \
     #        "${HSFM_COLOR_STATUS_BG:-41}" \
-    #        "$VAR_TERM_COLUMN_CNT" "" \
+    #        "$VAR_TERM_WIDTH" "" \
     #        "${var_left}" \
     #        "${var_spacing}" \
     #        "${var_right}"
 
     fterminal_print "\e7\e[%sH\r\e[%sm%s\e[%sm%s\e[%sm%s\e[m\e8" \
-           "$((VAR_TERM_LINE_CNT-1))" \
+           "$((VAR_TERM_HEIGHT-1))" \
            "${HSFM_COLOR_STATUS_LABEL_FG:-30};${HSFM_COLOR_STATUS_LABEL_BG:-41}" \
            "${var_left}" \
            "${HSFM_COLOR_STATUS_FG:-30};${HSFM_COLOR_STATUS_BG:-41}" \
@@ -1087,22 +1167,22 @@ fterminal_draw_command_line() {
         [ "${VAR_TERM_MODE_CURRENT}" = "${DEF_TERM_MODE_SEARCH}" ] ||
         [ "${VAR_TERM_MODE_CURRENT}" = "${DEF_TERM_MODE_FIND}" ]
     then
-        fterminal_print '\e[?25l\e[%sH' "$VAR_TERM_LINE_CNT"
+        fterminal_print '\e[?25l\e[%sH' "$VAR_TERM_HEIGHT"
 
         # fterminal_print $'\r\e[K'"${var_cmd_prefix}${var_input_buffer}${var_post_input_buffer} $(printf "\e[%dD" $((${#var_post_input_buffer} + 1)))"
         fterminal_print $'\r'"${var_cmd_prefix}${var_input_buffer}${var_post_input_buffer} "$'\e[K'"$(printf "\e[%dD" $((${#var_post_input_buffer} + 1)))"$'\e[?25h'
     else
-        fterminal_print '\e7\e[%sH\e[K\e[?25l\e8' "$VAR_TERM_LINE_CNT"
+        fterminal_print '\e7\e[%sH\e[K\e[?25l\e8' "$VAR_TERM_HEIGHT"
     fi
 }
 
 # FIXME, need impl a way to acept win type, for input purpose.
 fterminal_draw_miniwin()
 {
-    local var_start_line=$((${VAR_TERM_LINE_CNT}/4))
-    local var_start_col=$((${VAR_TERM_COLUMN_CNT}/4))
-    local var_width=$((${VAR_TERM_COLUMN_CNT}/2))
-    local var_height=$((${VAR_TERM_LINE_CNT}/2))
+    local var_start_line=$((${VAR_TERM_HEIGHT}/4))
+    local var_start_col=$((${VAR_TERM_WIDTH}/4))
+    local var_width=$((${VAR_TERM_WIDTH}/2))
+    local var_height=$((${VAR_TERM_HEIGHT}/2))
     local var_win_title="Action WIN"
     local var_buffer=()
     var_buffer+=("Action ongoing")
@@ -1113,10 +1193,10 @@ fterminal_draw_miniwin()
 # its an exp miniwin.
 fterminal_draw_checkwin() {
 
-    local var_start_line=$((${VAR_TERM_LINE_CNT}/4))
-    local var_start_col=$((${VAR_TERM_COLUMN_CNT}/4))
-    local var_width=$((${VAR_TERM_COLUMN_CNT}/2))
-    local var_height=$((${VAR_TERM_LINE_CNT}/2))
+    local var_start_line=$((${VAR_TERM_HEIGHT}/4))
+    local var_start_col=$((${VAR_TERM_WIDTH}/4))
+    local var_width=$((${VAR_TERM_WIDTH}/2))
+    local var_height=$((${VAR_TERM_HEIGHT}/2))
     local var_win_title="Check WIN"
     local var_buffer=()
     var_buffer+=("Action ongoing")
@@ -1131,11 +1211,11 @@ fterminal_draw_checkwin() {
 
 fterminal_draw_msgwin()
 {
-    local var_start_line=$((1 + ${VAR_TERM_TAB_LINE_HEIGHT} + ${VAR_TERM_CONTENT_MAX_CNT}))
-    # local var_start_line=20
     local var_start_col=0
-    local var_width=${VAR_TERM_COLUMN_CNT}
-    local var_height=${VAR_TERM_MSGWIN_HEIGHT}
+    local var_start_line=$((${VAR_TERM_MAINWIN_START_IDX[1]} + ${VAR_TERM_MAINWIN_HEIGHT}))
+    # local var_start_line=20
+    local var_width=${VAR_TERM_WIDTH}
+    local var_height=${VAR_TERM_SUBWIN_BOTTOM_SIZE}
     local var_win_title="Message WIN"
     local var_buffer=("${VAR_TERM_MSGWIN_BUFFER[@]}")
 
@@ -1143,10 +1223,10 @@ fterminal_draw_msgwin()
 }
 fterminal_draw_taskwin()
 {
-    local var_start_line=$((1 + ${VAR_TERM_TAB_LINE_HEIGHT} + ${VAR_TERM_CONTENT_MAX_CNT}))
     local var_start_col=0
-    local var_width=${VAR_TERM_COLUMN_CNT}
-    local var_height=${VAR_TERM_MSGWIN_HEIGHT}
+    local var_start_line=$((${VAR_TERM_MAINWIN_START_IDX[1]} + ${VAR_TERM_MAINWIN_HEIGHT}))
+    local var_width=${VAR_TERM_WIDTH}
+    local var_height=${VAR_TERM_SUBWIN_BOTTOM_SIZE}
     local var_win_title="Task WIN"
     local var_buffer=("${VAR_TERM_TASKWIN_BUFFER[@]}")
 
@@ -1284,6 +1364,7 @@ fterminal_read_dir() {
     shopt_flags=(s u)
     shopt -"${shopt_flags[$HSFM_ENABLE_HIDDEN]}" dotglob
 
+    # tmp_start=$(date +%N)
     if [[ ${HSFM_READ_DIR_MODE} == ${DEF_TERM_READ_DIR_MODE_NONE} ]]
     then
         VAR_TERM_DIR_FILE_LIST=("$PWD"/${var_pattern})
@@ -1525,8 +1606,9 @@ EOF
             ########################
             local tmp_array_str=$(printf "%s\n" "${VAR_TERM_DIR_FILE_LIST[@]}")
             local tmp_index
-            if test -n "${OLDPWD}"; then
-                local tmp_index=$(echo "$tmp_array_str" | grep -n "^$OLDPWD$" | cut -d: -f1)
+            if test -n "${OLDPWD}" && test -n "${tmp_array_str}"; then
+                # ignore error when greping reg string.
+                local tmp_index=$(echo "$tmp_array_str" | grep -n "^$OLDPWD$" 2>/dev/null |head -n 1| cut -d: -f1)
 
                 if test -z "${tmp_index}"; then
                     tmp_grep=( "echo \"$tmp_array_str\" | grep -n -F \"$OLDPWD\"")
@@ -1561,6 +1643,8 @@ EOF
         fi
 
     fi
+    # tmp_end=$(date +%N)
+    # flog_msg_debug "Read Dir Time: $((tmp_end - tmp_start))"
 
     if [[ ${#tmp_file_list[@]} -ge 1 ]]
     then
@@ -1583,12 +1667,12 @@ EOF
 
 fterminal_read_key() {
     # local REPLY
-    read "${VAR_TERM_READ_FLAGS[@]}" -srn 1
+    read "${VAR_TERM_READ_ARGS[@]}" -srn 1
     local ret_value=$?
     if [[ ${REPLY} == $'\e' ]]
     then
         local tmp_buffer="${REPLY}"
-        read "${VAR_TERM_READ_FLAGS[@]}" -rsn 1
+        read "${VAR_TERM_READ_ARGS[@]}" -rsn 1
 
         if [[ ${tmp_buffer}${REPLY} == $'\e\e' ]]; then
             # fast esc
@@ -1597,14 +1681,14 @@ fterminal_read_key() {
             return ${ret_value}
         elif [[ ${tmp_buffer}${REPLY} == $'\e[' ]]; then
             tmp_buffer="${tmp_buffer}${REPLY}"
-            read "${VAR_TERM_READ_FLAGS[@]}" -rsn 3
+            read "${VAR_TERM_READ_ARGS[@]}" -rsn 3
         fi
 
-        # read "${VAR_TERM_READ_FLAGS[@]}" -rsn 2
+        # read "${VAR_TERM_READ_ARGS[@]}" -rsn 2
 
         # Handle a normal escape key press.
         # [[ ${tmp_buffer}${REPLY} == $'\e\e['* ]] &&
-        #     read "${VAR_TERM_READ_FLAGS[@]}" -rsn 1 _
+        #     read "${VAR_TERM_READ_ARGS[@]}" -rsn 1 _
 
         REPLY=${tmp_buffer}${REPLY}
         VAR_TERM_KEY_CURRENT_INPUT="^"${REPLY:1}
@@ -1790,7 +1874,7 @@ fgui_scroll_down() {
 
         ((VAR_TERM_CONTENT_SCROLL_IDX++))
 
-        if ((VAR_TERM_WIN_CURRENT_CURSOR + 1 < VAR_TERM_CONTENT_MAX_CNT))
+        if ((VAR_TERM_WIN_CURRENT_CURSOR + 1 < VAR_TERM_MAINWIN_HEIGHT))
         then
             fterminal_draw_file_line $((VAR_TERM_CONTENT_SCROLL_IDX-1))
             ((VAR_TERM_WIN_CURRENT_CURSOR++))
@@ -1798,7 +1882,7 @@ fgui_scroll_down() {
             # FIXME, it's a patch to avoid glitch
             # clear the first content line
             # fterminal_draw_tab_line
-            # fterminal_print "\e[$((VAR_TERM_CONTENT_MAX_CNT + VAR_TERM_TAB_LINE_HEIGHT))H"
+            # fterminal_print "\e[$((VAR_TERM_MAINWIN_HEIGHT + VAR_TERM_TAB_LINE_HEIGHT))H"
             # fterminal_draw_dir
 
             # Draw new page, this is not partial update.
@@ -1857,14 +1941,14 @@ fgui_scroll_down_visual() {
         fterminal_draw_file_line $((VAR_TERM_CONTENT_SCROLL_IDX-1))
         fterminal_print "\n"
 
-        if ((VAR_TERM_WIN_CURRENT_CURSOR + 1 < VAR_TERM_CONTENT_MAX_CNT))
+        if ((VAR_TERM_WIN_CURRENT_CURSOR + 1 < VAR_TERM_MAINWIN_HEIGHT))
         then
             ((VAR_TERM_WIN_CURRENT_CURSOR++))
         else
             # FIXME, it's a patch to avoid glitch
             # clear the first content line
             fterminal_draw_tab_line
-            fterminal_print "\e[$((VAR_TERM_CONTENT_MAX_CNT + VAR_TERM_TAB_LINE_HEIGHT))H"
+            fterminal_print "\e[$((VAR_TERM_MAINWIN_HEIGHT + VAR_TERM_TAB_LINE_HEIGHT))H"
         fi
         fterminal_draw_file_line $((VAR_TERM_CONTENT_SCROLL_IDX))
 
@@ -2006,18 +2090,19 @@ fgui_tab_close()
         exit 0
     elif [ "${var_action}" = "right" ];then
         # flog_msg "CLOSE_TAB_RIGHT."
-        tmp_current_idx=$((${VAR_TERM_TAB_LINE_IDX} + 1))
-        if (( tmp_current_idx >= ${#VAR_TERM_TAB_LINE_LIST_PATH[@]} ));then
+        tmp_current_idx=$((${#VAR_TERM_TAB_LINE_LIST_PATH[@]} - 1))
+        if (( ${VAR_TERM_TAB_LINE_IDX} + 1 >= ${#VAR_TERM_TAB_LINE_LIST_PATH[@]} ));then
             flog_msg "Ignore CLOSE_TAB_RIGHT."
             return 0
         fi
-        # flog_msg_debug ${tmp_current_idx} < ${#VAR_TERM_TAB_LINE_LIST_PATH[@]}
-        while ((tmp_current_idx < ${#VAR_TERM_TAB_LINE_LIST_PATH[@]}));do
-            flog_msg_debug "${tmp_current_idx}: ${VAR_TERM_TAB_LINE_LIST_PATH[tmp_current_idx]}"
 
+        while ((tmp_current_idx > VAR_TERM_TAB_LINE_IDX));do
+            # flog_msg_debug "${tmp_current_idx}: ${VAR_TERM_TAB_LINE_LIST_PATH[tmp_current_idx]}"
             fterminal_tab_remove ${tmp_current_idx}
-            ((tmp_current_idx = tmp_current_idx + 1))
+            ((tmp_current_idx = tmp_current_idx - 1))
         done
+
+        VAR_TERM_TAB_LINE_IDX=${tmp_current_idx}
 
         # fterminal_redraw full
         # flog_msg "Tab closed."
@@ -2070,15 +2155,15 @@ fgui_tab_close()
             VAR_TERM_TAB_LINE_IDX=$((VAR_TERM_TAB_LINE_IDX - 1 ))
         fi
 
-        # fterminal_tab_load_contex ${VAR_TERM_TAB_LINE_IDX}
-        # cd ${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}
-        #
+        fterminal_tab_load_contex ${VAR_TERM_TAB_LINE_IDX}
+        cd ${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}
+
         # fterminal_redraw full
         # flog_msg "Tab closed."
     fi
 
-    fterminal_tab_load_contex ${VAR_TERM_TAB_LINE_IDX}
-    cd ${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}
+    # fterminal_tab_load_contex ${VAR_TERM_TAB_LINE_IDX}
+    # cd ${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}
 
     fterminal_redraw full
     flog_msg "Tab closed."
@@ -2381,18 +2466,20 @@ fnormal_mode_handler() {
             flog_msg "Window Refreshed."
             ;;
         ${HSFM_KEY_TOGGLE_MSGWIN})
-            if [ ${VAR_TERM_MSGWIN_SHOW} = true ]; then
-                VAR_TERM_MSGWIN_SHOW=false
+            if [ ${VAR_TERM_BOTTOMWIN_SHOW} != ${DEF_TERM_WIN_TYPE_MSG} ]
+            then
+                VAR_TERM_BOTTOMWIN_SHOW=${DEF_TERM_WIN_TYPE_MSG}
             else
-                VAR_TERM_MSGWIN_SHOW=true
+                VAR_TERM_BOTTOMWIN_SHOW=${DEF_TERM_WIN_TYPE_HIDDEN}
             fi
             fterminal_redraw
             ;;
         ${HSFM_KEY_TOGGLE_TASKWIN})
-            if [ ${VAR_TERM_TASKWIN_SHOW} = true ]; then
-                VAR_TERM_TASKWIN_SHOW=false
+            if [ ${VAR_TERM_BOTTOMWIN_SHOW} != ${DEF_TERM_WIN_TYPE_TASK} ]
+            then
+                VAR_TERM_BOTTOMWIN_SHOW=${DEF_TERM_WIN_TYPE_TASK}
             else
-                VAR_TERM_TASKWIN_SHOW=true
+                VAR_TERM_BOTTOMWIN_SHOW=${DEF_TERM_WIN_TYPE_HIDDEN}
             fi
             fterminal_redraw
             ;;
@@ -2601,7 +2688,7 @@ fcommand_mode_handler() {
     # static_var_comp_idx=0
     # static_var_comp_path_cmd=""
 
-    fterminal_print '\e[?25l\e[%sH' "$VAR_TERM_LINE_CNT"
+    fterminal_print '\e[?25l\e[%sH' "$VAR_TERM_HEIGHT"
 
     case ${var_key_press} in
         # Control UI
@@ -2897,7 +2984,7 @@ fcommand_mode_handler() {
         # Escape / Custom 'no' value (used as a replacement for '-n 1').
         # $'\e'|${3:-null})
         $'\e')
-            read "${VAR_TERM_READ_FLAGS[@]}" -rsn 2
+            read "${VAR_TERM_READ_ARGS[@]}" -rsn 2
             VAR_TERM_CMD_INPUT_BUFFER=
             fmode_setup "${DEF_TERM_MODE_NORMAL}"
 
@@ -2981,7 +3068,7 @@ fcommand_handler()
     ## Pre settings.
     ################################################################
     # new functon for handle all commands
-    # fterminal_print '\e7\e[%sH\e[?25h' "$VAR_TERM_LINE_CNT"
+    # fterminal_print '\e7\e[%sH\e[?25h' "$VAR_TERM_HEIGHT"
 
     ## Main handler
     ################################################################
@@ -3033,7 +3120,7 @@ fcommand_line_interact() {
     local var_input_buffer=""
     local var_post_input_buffer=""
 
-    fterminal_print '\e7\e[%sH\e[?25h' "$VAR_TERM_LINE_CNT"
+    fterminal_print '\e7\e[%sH\e[?25h' "$VAR_TERM_HEIGHT"
     # '\r\e[K': Redraw the read prompt on every keypress.
     #           This is mimicking what happens normally.
     while IFS= read -rsn 1 -p $'\r\e[K'"${var_cmd_prefix}${var_input_buffer}${var_post_input_buffer} $(printf "\e[%dD" $((${#var_post_input_buffer} + 1)))" read_reply 2>&1; do
@@ -3284,7 +3371,7 @@ fcommand_line_interact() {
             # Escape / Custom 'no' value (used as a replacement for '-n 1').
             # $'\e'|${3:-null})
             $'\e')
-                read "${VAR_TERM_READ_FLAGS[@]}" -rsn 2
+                read "${VAR_TERM_READ_ARGS[@]}" -rsn 2
                 VAR_TERM_CMD_INPUT_BUFFER=
 
                 if [[ ${var_cmd_function} == "search" ]]; then
@@ -3344,15 +3431,15 @@ flog_msg_debug()
         VAR_TERM_MSGWIN_BUFFER=("${VAR_TERM_MSGWIN_BUFFER[@]}")
     fi
     VAR_TERM_MSGWIN_BUFFER=("${VAR_TERM_MSGWIN_BUFFER[@]}" "$@")
-    if [ ${VAR_TERM_MSGWIN_SHOW} = true ]
+    if [ ${VAR_TERM_BOTTOMWIN_SHOW} = ${DEF_TERM_WIN_TYPE_MSG} ]
     then
         fterminal_draw_msgwin
     fi
 }
 flog_msg()
 {
-    fterminal_print '\e7\e[%sH\e[?25h' "$VAR_TERM_LINE_CNT"
-    fterminal_print '\r\e[%sH\e[?25h\e[2K%s' "$VAR_TERM_LINE_CNT" "$*"
+    fterminal_print '\e7\e[%sH\e[?25h' "$VAR_TERM_HEIGHT"
+    fterminal_print '\r\e[%sH\e[?25h\e[2K%s' "$VAR_TERM_HEIGHT" "$*"
     fterminal_print '\e[?25l\e8'
 }
 cmd_newsearch()
@@ -3406,7 +3493,7 @@ cmd_search()
 
     # '\e[%sH':  Move cursor back to cmd-line.
     # '\e[?25h': Unhide the cursor.
-    fterminal_print '\e[%sH\e[?25h' "$VAR_TERM_LINE_CNT"
+    fterminal_print '\e[%sH\e[?25h' "$VAR_TERM_HEIGHT"
 }
 cmd_rename()
 {
@@ -3530,7 +3617,7 @@ cmd_preview()
     # fterminal_print '\e[%sH\rPreview File: %s\e[K\n' "$((VAR_TERM_TAB_LINE_HEIGHT + 1))" "${var_file}"
     if command -v "catimg" 2>&1 > /dev/null; then
         local tmp_padding=1
-        local tmp_height=$((${VAR_TERM_LINE_CNT} - ${tmp_padding} - ${VAR_TERM_TAB_LINE_HEIGHT} - ${VAR_TERM_STATUS_LINE_CNT}))
+        local tmp_height=$((${VAR_TERM_HEIGHT} - ${tmp_padding} - ${VAR_TERM_TAB_LINE_HEIGHT} - ${VAR_TERM_STATUS_LINE_CNT}))
         local tmp_args=("")
 
         # FIXME, disable true color, only for preview.
@@ -3780,7 +3867,7 @@ cmd_dump()
     fterminal_print '\e[%sH\r## %s' "$((VAR_TERM_TAB_LINE_HEIGHT + 1 + var_print_cnt++))" "HSFM_PATH"
     for each_var in ${!HSFM_PATH_@}
     do
-        if [[ ${var_print_cnt} -gt ${VAR_TERM_CONTENT_MAX_CNT} ]]
+        if [[ ${var_print_cnt} -gt ${VAR_TERM_MAINWIN_HEIGHT} ]]
         then
             break
         fi
@@ -3790,7 +3877,7 @@ cmd_dump()
     fterminal_print '\e[%sH\r## %s' "$((VAR_TERM_TAB_LINE_HEIGHT + 1 + var_print_cnt++))" "HSFM_FILE"
     for each_var in ${!HSFM_FILE_@}
     do
-        if [[ ${var_print_cnt} -gt ${VAR_TERM_CONTENT_MAX_CNT} ]]
+        if [[ ${var_print_cnt} -gt ${VAR_TERM_MAINWIN_HEIGHT} ]]
         then
             break
         fi
@@ -3800,7 +3887,7 @@ cmd_dump()
     fterminal_print '\e[%sH\r## %s' "$((VAR_TERM_TAB_LINE_HEIGHT + 1 + var_print_cnt++))" "HSFM_FAV"
     for each_var in ${!HSFM_FAV@}
     do
-        if [[ ${var_print_cnt} -gt ${VAR_TERM_CONTENT_MAX_CNT} ]]
+        if [[ ${var_print_cnt} -gt ${VAR_TERM_MAINWIN_HEIGHT} ]]
         then
             break
         fi
@@ -3824,11 +3911,11 @@ cmd_help()
 }
 cmd_msg()
 {
-    if [ ${VAR_TERM_MSGWIN_SHOW} = true ]
+    if [ ${VAR_TERM_BOTTOMWIN_SHOW} != ${DEF_TERM_WIN_TYPE_MSG} ]
     then
-        VAR_TERM_MSGWIN_SHOW=false
+        VAR_TERM_BOTTOMWIN_SHOW=${DEF_TERM_WIN_TYPE_MSG}
     else
-        VAR_TERM_MSGWIN_SHOW=true
+        VAR_TERM_BOTTOMWIN_SHOW=${DEF_TERM_WIN_TYPE_HIDDEN}
     fi
 
     shift 1
@@ -3839,11 +3926,11 @@ cmd_msg()
 }
 cmd_task()
 {
-    if [ ${VAR_TERM_TASKWIN_SHOW} = true ]
+    if [ ${VAR_TERM_BOTTOMWIN_SHOW} != ${DEF_TERM_WIN_TYPE_TASK} ]
     then
-        VAR_TERM_TASKWIN_SHOW=false
+        VAR_TERM_BOTTOMWIN_SHOW=${DEF_TERM_WIN_TYPE_TASK}
     else
-        VAR_TERM_TASKWIN_SHOW=true
+        VAR_TERM_BOTTOMWIN_SHOW=${DEF_TERM_WIN_TYPE_HIDDEN}
     fi
 
     # shift 1
@@ -3910,16 +3997,16 @@ cmd_set()
 
     case ${args_variable} in
         read)
-            if [ "${args_value}" = "ls" ]
+            if [ "${args_value}" = "${DEF_TERM_READ_DIR_MODE_LS}" ] || [ "${args_value}" = "ls" ]
             then
                 HSFM_READ_DIR_MODE=${DEF_TERM_READ_DIR_MODE_LS}
-            elif [ "${args_value}" = "sort" ]
+            elif [ "${args_value}" = "${DEF_TERM_READ_DIR_MODE_SORT}" ] || [ "${args_value}" = "sort" ]
             then
                 HSFM_READ_DIR_MODE=${DEF_TERM_READ_DIR_MODE_SORT}
-            elif [ "${args_value}" = "none" ]
+            elif [ "${args_value}" = "${DEF_TERM_READ_DIR_MODE_NONE}" ] || [ "${args_value}" = "none" ]
             then
                 HSFM_READ_DIR_MODE=${DEF_TERM_READ_DIR_MODE_NONE}
-            elif [ "${args_value}" = "exp" ]
+            elif [ "${args_value}" = "${DEF_TERM_READ_DIR_MODE_FAST_LS}" ] || [ "${args_value}" = "fast" ]
             then
                 HSFM_READ_DIR_MODE=${DEF_TERM_READ_DIR_MODE_FAST_LS}
             else
@@ -4430,6 +4517,7 @@ fload_session() {
     if test -f ${HSFM_FILE_SESSION}
     then
         source ${HSFM_FILE_SESSION}
+        flog_msg_debug "Load Session Tab: ${VAR_TERM_TAB_LINE_IDX}-${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]##*/}"
     fi
 }
 fload_env() {
@@ -4542,7 +4630,7 @@ fsetup_shell()
     # anything until a key is pressed.
     # SEE: https://github.com/dylanaraps/hsfm/issues/48
     ((BASH_VERSINFO[0] > 3)) &&
-        VAR_TERM_READ_FLAGS=(-t 0.05)
+        VAR_TERM_READ_ARGS=(-t 0.05)
 
     ((${HSFM_LS_COLORS:=1} == 1)) &&
         fexport_ls_colors
@@ -4716,7 +4804,7 @@ function fCore() {
     HSFM_RUNNING=1
     # Vintage infinite loop.
     for ((;HSFM_RUNNING;)); {
-        # read "${VAR_TERM_READ_FLAGS[@]}" -srn 1 && {
+        # read "${VAR_TERM_READ_ARGS[@]}" -srn 1 && {
         fterminal_read_key && {
             case ${VAR_TERM_MODE_CURRENT} in
                 "${DEF_TERM_MODE_VISUAL}")
@@ -4790,7 +4878,7 @@ function fMain()
                 flag_load_session=false
                 ;;
             -r|-restore)
-                fload_session
+                flag_load_session=true
                 ;;
             -s|-setup)
                 if ! test -f "${HSFM_FILE_CONFIG}"
@@ -4839,14 +4927,14 @@ function fMain()
     if [ "${flag_load_session}" = "true" ]
     then
         fload_session
-    elif [ "${flag_load_session}" = "false" ]
+    elif [ "${flag_load_session}" = "false" ] || true
     then
         VAR_TERM_TAB_LINE_IDX=0
-        VAR_TERM_TAB_LINE_LIST_PATH+=("${PWD}")
-    else
-        VAR_TERM_TAB_LINE_LIST_PATH+=("${PWD}")
-        fload_session
-        VAR_TERM_TAB_LINE_IDX=0
+        VAR_TERM_TAB_LINE_LIST_PATH=("${PWD}")
+    # else
+    #     VAR_TERM_TAB_LINE_LIST_PATH+=("${PWD}")
+    #     fload_session
+    #     VAR_TERM_TAB_LINE_IDX=0
     fi
 
     if [[ $HSFM_DEBUG = true ]]
