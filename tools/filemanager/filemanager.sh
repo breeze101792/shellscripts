@@ -51,7 +51,7 @@ export VAR_TERM_TAB_LINE_HEIGHT=2
 
 # sub win
 export VAR_TERM_SUBWIN_UPPER_SIZE=10
-export VAR_TERM_SUBWIN_BOTTOM_SIZE=14
+export VAR_TERM_SUBWIN_BOTTOM_SIZE=12
 
 export VAR_TERM_SUBWIN_RIGHT_SIZE=20
 export VAR_TERM_SUBWIN_LEFT_SIZE=20
@@ -238,7 +238,7 @@ export HSFM_COLOR_STATUS_LABEL
 export HSFM_ENV_TITLE="HSFM"
 
 # Text Editor
-export EDITOR="vim"
+export HSFM_TEXT_EDITOR="vim"
 export HSFM_MEDIA_PLAYER="vlc"
 export HSFM_PICTURE_VIEWER="firefox"
 
@@ -1117,7 +1117,7 @@ fterminal_draw_status_line() {
 
     if ((var_content_cnt < ${var_center_cnt})); then
         var_center=${var_center:var_center_cnt-var_content_cnt:var_content_cnt}
-        var_center=${var_center#*/}
+        var_center=" ${var_center#*/}"
         var_center_cnt="${#var_center}"
     fi
     # flog_msg "test-> ${var_content_cnt}/$VAR_TERM_WIDTH"
@@ -4100,7 +4100,7 @@ fsys_open() {
         while test -z "${VAR_TERM_OPEN_FILE}"; do
             VAR_TERM_OPEN_FILE="${var_file}"
             # Figure out what kind of file we're working with.
-            # Open all text-based files in '$EDITOR'.
+            # Open all text-based files in '$HSFM_TEXT_EDITOR'.
             # Everything else goes through 'xdg-open'/'open'.
             if [[ $DISPLAY ]]; then
                 case "$(fprase_mime_type $var_file)" in
@@ -4401,13 +4401,13 @@ fselect_remove() {
 }
 
 fselect_rename() {
-    # Bulk rename files using '$EDITOR'.
+    # Bulk rename files using '$HSFM_TEXT_EDITOR'.
     rename_file=${XDG_CACHE_HOME:=${HOME}/.cache}/hsfm/fselect_rename
     VAR_TERM_MARKED_FILE_LIST=("${@:1:$#-1}")
 
     # Save marked files to a file and open them for editing.
     fterminal_print '%s\n' "${VAR_TERM_MARKED_FILE_LIST[@]##*/}" > "$rename_file"
-    "${EDITOR:-vi}" "$rename_file"
+    "${HSFM_TEXT_EDITOR:-vi}" "$rename_file"
 
     # Read the renamed files to an array.
     IFS=$'\n' read -d "" -ra changed_files < "$rename_file"
@@ -4434,13 +4434,13 @@ fselect_rename() {
 
     # Let the user double-check the commands and execute them.
     ((renamed == 1)) && {
-        "${EDITOR:-vi}" "$rename_file"
+        "${HSFM_TEXT_EDITOR:-vi}" "$rename_file"
 
         source "$rename_file"
         rm "$rename_file"
     }
 
-    # Fix terminal settings after '$EDITOR'.
+    # Fix terminal settings after '$HSFM_TEXT_EDITOR'.
     fterminal_setup
 }
 
@@ -4481,8 +4481,10 @@ fsave_env() {
         done
     fi
 
-    # Save color scheme
+    # Save runtime env
     echo "export HSFM_COLOR_THEME=${HSFM_COLOR_THEME}" >> ${HSFM_FILE_RUNTIME_ENV}
+    echo "export HSFM_READ_DIR_MODE=${HSFM_READ_DIR_MODE}" >> ${HSFM_FILE_RUNTIME_ENV}
+    echo "export HSFM_LS_SORTING=${HSFM_LS_SORTING}" >> ${HSFM_FILE_RUNTIME_ENV}
 }
 fsave_session() {
     ## Save tab 
