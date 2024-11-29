@@ -48,6 +48,12 @@ alias pnvim='pvim -d nvim '
 alias clips="clip -s "
 alias clipx="clip -x "
 
+## simple alias
+alias c='cd '
+alias f='ffind '
+alias g='grep '
+alias s='sgrep '
+
 ########################################################
 #####    Tools                                     #####
 ########################################################

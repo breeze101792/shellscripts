@@ -134,7 +134,7 @@ export VAR_TERM_SEARCH_HISTORY
 export VAR_TERM_FIND_HISTORY
 
 export VAR_TERM_CMD_INPUT_BUFFER=""
-export VAR_TERM_CMD_LIST=( "redraw" "help" "exit" "shell" "cd" )
+export VAR_TERM_CMD_LIST=( "redraw" "help" "exit" "shell" "cd" "colorscheme")
 VAR_TERM_CMD_LIST+=( "set" "title" )
 # Debug
 VAR_TERM_CMD_LIST+=( "debug" "select" "stat" "eval" "dump" "test" "task" "msg")
@@ -209,33 +209,29 @@ export HSFM_PATH_TRASH="${HOME}/.trash"
 # 96 	Light cyan                  # 106 	Light cyan
 # 97 	White                       # 107 	White
 ###########################################################
+export HSFM_COLOR_THEME="black"
+
+# black scheme, low profile.
 # Cursor color [0\-9]
-export HSFM_COLOR_CURSOR=37
+export HSFM_COLOR_CURSOR
 
 # Selection color [0\-9] (copied/moved files)
-export HSFM_COLOR_SELECTION=100
+export HSFM_COLOR_SELECTION
 
 # Title
-export HSFM_COLOR_TITLE_FG=30
-export HSFM_COLOR_TITLE_BG=104
+export HSFM_COLOR_TITLE
 
 # tab bar
-export HSFM_COLOR_TAB_FG=97
-export HSFM_COLOR_TAB_BG=100
-export HSFM_COLOR_TAB_SELECTION_FG=30
-export HSFM_COLOR_TAB_SELECTION_BG=43
-export HSFM_COLOR_TAB_LEBEL_FG=30
-export HSFM_COLOR_TAB_LEBEL_BG=43
+export HSFM_COLOR_TAB
+export HSFM_COLOR_TAB_SELECTION
+export HSFM_COLOR_TAB_LEBEL
 
 # bookmark bar
-export HSFM_COLOR_TAB_BOOKMARK_FG=97
-export HSFM_COLOR_TAB_BOOKMARK_BG=40
+export HSFM_COLOR_TAB_BOOKMARK
 
 # Status bar
-export HSFM_COLOR_STATUS_FG=97
-export HSFM_COLOR_STATUS_BG=100
-export HSFM_COLOR_STATUS_LABEL_FG=30
-export HSFM_COLOR_STATUS_LABEL_BG=43
+export HSFM_COLOR_STATUS
+export HSFM_COLOR_STATUS_LABEL
 
 ## HSFM ENV
 ###########################################################
@@ -544,11 +540,11 @@ fterminal_draw_window() {
 
     fterminal_print '\e[%sH\e[%sm%*s\e[m' \
            "${var_start_line};${var_start_col}" \
-           "${HSFM_COLOR_TAB_BOOKMARK_FG};${HSFM_COLOR_TAB_BOOKMARK_BG}" \
+           "${HSFM_COLOR_TAB_BOOKMARK}" \
            "${var_width}"
     fterminal_print '\e[%sH\e[%sm %s \e[m' \
            "${var_start_line};${var_start_col}" \
-           "${HSFM_COLOR_TAB_BOOKMARK_FG};${HSFM_COLOR_TAB_BOOKMARK_BG}" \
+           "${HSFM_COLOR_TAB_BOOKMARK}" \
            "${var_win_title}"
 
     local var_cnt=0
@@ -799,7 +795,6 @@ fterminal_draw_dir() {
 }
 
 fterminal_draw_file_line() {
-
     # If the dir item doesn't exist, end here.
     if [[ ${#VAR_TERM_DIR_FILE_LIST[@]} -eq 0 ]] || [[ -z ${VAR_TERM_DIR_FILE_LIST[$1]} ]]; then
         return
@@ -886,7 +881,7 @@ fterminal_draw_file_line() {
 
     # If the VAR_TERM_DIR_FILE_LIST item is under the cursor.
     (($var_content_idx == VAR_TERM_CONTENT_SCROLL_IDX)) &&
-        var_format+="\\e[1;${HSFM_COLOR_CURSOR:-36};7m"
+        var_format+="\\e[${HSFM_COLOR_CURSOR}m"
 
     # If the VAR_TERM_DIR_FILE_LIST item is marked for operation.
     if [[ ${VAR_TERM_MARKED_FILE_LIST[$var_content_idx]} == "${VAR_TERM_DIR_FILE_LIST[$var_content_idx]:-null}" ]];then
@@ -901,24 +896,34 @@ fterminal_draw_file_line() {
     var_file_name=${var_file_name//[^[:print:]]/^[}
     tmp_line_offset=0
 
+    # FIXME, Its a patch, after impl visual scroll, remove the following code.
     if ((var_content_idx - VAR_TERM_CONTENT_SCROLL_START_IDX >= VAR_TERM_MAINWIN_HEIGHT))
     then
+        # to next page
+        # flog_msg_debug "file line, Next page"
         ((VAR_TERM_CONTENT_SCROLL_START_IDX=$var_content_idx-$VAR_TERM_MAINWIN_HEIGHT+1))
-        tmp_line_offset=$((${args_line_offset}))
+        # tmp_line_offset=$((${args_line_offset}))
+        tmp_line_offset=$((${args_line_offset} + ${var_content_idx} - ${VAR_TERM_CONTENT_SCROLL_START_IDX}))
     elif ((var_content_idx < VAR_TERM_CONTENT_SCROLL_START_IDX))
     then
+        # to previous page
+        # flog_msg_debug "file line, Previous page"
         ((VAR_TERM_CONTENT_SCROLL_START_IDX=var_content_idx))
-        tmp_line_offset=$((${args_line_offset}))
+        # tmp_line_offset=$((${args_line_offset}))
+        tmp_line_offset=$((${args_line_offset} + ${var_content_idx} - ${VAR_TERM_CONTENT_SCROLL_START_IDX}))
     else
+        # flog_msg_debug "file line, within page"
+        # within page
         tmp_line_offset=$((${args_line_offset} + ${var_content_idx} - ${VAR_TERM_CONTENT_SCROLL_START_IDX}))
     fi
 
-    # flog_msg_debug "${tmp_line_offset}:${args_col_offset}"
+    # flog_msg_debug "${1}:${tmp_line_offset}:${args_col_offset}"
     fterminal_print '\e[%s;%sH' "${tmp_line_offset}" "${args_col_offset}"
 
     local tmp_content="${var_prefix}${var_file_info} ${VAR_TERM_FILE_PRE}${var_file_name}${VAR_TERM_FILE_POST}${var_postfix}"
 
     local var_content_width=${VAR_TERM_MAINWIN_WIDTH}
+    # This is for marking with line length
     # if (( ${#tmp_content} > ${VAR_TERM_MAINWIN_WIDTH})); then
     #     local var_content_width=${VAR_TERM_MAINWIN_WIDTH}
     # else
@@ -1017,15 +1022,15 @@ fterminal_draw_tab_line() {
 
     fterminal_print "\e7\e[%sH\r\e[%sm%s\e[%sm%s\e[%sm%s\e[%sm%s\e[%sm%s\e[m\e8" \
            "$((def_tab_start_line))" \
-           "${HSFM_COLOR_TITLE_FG:-30};${HSFM_COLOR_TITLE_BG:-41}" \
+           "${HSFM_COLOR_TITLE}" \
            "${var_left}" \
-           "${HSFM_COLOR_TAB_FG:-30};${HSFM_COLOR_TAB_BG:-41}" \
+           "${HSFM_COLOR_TAB}" \
            "${var_tab_list_pre_buf}" \
-           "${HSFM_COLOR_TAB_SELECTION_FG:-30};${HSFM_COLOR_TAB_SELECTION_BG:-41}" \
+           "${HSFM_COLOR_TAB_SELECTION}" \
            "${var_tab_selected_buf}" \
-           "${HSFM_COLOR_TAB_FG:-30};${HSFM_COLOR_TAB_BG:-41}" \
+           "${HSFM_COLOR_TAB}" \
            "${var_tab_list_post_buf}${var_spacing}" \
-           "${HSFM_COLOR_TAB_LEBEL_FG:-30};${HSFM_COLOR_TAB_LEBEL_BG:-41}" \
+           "${HSFM_COLOR_TAB_LEBEL}" \
            "${var_right}"
 
     fterminal_draw_bookmark_line
@@ -1048,7 +1053,7 @@ fterminal_draw_bookmark_line() {
         ((tmp_cnt++))
     done
 
-    fterminal_print '\e7\e[%sH\e[%s;%sm%*s\rBM |%s \e[m\e8' \
+    fterminal_print '\e7\e[%sH\e[%s;%sm%*s\r BM |%s \e[m\e8' \
            "${def_bookmark_start_line}" \
            "${HSFM_COLOR_TAB_BOOKMARK_FG}" \
            "${HSFM_COLOR_TAB_BOOKMARK_BG}" \
@@ -1132,32 +1137,13 @@ fterminal_draw_status_line() {
     # '\e8':       Restore cursor position.
     #              This is more widely supported than '\e[u'.
 
-    # fterminal_print "\e7\e[%sH\e[%s;%sm%*s\r%s%s%s\e[m\e[%sH\e[K\e8" \
-    #        "$((VAR_TERM_HEIGHT-1))" \
-    #        "${HSFM_COLOR_STATUS_FG:-30}" \
-    #        "${HSFM_COLOR_STATUS_BG:-41}" \
-    #        "$VAR_TERM_WIDTH" "" \
-    #        "${var_left}" \
-    #        "${var_spacing}" \
-    #        "${var_right}" \
-    #        "$VAR_TERM_HEIGHT"
-
-    # fterminal_print "\e7\e[%sH\e[%s;%sm%*s\r%s%s%s\e[m\e8" \
-    #        "$((VAR_TERM_HEIGHT-1))" \
-    #        "${HSFM_COLOR_STATUS_FG:-30}" \
-    #        "${HSFM_COLOR_STATUS_BG:-41}" \
-    #        "$VAR_TERM_WIDTH" "" \
-    #        "${var_left}" \
-    #        "${var_spacing}" \
-    #        "${var_right}"
-
     fterminal_print "\e7\e[%sH\r\e[%sm%s\e[%sm%s\e[%sm%s\e[m\e8" \
            "$((VAR_TERM_HEIGHT-1))" \
-           "${HSFM_COLOR_STATUS_LABEL_FG:-30};${HSFM_COLOR_STATUS_LABEL_BG:-41}" \
+           "${HSFM_COLOR_STATUS_LABEL}" \
            "${var_left}" \
-           "${HSFM_COLOR_STATUS_FG:-30};${HSFM_COLOR_STATUS_BG:-41}" \
+           "${HSFM_COLOR_STATUS}" \
            "${var_center}${var_spacing}" \
-           "${HSFM_COLOR_STATUS_LABEL_FG:-30};${HSFM_COLOR_STATUS_LABEL_BG:-41}" \
+           "${HSFM_COLOR_STATUS_LABEL}" \
            "${var_right}"
 }
 
@@ -1950,11 +1936,12 @@ fgui_scroll_down_visual() {
             fterminal_draw_tab_line
             fterminal_print "\e[$((VAR_TERM_MAINWIN_HEIGHT + VAR_TERM_TAB_LINE_HEIGHT))H"
         fi
-        fterminal_draw_file_line $((VAR_TERM_CONTENT_SCROLL_IDX))
 
         if [ "${VAR_TERM_MODE_CURRENT}" = "${DEF_TERM_MODE_VISUAL}" ] && [[ $VAR_TERM_CONTENT_SCROLL_IDX -gt $VAR_TERM_VISUAL_START_IDX ]]
         then
             fterminal_mark_add "$VAR_TERM_CONTENT_SCROLL_IDX"
+        else
+            fterminal_draw_file_line $((VAR_TERM_CONTENT_SCROLL_IDX))
         fi
         # fterminal_draw_status_line
         fterminal_flush
@@ -4039,6 +4026,11 @@ cmd_set()
     fterminal_redraw full
     flog_msg "Set ${args_variable} ${args_value}"
 }
+cmd_colorscheme()
+{
+    fsetup_theme $1
+    fterminal_redraw full
+}
 cmd_test()
 {
     # local tmp_cmd="sleep 5"
@@ -4489,7 +4481,8 @@ fsave_env() {
         done
     fi
 
-
+    # Save color scheme
+    echo "export HSFM_COLOR_THEME=${HSFM_COLOR_THEME}" >> ${HSFM_FILE_RUNTIME_ENV}
 }
 fsave_session() {
     ## Save tab 
@@ -4697,6 +4690,54 @@ fexport_ls_colors() {
     # 'export' is a viable alternative.
     export "${ls_cols[@]}" &>/dev/null
 }
+fsetup_theme() {
+    local var_colorscheme=""
+    if [[ "${#}" -ge "1" ]]
+    then
+        var_colorscheme="${1}"
+    else
+        var_colorscheme="${HSFM_COLOR_THEME}"
+    fi
+    
+    if [ $var_colorscheme = "black" ] ||  [ $var_colorscheme = "default" ]; then
+        # black scheme, low profile.
+        # Cursor color [0\-9]
+        export HSFM_COLOR_CURSOR="1;37;40"
+        # Selection color [0\-9] (copied/moved files)
+        export HSFM_COLOR_SELECTION="100"
+        # Title
+        export HSFM_COLOR_TITLE="97;40"
+        # tab bar
+        export HSFM_COLOR_TAB="97;40"
+        export HSFM_COLOR_TAB_SELECTION="32;40"
+        export HSFM_COLOR_TAB_LEBEL="97;40"
+        # bookmark bar
+        export HSFM_COLOR_TAB_BOOKMARK="97;40"
+        # Status bar
+        export HSFM_COLOR_STATUS="97;40"
+        export HSFM_COLOR_STATUS_LABEL="97;40"
+    elif [ $var_colorscheme = "color" ]; then
+        # Cursor color [0\-9]
+        export HSFM_COLOR_CURSOR="1;37;7"
+        # Selection color [0\-9] (copied/moved files)
+        export HSFM_COLOR_SELECTION="100"
+        # Title
+        export HSFM_COLOR_TITLE="30;104"
+        # tab bar
+        export HSFM_COLOR_TAB="97;100"
+        export HSFM_COLOR_TAB_SELECTION="30;43"
+        export HSFM_COLOR_TAB_LEBEL="30;43"
+        # bookmark bar
+        export HSFM_COLOR_TAB_BOOKMARK="97;40"
+        # Status bar
+        export HSFM_COLOR_STATUS="97;100"
+        export HSFM_COLOR_STATUS_LABEL="30;43"
+    else
+        flog_msg "Theme ${var_colorscheme} not found."
+        return -1
+    fi
+    HSFM_COLOR_THEME=${var_colorscheme}
+}
 
 fHelp_keymap() {
     fterminal_print "[KeyMap]\n"
@@ -4794,6 +4835,7 @@ function fCore() {
     fsetup_osenv
     fsetup_options
     fsetup_shell
+    fsetup_theme "${HSFM_COLOR_THEME}"
 
     fterminal_get_size
     fterminal_setup
