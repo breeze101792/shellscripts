@@ -4529,7 +4529,7 @@ fsave_settings() {
 ###########################################################
 ## Others
 ###########################################################
-fsetup_osenv() {
+fsetup_env() {
     # Figure out the current operating system to set some specific variables.
     # '$OSTYPE' typically stores the name of the OS kernel.
     case $OSTYPE in
@@ -4563,6 +4563,13 @@ fsetup_osenv() {
             # VAR_TERM_DIR_LS_ARGS+=("-1")
         ;;
     esac
+
+    # Setup patch env
+    export HSFM_FILE_RUNTIME_ENV=${HSFM_PATH_CACHE}/hsfm_runtimeenv.sh
+    export HSFM_FILE_SESSION=${HSFM_PATH_CACHE}/hsfm_session.sh
+    export HSFM_FILE_CD_LASTPATH=${HSFM_PATH_CACHE}/hsfm_last.sh
+    export HSFM_FILE_MESSAGE=${HSFM_PATH_CACHE}/hsfm_message.log
+    export HSFM_FILE_LOGS=${HSFM_PATH_CACHE}/hsfm_logs.sh
 }
 
 fsetup_options() {
@@ -4788,6 +4795,7 @@ fHelp_commands() {
     fterminal_print "[Options]\n"
     fterminal_print "    %- 16s\t%s\n" "-s|-setup   " "Copy hsfm config file."
     fterminal_print "    %- 16s\t%s\n" "-d|--debug  " "Enable debug flag."
+    fterminal_print "    %- 16s\t%s\n" "--cache-path" "Specify cache path."
     # fterminal_print "    %- 16s\t%s\n" "-r|--restore" "restore previous session."
     fterminal_print "    %- 16s\t%s\n" "-n|--new" "Open new session session."
     fterminal_print "    %- 16s\t%s\n" "-l|--last   " "Print last path & remove the last path file."
@@ -4834,7 +4842,7 @@ function fCore() {
     # restore runtime env.
     fload_env
 
-    fsetup_osenv
+    fsetup_env
     fsetup_options
     fsetup_shell
     fsetup_theme "${HSFM_COLOR_THEME}"
@@ -4933,6 +4941,14 @@ function fMain()
                 else
                     echo "File exits."
                     exit 1
+                fi
+                ;;
+            --cache-path)
+
+                if [[ "${#}" -ge "2" ]] && ! [[ $2 =~ -.* ]]
+                then
+                    export HSFM_PATH_CACHE="${2}"
+                    shift 1
                 fi
                 ;;
             # Options

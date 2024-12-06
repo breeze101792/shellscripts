@@ -1,4 +1,62 @@
 #!/bin/bash
+function xxh()
+{
+    local var_cmd_pre=("")
+    local var_cmd=("")
+    local var_cmd_args=()
+    local var_cmd_buff=""
+    local var_ssh_pwd_file="${HOME}/.ssh/sshpass.conf"
+
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            scp)
+                var_cmd="$@"
+                break
+                ;;
+            ssh)
+                var_cmd="$@"
+                break
+                ;;
+            -a|--append)
+                cmd_args+=("${2}")
+                shift 1
+                ;;
+            -v|--verbose)
+                flag_verbose="y"
+                shift 1
+                ;;
+            -h|--help)
+                cli_helper -c "template" -cd "template function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "template [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-a|--append" -d "append file extension on search"
+                cli_helper -o "-v|--verbose" -d "Verbose print "
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                var_cmd="ssh $@"
+                break
+                # echo "Wrong args, $@"
+                # return -1
+                ;;
+        esac
+        shift 1
+    done
+    # search ssh password.
+    if test -f "${var_ssh_pwd_file}"; then
+        grep  "${var_ssh_pwd_file}"
+    fi
+
+    # compose cmd buffer.
+    var_cmd_buff="${var_cmd_pre} ${var_cmd} ${var_cmd_args[@]}"
+
+    # check sshpass
+    echo "CMD: '${var_cmd_buff}'"
+    eval "${var_cmd_buff}"
+}
 function lab_option()
 {
     name=${1//\//\\/}
