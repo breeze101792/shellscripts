@@ -903,7 +903,9 @@ function session()
         fi
         # NOTE, don't carete session with names
         var_target_name="${var_taget_socket}"
-        pureshell "export TERM='xterm-256color' && ${var_cmd[@]} -u -2 new -s ${var_target_name}"
+        #NOTE, it'll fail if we have an non-system tmux.
+        # pureshell "export TERM='xterm-256color' && ${var_cmd[@]} -u -2 new -s ${var_target_name}"
+        ${var_cmd[@]} -u -2 new -s ${var_target_name}
     elif [ "${var_action}" = "list" ]
     then
         echo "${var_action} session:"
@@ -917,11 +919,11 @@ function session()
                 then
                     local tmp_buf="$(eval ${var_cmd[@]} -S ${var_session_tmp_path}/${each_session} ls)"
                     # printf "%s@%s:%s\n" "$(eval ${var_cmd[@]} -S ${var_session_tmp_path}/${each_session} ls|cut -d ':' -f 1)" "${each_session}" "$(eval ${var_cmd[@]} -S ${var_session_tmp_path}/${each_session} ls|cut -d ':' -f 2-)"
-                    printf "% 24s:%s\n" "${each_session}@${tmp_buf%%:*}" "${tmp_buf#*:}"
+                    printf "%- 16s: @%s%s\n" "${each_session}" "${tmp_buf%%:*}" "${tmp_buf#*:}"
                 fi
             done
         else
-            tmux ls
+            eval tmux ls
             # for each_session in $(tmux ls | cut -d ':' -f 1)
             # do
             #     printf "${each_session}: Off\n"

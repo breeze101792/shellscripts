@@ -6,6 +6,7 @@
 ########################################################
 ########################################################
 # Get Script Path
+test -z "${HS_ENV_SETUP_FINISHED}" && export HS_ENV_SETUP_FINISHED=false
 HS_STARTUP_DEBUG=n
 HS_SCRIPT_PATH=""
 HS_ENV_SHELL=""
@@ -324,6 +325,7 @@ function reload
     local cpath="${PWD}"
     cd
     cd "${cpath}"
+    export HS_ENV_SETUP_FINISHED=false
     source ${HS_PATH_LIB}/source.sh -p=${HS_PATH_LIB} -s=${HS_ENV_SHELL} -S=${HS_ENV_SILENCE} --refresh
     cd "${cpath}"
 }
@@ -342,6 +344,7 @@ function hs_main
     local flag_var_refresh="n"
     local var_user_config="${HOME}/.hsconfig.sh"
     local var_user_autostart="${HOME}/.hsautostart.sh"
+    local var_current_version="${HS_ENV_VER:0}"
 
     ##########################################
     # configs
@@ -491,26 +494,38 @@ function hs_main
     hs_source ${HS_PATH_LIB}/shell/enviroment/platform.sh
     hs_source ${HS_PATH_LIB}/shell/enviroment/enviroment.sh
     hs_source ${HS_PATH_LIB}/shell/enviroment/alias.sh
-    hs_source ${HS_PATH_LIB}/shell/library/lib.sh
-    hs_source ${HS_PATH_LIB}/shell/library/cli.sh
-    hs_source ${HS_PATH_LIB}/shell/tools/tools.sh
-    hs_source ${HS_PATH_LIB}/shell/tools/development.sh
-    hs_source ${HS_PATH_LIB}/shell/tools/others.sh
 
-    # source project root script
-    hs_source ${HS_PATH_LIB}/projects/project.sh
+    if [ "${HS_ENV_SHELL}" = "bash" ] && [ "${HS_CONFIG_FUNCTION_EXPORT}" = "y" ]  && [ "${HS_ENV_SETUP_FINISHED}" = true ] && [ "${HS_CONFIG_IGNORE_SUBSHELL_FUNCTION_SOURCE}" = "y" ]  && [ "${HS_ENV_VER}" = "${var_current_version}" ]
+    then
+        hs_print "Ignore on subshell."
+    else
+        hs_source ${HS_PATH_LIB}/shell/library/lib.sh
+        hs_source ${HS_PATH_LIB}/shell/library/cli.sh
+        hs_source ${HS_PATH_LIB}/shell/tools/tools.sh
+        hs_source ${HS_PATH_LIB}/shell/tools/development.sh
+        hs_source ${HS_PATH_LIB}/shell/tools/others.sh
+
+        # source project root script
+        hs_source ${HS_PATH_LIB}/projects/project.sh
+
+        # shell post init
+        if [ "${HS_ENV_SHELL}" = "bash" ] && [ "${HS_CONFIG_FUNCTION_EXPORT}" = "y" ]
+        then
+            hs_print "Function export"
+            export_sh_func ${HS_PATH_LIB}/shell/core/core.sh
+            export_sh_func ${HS_PATH_LIB}/shell/library/lib.sh
+            export_sh_func ${HS_PATH_LIB}/shell/library/cli.sh
+            export_sh_func ${HS_PATH_LIB}/shell/tools/tools.sh
+            export_sh_func ${HS_PATH_LIB}/shell/tools/development.sh
+            export_sh_func ${HS_PATH_LIB}/shell/tools/others.sh
+
+            export_sh_func ${HS_PATH_LIB}/projects/project.sh
+        fi
+    fi
 
     ##########################################
     # shell post init
     ##########################################
-    if [ "${HS_ENV_SHELL}" = "bash" ] && [ "${HS_CONFIG_FUNCTION_EXPORT}" = "y" ]
-    then
-        export_sh_func ${HS_PATH_LIB}/shell/core/core.sh
-        export_sh_func ${HS_PATH_LIB}/shell/library/lib.sh
-        export_sh_func ${HS_PATH_LIB}/shell/library/cli.sh
-        export_sh_func ${HS_PATH_LIB}/shell/tools/tools.sh
-        export_sh_func ${HS_PATH_LIB}/shell/tools/development.sh
-    fi
     # if [ "${flag_var_refresh}" = "n" ] && [ ${HS_ENV_SILENCE} = "n" ]
     # then
     #     retitle "${HS_ENV_TITLE}"
@@ -553,6 +568,7 @@ function hs_main
     then
         eval "${excute_command}"
     fi
+    export HS_ENV_SETUP_FINISHED=true
 }
 hs_eval hs_main $@
 unset -f hs_main

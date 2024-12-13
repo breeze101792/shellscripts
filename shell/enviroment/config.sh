@@ -9,7 +9,7 @@
 # Put var, function & alias will be needed before sourc base_shell file
 # Don't Set this flags
 # Vars
-export HS_ENV_VER=0.3.0
+export HS_ENV_VER=0.3.1
 export HS_ENV_TITLE="DO IT NOW"
 
 # test -z "${HS_ENV_OS}" && export HS_ENV_OS="LINUX"
@@ -39,8 +39,10 @@ test -z "${HS_CONFIG_ADVANCED_PROMOTE}" && export HS_CONFIG_ADVANCED_PROMOTE=y
 test -z "${HS_CONFIG_CHANGE_DIR}" && export HS_CONFIG_CHANGE_DIR=y
 test -z "${HS_CONFIG_SHELL_GIT_PARSE}" && export HS_CONFIG_SHELL_GIT_PARSE=y
 test -z "${HS_CONFIG_SAFE_COMMAND_REPLACEMENT}" && export HS_CONFIG_SAFE_COMMAND_REPLACEMENT=n
+
 # Only work on bash
 test -z "${HS_CONFIG_FUNCTION_EXPORT}" && export HS_CONFIG_FUNCTION_EXPORT=n
+test -z "${HS_CONFIG_IGNORE_SUBSHELL_FUNCTION_SOURCE}" && export HS_CONFIG_IGNORE_SUBSHELL_FUNCTION_SOURCE=n
 ########################################################
 ########################################################
 #####                                              #####

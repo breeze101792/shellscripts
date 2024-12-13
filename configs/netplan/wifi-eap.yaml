@@ -1,0 +1,17 @@
+network:
+  version: 2
+  renderer: NetworkManager
+  wifis:
+    wlan0:
+      dhcp4: true
+      dhcp6: true
+      access-points:
+        "ssid-name":
+          auth:
+            key-management: eap
+            identity: "id-name"
+            password: "password"
+            method: peap
+            phase2-auth: mschapv2
+      networkmanager:
+        name: "profile-name"

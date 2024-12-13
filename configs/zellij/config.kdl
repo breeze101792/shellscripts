@@ -1,3 +1,55 @@
+// ################################################################
+// Layout
+// ################################################################
+// layout {
+//     // Define panes and splits
+//     pane split_direction="vertical" {
+//         command "htop"
+//     }
+//     pane {
+//         command "bash"
+//     }
+// }
+
+// ################################################################
+// Theme
+// ################################################################
+// Customize theme
+themes {
+    dracula {
+        fg 248 248 242
+        bg 40 42 54
+        red 255 85 85
+        green 80 250 123
+        yellow 241 250 140
+        blue 98 114 164
+        magenta 255 121 198
+        orange 255 184 108
+        cyan 139 233 253
+        black 0 0 0
+        white 255 255 255
+    }
+}
+
+// ################################################################
+// Plugins
+// ################################################################
+plugins {
+    tab-bar location="zellij:tab-bar"
+    status-bar location="zellij:status-bar"
+    strider location="zellij:strider"
+    compact-bar location="zellij:compact-bar"
+    session-manager location="zellij:session-manager"
+    welcome-screen location="zellij:session-manager" {
+        welcome_screen true
+    }
+    filepicker location="zellij:strider" {
+        cwd "/"
+    }
+}
+// ################################################################
+// Keybinding
+// ################################################################
 // If you'd like to override the default keybindings completely, be sure to change "keybinds" to "keybinds clear-defaults=true"
 keybinds {
     normal {
@@ -202,20 +254,9 @@ keybinds {
     }
 }
 
-plugins {
-    tab-bar location="zellij:tab-bar"
-    status-bar location="zellij:status-bar"
-    strider location="zellij:strider"
-    compact-bar location="zellij:compact-bar"
-    session-manager location="zellij:session-manager"
-    welcome-screen location="zellij:session-manager" {
-        welcome_screen true
-    }
-    filepicker location="zellij:strider" {
-        cwd "/"
-    }
-}
-
+// ################################################################
+// Settings
+// ################################################################
 // Choose what to do when zellij receives SIGTERM, SIGINT, SIGQUIT or SIGHUP
 // eg. when terminal window with an active zellij session is closed
 // Options:
@@ -252,7 +293,7 @@ plugins {
 //   - true (default)
 //   - false
 //
-// auto_layout true
+auto_layout true
 
 // Whether sessions should be serialized to the cache folder (including their tabs/panes, cwds and running commands) so that they can later be resurrected
 // Options:
@@ -265,7 +306,7 @@ plugins {
 // Options:
 //   - true
 //   - false (default)
-// serialize_pane_viewport true
+serialize_pane_viewport true
 
 // Scrollback lines to serialize along with the pane viewport when serializing sessions, 0
 // defaults to the scrollback size. If this number is higher than the scrollback size, it will
@@ -295,8 +336,8 @@ plugins {
 
 // Choose the theme that is specified in the themes section.
 // Default: default
-//
-// theme "default"
+
+theme "dracula"
 
 // The name of the default layout to load on startup
 // Default: "default"
@@ -380,3 +421,4 @@ scroll_buffer_size 50000
 // Default: false
 //
 // disable_session_metadata true
+

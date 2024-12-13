@@ -1,0 +1,22 @@
+network:
+  version: 2
+  ethernets:
+    NM-a6fc6c9d-bfe9-3026-b6c2-e0772f7176ab:
+      renderer: NetworkManager
+      match:
+        name: "enx00e099914f43"
+      addresses:
+      - "192.168.13.15/24"
+      - "192.168.13.12/24"
+      dhcp6: true
+      wakeonlan: true
+      networkmanager:
+        uuid: "a6fc6c9d-bfe9-3026-b6c2-e0772f7176ab"
+        name: "ZeroLen"
+        passthrough:
+          connection.autoconnect-priority: "-999"
+          connection.timestamp: "1728916500"
+          ethernet._: ""
+          ipv6.addr-gen-mode: "default"
+          ipv6.ip6-privacy: "-1"
+          proxy._: ""
