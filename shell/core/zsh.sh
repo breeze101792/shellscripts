@@ -16,6 +16,7 @@ zstyle :compinstall filename "${HOME}/.zshrc"
 zstyle ':completion:*' menu select
 
 # load theme promot
+# FIXME, compinit will slow down zsh
 autoload -Uz compinit promptinit
 compinit
 promptinit
