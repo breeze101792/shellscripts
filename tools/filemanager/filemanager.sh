@@ -381,6 +381,13 @@ export HSFM_KEY_SELECTION="s"
 # source ${PATH_SCRIPT_ROOT}/winmgr.sh
 
 ###########################################################
+## Utility Functions
+###########################################################
+futility_stream_purify() {
+    sed "s/ /_/g" | sed -r "s/[^0-9a-zA-Z._-]/_/g" | sed -r "s/\[_\]\+/_/g" | sed -r "s/^_//g" | sed -r "s/_$//g" | tr -s '_'
+}
+
+###########################################################
 ## Terminal Functions
 ###########################################################
 fterminal_print() {
@@ -3041,7 +3048,8 @@ fprase_mime_type() {
     echo $(file "-${VAR_TERM_FILE_ARGS:-biL}" "$*" 2>/dev/null)
 }
 fget_cursor_file() {
-    echo ${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}
+    # echo ${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}
+    printf "%s\n" "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
 }
 fget_selection_file() {
     echo ${VAR_TERM_SELECTION_FILE_LIST[@]}
@@ -3623,6 +3631,7 @@ cmd_extract()
     local var_file=""
     local var_file_type=""
     local var_cmd=""
+    local var_extrace_name=""
 
     if [[ "${#}" -ge "2" ]]
     then
@@ -3638,12 +3647,16 @@ cmd_extract()
     fi
 
     if [ -f "${var_file}" ] ; then
-        var_file="$(realpath ${var_file})"
+        var_extrace_name=($(echo "${var_file##*/}"| futility_stream_purify))
+        var_extrace_name="${var_extrace_name[*]}"
+        # var_file=($(realpath "${var_file}"))
+        # FIXME, not support reltive path.
+        var_file="${var_file}"
     else
         flog_msg "'${var_file}' is not a valid file!"
         return 1
     fi
-    case ${var_file_type} in
+    case "${var_file_type}" in
         *tar.bz2|*tbz2)
             var_cmd="tar xvjf '${var_file}'"
             ;;
@@ -3660,7 +3673,7 @@ cmd_extract()
             var_cmd="unrar x '${var_file}'"
             ;;
         *gz)
-            var_cmd="gunzip '${var_file}'"
+            var_cmd="gunzip -k '${var_file}'"
             ;;
         *zip)
             var_cmd="unzip '${var_file}'"
@@ -3680,10 +3693,14 @@ cmd_extract()
             ;;
     esac
 
-    local tmp_extrace_path="${var_file%.*}"
+    local tmp_extrace_path=${var_extrace_name}
+
+    # flog_msg_debug "Creating folder file -${tmp_extrace_path[@]}-."
     flog_msg "Starting extract file ${var_file}."
+
     fterminal_draw_miniwin "Start extract files."
-    if [[ -d "${var_file%.*}" ]]; then
+    flog_msg_debug "Eval: ${var_cmd}"
+    if [[ -d "${tmp_extrace_path}" ]]; then
         local tmp_time=$(date +%s)
         local tmp_extrace_path="${var_file%.*}_${tmp_time}"
         mkdir "${tmp_extrace_path}"
@@ -3700,6 +3717,7 @@ cmd_extract()
         fi
         popd > /dev/null
     fi
+    sleep 5
 
     # for redraw miniwin, we must redraw.
     fterminal_redraw full
@@ -4076,7 +4094,7 @@ cmd_exit()
 }
 fsys_open() {
     local var_file=""
-    # flog_msg_debug "Open '$*'"
+    flog_msg_debug "Open '$*'"
     if test -e "$*"; then
         var_file="${*}"
     else
@@ -4084,7 +4102,7 @@ fsys_open() {
     fi
 
     # Open directories and files.
-    if [[ -d $var_file/ ]]; then
+    if [[ -d "${var_file}/" ]]; then
         VAR_SEARCH_MODE=
         VAR_TERM_SEARCH_END_EARLY=
         if test -r "${var_file:-/}"; then
@@ -4095,7 +4113,7 @@ fsys_open() {
             flog_msg "Access fail on: ${var_file:-/}"
         fi
 
-    elif [[ -f $var_file ]]; then
+    elif [[ -f "${var_file}" ]]; then
         VAR_TERM_OPEN_FILE=""
         while test -z "${VAR_TERM_OPEN_FILE}"; do
             VAR_TERM_OPEN_FILE="${var_file}"
@@ -4506,7 +4524,7 @@ fsave_session() {
     do
         echo "VAR_TERM_TAB_LINE_LIST_PATH+=(\"${each_tab}\")" >> ${HSFM_FILE_SESSION}
     done
-    echo "cd ${PWD}" >> ${HSFM_FILE_SESSION}
+    echo "cd '${PWD}'" >> ${HSFM_FILE_SESSION}
 }
 fload_session() {
     if test -f ${HSFM_FILE_SESSION}
@@ -4544,6 +4562,9 @@ fsetup_env() {
             # FIXME, not tested.
             # VAR_TERM_DIR_LS_ARGS+=("--time-style=long-iso")
             # VAR_TERM_DIR_LS_ARGS+=("-quote-name")
+
+            # Patch
+            HSFM_READ_DIR_MODE=${DEF_TERM_READ_DIR_MODE_LS}
         ;;
 
         linux*|*)
