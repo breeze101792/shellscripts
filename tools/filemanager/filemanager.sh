@@ -3693,16 +3693,16 @@ cmd_extract()
             ;;
     esac
 
-    local tmp_extrace_path=${var_extrace_name}
+    local tmp_extrace_path="${var_extrace_name}_extract"
 
     # flog_msg_debug "Creating folder file -${tmp_extrace_path[@]}-."
     flog_msg "Starting extract file ${var_file}."
 
     fterminal_draw_miniwin "Start extract files."
     flog_msg_debug "Eval: ${var_cmd}"
-    if [[ -d "${tmp_extrace_path}" ]]; then
+    if [[ -e "${tmp_extrace_path}" ]]; then
         local tmp_time=$(date +%s)
-        local tmp_extrace_path="${var_file%.*}_${tmp_time}"
+        local tmp_extrace_path="${var_extrace_name}_extract_${tmp_time}"
         mkdir "${tmp_extrace_path}"
         pushd "${tmp_extrace_path}" > /dev/null
         if ! eval "${var_cmd}" > /dev/null; then
@@ -3717,7 +3717,6 @@ cmd_extract()
         fi
         popd > /dev/null
     fi
-    sleep 5
 
     # for redraw miniwin, we must redraw.
     fterminal_redraw full
