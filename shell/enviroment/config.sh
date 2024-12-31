@@ -9,7 +9,7 @@
 # Put var, function & alias will be needed before sourc base_shell file
 # Don't Set this flags
 # Vars
-export HS_ENV_VER=0.3.1
+export HS_ENV_VER=0.3.2
 export HS_ENV_TITLE="DO IT NOW"
 
 # test -z "${HS_ENV_OS}" && export HS_ENV_OS="LINUX"

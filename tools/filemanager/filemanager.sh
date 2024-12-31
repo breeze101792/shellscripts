@@ -134,7 +134,7 @@ export VAR_TERM_SEARCH_HISTORY
 export VAR_TERM_FIND_HISTORY
 
 export VAR_TERM_CMD_INPUT_BUFFER=""
-export VAR_TERM_CMD_LIST=( "redraw" "help" "exit" "shell" "cd" "colorscheme")
+export VAR_TERM_CMD_LIST=( "redraw" "help" "exit" "shell" "cd" "reenter" "colorscheme")
 VAR_TERM_CMD_LIST+=( "set" "title" )
 # Debug
 VAR_TERM_CMD_LIST+=( "debug" "select" "stat" "eval" "dump" "test" "task" "msg")
@@ -143,7 +143,7 @@ VAR_TERM_CMD_LIST+=( "mkdir" "touch" "rename" "search" "find" "sort" )
 # Tab operation
 VAR_TERM_CMD_LIST+=( "quitngo" "tabclose" "tabcloseright" "tabcloseleft" "tabcloseothers")
 # Open ralted.
-VAR_TERM_CMD_LIST+=( "open" "editor" "vim" "media" "play" "image" "preview" "unzip" "extract")
+VAR_TERM_CMD_LIST+=( "open" "editor" "vim" "hex" "media" "play" "image" "preview" "unzip" "extract")
 
 export VAR_TERM_SELECT_CMD_LIST=( "compress" )
 # VAR_TERM_SELECT_CMD_LIST+=( "copy" "remove" "paste" )
@@ -3559,6 +3559,32 @@ cmd_editor()
         flog_msg "warn: '$var_file' not opened"
     fi
 }
+cmd_hex()
+{
+    local var_file=""
+    if test -f "$*"
+    then
+        var_file="${*}"
+    else
+        var_file="$(fget_cursor_file)"
+    fi
+
+    if ! command -v xxd 2>&1 > /dev/null; then
+        flog_msg "warn: 'xxd' not found."
+        return 1
+    fi
+
+    if [[ -f "${var_file}" ]]; then
+        fterminal_reset
+
+        xxd "${var_file}" |less
+
+        fterminal_setup
+        fterminal_redraw
+    else
+        flog_msg "warn: '$var_file' not opened"
+    fi
+}
 cmd_media()
 {
     local var_file=""
@@ -3652,6 +3678,22 @@ cmd_extract()
         # var_file=($(realpath "${var_file}"))
         # FIXME, not support reltive path.
         var_file="${var_file}"
+
+        # Create extracting path
+        local tmp_extrace_path="${var_extrace_name}_extracted"
+        if [[ -e "${tmp_extrace_path}" ]]; then
+            local tmp_time=$(date +%s)
+            local tmp_extrace_path="${var_extrace_name}_extracted_${tmp_time}"
+            mkdir "${tmp_extrace_path}"
+            pushd "${tmp_extrace_path}" > /dev/null
+            if ! eval "${var_cmd}" > /dev/null; then
+                rm -rf "${tmp_extrace_path}"
+            fi
+            popd > /dev/null
+        else
+            mkdir "${tmp_extrace_path}"
+        fi
+
     else
         flog_msg "'${var_file}' is not a valid file!"
         return 1
@@ -3672,9 +3714,6 @@ cmd_extract()
         *rar)
             var_cmd="unrar x '${var_file}'"
             ;;
-        *gz)
-            var_cmd="gunzip -k '${var_file}'"
-            ;;
         *zip)
             var_cmd="unzip '${var_file}'"
             ;;
@@ -3684,7 +3723,10 @@ cmd_extract()
         *tar)
             var_cmd="tar xvf '${var_file}'"
             ;;
-        *7z)
+        # *gz)
+        #     var_cmd="gunzip -k '${var_file}'"
+        #     ;;
+        *7z|*gz)
             var_cmd="7z x '${var_file}'"
             ;;
         *)
@@ -3693,34 +3735,22 @@ cmd_extract()
             ;;
     esac
 
-    local tmp_extrace_path="${var_extrace_name}_extract"
-
     # flog_msg_debug "Creating folder file -${tmp_extrace_path[@]}-."
-    flog_msg "Starting extract file ${var_file}."
 
     fterminal_draw_miniwin "Start extract files."
+
+    flog_msg "Starting extract file ${var_file}."
     flog_msg_debug "Eval: ${var_cmd}"
-    if [[ -e "${tmp_extrace_path}" ]]; then
-        local tmp_time=$(date +%s)
-        local tmp_extrace_path="${var_extrace_name}_extract_${tmp_time}"
-        mkdir "${tmp_extrace_path}"
-        pushd "${tmp_extrace_path}" > /dev/null
-        if ! eval "${var_cmd}" > /dev/null; then
-            rm -rf "${tmp_extrace_path}"
-        fi
-        popd > /dev/null
-    else
-        mkdir "${tmp_extrace_path}"
-        pushd "${tmp_extrace_path}" > /dev/null
-        if ! eval "${var_cmd}" > /dev/null; then
-            rm -rf "${tmp_extrace_path}"
-        fi
-        popd > /dev/null
+
+    pushd "${tmp_extrace_path}" > /dev/null
+    if ! eval "${var_cmd}" > /dev/null; then
+        rm -rf "${tmp_extrace_path}"
     fi
+    popd > /dev/null
 
     # for redraw miniwin, we must redraw.
     fterminal_redraw full
-    if [[ -d "${var_file%.*}" ]]; then
+    if [[ -e "${tmp_extrace_path}" ]]; then
         flog_msg "Extract file to '${tmp_extrace_path}'"
     else
         flog_msg "Extract file fail '${tmp_extrace_path}'"
@@ -3807,6 +3837,25 @@ cmd_cd()
 
         flog_msg "${var_dir_path} not found."
         return 1
+    fi
+    return 0
+}
+cmd_reenter()
+{
+    local var_dir_path="$(realpath ${PWD})"
+    if test -d "${var_dir_path}"
+    then
+        # cd $@
+        fsys_open "${var_dir_path}"
+
+        # FIXME, it didn't use anymore, remove it.
+        # backup cursor
+        # NOTE. It's a patch for storing cursor position, cuse fcommand_handler will restore it.
+        fterminal_print '\e7'
+
+        flog_msg "Change dir to: ${var_dir_path}"
+    else
+        flog_msg "No dir found. ${var_dir_path}"
     fi
     return 0
 }
@@ -4116,11 +4165,14 @@ fsys_open() {
         VAR_TERM_OPEN_FILE=""
         while test -z "${VAR_TERM_OPEN_FILE}"; do
             VAR_TERM_OPEN_FILE="${var_file}"
+            local tmp_file_type=($(fprase_mime_type "$var_file"))
+            tmp_file_type=${tmp_file_type[@]}
+
             # Figure out what kind of file we're working with.
             # Open all text-based files in '$HSFM_TEXT_EDITOR'.
             # Everything else goes through 'xdg-open'/'open'.
             if [[ $DISPLAY ]]; then
-                case "$(fprase_mime_type $var_file)" in
+                case "${tmp_file_type}" in
                     audio/*)
                         cmd_media "$var_file"
                         break
@@ -4141,7 +4193,7 @@ fsys_open() {
             fi
 
             # cli preview
-            case "$(fprase_mime_type $var_file)" in
+            case "${tmp_file_type}" in
                 image/*)
                     cmd_preview "$var_file"
                     break
@@ -4177,7 +4229,7 @@ fsys_open() {
                 nohup "${HSFM_OPENER}" "$var_file" &>/dev/null &
                 disown
             else
-                flog_msg "Unknown file type: '$(fprase_mime_type $var_file)'"
+                flog_msg "Unknown file type: '${tmp_file_type}'"
             fi
         done
     fi

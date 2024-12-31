@@ -754,7 +754,7 @@ function xfm()
     if test -d "${tmp_path}"
     then
         echo goto path:${tmp_path}
-        cd ${tmp_path}
+        cd "${tmp_path}"
     fi
 }
 function retitle()

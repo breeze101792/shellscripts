@@ -810,6 +810,9 @@ function session()
                     var_target_name=${var_hostname}
                 fi
                 ;;
+            -v|--verbose)
+                var_cmd+=('-v')
+                ;;
             -h|--help)
                 cli_helper -c "session" -cd "session is an independ instance of tmux"
                 cli_helper -t "SYNOPSIS"
@@ -830,6 +833,7 @@ function session()
                 cli_helper -o "-rm|--remove" -d "remove session with session list"
                 cli_helper -o "-f|--file" -d "Specify config file"
                 cli_helper -o "--host|host|Host|h|H" -d "Attach/Create with hostname, if Host/H, will attach-only."
+                cli_helper -o "-v|--verbose" -d "Verbose output"
                 return 0
                 ;;
             *)
@@ -881,7 +885,7 @@ function session()
         then
             var_cmd+=("-S ${var_session_tmp_path}/${var_taget_socket}")
         fi
-        eval ${var_cmd[@]} a -dt ${var_target_name}
+        eval ${var_cmd[@]} a -dt "${var_target_name}"
     elif [ "${var_action}" = "attach-only" ]
     then
         echo "${var_action} session: ${var_target_name}@${var_taget_socket}"
@@ -891,7 +895,7 @@ function session()
         then
             var_cmd+=("-S ${var_session_tmp_path}/${var_taget_socket}")
         fi
-        eval ${var_cmd[@]} a -t ${var_target_name}
+        eval ${var_cmd[@]} a -t "${var_target_name}"
     elif [ "${var_action}" = "create" ]
     then
         echo "${var_action} session: ${var_taget_socket}"
@@ -905,7 +909,7 @@ function session()
         var_target_name="${var_taget_socket}"
         #NOTE, it'll fail if we have an non-system tmux.
         # pureshell "export TERM='xterm-256color' && ${var_cmd[@]} -u -2 new -s ${var_target_name}"
-        ${var_cmd[@]} -u -2 new -s ${var_target_name}
+        eval ${var_cmd[@]} -u -2 new -s "${var_target_name}"
     elif [ "${var_action}" = "list" ]
     then
         echo "${var_action} session:"
