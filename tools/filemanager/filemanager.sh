@@ -86,6 +86,7 @@ export VAR_TERM_OPEN_FILE=""
 # Buffer
 export VAR_TERM_PRINT_BUFFER_ENABLE=false
 export VAR_TERM_PRINT_BUFFER=""
+export VAR_TERM_KEY_BUFFER_INPUT=""
 export VAR_TERM_KEY_CURRENT_INPUT=""
 # export VAR_TERM_KEY_PREVIOUS_INPUT=""
 # export VAR_TERM_KEY_SECOND_LEVE_KEY_LIST=("q")
@@ -833,8 +834,17 @@ fterminal_draw_file_line() {
 
     # Directory.
     if [[ -d "${VAR_TERM_DIR_FILE_LIST[$var_content_idx]}" ]]; then
-        var_format+=\\e[${di:-1;-32}m
+        # Check if symbolic link
+        if [[ -h ${VAR_TERM_DIR_FILE_LIST[$var_content_idx]} ]]; then
+            var_format+=\\e[${ln:-01;36}m
+        else
+            var_format+=\\e[${di:-1;-32}m
+        fi
         var_postfix+=/
+
+    # Symbolic Link.
+    elif [[ -h ${VAR_TERM_DIR_FILE_LIST[$var_content_idx]} && ! -e ${VAR_TERM_DIR_FILE_LIST[$var_content_idx]} ]]; then
+        var_format+=\\e[${mi:-01;31;7}m
 
     # Block special file.
     elif [[ -b ${VAR_TERM_DIR_FILE_LIST[$var_content_idx]} ]]; then
@@ -847,10 +857,6 @@ fterminal_draw_file_line() {
     # Executable file.
     elif [[ -x ${VAR_TERM_DIR_FILE_LIST[$var_content_idx]} ]]; then
         var_format+=\\e[${ex:-01;32}m
-
-    # Symbolic Link (broken).
-    elif [[ -h ${VAR_TERM_DIR_FILE_LIST[$var_content_idx]} && ! -e ${VAR_TERM_DIR_FILE_LIST[$var_content_idx]} ]]; then
-        var_format+=\\e[${mi:-01;31;7}m
 
     # Symbolic Link.
     elif [[ -h ${VAR_TERM_DIR_FILE_LIST[$var_content_idx]} ]]; then
@@ -1662,6 +1668,11 @@ fterminal_read_key() {
     # local REPLY
     read "${VAR_TERM_READ_ARGS[@]}" -srn 1
     local ret_value=$?
+    if [ "${VAR_TERM_KEY_BUFFER_INPUT}" != "" ]
+    then
+        REPLY="${VAR_TERM_KEY_BUFFER_INPUT}${REPLY}"
+        VAR_TERM_KEY_BUFFER_INPUT=""
+    fi
     if [[ ${REPLY} == $'\e' ]]
     then
         local tmp_buffer="${REPLY}"
@@ -1674,16 +1685,34 @@ fterminal_read_key() {
             return ${ret_value}
         elif [[ ${tmp_buffer}${REPLY} == $'\e[' ]]; then
             tmp_buffer="${tmp_buffer}${REPLY}"
-            read "${VAR_TERM_READ_ARGS[@]}" -rsn 3
+            read "${VAR_TERM_READ_ARGS[@]}" -rsn 1
         fi
 
-        # read "${VAR_TERM_READ_ARGS[@]}" -rsn 2
+        if [[ "${REPLY}" =~ ^-?[0-9]+$ ]]; then
+            # Handle F5~F12/Home/Ins/Del/PgD/PgU.
+            tmp_buffer="${tmp_buffer}${REPLY}"
+            read "${VAR_TERM_READ_ARGS[@]}" -rsn 1
 
-        # Handle a normal escape key press.
-        # [[ ${tmp_buffer}${REPLY} == $'\e\e['* ]] &&
-        #     read "${VAR_TERM_READ_ARGS[@]}" -rsn 1 _
+            if [[ "${REPLY}" = "~" ]]; then
+                # tmp_buffer="${tmp_buffer}${REPLY}"
+                REPLY=${tmp_buffer}${REPLY}
+            else
+                tmp_buffer="${tmp_buffer}${REPLY}"
+                read "${VAR_TERM_READ_ARGS[@]}" -rsn 1
 
-        REPLY=${tmp_buffer}${REPLY}
+                REPLY=${tmp_buffer}${REPLY}
+            fi
+
+        elif [[ "${REPLY}" = 'O' ]]; then
+            # Handle F1~F4
+            tmp_buffer="${tmp_buffer}${REPLY}"
+            read "${VAR_TERM_READ_ARGS[@]}" -rsn 1
+            REPLY=${tmp_buffer}${REPLY}
+        else
+            REPLY=${tmp_buffer}${REPLY}
+        fi
+
+        # REPLY=${tmp_buffer}${REPLY}
         VAR_TERM_KEY_CURRENT_INPUT="^"${REPLY:1}
         # flog_msg_debug "${VAR_TERM_KEY_CURRENT_INPUT}"
     elif [[ ${ret_value} ]]
@@ -4452,7 +4481,7 @@ fselect_remove() {
 
     else
         # FIXME, don't trash on different device/big file size
-        rm -r "${@:1:$#-1}"
+        rm -rf "${@:1:$#-1}"
 
         # test -d "${HSFM_PATH_TRASH}" || mkdir -p "${HSFM_PATH_TRASH}"
         # cd "$HSFM_PATH_TRASH" || flog_msg "error: Can't cd to trash directory."
@@ -4946,7 +4975,7 @@ function fCore() {
                 esac
                 fterminal_draw_status_line
                 # Discard following input
-                read -t 0 -rsn 10000 _
+                # read -t 0 -rsn 10000 _
             }
 
         # Exit if there is no longer a terminal attached.

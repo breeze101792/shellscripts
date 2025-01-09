@@ -35,6 +35,9 @@ then
 #     echo "Shell : ${HSL_SHELL}"
 fi
 
+#Enable vi mode, for key compatiable.
+set -o vi
+
 # set a fancy prompt (non-color, unless we know we "want" color)
 case "$TERM" in
     xterm-color|*-256color) color_prompt=yes;;
