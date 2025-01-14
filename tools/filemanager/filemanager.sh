@@ -234,6 +234,10 @@ export HSFM_COLOR_TAB_BOOKMARK
 export HSFM_COLOR_STATUS
 export HSFM_COLOR_STATUS_LABEL
 
+# Float win
+export HSFM_COLOR_FLOAT_WIN
+export HSFM_COLOR_FLOAT_WIN_LABEL
+
 ## HSFM ENV
 ###########################################################
 export HSFM_ENV_TITLE="HSFM"
@@ -294,7 +298,7 @@ export HSFM_MARK_FORMAT="%f*"
 
 # LS settings
 # a: alph, t:time
-export HSFM_LS_SORTING=""
+export HSFM_LS_SORTING="-U"
 ## Keybindings
 ###########################################################
 
@@ -548,11 +552,11 @@ fterminal_draw_window() {
 
     fterminal_print '\e[%sH\e[%sm%*s\e[m' \
            "${var_start_line};${var_start_col}" \
-           "${HSFM_COLOR_TAB_BOOKMARK}" \
+           "${HSFM_COLOR_FLOAT_WIN_LABEL}" \
            "${var_width}"
     fterminal_print '\e[%sH\e[%sm %s \e[m' \
            "${var_start_line};${var_start_col}" \
-           "${HSFM_COLOR_TAB_BOOKMARK}" \
+           "${HSFM_COLOR_FLOAT_WIN_LABEL}" \
            "${var_win_title}"
 
     local var_cnt=0
@@ -562,7 +566,7 @@ fterminal_draw_window() {
         # clean lines
         fterminal_print '\e[%sH\e[%sm%*s\e[m' \
             "$((var_start_line + 1 + var_cnt));${var_start_col}" \
-            "${HSFM_COLOR_TAB_BOOKMARK_FG};${HSFM_COLOR_TAB_BOOKMARK_BG}" \
+            "${HSFM_COLOR_FLOAT_WIN}" \
             "${var_width}"
 
         # Draw lines
@@ -570,7 +574,7 @@ fterminal_draw_window() {
         then
             fterminal_print '\e[%sH\e[%sm%s\e[m' \
                 "$((var_start_line + 1 + var_cnt));${var_start_col}" \
-                "${HSFM_COLOR_TAB_BOOKMARK_FG};${HSFM_COLOR_TAB_BOOKMARK_BG}" \
+                "${HSFM_COLOR_FLOAT_WIN}" \
                 " ${each_line:0:$((var_width - 2))} "
         fi
         ((var_cnt++))
@@ -1066,10 +1070,9 @@ fterminal_draw_bookmark_line() {
         ((tmp_cnt++))
     done
 
-    fterminal_print '\e7\e[%sH\e[%s;%sm%*s\r BM |%s \e[m\e8' \
+    fterminal_print '\e7\e[%sH\e[%sm%*s\r BM |%s \e[m\e8' \
            "${def_bookmark_start_line}" \
-           "${HSFM_COLOR_TAB_BOOKMARK_FG}" \
-           "${HSFM_COLOR_TAB_BOOKMARK_BG}" \
+           "${HSFM_COLOR_TAB_BOOKMARK}" \
            "${VAR_TERM_WIDTH}" "" \
            "${tmp_bookmark_buf}"
 
@@ -2410,7 +2413,7 @@ fnormal_mode_handler() {
             if [ "${HSFM_LS_SORTING}" = "" ]; then
                 HSFM_LS_SORTING="-t"
             else
-                HSFM_LS_SORTING=""
+                HSFM_LS_SORTING="-U"
             fi
             fterminal_redraw full
             flog_msg "Sorting: ${HSFM_LS_SORTING}"
@@ -4826,6 +4829,10 @@ fsetup_theme() {
         # Status bar
         export HSFM_COLOR_STATUS="97;40"
         export HSFM_COLOR_STATUS_LABEL="97;40"
+
+        # Float win
+        export HSFM_COLOR_FLOAT_WIN="97;40"
+        export HSFM_COLOR_FLOAT_WIN_LABEL="97;40"
     elif [ $var_colorscheme = "color" ]; then
         # Cursor color [0\-9]
         export HSFM_COLOR_CURSOR="1;37;7"
@@ -4842,6 +4849,10 @@ fsetup_theme() {
         # Status bar
         export HSFM_COLOR_STATUS="97;100"
         export HSFM_COLOR_STATUS_LABEL="30;43"
+
+        # Float win
+        export HSFM_COLOR_FLOAT_WIN="97;100"
+        export HSFM_COLOR_FLOAT_WIN_LABEL="30;47"
     else
         flog_msg "Theme ${var_colorscheme} not found."
         return -1

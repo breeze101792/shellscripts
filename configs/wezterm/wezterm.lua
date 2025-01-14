@@ -21,17 +21,20 @@ config.font_size = 12.0
 config.font = wezterm.font("SourceCodePro-Regular")
 
 -- Tab/frame
-config.hide_tab_bar_if_only_one_tab	= true	
-config.use_fancy_tab_bar = false 
+config.hide_tab_bar_if_only_one_tab	= true
+config.use_fancy_tab_bar = false
 config.window_decorations = "INTEGRATED_BUTTONS|RESIZE"
 config.integrated_title_button_color = "Auto"
+config.tab_max_width = 32
 
 -- Performance settings
--- config.front_end = "OpenGL"
+-- Front end settings
+-- Value: OpenGL/WebGpu/Software
+config.front_end = "OpenGL"
+--[[
 config.front_end = "WebGpu"
-
--- Lab
--- OpenGL/WebGpu/Software
+config.webgpu_power_preference = 'HighPerformance'
+--]]
 
 -- Key Mapping
 ----------------------------------------------------------------
@@ -49,9 +52,13 @@ config.keys = {
 
     -- paste from the primary selection
     { key = 'v', mods = 'CTRL|SHIFT', action = wezterm.action.PasteFrom 'PrimarySelection' },
+    -- Open new tab on window
+    { key = 'n', mods = 'SHIFT|CTRL', action = wezterm.action.SpawnWindow },
+    { key = 'r', mods = 'CMD|SHIFT', action = wezterm.action.ReloadConfiguration },
+
 }
 -- Activate tab
-for i = 1, 8 do
+for i = 1, 9 do
     -- CTRL+ALT + number to activate that tab
     table.insert(config.keys, {
         key = tostring(i),
