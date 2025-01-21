@@ -1196,7 +1196,7 @@ function cifs_mount()
 
     if ! test -d "${var_mount_path}"
     then
-        sudo mkdir "${var_mount_path}"
+        sudo mkdir -p "${var_mount_path}"
     fi
 
     if mountpoint "${var_mount_path}" |grep -v not
