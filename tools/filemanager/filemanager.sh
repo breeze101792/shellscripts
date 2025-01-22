@@ -2412,11 +2412,13 @@ fnormal_mode_handler() {
         ${HSFM_KEY_SORTING})
             if [ "${HSFM_LS_SORTING}" = "" ]; then
                 HSFM_LS_SORTING="-t"
+                var_name="time"
             else
                 HSFM_LS_SORTING="-U"
+                var_name="none"
             fi
             fterminal_redraw full
-            flog_msg "Sorting: ${HSFM_LS_SORTING}"
+            flog_msg "Sorting: ${var_name}.${HSFM_LS_SORTING}"
             ;;
 
         # Spawn a shell.
@@ -3826,7 +3828,7 @@ cmd_sort()
             var_name="extension"
            ;;
         *)
-            flog_msg "Sorting Options: none/size/time/version/extension"
+            flog_msg "Sorting Options: none/size/time/version/extension, default use none."
             return 0
             ;;
     esac

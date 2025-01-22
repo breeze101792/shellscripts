@@ -5,47 +5,6 @@
 keybinds clear-defaults=true {
     locked {
         bind "Ctrl g" { SwitchToMode "normal"; }
-        bind "Ctrl b" { SwitchToMode "tmux"; }
-    }
-    tmux {
-        bind "[" { SwitchToMode "Scroll"; }
-        bind "Ctrl b" { Write 2; SwitchToMode "locked"; }
-        bind "\"" { NewPane "Down"; SwitchToMode "locked"; }
-        bind "%" { NewPane "Right"; SwitchToMode "locked"; }
-        bind "z" { ToggleFocusFullscreen; SwitchToMode "locked"; }
-        bind "c" { NewTab; SwitchToMode "locked"; }
-        bind "," { SwitchToMode "RenameTab"; }
-        bind "p" { GoToPreviousTab; SwitchToMode "locked"; }
-        bind "n" { GoToNextTab; SwitchToMode "locked"; }
-        bind "Left" { MoveFocus "Left"; SwitchToMode "locked"; }
-        bind "Right" { MoveFocus "Right"; SwitchToMode "locked"; }
-        bind "Down" { MoveFocus "Down"; SwitchToMode "locked"; }
-        bind "Up" { MoveFocus "Up"; SwitchToMode "locked"; }
-        bind "h" { MoveFocus "Left"; SwitchToMode "locked"; }
-        bind "l" { MoveFocus "Right"; SwitchToMode "locked"; }
-        bind "j" { MoveFocus "Down"; SwitchToMode "locked"; }
-        bind "k" { MoveFocus "Up"; SwitchToMode "locked"; }
-        bind "o" { FocusNextPane; }
-        bind "d" { Detach; }
-        bind "Space" { NextSwapLayout; }
-        bind "x" { CloseFocus; SwitchToMode "locked"; }
-
-        // Meta + number to switch tab
-        bind "1" { GoToTab 1; SwitchToMode "locked"; }
-        bind "2" { GoToTab 2; SwitchToMode "locked"; }
-        bind "3" { GoToTab 3; SwitchToMode "locked"; }
-        bind "4" { GoToTab 4; SwitchToMode "locked"; }
-        bind "5" { GoToTab 5; SwitchToMode "locked"; }
-        bind "6" { GoToTab 6; SwitchToMode "locked"; }
-        bind "7" { GoToTab 7; SwitchToMode "locked"; }
-        bind "8" { GoToTab 8; SwitchToMode "locked"; }
-        bind "9" { GoToTab 9; SwitchToMode "locked"; }
-        bind "e" { EditScrollback; SwitchToMode "locked"; }
-        bind "m" { SwitchToMode "move"; }
-        bind "=" { SwitchToMode "resize"; }
-
-        bind "PageDown" { PageScrollDown; SwitchToMode "Scroll"; }
-        bind "PageUp" { PageScrollUp;  SwitchToMode "Scroll"; }
     }
     pane {
         bind "left" { MoveFocus "left"; }
@@ -237,9 +196,6 @@ keybinds clear-defaults=true {
         bind "l" { PageScrollDown; }
         bind "u" { HalfPageScrollUp; }
     }
-    shared_except "tmux" "locked" {
-        bind "Ctrl b" { SwitchToMode "Tmux"; }
-    }
     entersearch {
         bind "Ctrl c" { SwitchToMode "scroll"; }
         bind "esc" { SwitchToMode "scroll"; }
@@ -291,7 +247,6 @@ load_plugins {
 // Default: default
 // 
 // theme "dracula"
-theme "nord"
  
 // Choose the base input mode of zellij.
 // Default: normal
@@ -310,7 +265,6 @@ default_mode "locked"
 // The name of the default layout to load on startup
 // Default: "default"
 // 
-// default_layout "compact"
 // default_layout "compact"
  
 // The folder in which Zellij will look for layouts
@@ -331,7 +285,6 @@ default_mode "locked"
 //   - false
 // 
 // mouse_mode false
-mouse_mode false
  
 // Toggle having pane frames around the panes
 // Options:
@@ -365,7 +318,6 @@ mouse_mode false
 // Default value: 10000
 // 
 // scroll_buffer_size 10000
-scroll_buffer_size 50000
  
 // Provide a command to execute when copying text. The text will be piped to
 // the stdin of the program to perform the copy. This can be used with

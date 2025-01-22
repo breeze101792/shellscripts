@@ -311,7 +311,7 @@ default_mode "locked"
 // Default: "default"
 // 
 // default_layout "compact"
-// default_layout "compact"
+default_layout "compact"
  
 // The folder in which Zellij will look for layouts
 // (Requires restart)
