@@ -1,20 +1,31 @@
 #!/bin/env shell
 ################################################################
-####    Env
+####    Auto Env
 ################################################################
 [ -z ${HOME} ] && test -d ~ && export HOME=$(realpath ~)
 [ -z ${HOME} ] && test -d ~ && export HOME=/
 
-[ -z ${HSL_SHELL} ] && export HSL_SHELL=sh
 [ -z ${HSL_ROOT_PATH} ] && test -d ${HOME}/tools && export HSL_ROOT_PATH=$(realpath ${HOME}/tools/)
 [ -z ${HSL_ROOT_PATH} ] && test -d ${HOME}/ && export HSL_ROOT_PATH=$(realpath ${HOME}/)
 [ -z ${HSL_WORK_PATH} ] && test -d ${HSL_WORK_PATH}/work && export HSL_WORK_PATH=$(realpath ${HSL_ROOT_PATH}/work/)
 [ -z ${HSL_WORK_PATH} ] && test -d ${HSL_WORK_PATH} && export HSL_WORK_PATH=$(realpath ${HSL_ROOT_PATH})
+
+if [ -z ${HSL_SHELL} ] && [ -n ${SHELL} ] ; then
+    if [ "${SHELL}" = "/bin/bash" ] ; then
+        export HSL_SHELL="bash"
+    elif [ "${SHELL}" = "/bin/sh" ] ; then
+        export HSL_SHELL="sh"
+    elif [ "${SHELL}" = "/bin/zsh" ] ; then
+        export HSL_SHELL="zsh"
+    else
+        export HSL_SHELL="sh"
+    fi
+fi
 ################################################################
 ####    Settings
 ################################################################
 # It's for bash
-if [ ${HSL_SHELL} = "bash" ]
+if [ ${HSL_SHELL} = "bash" ] || [ ${HSL_SHELL} = "sh" ]
 then
     # echo "Shell : ${HSL_SHELL}"
     # Use GNU ls colors when tab-completing files
@@ -26,17 +37,18 @@ then
     # check the window size after each command and, if necessary,
     # update the values of LINES and COLUMNS.
     shopt -s checkwinsize
-    export PS1="[\u@\h][\d \A]\\$ "
+    export PS1="[\u@\h][\d \A][\w]\\$ "
 elif [ ${HSL_SHELL} = "zsh" ]
 then
     # echo "Shell : ${HSL_SHELL}"
     PROMPT="[%n@%m][%D %T][%?][%d] $ "
-# else
-#     echo "Shell : ${HSL_SHELL}"
+else
+    echo "Shell : ${HSL_SHELL}"
 fi
 
 #Enable vi mode, for key compatiable.
-set -o vi
+# User vi mode will not do auto-complete on sh.
+# set -o vi
 
 # set a fancy prompt (non-color, unless we know we "want" color)
 case "$TERM" in
@@ -67,6 +79,24 @@ alias scgrep='grep --color=always -rnIi  '
 ################################################################
 ####    Function
 ################################################################
+reload()
+{
+    local var_source_file=""
+    if [ ${HSL_SHELL} = "bash" ]
+    then
+        source ${HOME}/.bashrc
+    elif [ ${HSL_SHELL} = "zsh" ]
+    then
+        source ${HOME}/.zshrc
+    elif [ ${HSL_SHELL} = "sh" ]
+    then
+        source ${HOME}/.profile
+    else
+        echo "Unknow shtype. ${HSL_SHELL}"
+        return
+    fi
+    echo "Hslite reloaded."
+}
 epath()
 {
     local flag_verbose=n
@@ -89,26 +119,71 @@ epath()
     fi;
 
 }
-balias()
+toollink()
 {
     local var_toolbox="busybox"
-     var_white_list=("ls")
-    for each_cmd in $(${var_toolbox} | grep 'Currently defined functions' -A 1000 | sed 's/,//g' | sed '1d')
+    local var_list_cmd="busybox | grep 'Currently defined functions' -A 1000 | sed 's/,//g' | sed '1d'"
+    local flag_link_all="n"
+    local var_white_list=()
+    local var_output_path=${PWD}/toollink_${var_toolbox}
+    # var_white_list+=("ls")
+
+    while [[ "$#" != 0 ]]
     do
-        if [ "${each_cmd}" = '[' ] || [ "${each_cmd}" = '[[' ] || command -v ${each_cmd} > /dev/null
+        case $1 in
+            -t|--toolbox)
+                var_toolbox="$2"
+                shift 1
+                ;;
+            -l|--list-cmd)
+                var_list_cmd=$2
+                shift 1
+                ;;
+            -a|--all)
+                flag_link_all="y"
+                ;;
+            -w|--white-list)
+                var_white_list="$2"
+                shift 1
+                ;;
+            -h|--help)
+                echo "toollink toollink function"
+                echo "SYNOPSIS"
+                echo "toollink [Options] [Value]"
+                echo "Options"
+                echo "-t|--toolbox\t Specify busybox/toybox, default toybox"
+                echo "-l|--list-cmd\t List command to show all support commands."
+                echo "-w|--white-list\t White listed program, default link command not exists in system."
+                echo "-a|--all\t Link all command."
+                echo "-h|--help\t Print help function "
+                return 0
+                ;;
+            *)
+                break
+                ;;
+        esac
+        shift 1
+    done
+    var_output_path=toollink_${var_toolbox}
+    test -d "${var_output_path}" || mkdir "${var_output_path}"
+
+    for each_cmd in $(${var_list_cmd})
+    do
+        echo "Check command '${each_cmd}'"
+        if [ "${each_cmd}" = '[' ] || [ "${each_cmd}" = '[[' ] || ( command -v ${each_cmd} && [ "${flag_link_all}" = "n" ] ) > /dev/null
         then
             for each_whited_listed_cmd in ${var_white_list}
             do
                 if [ "${each_whited_listed_cmd}" = "${each_cmd}" ]
                 then
-                    echo "alias |${each_cmd}|"
-                    alias ${each_cmd}="${var_toolbox} ${each_cmd}"
+                    echo "ln '${var_toolbox}' '${var_output_path}/${each_cmd}'"
+                    ln "${var_toolbox}" "${var_output_path}/${each_cmd}"
                 fi
             done
-            continue
+        else
+            echo "ln '${var_toolbox}' '${var_output_path}/${each_cmd}'"
+            ln "${var_toolbox}" "${var_output_path}/${each_cmd}"
         fi
-        echo "alias |${each_cmd}|"
-        alias ${each_cmd}="${var_toolbox} ${each_cmd}"
     done
 }
 ffind()
