@@ -210,7 +210,7 @@ function hs_varconfig()
             local content=$3
             # echo sed --quiet -i "s|${target_var}=.*|${target_var}=${content}|g" ${HS_TMP_FILE_CONFIG}
             # echo grep --no-messages -f ${HS_TMP_FILE_CONFIG} ${target_var}
-            if cat ${HS_TMP_FILE_CONFIG} | grep --silent ${target_var}
+            if cat ${HS_TMP_FILE_CONFIG} | grep -a --silent ${target_var}
             then
                 # echo grep true
                 # sed -i "/${target_var}=.*/d" ${HS_TMP_FILE_CONFIG}
@@ -233,7 +233,7 @@ function hs_varconfig()
             then
                 # echo ${target_var}
                 # echo $(cat ${HS_TMP_FILE_CONFIG} | grep "${target_var}=" | cut -d "=" -f 2-)
-                cat ${HS_TMP_FILE_CONFIG} | grep "${target_var}=" | cut -d "=" -f 2-
+                cat ${HS_TMP_FILE_CONFIG} | grep -a "${target_var}=" | cut -d "=" -f 2-
             fi
             ;;
         -e)
@@ -241,7 +241,7 @@ function hs_varconfig()
             if [ -f "${HS_TMP_FILE_CONFIG}" ]
             then
                 # echo ${target_var}
-                if cat ${HS_TMP_FILE_CONFIG} | grep "${target_var}="
+                if cat ${HS_TMP_FILE_CONFIG} | grep -a "${target_var}="
                 then
                     return 0
                 else
@@ -323,7 +323,7 @@ function export_sh_func()
     then
         if [ -f "${target_shell}" ]
         then
-            for each_cmd in $(cat ${target_shell} | grep "^function.*()$" | sed "s/^function//g" | sed "s/()$//g" )
+            for each_cmd in $(cat ${target_shell} | grep -a "^function.*()$" | sed "s/^function//g" | sed "s/()$//g" )
             do
                 # echo eval "export -f ${each_cmd}"
                 eval "export -f ${each_cmd}"

@@ -210,7 +210,7 @@ export HSFM_PATH_TRASH="${HOME}/.trash"
 # 96 	Light cyan                  # 106 	Light cyan
 # 97 	White                       # 107 	White
 ###########################################################
-export HSFM_COLOR_THEME="black"
+export HSFM_COLOR_THEME="cololr"
 
 # black scheme, low profile.
 # Cursor color [0\-9]
