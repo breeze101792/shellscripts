@@ -94,6 +94,9 @@ fi
 if test -f "${HSL_CONFIG_PATH}/tmux.conf" && command -v tmux 2>&1 > /dev/null; then
     alias tmux="tmux -f ${HSL_CONFIG_PATH}/tmux.conf"
 fi
+
+alias hs_reload=reload
+
 ################################################################
 ####    Function
 ################################################################

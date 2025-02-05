@@ -1621,6 +1621,56 @@ function xkey()
     printf "\n"
 }
 
+########################################################
+#####    Others Function                           #####
+########################################################
+function wol()
+{
+    local var_interface=""
+    local var_remote_mac=""
+
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -m|--mac)
+                var_remote_mac="${2}"
+                shift 1
+                ;;
+            -i|--interface)
+                var_interface="${2}"
+                shift 1
+                ;;
+            -h|--help)
+                cli_helper -c "wol" -cd "wol function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "wol [Options] [Value]"
+                cli_helper -t "Options"
+                cli_helper -o "-m|--mac" -d "Target mac address"
+                cli_helper -o "-i|--interface" -d "Local brocast interface"
+                cli_helper -o "-h|--help" -d "Print help function "
+                return 0
+                ;;
+            *)
+                echo "Wrong args, $@"
+                return -1
+                ;;
+        esac
+        shift 1
+    done
+    if command -v etherwake 2>&1 > /dev/null; then
+        echo "etherwake not found. please install it."
+        return -1
+    fi
+    if test -z "${var_remote_mac}"; then
+        echo "Target mac address not found."
+        return -1
+    fi
+    if test -z "${var_interface}"; then
+        echo "Target interface not found."
+        return -1
+    fi
+    sudo etherwake -i ${var_interface} ${var_remote_mac}
+}
 function silence()
 {
     local precmd=""
