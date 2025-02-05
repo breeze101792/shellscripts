@@ -164,7 +164,8 @@ function fSetup()
     fi
 
     if ! test -d "${ARG_TARGET_PATH}"; then
-        mkdir "${ARG_TARGET_PATH}" || $(echo "Can't create ${ARG_TARGET_PATH}"; exit 1)
+        echo "mkdir ${ARG_TARGET_PATH}"
+        mkdir "${ARG_TARGET_PATH}" || (echo "Can't create ${ARG_TARGET_PATH}" && exit 1)
     fi
 
     echo "Check ${ARG_TARGET_PATH}/${ARG_TARGET_CONFIG_NAME}"
@@ -173,6 +174,7 @@ function fSetup()
         read var_ans
         if [ "${var_ans}" = "y" ]; then
             # backup
+            echo mv "${ARG_TARGET_PATH}/${ARG_TARGET_CONFIG_NAME}" "${ARG_TARGET_PATH}/${ARG_TARGET_CONFIG_NAME}_backup_$(date +%s)"
             mv "${ARG_TARGET_PATH}/${ARG_TARGET_CONFIG_NAME}" "${ARG_TARGET_PATH}/${ARG_TARGET_CONFIG_NAME}_backup_$(date +%s)"
 
             echo "Overwrite ${ARG_TARGET_CONFIG_NAME}"
@@ -225,18 +227,27 @@ function fMain()
                 if test -e "${2}"; then
                     ARG_CONFIG_TEMPLATE_PATH="${2}"
                     shift 1
+                else
+                    echo "config file not found."
+                    return
                 fi
                 ;;
             -t | --target)
                 if test -d "${2}"; then
                     ARG_TARGET_PATH="${2}"
                     shift 1
+                else
+                    echo "target folder not found."
+                    return
                 fi
                 ;;
             -n | --name)
                 if test -n "${2}"; then
                     ARG_TARGET_CONFIG_NAME="${2}"
                     shift 1
+                else
+                    echo "no specify name."
+                    return
                 fi
                 ;;
             -h | --help)
@@ -256,6 +267,8 @@ function fMain()
         OPTION_VERBOSE=y
         fInfo; fErrControl ${FUNCNAME[0]} ${LINENO}
     fi
+
+    fInfo
 
     fSetup; fErrControl ${FUNCNAME[0]} ${LINENO}
 }

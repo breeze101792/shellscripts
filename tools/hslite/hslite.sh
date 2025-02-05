@@ -76,6 +76,8 @@ alias cgrep='grep --color=always '
 alias sgrep='grep -rnIi  '
 alias scgrep='grep --color=always -rnIi  '
 
+alias hs_reload=reload
+
 ################################################################
 ####    Function
 ################################################################
