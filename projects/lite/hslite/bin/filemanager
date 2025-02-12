@@ -210,7 +210,7 @@ export HSFM_PATH_TRASH="${HOME}/.trash"
 # 96 	Light cyan                  # 106 	Light cyan
 # 97 	White                       # 107 	White
 ###########################################################
-export HSFM_COLOR_THEME="cololr"
+export HSFM_COLOR_THEME="color"
 
 # black scheme, low profile.
 # Cursor color [0\-9]
@@ -4986,7 +4986,8 @@ function fCore() {
                     fnormal_mode_handler "$REPLY"
                     ;;
                 esac
-                fterminal_draw_status_line
+                # FIXME, temporailly disable draw status line during keytyping.
+                # fterminal_draw_status_line
                 # Discard following input
                 # read -t 0 -rsn 10000 _
             }

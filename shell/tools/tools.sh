@@ -1679,3 +1679,70 @@ function silence()
 
     eval "${precmd} ${cmd} ${postcmd}"
 }
+toollink()
+{
+    local var_toolbox="busybox"
+    local var_list_cmd="busybox | grep 'Currently defined functions' -A 1000 | sed 's/,//g' | sed '1d'"
+    local flag_link_all="n"
+    local var_white_list=()
+    local var_output_path=${PWD}/toollink_${var_toolbox}
+    # var_white_list+=("ls")
+
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -t|--toolbox)
+                var_toolbox="$2"
+                shift 1
+                ;;
+            -l|--list-cmd)
+                var_list_cmd=$2
+                shift 1
+                ;;
+            -a|--all)
+                flag_link_all="y"
+                ;;
+            -w|--white-list)
+                var_white_list="$2"
+                shift 1
+                ;;
+            -h|--help)
+                echo "toollink toollink function"
+                echo "SYNOPSIS"
+                echo "toollink [Options] [Value]"
+                echo "Options"
+                echo "-t|--toolbox\t Specify busybox/toybox, default toybox"
+                echo "-l|--list-cmd\t List command to show all support commands."
+                echo "-w|--white-list\t White listed program, default link command not exists in system."
+                echo "-a|--all\t Link all command."
+                echo "-h|--help\t Print help function "
+                return 0
+                ;;
+            *)
+                break
+                ;;
+        esac
+        shift 1
+    done
+    var_output_path=toollink_${var_toolbox}
+    test -d "${var_output_path}" || mkdir "${var_output_path}"
+
+    for each_cmd in $(${var_list_cmd})
+    do
+        echo "Check command '${each_cmd}'"
+        if [ "${each_cmd}" = '[' ] || [ "${each_cmd}" = '[[' ] || ( command -v ${each_cmd} && [ "${flag_link_all}" = "n" ] ) > /dev/null
+        then
+            for each_whited_listed_cmd in ${var_white_list}
+            do
+                if [ "${each_whited_listed_cmd}" = "${each_cmd}" ]
+                then
+                    echo "ln '${var_toolbox}' '${var_output_path}/${each_cmd}'"
+                    ln "${var_toolbox}" "${var_output_path}/${each_cmd}"
+                fi
+            done
+        else
+            echo "ln '${var_toolbox}' '${var_output_path}/${each_cmd}'"
+            ln "${var_toolbox}" "${var_output_path}/${each_cmd}"
+        fi
+    done
+}

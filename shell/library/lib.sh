@@ -30,9 +30,9 @@ function pureshell()
                 shift 1
                 ;;
             -h|--help)
-                cli_helper -c "template" -cd "template function"
+                cli_helper -c "pureshell" -cd "pureshell function"
                 cli_helper -t "SYNOPSIS"
-                cli_helper -d "template [Options] [Other commands]"
+                cli_helper -d "pureshell [Options] [Other commands]"
                 cli_helper -t "Options"
                 cli_helper -o "-s|--shell" -d "Specify shell, zsh/bash"
                 cli_helper -o "-v|--verbose" -d "Verbose print "

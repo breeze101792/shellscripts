@@ -95,7 +95,7 @@ else
     set listchars=tab:>-,trail:~,extends:>,precedes:<
 endif
 set list
-if exists('&nofixendofline')
+if exists('&nofixendofline') 
     set nofixendofline " enable this will cause vim add new line at the end of line
 endif
 syntax sync maxlines=50
@@ -300,24 +300,14 @@ command! -bang Tabcloseleft call TabCloseLeft('<bang>')
 let g:IDE_ENV_OS = "Linux"
 let g:IDE_ENV_INS = "vim"
 let g:IDE_ENV_IDE_TITLE = "LITE"
-let s:init_message_buf = ""
 try
     colorscheme industry
-catch
-    let s:init_message_buf+='industry not found.'
-endtry
-try
     syntax on
-catch
-    let s:init_message_buf+='Syntax enable fail.'
 endtry
 set listchars=tab:>-,trail:~,extends:>,precedes:<
 set noswapfile
 if exists('&colorcolumn') 
     set colorcolumn=""
-endif
-if s:init_message_buf != ""
-    echom s:init_message_buf
 endif
 noremap <C-_> :SimpleCommentCode<CR>
 map <leader>b <Esc>:buffers<CR>
@@ -335,7 +325,7 @@ function! TabsOrSpaces()
         setlocal expandtab
     endif
 endfunction
-if !exists("*Reload") ||  !exists(":Reload")
+if !exists("Reload")
     command! Reload call Reload()
     function! Reload()
         if !empty(glob($MYVIMRC))
@@ -414,14 +404,14 @@ function! StatusLineGetFilePositon()
     return printf('%.2f%%', ( 100.0 * line('.') / line('$') ))
 endfunction
 hi! StatusLine  ctermfg=000 ctermbg=003
-hi! User1 ctermfg=000 ctermbg=003
-hi! User2 ctermfg=007 ctermbg=000
-hi! User3 ctermfg=007 ctermbg=236
-hi! User4 ctermfg=007 ctermbg=240
-hi! User5 ctermfg=007 ctermbg=008
-hi! User7 ctermfg=007 ctermbg=240
-hi! User8 ctermfg=007 ctermbg=236
-hi! User9 ctermfg=015 ctermbg=232
+hi User1 ctermfg=000 ctermbg=003
+hi User2 ctermfg=007 ctermbg=000
+hi User3 ctermfg=007 ctermbg=236
+hi User4 ctermfg=007 ctermbg=240
+hi User5 ctermfg=007 ctermbg=008
+hi User7 ctermfg=007 ctermbg=240
+hi User8 ctermfg=007 ctermbg=236
+hi User9 ctermfg=015 ctermbg=232
 set statusline=
 set statusline+=%{StatusLineUpdateColor()}                 " Changing the statusline color
 set statusline+=%1*\ %{toupper(StatusLineGetCurrentMode())}          " Current mode
@@ -432,10 +422,10 @@ set statusline+=%5*\ %{(&filetype!=''?&filetype:'None')}   " FileType
 set statusline+=%5*\ \[%{(&fenc!=''?&fenc:&enc)}\|%{&ff}]\ " Encoding & Fileformat
 set statusline+=%1*\ %2l:%-2c\ %{StatusLineGetFilePositon()}\                     " Col, Rownumber/total (%)
 set tabline=%!TabLineCompose()
-hi! TabLine cterm=None ctermfg=007 ctermbg=240
-hi! TabLineSel cterm=None ctermfg=000 ctermbg=003
-hi! TabLineFill cterm=None ctermfg=007 ctermbg=236
-hi! TabTitle cterm=bold ctermfg=000 ctermbg=014
+hi TabLine cterm=None ctermfg=007 ctermbg=240
+hi TabLineSel cterm=None ctermfg=000 ctermbg=003
+hi TabLineFill cterm=None ctermfg=007 ctermbg=236
+hi TabTitle cterm=bold ctermfg=000 ctermbg=014
 function! TabLineCompose() " acclamation to avoid conflict
     let s = '' " complete tabline goes here
     let title = get(g:, 'IDE_ENV_IDE_TITLE', "VIM")

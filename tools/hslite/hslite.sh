@@ -6,34 +6,63 @@
 # if useing sh, you there will no things like bashrc, but you
 # could add the following line to automatically source shrc.
 # export ENV="$HOME/.shrc"
+
+if false; then
+    # Please export things like the follings
+    export HSL_SHELL=zsh
+    export HSL_ROOT_PATH="~/tools/hslite"
+    export HSL_LOCAL_VAR="${HSL_ROOT_PATH}/.var"
+fi
 ################################################################
 ####    Auto Env
+################################################################
+
+## Flags
+################################################################
+[ -z ${HSL_FLAG_INITED} ] && export HSL_FLAG_INITED=false
+[ -z ${HSL_FLAG_DEBUG} ] && export HSL_FLAG_DEBUG=false
+[ -z ${HSL_FLAG_MOTD} ] && export HSL_FLAG_MOTD=false
+
+## Path
 ################################################################
 [ -z ${HOME} ] && test -d ~ && export HOME="~"
 [ -z ${HOME} ] && export HOME=/
 
+[ -z ${HSL_ROOT_PATH} ] && test -d ${HOME}/tools/hslite && export HSL_ROOT_PATH="${HOME}/tools/hslite"
 [ -z ${HSL_ROOT_PATH} ] && test -f ${HOME}/tools/hslite.sh && export HSL_ROOT_PATH="${HOME}/tools"
 [ -z ${HSL_ROOT_PATH} ] && test -f ${HOME}/tools/scripts/hslite.sh && export HSL_ROOT_PATH="${HOME}/tools"
-[ -z ${HSL_WORK_PATH} ] && test -d ${HSL_ROOT_PATH}/work && export HSL_WORK_PATH="${HSL_ROOT_PATH}/work"
+
 [ -z ${HSL_WORK_PATH} ] && test -f ${HSL_ROOT_PATH}/scripts/work.sh && export HSL_WORK_PATH="${HSL_ROOT_PATH}/scripts"
-[ -z ${HSL_WORK_PATH} ] && test -f ${HSL_ROOT_PATH}/work.sh && export HSL_WORK_PATH="${HSL_ROOT_PATH}"
+[ -z ${HSL_WORK_PATH} ] && test -f ${HSL_ROOT_PATH}/work/work.sh && export HSL_WORK_PATH="${HSL_ROOT_PATH}/work"
 
 [ -z ${HSL_CONFIG_PATH} ] && test -d ${HSL_ROOT_PATH}/configs && export HSL_CONFIG_PATH="${HSL_ROOT_PATH}/configs"
 
+[ -z ${HSL_LOCAL_VAR} ] && export HSL_LOCAL_VAR="${HSL_ROOT_PATH}/.var"
+
+test -n ${HSL_LOCAL_VAR} && (test -d ${HSL_LOCAL_VAR} || mkdir -p ${HSL_LOCAL_VAR})
+
+## Shell env
+################################################################
 if [ -z ${HSL_SHELL} ] && [ -n ${SHELL} ] ; then
-    if [ "${SHELL}" = "/bin/bash" ] ; then
+    if [ "${SHELL##*/}" = "bash" ] || [ "${SHELL}" = "/bin/bash" ] ; then
         export HSL_SHELL="bash"
-    elif [ "${SHELL}" = "/bin/sh" ] ; then
-        export HSL_SHELL="sh"
-    elif [ "${SHELL}" = "/bin/zsh" ] ; then
+    elif [ "${SHELL##*/}" = "zsh" ] ||  [ "${SHELL}" = "/bin/zsh" ] ; then
         export HSL_SHELL="zsh"
+    elif [ "${SHELL##*/}" = "ash" ] ||  [ "${SHELL}" = "/bin/ash" ] ; then
+        export HSL_SHELL="ash"
     else
         export HSL_SHELL="sh"
     fi
 fi
+
 ################################################################
 ####    Settings
 ################################################################
+
+####    Init
+################################################################
+# FIXME, refactor it
+# export HSL_LOCAL_VAR="${HSL_ROOT_PATH}/.var"
 # It's for bash
 if [ ${HSL_SHELL} = "bash" ] || [ ${HSL_SHELL} = "sh" ] || [ ${HSL_SHELL} = "ash" ]
 then
@@ -70,7 +99,6 @@ export LANG=en_US.UTF-8
 export LANGUAGE=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
 
-################################################################
 ####    Alias
 ################################################################
 alias l='ls -a '
@@ -88,22 +116,92 @@ alias scgrep='grep --color=always -rnIi  '
 
 alias xim='vim -u ${HSL_CONFIG_PATH}/vimlite.vim'
 
-if test -f "${HSL_CONFIG_PATH}/config_tmux.kdl" && command -v zellij 2>&1 > /dev/null; then
-    alias zellij="zellij -c ${HSL_CONFIG_PATH}/config_tmux.kdl"
+if test -f "${HSL_CONFIG_PATH}/config_legacy.kdl" && command -v zellij 2>&1 > /dev/null; then
+    alias zellij="zellij -c ${HSL_CONFIG_PATH}/config_legacy.kdl"
 fi
 if test -f "${HSL_CONFIG_PATH}/tmux.conf" && command -v tmux 2>&1 > /dev/null; then
     alias tmux="tmux -f ${HSL_CONFIG_PATH}/tmux.conf"
 fi
 
-alias hs_reload=reload
+####    Post Setting
+################################################################
+if test -n "${HSL_WORK_PATH}"
+then
+    if test -f "${HSL_WORK_PATH}/work.sh"
+    then
+        source ${HSL_WORK_PATH}/work.sh
+        #     echo "Work script ${HSL_WORK_PATH}/work.sh"
+        # else
+        #     echo "Work script not found. ${HSL_WORK_PATH}/work.sh"
+    fi
+fi
+
+if test -n "${HSL_ROOT_PATH}"
+then
+    if test -d "${HSL_ROOT_PATH}/scripts"
+    then
+        export PATH=${PATH}:"${HSL_ROOT_PATH}/scripts"
+        # else
+        #     echo "Execute script folder not found. ${HSL_ROOT_PATH}/scripts.sh"
+    fi
+
+    if test -d "${HSL_ROOT_PATH}/bin"
+    then
+        export PATH=${PATH}:"${HSL_ROOT_PATH}/bin"
+        # else
+        #     echo "Binary folder not found. ${HSL_ROOT_PATH}"
+    fi
+fi
+
+if test -d "~/.usr/bin"
+then
+    export PATH=${PATH}:"~/.usr/bin"
+fi
+# Homebrew test
+if test -f "/opt/homebrew/bin/brew"
+then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+fi
+################################################################
+####    Finalize
+################################################################
+
+if [ ${HSL_FLAG_MOTD} = true ] && [ ${HSL_FLAG_INITED} = true ]
+then
+    printf " %s\n" ""
+    printf " %s\n" " _   _ ____        _     ___ _____ _____ "
+    printf " %s\n" "| | | / ___|      | |   |_ _|_   _| ____|"
+    printf " %s\n" "| |_| \___ \ _____| |    | |  | | |  _|  "
+    printf " %s\n" "|  _  |___) |_____| |___ | |  | | | |___ "
+    printf " %s\n" "|_| |_|____/      |_____|___| |_| |_____|"
+    printf " %s\n" ""
+
+    test -n "${SSH_CONNECTION}" && printf "Connections: %s\n" "${SSH_CONNECTION}"
+
+    ## Debug
+    if [ ${HSL_FLAG_DEBUG} = true ]
+    then
+        echo "HSL Debug Info"
+        echo "HSL_ROOT_PATH: ${HSL_ROOT_PATH}" 
+        echo "HSL_WORK_PATH: ${HSL_WORK_PATH}" 
+    fi
+    export HSL_FLAG_MOTD=false
+fi
+echo -en "\033]0;$(hostname)\a"
+
+export HSL_FLAG_INITED=true
 
 ################################################################
-####    Function
+####    Build-In Function
 ################################################################
-reload()
+hsl_reload()
 {
     local var_source_file=""
-    if [ ${HSL_SHELL} = "bash" ]
+
+    if test -f "${HSL_ROOT_PATH}/scripts/hslite.sh"
+    then
+        source "${HSL_ROOT_PATH}/scripts/hslite.sh"
+    elif [ ${HSL_SHELL} = "bash" ]
     then
         source ${HOME}/.bashrc
     elif [ ${HSL_SHELL} = "zsh" ]
@@ -128,6 +226,167 @@ hsl_info()
     echo "SHELL: ${SHELL}" 
     echo "ENV: ${ENV}" 
 }
+session()
+{
+    local var_taget_socket=""
+    local var_action=""
+    local var_remove_list=()
+    if command -v tmux 2>&1 > /dev/null; then
+        local var_cmd='tmux'
+    elif command -v zellij 2>&1 > /dev/null; then
+        local var_cmd='zellij'
+    else
+        echo "no tmux or zellij found."
+    fi
+    local var_cmd_opts=('')
+
+    local var_taget_name=""
+
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -ls|--list|ls)
+                var_action="list"
+                ;;
+            -S|--socket)
+                if [ "${var_cmd}" = "tmux"  ] ; then
+                    var_cmd_opts+=("-S ${2}")
+                fi
+                shift 1
+                ;;
+            -f|--file)
+                if test -f ${2}
+                then
+                    if [ "${var_cmd}" = "tmux"  ] ; then
+                        var_cmd_opts+=("-f ${2}")
+                    elif [ "${var_cmd}" = "zellij"  ] ; then
+                        var_cmd_opts+=("-c ${2}")
+                    fi
+                else
+                    echo "Config file not found. $2"
+                    return 1
+                fi
+                shift 1
+                ;;
+            -s|--session-name)
+                tmp_session_name="${2}"
+
+                local tmp_name=$(session ls |grep "${tmp_session_name}" | cut -d ' ' -f 1| sed 's/:$//g' | tr -d  ' ')
+                if [ "${tmp_name}" != "" ]
+                then
+                    var_action="attach"
+                    var_taget_name=${tmp_name}
+                else
+                    var_action="create"
+                    var_taget_name=${tmp_session_name}
+                fi
+                shift 1
+                ;;
+            --host|host|hostname|h)
+                local var_hostname=""
+                if command -v hostname 2>&1 > /dev/null
+                then
+                    var_hostname="$(hostname)"
+                elif test -f "/etc/hostname"
+                then
+                    var_hostname="$(cat /etc/hostname)"
+                fi
+
+                local tmp_name=$(session ls |grep --color=none "${var_hostname}" | cut -d ' ' -f 1| sed 's/:$//g' | tr -d  ' ')
+                if [ "${tmp_name}" != "" ]
+                then
+                    var_action="attach"
+                    var_taget_name=${tmp_name}
+                else
+                    var_action="create"
+                    var_taget_name=${var_hostname}
+                fi
+                ;;
+            -o|--options)
+                var_cmd_opts+=($*)
+                ;;
+            -h|--help)
+                echo "session " "session lite is an independ instance of ${var_cmd}"
+                echo "SYNOPSIS"
+                echo "session [Options] [Value]"
+                echo "Options"
+                echo "    -f|--file"              -d "Specify config file"
+                echo "    -S|--socket"            -d "Specify socket file"
+                echo "    --host|host|hostname|h" -d "detach all session"
+                echo "    -ls|--list|ls|list"     -d "List sessions"
+                echo "    -s|--session"           -d "specify session name"
+                echo "    -o|--options"           -d "specify command options"
+                return 0
+                ;;
+            *)
+                tmp_session_name="${*}"
+
+                local tmp_name=$(session ls |grep "${tmp_session_name}" | cut -d ' ' -f 1| sed 's/:$//g' | tr -d  ' ')
+                if [ "${tmp_name}" != "" ]
+                then
+                    var_action="attach"
+                    var_taget_name=${tmp_name}
+                else
+                    var_action="create"
+                    var_taget_name=${tmp_session_name}
+                fi
+                break
+                ;;
+        esac
+        shift 1
+    done
+
+    if [ "${var_action}" = "attach" ]
+    then
+        echo "[${var_action}]Session Name: '${var_taget_name}'"
+        if [ "${var_cmd}" = "tmux"  ] ; then
+            var_cmd_opts+=("attach -t ${var_taget_name}")
+        elif [ "${var_cmd}" = "zellij"  ] ; then
+            var_cmd_opts+=("-s ${var_taget_name} attach")
+        fi
+    elif [ "${var_action}" = "create" ]
+    then
+        echo "[${var_action}]Session Name: '${var_taget_name}'"
+        if [ "${var_cmd}" = "tmux"  ] ; then
+            var_cmd_opts+=("-u -2 new -s ${var_taget_name}")
+        elif [ "${var_cmd}" = "zellij" ] ; then
+            var_cmd_opts+=("-s ${var_taget_name}")
+        fi
+    elif [ "${var_action}" = "list" ]
+    then
+        echo "List sessions:"
+        var_cmd_opts+=("ls")
+        # if [ "${var_cmd}" = "tmux"  ] ; then
+        #     var_cmd_opts+=("ls")
+        # elif [ "${var_cmd}" = "zellij" ] ; then
+        #     var_cmd_opts+=("ls")
+        # fi
+    fi
+
+    echo "export TERM='xterm-256color' && ${var_cmd} ${var_cmd_opts[@]}"
+    eval "export TERM='xterm-256color' && ${var_cmd} ${var_cmd_opts[@]}"
+}
+fm()
+{
+    # local var_fm="${HSL_ROOT_PATH}/bin/fm --cache-path ${HSL_LOCAL_VAR}/hsfm"
+    local var_fm="filemanager --cache-path ${HSL_LOCAL_VAR}/hsfm"
+
+    ${var_fm} $@
+    local tmp_path=$(${var_fm} -l flush)
+    # if ${HS_PATH_LIB}/tools/filemanager/filemanager.sh -l 2> /dev/null
+    # then
+    if test -d "${tmp_path}"
+    then
+        echo goto path:${tmp_path}
+        cd "${tmp_path}"
+    fi
+}
+
+################################################################
+################################################################
+####    Sync Function
+################################################################
+################################################################
 epath()
 {
     local flag_verbose=n
@@ -159,6 +418,11 @@ epath()
         return 0
     fi;
 
+}
+retitle()
+{
+    # print -Pn "\e]0;$@\a"
+    echo -en "\033]0;$@\a"
 }
 toollink()
 {
@@ -351,150 +615,3 @@ mark()
     # $@ 2>&1 | sed -E -e "s%${hi_word}%${color_array[$clr_idx]}&${ccend}%ig"
     sed -u -E -e "s%${hi_word}%${ccstart}&${ccend}%ig"
 }
-function session()
-{
-    local var_taget_socket=""
-    local var_action=""
-    local var_remove_list=()
-    if command -v tmux 2>&1 > /dev/null; then
-        local var_cmd='tmux'
-    elif command -v zellij 2>&1 > /dev/null; then
-        local var_cmd='zellij'
-    else
-        echo "no tmux or zellij found."
-    fi
-    local var_cmd_opts=('')
-
-    local var_taget_name=""
-
-    while [[ "$#" != 0 ]]
-    do
-        case $1 in
-            -ls|--list|ls)
-                ${var_cmd} ls
-                return 0
-                ;;
-            -S|--socket)
-                if [ "${var_cmd}" = "tmux"  ] ; then
-                    var_cmd_opts+=("-S ${2}")
-                fi
-                shift 1
-                ;;
-            -f|--file)
-                if test -f ${2}
-                then
-                    if [ "${var_cmd}" = "tmux"  ] ; then
-                        var_cmd_opts+=("-f ${2}")
-                    elif [ "${var_cmd}" = "zellij"  ] ; then
-                        var_cmd_opts+=("-c ${2}")
-                    fi
-                else
-                    echo "Config file not found. $2"
-                    return 1
-                fi
-                shift 1
-                ;;
-            -s|--session-name)
-                tmp_session_name="${2}"
-
-                local tmp_name=$(session ls |grep "${tmp_session_name}" | cut -d ' ' -f 1| sed 's/:$//g' | tr -d  ' ')
-                if [ "${tmp_name}" != "" ]
-                then
-                    var_action="attach"
-                    var_taget_name=${tmp_name}
-                else
-                    var_action="create"
-                    var_taget_name=${tmp_session_name}
-                fi
-                shift 1
-                ;;
-            --host|host|hostname|h)
-                local var_hostname=""
-                if command -v hostname 2>&1 > /dev/null
-                then
-                    var_hostname="$(hostname)"
-                elif test -f "/etc/hostname"
-                then
-                    var_hostname="$(cat /etc/hostname)"
-                fi
-
-                local tmp_name=$(session ls |grep --color=none "${var_hostname}" | cut -d ' ' -f 1| sed 's/:$//g' | tr -d  ' ')
-                if [ "${tmp_name}" != "" ]
-                then
-                    var_action="attach"
-                    var_taget_name=${tmp_name}
-                else
-                    var_action="create"
-                    var_taget_name=${var_hostname}
-                fi
-                ;;
-            -h|--help)
-                echo "session " "session lite is an independ instance of ${var_cmd}"
-                echo "SYNOPSIS"
-                echo "session [Options] [Value]"
-                echo "Options"
-                echo "    -f|--file"              -d "Specify config file"
-                echo "    -S|--socket"            -d "Specify socket file"
-                echo "    --host|host|hostname|h" -d "detach all session"
-                echo "    -ls|--list|ls|list"     -d "List sessions"
-                echo "    -s|--session"           -d "specify session name"
-                return 0
-                ;;
-            *)
-                var_cmd_opts+=($*)
-                break
-                ;;
-        esac
-        shift 1
-    done
-
-    echo "Session Name: '${var_taget_name}'"
-    if [ "${var_action}" = "attach" ]
-    then
-        if [ "${var_cmd}" = "tmux"  ] ; then
-            var_cmd_opts+=("attach -t ${var_taget_name}")
-        elif [ "${var_cmd}" = "zellij"  ] ; then
-            var_cmd_opts+=("-s ${var_taget_name} attach")
-        fi
-    elif [ "${var_action}" = "create" ]
-    then
-        if [ "${var_cmd}" = "tmux"  ] ; then
-            var_cmd_opts+=("-u -2 new -s ${var_taget_name}")
-        elif [ "${var_cmd}" = "zellij" ] ; then
-            var_cmd_opts+=("-s ${var_taget_name}")
-        fi
-    fi
-
-    echo "export TERM='xterm-256color' && ${var_cmd} ${var_cmd_opts[@]}"
-    eval "export TERM='xterm-256color' && ${var_cmd} ${var_cmd_opts[@]}"
-}
-################################################################
-####    Post Setting
-################################################################
-if test -n "${HSL_WORK_PATH}"
-then
-    if test -f "${HSL_WORK_PATH}/work.sh"
-    then
-        source ${HSL_WORK_PATH}/work.sh
-        #     echo "Work script ${HSL_WORK_PATH}/work.sh"
-        # else
-        #     echo "Work script not found. ${HSL_WORK_PATH}/work.sh"
-    fi
-fi
-
-if test -n "${HSL_ROOT_PATH}"
-then
-    if test -d "${HSL_ROOT_PATH}/scripts"
-    then
-        epath "${HSL_ROOT_PATH}/scripts"
-        # else
-        #     echo "Execute script folder not found. ${HSL_ROOT_PATH}/scripts.sh"
-    fi
-
-    if test -d "${HSL_ROOT_PATH}/bin"
-    then
-        epath "${HSL_ROOT_PATH}/bin"
-        # else
-        #     echo "Binary folder not found. ${HSL_ROOT_PATH}"
-    fi
-fi
