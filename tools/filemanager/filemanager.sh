@@ -4632,6 +4632,14 @@ fsave_settings() {
 ###########################################################
 ## Others
 ###########################################################
+fsetup_env_cache() {
+    # Setup patch env
+    export HSFM_FILE_RUNTIME_ENV=${HSFM_PATH_CACHE}/hsfm_runtimeenv.sh
+    export HSFM_FILE_SESSION=${HSFM_PATH_CACHE}/hsfm_session.sh
+    export HSFM_FILE_CD_LASTPATH=${HSFM_PATH_CACHE}/hsfm_last.sh
+    export HSFM_FILE_MESSAGE=${HSFM_PATH_CACHE}/hsfm_message.log
+    export HSFM_FILE_LOGS=${HSFM_PATH_CACHE}/hsfm_logs.sh
+}
 fsetup_env() {
     # Figure out the current operating system to set some specific variables.
     # '$OSTYPE' typically stores the name of the OS kernel.
@@ -4669,13 +4677,7 @@ fsetup_env() {
             # VAR_TERM_DIR_LS_ARGS+=("-1")
         ;;
     esac
-
-    # Setup patch env
-    export HSFM_FILE_RUNTIME_ENV=${HSFM_PATH_CACHE}/hsfm_runtimeenv.sh
-    export HSFM_FILE_SESSION=${HSFM_PATH_CACHE}/hsfm_session.sh
-    export HSFM_FILE_CD_LASTPATH=${HSFM_PATH_CACHE}/hsfm_last.sh
-    export HSFM_FILE_MESSAGE=${HSFM_PATH_CACHE}/hsfm_message.log
-    export HSFM_FILE_LOGS=${HSFM_PATH_CACHE}/hsfm_logs.sh
+    fsetup_env_cache
 }
 
 fsetup_options() {
@@ -5063,6 +5065,7 @@ function fMain()
                 if [[ "${#}" -ge "2" ]] && ! [[ $2 =~ -.* ]]
                 then
                     export HSFM_PATH_CACHE="${2}"
+                    fsetup_env_cache
                     shift 1
                 fi
                 ;;

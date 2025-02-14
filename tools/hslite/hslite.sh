@@ -18,31 +18,33 @@ fi
 ################################################################
 
 ## Flags
-################################################################
+#===============================================================
 [ -z ${HSL_FLAG_INITED} ] && export HSL_FLAG_INITED=false
 [ -z ${HSL_FLAG_DEBUG} ] && export HSL_FLAG_DEBUG=false
 [ -z ${HSL_FLAG_MOTD} ] && export HSL_FLAG_MOTD=false
 
 ## Path
-################################################################
+#===============================================================
 [ -z ${HOME} ] && test -d ~ && export HOME="~"
 [ -z ${HOME} ] && export HOME=/
 
+# Root path
 [ -z ${HSL_ROOT_PATH} ] && test -d ${HOME}/tools/hslite && export HSL_ROOT_PATH="${HOME}/tools/hslite"
 [ -z ${HSL_ROOT_PATH} ] && test -f ${HOME}/tools/hslite.sh && export HSL_ROOT_PATH="${HOME}/tools"
 [ -z ${HSL_ROOT_PATH} ] && test -f ${HOME}/tools/scripts/hslite.sh && export HSL_ROOT_PATH="${HOME}/tools"
 
-[ -z ${HSL_WORK_PATH} ] && test -f ${HSL_ROOT_PATH}/scripts/work.sh && export HSL_WORK_PATH="${HSL_ROOT_PATH}/scripts"
-[ -z ${HSL_WORK_PATH} ] && test -f ${HSL_ROOT_PATH}/work/work.sh && export HSL_WORK_PATH="${HSL_ROOT_PATH}/work"
-
+# Congis path
 [ -z ${HSL_CONFIG_PATH} ] && test -d ${HSL_ROOT_PATH}/configs && export HSL_CONFIG_PATH="${HSL_ROOT_PATH}/configs"
 
+# Work path
+[ -z ${HSL_WORK_PATH} ] && test -f ${HSL_ROOT_PATH}/work/work.sh && export HSL_WORK_PATH="${HSL_ROOT_PATH}/work"
+[ -z ${HSL_WORK_PATH} ] && test -f ${HSL_ROOT_PATH}/scripts/work.sh && export HSL_WORK_PATH="${HSL_ROOT_PATH}/scripts"
+
+# Local path
 [ -z ${HSL_LOCAL_VAR} ] && export HSL_LOCAL_VAR="${HSL_ROOT_PATH}/.var"
 
-test -n ${HSL_LOCAL_VAR} && (test -d ${HSL_LOCAL_VAR} || mkdir -p ${HSL_LOCAL_VAR})
-
 ## Shell env
-################################################################
+#===============================================================
 if [ -z ${HSL_SHELL} ] && [ -n ${SHELL} ] ; then
     if [ "${SHELL##*/}" = "bash" ] || [ "${SHELL}" = "/bin/bash" ] ; then
         export HSL_SHELL="bash"
@@ -60,7 +62,7 @@ fi
 ################################################################
 
 ####    Init
-################################################################
+#===============================================================
 # FIXME, refactor it
 # export HSL_LOCAL_VAR="${HSL_ROOT_PATH}/.var"
 # It's for bash
@@ -99,8 +101,12 @@ export LANG=en_US.UTF-8
 export LANGUAGE=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
 
+####    Path init
+#===============================================================
+test -n ${HSL_LOCAL_VAR} && (test -d ${HSL_LOCAL_VAR} || mkdir -p ${HSL_LOCAL_VAR})
+
 ####    Alias
-################################################################
+#===============================================================
 alias l='ls -a '
 alias lt='ls -a -t '
 alias lc='ls -a --color=always'
@@ -124,7 +130,20 @@ if test -f "${HSL_CONFIG_PATH}/tmux.conf" && command -v tmux 2>&1 > /dev/null; t
 fi
 
 ####    Post Setting
-################################################################
+#===============================================================
+# Local script
+if test -n "${HSL_ROOT_PATH}"
+then
+    if test -f "${HSL_ROOT_PATH}/hsllocal.sh"
+    then
+        source ${HSL_ROOT_PATH}/hsllocal.sh
+        #     echo "Local script ${HSL_ROOT_PATH}/hsllocal.sh"
+        # else
+        #     echo "Local script not found. ${HSL_ROOT_PATH}/hsllocal.sh"
+    fi
+fi
+
+# work
 if test -n "${HSL_WORK_PATH}"
 then
     if test -f "${HSL_WORK_PATH}/work.sh"
@@ -138,12 +157,12 @@ fi
 
 if test -n "${HSL_ROOT_PATH}"
 then
-    if test -d "${HSL_ROOT_PATH}/scripts"
-    then
-        export PATH=${PATH}:"${HSL_ROOT_PATH}/scripts"
-        # else
-        #     echo "Execute script folder not found. ${HSL_ROOT_PATH}/scripts.sh"
-    fi
+    # if test -d "${HSL_ROOT_PATH}/scripts"
+    # then
+    #     export PATH=${PATH}:"${HSL_ROOT_PATH}/scripts"
+    #     # else
+    #     #     echo "Execute script folder not found. ${HSL_ROOT_PATH}/scripts.sh"
+    # fi
 
     if test -d "${HSL_ROOT_PATH}/bin"
     then
@@ -157,6 +176,7 @@ if test -d "~/.usr/bin"
 then
     export PATH=${PATH}:"~/.usr/bin"
 fi
+
 # Homebrew test
 if test -f "/opt/homebrew/bin/brew"
 then
@@ -368,13 +388,11 @@ session()
 }
 fm()
 {
-    # local var_fm="${HSL_ROOT_PATH}/bin/fm --cache-path ${HSL_LOCAL_VAR}/hsfm"
     local var_fm="filemanager --cache-path ${HSL_LOCAL_VAR}/hsfm"
 
-    ${var_fm} $@
-    local tmp_path=$(${var_fm} -l flush)
-    # if ${HS_PATH_LIB}/tools/filemanager/filemanager.sh -l 2> /dev/null
-    # then
+    eval ${var_fm} $@
+
+    local tmp_path=$(eval "${var_fm} -l flush")
     if test -d "${tmp_path}"
     then
         echo goto path:${tmp_path}
