@@ -120,8 +120,6 @@ alias cgrep='grep --color=always '
 alias sgrep='grep -rnIi  '
 alias scgrep='grep --color=always -rnIi  '
 
-alias xim='vim -u ${HSL_CONFIG_PATH}/vimlite.vim'
-
 if test -f "${HSL_CONFIG_PATH}/config_legacy.kdl" && command -v zellij 2>&1 > /dev/null; then
     alias zellij="zellij -c ${HSL_CONFIG_PATH}/config_legacy.kdl"
 fi
@@ -245,6 +243,17 @@ hsl_info()
     echo "HOME: ${HOME}" 
     echo "SHELL: ${SHELL}" 
     echo "ENV: ${ENV}" 
+}
+xim()
+{
+    ## Override commands
+    if test -f "${HSL_CONFIG_PATH}/vimlite.vim"; then
+        export MYVIMRC=${HSL_CONFIG_PATH}/vimlite.vim
+        vim -u ${HSL_CONFIG_PATH}/vimlite.vim $@
+        unset MYVIMRC
+    else
+        vim $@
+    fi
 }
 session()
 {
