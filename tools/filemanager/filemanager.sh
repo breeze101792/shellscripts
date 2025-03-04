@@ -297,8 +297,8 @@ export HSFM_FILE_FORMAT="%f"
 export HSFM_MARK_FORMAT="%f*"
 
 # LS settings
-# a: alph, t:time
-export HSFM_LS_SORTING="-U"
+# Default use extension to sort.
+export HSFM_LS_SORTING="-X"
 ## Keybindings
 ###########################################################
 
@@ -1575,7 +1575,7 @@ EOF
 
         # local tmp_ls_output="$(ls ${var_ls_args[*]} ${PWD}/${var_pattern})"
         local tmp_ls_output=$(ls ${var_ls_args[*]} "${PWD}"/${var_pattern})
-        # flog_msg_debug "LS args: 'ls ${var_ls_args[*]} ${PWD}/${var_pattern}'"
+        flog_msg_debug "LS args: 'ls ${var_ls_args[*]} ${PWD}/${var_pattern}'"
 
         # flog_msg_debug "Fast mode:idx[0]=>'${tmp_ls_output[0]}'"
         # flog_msg_debug "LS args: '${var_ls_args[*]}'"
@@ -2414,8 +2414,8 @@ fnormal_mode_handler() {
                 HSFM_LS_SORTING="-t"
                 var_name="time"
             else
-                HSFM_LS_SORTING="-U"
-                var_name="none"
+                HSFM_LS_SORTING="-X"
+                var_name="extension"
             fi
             fterminal_redraw full
             flog_msg "Sorting: ${var_name}.${HSFM_LS_SORTING}"
