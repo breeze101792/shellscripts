@@ -132,9 +132,11 @@ function setup_git()
         if ! cat "${HOME}/.gitconfig" | grep '\[include\]' > /dev/null
         then
             echo [include] >> ${var_def_cfg}
+            echo "    path = ${HOME}/.config/git/config.cfg" >> ${var_def_cfg}
+        else
+            echo sed -i "/\[include\]/a \ \ \ \ path = ${HOME}/.config/git/config.cfg" ${var_def_cfg}
+            sed -i "/\[include\]/a \ \ \ \ path = ${HOME}/.config/git/config.cfg" ${var_def_cfg}
         fi
-        echo sed -i "/\[include\]/a \ \ \ \ path = ${HOME}/.config/git/config.cfg" ${var_def_cfg}
-        sed -i "/\[include\]/a \ \ \ \ path = ${HOME}/.config/git/config.cfg" ${var_def_cfg}
     else
         echo "${var_def_cfg} exist"
     fi
