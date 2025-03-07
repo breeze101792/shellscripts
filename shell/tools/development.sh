@@ -2498,6 +2498,68 @@ function gpatch()
     echo "mv ${tmp_patch_file} ${var_patch_file}"
     mv "${tmp_patch_file}" "${var_patch_file}"
 }
+function gmoduleupdate()
+{
+    # Ensure we're in a git repository
+    if [ ! -f ".gitmodules" ]; then
+        echo "No .gitmodules file found. Are you in the correct repository?"
+        exit 1
+    fi
+
+    echo "Updating submodules..."
+
+    # Loop through all submodules
+    git submodule foreach --recursive '
+        echo "########################################################"
+        echo "Processing submodule: $name ($path)"
+        echo "########################################################"
+
+        # Move into the submodule directory
+        # cd $path || pwd; exit 1
+
+        if [[ -n $(git status --porcelain) ]]; then
+            echo "Repository at '$repo_path' is NOT clean."
+            continue
+        fi
+
+        # Fetch latest changes
+        git fetch origin
+
+        # Get branch info
+        REMOTE_BRANCH=$(git for-each-ref --format="%(upstream:short)" $(git symbolic-ref -q HEAD))
+        BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null || echo "detached")
+
+        # Ensure submodule is on a branch
+        echo "Local Branch: ${BRANCH}"
+        if [ "$BRANCH" = "detached" ]; then
+            if git show-ref --verify --quiet "refs/heads/$BRANCH_NAME"; then
+                echo "Warning: Submodule $path is in detached HEAD state. Create local branch..."
+                # cd ..
+                # continue
+                git checkout -b ${REMOTE_BRANCH##*/}
+            else
+                echo "Enter ${REMOTE_BRANCH##*/}"
+                git checkout ${REMOTE_BRANCH##*/}
+            fi
+        fi
+
+        # Check remote tracking branch
+        echo "Remote Branch: ${REMOTE_BRANCH}"
+        if [ -z "$REMOTE_BRANCH" ]; then
+            echo "Setting upstream branch for $REMOTE_BRANCH..."
+            git branch --set-upstream-to=$REMOTE_BRANCH
+        fi
+
+        # Pull the latest changes
+        git pull --ff-only || exit 1
+
+        # # Return to main repo
+        # cd ..
+        # echo "Updated submodule: $path"
+    '
+
+    echo "All submodules updated successfully!"
+}
 function greset()
 {
     git reset --hard HEAD
