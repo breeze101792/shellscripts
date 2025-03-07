@@ -72,7 +72,7 @@ test -z "${HS_PATH_LAB}" && export HS_PATH_LAB="${HOME}/lab"
 test -z "${HS_PATH_BUILD}" && export HS_PATH_BUILD="${HOME}/build"
 test -z "${HS_PATH_PROJ}" && export HS_PATH_PROJ="${HOME}/projects"
 test -z "${HS_PATH_WORK}" && export HS_PATH_WORK="${HS_PATH_LIB}/../work"
-test -z "${HS_PATH_IDE}" && export HS_PATH_IDE="${HS_PATH_LIB}/../vim-ide"
+test -z "${HS_PATH_IDE}" && export HS_PATH_IDE="${HS_PATH_LIB}/../xim"
 test -z "${HS_PATH_SLINK}" && export HS_PATH_SLINK="${HOME}/slink"
 test -z "${HS_PATH_LOG}" && export HS_PATH_LOG="${HOME}/log"
 # it's better to set tmp to ramdisk
