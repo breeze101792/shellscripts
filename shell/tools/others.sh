@@ -472,10 +472,10 @@ function xcaffine()
                 cli_helper -t "SYNOPSIS"
                 cli_helper -d "xcaffine [Options] [Value]"
                 cli_helper -t "Options"
-                cli_helper -o "-d|--disable" -d "disable caffine"
-                cli_helper -o "-e|--enable" -d "enable caffine"
-                cli_helper -o "-s|--show" -d "show xset settings"
-                cli_helper -o "-h|--help" -d "Print help function "
+                cli_helper -o "-d|--disable|disable" -d "disable caffine"
+                cli_helper -o "-e|--enable|enable" -d "enable caffine"
+                cli_helper -o "-s|--show|show" -d "show xset settings"
+                cli_helper -o "-h|--help|help" -d "Print help function "
                 cli_helper -t "Options"
                 cli_helper -d "Default do whil caffeinate"
                 return 0
@@ -490,26 +490,19 @@ function xcaffine()
 
     if [ "${var_action}" = "default" ]
     then
-        echo "action: On"
-        xset -dpms
-        xset s off
-        xset dpms 0 0 0
+        local flag_run=true
+        trap "echo "\n"; xcaffine -d; flag_run=false" SIGINT
+        xcaffine -e
 
-        while true
+        while ${flag_run}
         do
             printf "\r[%s] caffeinating..." "$(date)"
-            sleep 60
+            sleep 1
         done
 
-        echo "action: Off"
-        xset +dpms
-        xset s on # if you also want to disable the screen saver
-
-        # You could also customize your Standby, Suspend and Off times with something like:
-        xset dpms 900 3600 4000
     elif [ "${var_action}" = "on" ]
     then
-        echo "action: ${var_action}"
+        echo "Caffine: ${var_action}"
         xset -dpms
         # if you also want to disable the screen saver
         xset s off
@@ -518,7 +511,7 @@ function xcaffine()
         xset dpms 0 0 0
     elif [ "${var_action}" = "off" ]
     then
-        echo "action: ${var_action}"
+        echo "Caffine: ${var_action}"
         xset +dpms
         xset s on # if you also want to disable the screen saver
 
@@ -526,7 +519,7 @@ function xcaffine()
         xset dpms 900 3600 4000
     elif [ "${var_action}" = "show" ]
     then
-        echo "action: ${var_action}"
+        echo "Action: ${var_action}"
         xset q
     fi
 
