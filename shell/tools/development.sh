@@ -2865,6 +2865,7 @@ function rpcheckoutByDate()
 function proot()
 {
     local var_action=''
+    local flag_fake=false
 
     while [[ "$#" != 0 ]]
     do
@@ -2877,6 +2878,9 @@ function proot()
                 ;;
             -o|--out)
                 var_action='out'
+                ;;
+            -f|--fake)
+                flag_fake=true
                 ;;
             # -v|--verbose)
             #     flag_verbose="y"
@@ -2900,21 +2904,30 @@ function proot()
         esac
         shift 1
     done
+    local target_path=""
     # alias proot="froot -m .git || froot -m .repo"
     if [ "${var_action}" = "repo" ]
     then
         # echo "flag_repo: ${flag_repo}"
-        froot -m .repo
+        target_path=$(froot -f -m .repo)
     elif [ "${var_action}" = "git" ]
     then
         # echo "flag_git: ${flag_git}"
-        froot -m .git
+        target_path=$(froot -f -m .git)
     elif [ "${var_action}" = "out" ]
     then
-
-        cd $(froot -f -m .repo || froot -f -m .git)/..
+        target_path="$(froot -f -m .repo || froot -f -m .git)/.."
     else
-        froot -m .repo || froot -m .git
+        target_path=$(froot -f -m .repo || froot -f -m .git)
+    fi
+
+    if test -d ${target_path}; then
+        if [ ${flag_fake} = true ]
+        then
+            echo ${target_path}
+        else
+            cd ${target_path}
+        fi
     fi
 }
 ########################################################
@@ -3039,13 +3052,27 @@ function pyvenv()
     local var_target_path="${HS_PATH_PYTHEN_ENV}"
     local var_action=""
     local var_pip_cmd=""
+    local def_env_name='.pyvenv'
     if [[ "$#" = "0" ]]
     then
         var_action="active"
     fi
+    if test -d "./${def_env_name}"
+    then
+        var_target_path="./${def_env_name}"
+    fi
+    echo "$(froot -f ${def_env_name})"
+    if test -d "$(froot -f ${def_env_name})/${def_env_name}" 2>&1 > /dev/null
+    then
+        var_target_path="$(froot -f ${def_env_name})/${def_env_name}"
+    fi
+
     while [[ "$#" != 0 ]]
     do
         case $1 in
+            -g|--git)
+                var_target_path=$(proot -f)/${def_env_name}
+                ;;
             -c|--create|c)
                 var_action="create"
                 ;;
@@ -3074,6 +3101,7 @@ function pyvenv()
                 cli_helper -d "pyvenv [Options] [Value]"
                 cli_helper -d "default path will set to HS_PATH_PYTHEN_ENV"
                 cli_helper -t "Options"
+                cli_helper -o "-g|--git" -d "specify Pyvenv to .git root."
                 cli_helper -o "-c|--create|c" -d "create Pyvenv"
                 cli_helper -o "-a|--active|a" -d "active Pyvenv"
                 cli_helper -o "-d|--deactivate|d" -d "deactivate Pyvenv"
@@ -3092,6 +3120,7 @@ function pyvenv()
         shift 1
     done
 
+    echo "PyVenv: ${var_target_path}"
     if [ "${var_action}" = "active" ]
     then
         source ${var_target_path}/bin/activate
