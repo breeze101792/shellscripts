@@ -810,6 +810,41 @@ function session()
                     var_target_name=${var_hostname}
                 fi
                 ;;
+            --git|g)
+                local var_proj_name=""
+                if command -v git 2>&1 > /dev/null
+                then
+                    var_proj_name="$(basename -s .git `git config --get remote.origin.url`)"
+                else
+                    echo "Git command not found."
+                    return 1
+                # elif test -f "/etc/hostname"
+                # then
+                #     var_proj_name="$(cat /etc/hostname)"
+                fi
+
+                # modify name for remove special chars.
+                if test -n "${var_proj_name}"
+                then
+                    var_proj_name=$(echo ${var_proj_name}| sed 's/\./_/g')
+                fi
+
+                local tmp_name=$(session ls | grep "${var_proj_name}" | cut -d ':' -f 1| cut -d "@" -f 2 | tr -d  ' ')
+                if [ "${tmp_name}" != "" ]
+                then
+                    if [ "${1}" = "H" ] || [ "${1}" = "Host" ]
+                    then
+                        var_action="attach-only"
+                        var_target_name=${tmp_name}
+                    else
+                        var_action="attach"
+                        var_target_name=${tmp_name}
+                    fi
+                else
+                    var_action="create"
+                    var_target_name=${var_proj_name}
+                fi
+                ;;
             -v|--verbose)
                 var_cmd+=('-v')
                 ;;
@@ -3061,7 +3096,7 @@ function pyvenv()
     then
         var_target_path="./${def_env_name}"
     fi
-    echo "$(froot -f ${def_env_name})"
+
     if test -d "$(froot -f ${def_env_name})/${def_env_name}" 2>&1 > /dev/null
     then
         var_target_path="$(froot -f ${def_env_name})/${def_env_name}"
