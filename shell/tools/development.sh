@@ -3086,6 +3086,7 @@ function pyvenv()
 {
     local var_target_path="${HS_PATH_PYTHEN_ENV}"
     local var_action=""
+    local var_exe_cmd=""
     local var_pip_cmd=""
     local def_env_name='.pyvenv'
     if [[ "$#" = "0" ]]
@@ -3121,6 +3122,12 @@ function pyvenv()
             -u|--update|u)
                 var_action="update"
                 ;;
+            -x|--execute|x)
+                var_action="execute"
+                shift 1
+                var_exe_cmd="$@"
+                break
+                ;;
             -p|--path)
                 var_target_path="$(realpath ${2})"
                 shift 1
@@ -3139,6 +3146,7 @@ function pyvenv()
                 cli_helper -o "-g|--git" -d "specify Pyvenv to .git root."
                 cli_helper -o "-c|--create|c" -d "create Pyvenv"
                 cli_helper -o "-a|--active|a" -d "active Pyvenv"
+                cli_helper -o "-x|--execute|x" -d "Execute Pyvenv script."
                 cli_helper -o "-d|--deactivate|d" -d "deactivate Pyvenv"
                 cli_helper -o "-u|--update|u" -d "update pip"
                 cli_helper -o "-p|--path" -d "setting pyen path, default path:${HS_PATH_PYTHEN_ENV}"
@@ -3180,6 +3188,11 @@ function pyvenv()
     elif [ "${var_action}" = "pip" ]
     then
         pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org $@
+    elif [ "${var_action}" = "execute" ]
+    then
+        {
+            source ${var_target_path}/bin/activate && echo ${var_exe_cmd} && eval ${var_exe_cmd}
+        }
     fi
     # deactivate
 }
