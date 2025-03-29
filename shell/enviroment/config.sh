@@ -28,6 +28,9 @@ test -z "${HS_ENV_SILENCE}" && export HS_ENV_SILENCE=n
 test -z "${HS_ENV_ENABLE}" && export HS_ENV_ENABLE=true
 test -z "${HS_ENV_MAIL}" && export HS_ENV_MAIL=""
 
+# Service env
+test -z "${HS_ENV_AI_SERVICE_URL}" && export HS_ENV_AI_SERVICE_URL="http://localhost:11434"
+
 ########################################################
 ########################################################
 #####                                              #####

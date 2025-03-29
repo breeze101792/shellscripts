@@ -3111,6 +3111,14 @@ function pyvenv()
                 ;;
             -c|--create|c)
                 var_action="create"
+                if (( "$#" >= "2" ))
+                then
+                    if ! [[ $2 =~ \-.* ]] && test -d "$2"
+                    then
+                        var_target_path=${2}/${def_env_name}
+                        shift 1
+                    fi
+                fi
                 ;;
             -a|--active|a)
                 var_action="active"
@@ -3127,6 +3135,9 @@ function pyvenv()
                 shift 1
                 var_exe_cmd="$@"
                 break
+                ;;
+            -r|--requirment|r)
+                var_action="require"
                 ;;
             -p|--path)
                 var_target_path="$(realpath ${2})"
@@ -3146,8 +3157,9 @@ function pyvenv()
                 cli_helper -o "-g|--git" -d "specify Pyvenv to .git root."
                 cli_helper -o "-c|--create|c" -d "create Pyvenv"
                 cli_helper -o "-a|--active|a" -d "active Pyvenv"
-                cli_helper -o "-x|--execute|x" -d "Execute Pyvenv script."
                 cli_helper -o "-d|--deactivate|d" -d "deactivate Pyvenv"
+                cli_helper -o "-r|--require|r" -d "Install require package(requirements.txt)."
+                cli_helper -o "-x|--execute|x" -d "Execute Pyvenv script."
                 cli_helper -o "-u|--update|u" -d "update pip"
                 cli_helper -o "-p|--path" -d "setting pyen path, default path:${HS_PATH_PYTHEN_ENV}"
                 cli_helper -o "--pip|pip" -d "Do pip install with trust host"
@@ -3167,12 +3179,6 @@ function pyvenv()
     if [ "${var_action}" = "active" ]
     then
         source ${var_target_path}/bin/activate
-        # $@
-    elif [ "${var_action}" = "update" ]
-    then
-        python -m pip install --upgrade pip
-        # pip list --outdated --format=freeze | grep -v '^\-e' | cut -d = -f 1 | xargs -n1 pip install -U
-        pip3 list --outdated | cut -d " " -f 1 | grep -v "Package\|-" | xargs pip install -U
     elif [ "${var_action}" = "create" ]
     then
         if [ -d ${var_target_path} ]
@@ -3184,6 +3190,20 @@ function pyvenv()
             # virtualenv --system-site-packages -p python3 ${target_path}
             # echo virtualenv --system-site-packages -p python ${var_target_path}
             virtualenv --system-site-packages -p python ${var_target_path}
+        fi
+        # after creating, source it.
+        source ${var_target_path}/bin/activate
+    elif [ "${var_action}" = "update" ]
+    then
+        python -m pip install --upgrade pip
+        # pip list --outdated --format=freeze | grep -v '^\-e' | cut -d = -f 1 | xargs -n1 pip install -U
+        pip3 list --outdated | cut -d " " -f 1 | grep -v "Package\|-" | xargs pip install -U
+    elif [ "${var_action}" = "require" ]
+    then
+        if test -f requirements.txt; then
+            cat requirements.txt | xargs pip install 
+        else
+            echo "requirements.txt not found."
         fi
     elif [ "${var_action}" = "pip" ]
     then

@@ -54,13 +54,7 @@ alias f='ffind '
 alias g='grep '
 alias s='sgrep '
 
-########################################################
-#####    Tools                                     #####
-########################################################
-# alias fm="${HS_PATH_LIB}/tools/filemanager/filemanager.sh"
 alias fm="xfm"
-alias bashtop="${HS_PATH_LIB}/tools/bashtop/bashtop"
-alias wpacli="${HS_PATH_LIB}/tools/wifitool/wpacli.sh"
 ########################################################
 #####    Dev                                       #####
 ########################################################

@@ -508,6 +508,9 @@ function hs_main
         # source project root script
         hs_source ${HS_PATH_LIB}/projects/project.sh
 
+        # source tools root script
+        hs_source ${HS_PATH_LIB}/tools/tools.sh
+
         # shell post init
         if [ "${HS_ENV_SHELL}" = "bash" ] && [ "${HS_CONFIG_FUNCTION_EXPORT}" = "y" ]
         then
