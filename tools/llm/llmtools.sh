@@ -168,9 +168,7 @@ function fexample()
 function ai_git_commit() {
     local git_template=("$(eval "cat $(git config --get commit.template)")")
     local prompt="Help user to generate git commit message with given template.\n"
-    local diff_buffer="Diff content as follow:\n"
-
-
+    local diff_buffer="git diff content as follow:\n"
     prompt+="1. The first none-# line is title line, update it inline.\n"
     prompt+="2. For each following sessions, update it as template dose.\n"
     prompt+="3. # is for comment, will be removed latter. it's not a valid message."
@@ -182,15 +180,14 @@ function ai_git_commit() {
     question_msg=$(echo -E "${diff_buffer}")
     # printf "Diff: ${diff_buffer}"
     git_message=$(ask_ollama "${promote_msg}" "${question_msg}")
+    echo -E "##################################################################\n"
     echo -E "${git_message}"
+    echo -E "##################################################################\n"
     git status
     result=$(fAskInput "n" "Do you want to procced git commmit?(y/N)")
     if [ "${result}" = "y" ]
     then
-        git commit -m ${git_message}
-        if $?; then
-            git commit --amend
-        fi
+        git commit -m "${git_message}" && git commit --amend
     fi
 }
 function ai_file() {
