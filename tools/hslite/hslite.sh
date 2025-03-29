@@ -73,7 +73,7 @@ then
     set colored-stats on
 
     # Disable history function
-    set +o history
+    # set +o history
 
     # check the window size after each command and, if necessary,
     # update the values of LINES and COLUMNS.

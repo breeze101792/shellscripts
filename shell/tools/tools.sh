@@ -867,6 +867,8 @@ function filesync()
     var_excute_cmd+=("-avhW" "--progress" "--omit-dir-times" )
     # var_excute_cmd+=("--no-compress")
     var_excute_cmd+=("--compress")
+    # Make path if not exist.
+    var_excute_cmd+=("--mkpath")
     # NOTE. Not every version support compress choice
     # var_excute_cmd+=("--compress-choice=lz4")
 

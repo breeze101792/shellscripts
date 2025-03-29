@@ -3191,7 +3191,10 @@ function pyvenv()
     elif [ "${var_action}" = "execute" ]
     then
         {
-            source ${var_target_path}/bin/activate && echo ${var_exe_cmd} && eval ${var_exe_cmd}
+            source ${var_target_path}/bin/activate
+            echo ${var_exe_cmd}
+            eval ${var_exe_cmd}
+            deactivate
         }
     fi
     # deactivate
