@@ -173,13 +173,13 @@ function ai_git_commit() {
     prompt+="2. For each following sessions, update it as template dose.\n"
     prompt+="3. # is for comment, will be removed latter. it's not a valid message."
     diff_buffer+="$(git diff --cached)\n"
-    diff_buffer+="Please help me to fill out the git commit message, and only output the message.\n"
+    diff_buffer+="Please help me to fill out the git commit message, and only output the message with unreated words.\n"
     diff_buffer+="Template as follow:\n${git_template[*]}\n"
 
     promote_msg=$(echo -E "${prompt}")
     question_msg=$(echo -E "${diff_buffer}")
     # printf "Diff: ${diff_buffer}"
-    git_message=$(ask_ollama "${promote_msg}" "${question_msg}")
+    git_message=$(ask_ollama "${promote_msg}" "${question_msg}" | sed 's/^Answser: //g')
     echo -E "##################################################################\n"
     echo -E "${git_message}"
     echo -E "##################################################################\n"
@@ -192,16 +192,23 @@ function ai_git_commit() {
 }
 function ai_file() {
     local var_file_path=$1
-    local prompt="Read the text content and anwser user's question. \n"
-    local text_buffer=($(cat ${var_file_path}))
     shift 1
     local question="${*}"
 
-    promote_msg=$(echo -E "${prompt}")
-    question_msg=$(printf "${question}\n%s\n" "${text_buffer[*]}")
-    printf "Message: %s" "${question_msg}"
-    git_message=$(ask_ollama "${promote_msg}" "${question_msg}")
-    printf "${git_message}"
+    local prompt="Read the text content and anwser user's question. \n"
+    # local text_buffer="$(<${var_file_path})"
+    local text_buffer=""
+
+    while IFS= read -r line; do
+        text_buffer+="$line"$'\n'
+    done < ${var_file_path}
+    if [ ${OPTION_VERBOSE} = y ]
+    then
+        printf "${text_buffer}"
+    fi
+
+    result_message=$(ask_ollama "${promote_msg}" "${text_buffer}\nUser Question:${question}\n")
+    printf "${result_message}\n"
 }
 function ask_ollama() {
     local model=${VAR_DEFAULT_MODEL}
@@ -216,19 +223,10 @@ function ask_ollama() {
     if [ ${OPTION_VERBOSE} = y ]
     then
         echo "${model}@${service_url}: ${prompt}=>${question}"
-
-        # send a POST to reuquest Ollama API System.
-        echo curl -s ${service_url} -d "{
-        \"model\": \"${model}\",
-        \"messages\": [
-        {\"role\": \"system\", \"content\": ${prompt}},
-            {\"role\": \"user\", \"content\": ${question}}
-            ],
-            \"stream\": false
-        }"
     fi
-        
-    response=$(curl -s ${service_url} -d "{
+
+
+    response=$(curl -s ${service_url} -H "Content-Type: application/json" -d "{
     \"model\": \"${model}\",
     \"messages\": [
     {\"role\": \"system\", \"content\": ${prompt}},
@@ -261,6 +259,10 @@ function fMain()
                 ;;
             -p|--promote)
                 var_promote="${2}"
+                shift 1
+                ;;
+            -m|--model)
+                VAR_DEFAULT_MODEL="${2}"
                 shift 1
                 ;;
             -f|--file)
