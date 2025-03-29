@@ -19,8 +19,12 @@ if test -n "${HS_ENV_AI_SERVICE_URL}"; then
 else
     export VAR_SERVER_URL="http://localhost:11434"
 fi
+if test -n "${HS_ENV_AI_MODEL}"; then
+    export VAR_DEFAULT_MODEL="${HS_ENV_AI_MODEL}"
+else
+    export VAR_DEFAULT_MODEL="qwen2.5:7b-instruct-q8_0"
+fi
 export VAR_DEFAULT_PROMPT="It's an simple anwser system."
-export VAR_DEFAULT_MODEL="qwen2.5"
 
 ###########################################################
 ## Options

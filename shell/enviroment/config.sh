@@ -30,6 +30,7 @@ test -z "${HS_ENV_MAIL}" && export HS_ENV_MAIL=""
 
 # Service env
 test -z "${HS_ENV_AI_SERVICE_URL}" && export HS_ENV_AI_SERVICE_URL="http://localhost:11434"
+test -z "${HS_ENV_AI_MODEL}" && export HS_ENV_AI_MODEL="qwen2.5:7b-instruct-q8_0"
 
 ########################################################
 ########################################################
