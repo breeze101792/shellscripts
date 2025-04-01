@@ -76,6 +76,8 @@ fHelp()
     printf "    %- 16s\t%s\n " " -q|--question   " " Question to ask."
     printf "    %- 16s\t%s\n " " -v|--verbose    " " Print in verbose mode"
     printf "    %- 16s\t%s\n " " -h|--help       " " Print helping"
+    echo "[Actions]"
+    printf "    %- 16s\t%s\n " " review          " " Do the code review"
 }
 fInfo()
 {
@@ -169,13 +171,60 @@ function fexample()
 {
     fPrintHeader ${FUNCNAME[0]}
 }
+function ai_code_review() {
+    local prompt="Help user to review modified code and generate suggestion\n"
+    prompt+=$(cat << 'EOF'
+You are an experienced software engineer with expertise in code security, performance, and best practices. 
+
+I will provide you with a `git diff` output that contains code changes between different commits or branches. Your task is to:
+
+1. **Analyze Security Risks:**  
+   - Check for potential security vulnerabilities such as SQL injection, command injection, and improper input handling.
+   - Look for improper usage of file handling, network requests, or access control.
+   - Identify any hardcoded credentials or sensitive data.
+
+2. **Detect Memory Leaks and Resource Management Issues:**  
+   - Identify potential memory leaks, especially in languages like C/C++ or Python where improper management may cause resource exhaustion.
+   - Check for dangling pointers, double-free, or improper deallocation of resources.
+
+3. **Evaluate Code Efficiency and Optimization Opportunities:**  
+   - Suggest performance improvements or refactoring where applicable.
+   - Identify redundant operations or unnecessary complexity.
+
+4. **Ensure Consistency with Coding Standards and Best Practices:**  
+   - Check if the code follows established coding guidelines and style conventions.
+   - Look for inconsistent naming conventions, improper error handling, or missing comments.
+
+5. **Error Handling and Logging:**  
+   - Ensure proper error handling and logging mechanisms are in place.
+   - Verify that sensitive errors or exceptions are not exposed to the end-user.
+
+### Additional Instructions:
+- Focus only on the changed lines provided in the diff.
+- Provide detailed explanations for any issues found.
+- Suggest safer or more efficient alternatives where applicable.
+EOF
+)
+
+    local diff_buffer='Here is the `git diff` to review:\n'
+    diff_buffer+="$(git diff HEAD)\n"
+
+    diff_buffer+="Please help me to review the code above.\n"
+
+    promote_msg=$(echo -E "${prompt}")
+    question_msg=$(echo -E "${diff_buffer}")
+    # printf "Diff: ${diff_buffer}"
+    review_message=$(ask_ollama "${promote_msg}" "${question_msg}" | sed 's/^Answser: //g')
+    echo -E "${review_message}" | less
+}
 function ai_git_commit() {
-    local git_template=("$(eval "cat $(git config --get commit.template)")")
     local prompt="Help user to generate git commit message with given template.\n"
-    local diff_buffer="git diff content as follow:\n"
     prompt+="1. The first none-# line is title line, update it inline.\n"
     prompt+="2. For each following sessions, update it as template dose.\n"
     prompt+="3. # is for comment, will be removed latter. it's not a valid message."
+
+    local diff_buffer="git diff content as follow:\n"
+    local git_template=("$(eval "cat $(git config --get commit.template)")")
     diff_buffer+="$(git diff --cached)\n"
     diff_buffer+="Please help me to fill out the git commit message, and only output the message with unreated words.\n"
     diff_buffer+="Template as follow:\n${git_template[*]}\n"
@@ -277,6 +326,9 @@ function fMain()
             -g|--git-commit)
                 var_action="git"
                 ;;
+            review)
+                var_action="review"
+                ;;
             -q|--question)
                 var_action="question"
                 var_question="${2}"
@@ -311,6 +363,8 @@ function fMain()
         ai_git_commit
     elif [ "${var_action}" = "file" ]; then
         ai_file "${var_file_path}" "${var_question}"
+    elif [ "${var_action}" = "review" ]; then
+        ai_code_review
     fi
 }
 

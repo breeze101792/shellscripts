@@ -3133,7 +3133,13 @@ function pyvenv()
             -x|--execute|x)
                 var_action="execute"
                 shift 1
-                var_exe_cmd="$@"
+                var_exe_cmd=("$@")
+                break
+                ;;
+            -p|--profiling|p)
+                var_action="profiling"
+                shift 1
+                var_exe_cmd=("$@")
                 break
                 ;;
             -r|--requirment|r)
@@ -3159,7 +3165,8 @@ function pyvenv()
                 cli_helper -o "-a|--active|a" -d "active Pyvenv"
                 cli_helper -o "-d|--deactivate|d" -d "deactivate Pyvenv"
                 cli_helper -o "-r|--require|r" -d "Install require package(requirements.txt)."
-                cli_helper -o "-x|--execute|x" -d "Execute Pyvenv script."
+                cli_helper -o "-x|--execute|x" -d "Execute Pyvenv script. ex. pyvenv -x main.py"
+                cli_helper -o "-p|--profiling|p" -d "Execute Pyvenv script. ex. pyvenv -p main.py"
                 cli_helper -o "-u|--update|u" -d "update pip"
                 cli_helper -o "-p|--path" -d "setting pyen path, default path:${HS_PATH_PYTHEN_ENV}"
                 cli_helper -o "--pip|pip" -d "Do pip install with trust host"
@@ -3210,12 +3217,21 @@ function pyvenv()
         pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org $@
     elif [ "${var_action}" = "execute" ]
     then
-        {
+        (
             source ${var_target_path}/bin/activate
-            echo ${var_exe_cmd}
-            eval ${var_exe_cmd}
+            if [[ "${var_exe_cmd[0]}" =~ ^python(3)?$ ]];then
+                echo ${var_exe_cmd[@]}
+                eval ${var_exe_cmd[@]}
+            else
+                echo python ${var_exe_cmd[@]}
+                eval python ${var_exe_cmd[@]}
+            fi
             deactivate
-        }
+        )
+    elif [ "${var_action}" = "profiling" ]
+    then
+        echo python -X importtime ${var_exe_cmd[@]}
+        eval python -X importtime ${var_exe_cmd[@]}
     fi
     # deactivate
 }
