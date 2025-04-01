@@ -460,6 +460,9 @@ function xcaffine()
             -e|--enable)
                 var_action="on"
                 ;;
+            -b|--screen-off)
+                var_action="screenoff"
+                ;;
             -s|--show)
                 var_action="show"
                 ;;
@@ -474,6 +477,7 @@ function xcaffine()
                 cli_helper -t "Options"
                 cli_helper -o "-d|--disable|disable" -d "disable caffine"
                 cli_helper -o "-e|--enable|enable" -d "enable caffine"
+                cli_helper -o "-b|--screen-off|black" -d "turn off screen"
                 cli_helper -o "-s|--show|show" -d "show xset settings"
                 cli_helper -o "-h|--help|help" -d "Print help function "
                 cli_helper -t "Options"
@@ -521,6 +525,10 @@ function xcaffine()
     then
         echo "Action: ${var_action}"
         xset q
+    elif [ "${var_action}" = "screenoff" ]
+    then
+        echo "Action: ${var_action}"
+        xset dpms force off
     fi
 
 }
