@@ -146,13 +146,13 @@ function setup_git()
         mkdir -p ${var_config_path}
     fi
     ln -sf ${HS_SCRIPT_PATH}/configs/git/*   ${var_config_path}/
-    if [ ! -f "${var_config_path}/credential.cfg" ]
+    if [ ! -f "${var_config_path}/git-credentials" ]
     then
-        cp ${HS_SCRIPT_PATH}/configs/git/template/credential_template.cfg ${var_config_path}/credential.cfg
+        cp ${HS_SCRIPT_PATH}/configs/git/template/credentials_template.cfg ${var_config_path}/git-credentials
     else
         echo "${var_config_path}/credential.cfg exist"
-
     fi
+
     if [ ! -f "${var_config_path}/feature.cfg" ]
     then
         cp ${HS_SCRIPT_PATH}/configs/git/template/feature_template.cfg ${var_config_path}/feature.cfg
