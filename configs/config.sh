@@ -67,14 +67,22 @@ fErrControl()
 fHelp()
 {
     echo "${VAR_SCRIPT_NAME}"
-    echo "[Example]"
-    printf "    %s\n" "run test: ${VAR_SCRIPT_NAME} -d alacritty"
+    echo "[Usage]"
+    echo "    Basic usage: ${VAR_SCRIPT_NAME} [OPTIONS]"
+    
     echo "[Options]"
-    printf "    %- 16s\t%s\n" "-d|--description" "Description file for setup config."
-    printf "    %- 16s\t%s\n" "-c|--config-file" "Specify config template path."
-    printf "    %- 16s\t%s\n" "-t|--target" "Specify target config path."
-    printf "    %- 16s\t%s\n" "-n|--name" "Specify target config name."
-    printf "    %- 16s\t%s\n" "-h|--help" "Print helping"
+    printf "    %- 16s\t%s\n" "-d|--description <FILE>" "Specifies a configuration description file or directory containing setup.conf"
+    printf "    %- 16s\t%s\n" "-c|--config-file <PATH>" "Path to the configuration template file to use for setup"
+    printf "    %- 16s\t%s\n" "-t|--target <DIR>" "Target directory where configuration will be deployed"
+    printf "    %- 16s\t%s\n" "-n|--name <NAME>" "Name of the target configuration file in the target directory"
+    printf "    %- 16s\t%s\n" "-h|--help" "Display this help message and exit"
+    
+    echo "[Description]"
+    echo "    Use these options to control the configuration setup process:"
+    echo "    * -d or --description: Specifies a configuration description file or directory containing setup.conf"
+    echo "    * -c or --config-file: Path to the template file you want to use for configuration"
+    echo "    * -t or --target: Directory where the configuration will be placed"
+    echo "    * -n or --name: Name of the configuration file in the target directory"
 }
 fInfo()
 {

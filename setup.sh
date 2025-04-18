@@ -278,16 +278,16 @@ function setup()
                 ;;
             -h|--help)
                 echo "Setup Usage"
-                printf "    %- 32s\n            %s\n" "-i|--inputrc" "Setup inputrc"
-                printf "    %- 32s\n            %s\n" "-t|--tmux" "Setup tmux"
-                printf "    %- 32s\n            %s\n" "-g|--git" "Setup git"
-                printf "    %- 32s\n            %s\n" "-s|--setup" "Setup all"
-                printf "    %- 32s\n            %s\n" "-hs|--shell-setup" "Setup shell"
-                printf "    %- 32s\n            %s\n" "-l|--lite" "Setup lite shell"
-                printf "    %- 32s\n            %s\n" "-c|--config" "Setup config"
-                printf "    %- 32s\n            %s\n" "-u|--usr" "setup local usr"
+                printf "    %- 32s\n            %s\n" "-i|--inputrc" "Configure .inputrc for better command-line editing."
+                printf "    %- 32s\n            %s\n" "-t|--tmux" "Configure tmux settings."
+                printf "    %- 32s\n            %s\n" "-g|--git" "Configure global Git settings and user details."
+                printf "    %- 32s\n            %s\n" "-s|--setup" "Configure all settings (shell, inputrc, tmux, git)."
+                printf "    %- 32s\n            %s\n" "-hs|--shell-setup" "Configure the shell environment by adding necessary source scripts to .bashrc or .zshrc."
+                printf "    %- 32s\n            %s\n" "-l|--lite" "Configure a lightweight shell setup."
+                printf "    %- 32s\n            %s\n" "-c|--config" "Generate a local configuration file with various settings."
+                printf "    %- 32s\n            %s\n" "-u|--usr" "Create a local user directory structure (/.usr/bin, /.usr/lib)."
                 printf "    %- 32s\n            %s\n" "-hs|--hs-excute" "Create hs excutable on .usr/bin"
-                printf "    %- 32s\n            %s\n" "-x|--excute" "Excute with hs env"
+                printf "    %- 32s\n            %s\n" "-x|--excute" "Execute commands within the configured environment."
                 printf "    %- 32s\n            %s\n" "-h|--help" "Help me"
                 return 0
                 ;;
