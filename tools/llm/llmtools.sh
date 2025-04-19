@@ -25,6 +25,8 @@ else
     export VAR_DEFAULT_MODEL="qwen2.5:7b-instruct-q8_0"
 fi
 export VAR_DEFAULT_PROMPT="It's an simple anwser system."
+# google/ollama
+export VAR_PROVIDER='google'
 
 ###########################################################
 ## Options
@@ -73,7 +75,9 @@ fHelp()
     printf "    %- 16s\t%s\n " " -p|--promote    " " Specify system promte"
     printf "    %- 16s\t%s\n " " -f|--file       " " File mode, file to attach"
     printf "    %- 16s\t%s\n " " -g|--git-commit " " Git comimt mode."
+    printf "    %- 16s\t%s\n " " -m|--model      " " Specify model to use (Default: ${VAR_DEFAULT_MODEL})"
     printf "    %- 16s\t%s\n " " -q|--question   " " Question to ask."
+    printf "    %- 16s\t%s\n " " --provider      " " Specify AI provider (google/ollama, Default: ${VAR_PROVIDER})"
     printf "    %- 16s\t%s\n " " -v|--verbose    " " Print in verbose mode"
     printf "    %- 16s\t%s\n " " -h|--help       " " Print helping"
     echo "[Actions]"
@@ -214,7 +218,7 @@ EOF
     promote_msg=$(echo -E "${prompt}")
     question_msg=$(echo -E "${diff_buffer}")
     # printf "Diff: ${diff_buffer}"
-    review_message=$(ask_ollama "${promote_msg}" "${question_msg}" | sed 's/^Answser: //g')
+    review_message=$(ask_llm "${promote_msg}" "${question_msg}" | sed 's/^Answser: //g')
     echo -E "${review_message}" | less
 }
 function ai_git_commit() {
@@ -232,7 +236,7 @@ function ai_git_commit() {
     promote_msg=$(echo -E "${prompt}")
     question_msg=$(echo -E "${diff_buffer}")
     # printf "Diff: ${diff_buffer}"
-    git_message=$(ask_ollama "${promote_msg}" "${question_msg}" | sed 's/^Answser: //g')
+    git_message=$(ask_llm "${promote_msg}" "${question_msg}" | sed 's/^Answser: //g')
     echo -E "##################################################################\n"
     echo -E "${git_message}"
     echo -E "##################################################################\n"
@@ -260,10 +264,53 @@ function ai_file() {
         printf "${text_buffer}"
     fi
 
-    result_message=$(ask_ollama "${promote_msg}" "${text_buffer}\nUser Question:${question}\n")
+    result_message=$(ask_llm "${promote_msg}" "${text_buffer}\nUser Question:${question}\n")
     printf "${result_message}\n"
 }
-function ask_ollama() {
+###########################################################
+## AI Functions
+###########################################################
+
+function ask_gemini()
+{
+    # local model="gemini-2.0-flash"
+    local model="gemini-2.5-pro-exp-03-25"
+    local service_url="https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+    local api_key="${GEMINI_API_KEY}"
+
+    local prompt="$1"
+    local question="$2"
+
+    prompt=$(echo "$prompt" | jq -Rs .)
+    question=$(echo "$question" | jq -Rs .)
+
+    if [ ${OPTION_VERBOSE} = y ]
+    then
+        echo "${model}@${service_url}: ${prompt}=>${question}"
+    fi
+    if test -z "${api_key}"; then
+        echo "API KEY not found."
+        return 1
+    fi
+
+    response=$(curl -s "${service_url}" \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer ${api_key}" \
+        -d "{
+            \"model\": \"${model}\",
+            \"messages\": [
+                {\"role\": \"user\", \"content\": ${question}}
+                ],
+                \"stream\": false
+            }")
+
+    # Show, result.
+    # printf "%s\n" "${response}"
+    answer=$(echo $response | jq -r '.choices[0].message.content')
+    echo "Answser: $answer"
+}
+
+function ask_llm() {
     local model=${VAR_DEFAULT_MODEL}
     # it must be: http://localhost:11434/api/chat
     local service_url="${VAR_SERVER_URL}/api/chat"
@@ -291,6 +338,20 @@ function ask_ollama() {
     # Show, result.
     answer=$(echo $response | jq -r '.message.content')
     echo "Answser: $answer"
+}
+function ask_llm() {
+    # printf "Prompt: ${1}"
+    # printf "Question: ${2}"
+    #
+    if [ "${VAR_PROVIDER}" = "ollama" ]
+    then
+        ask_ollama "$1" "$2"
+    elif [ "${VAR_PROVIDER}" = "google" ];then
+        ask_gemini "$1" "$2"
+    else
+        echo "Unknow provider ${VAR_PROVIDER}"
+        return 1
+    fi
 }
 ## Main Functions
 ###########################################################
@@ -331,7 +392,9 @@ function fMain()
                 ;;
             -q|--question)
                 var_action="question"
-                var_question="${2}"
+                ;;
+            -P|--provider)
+                VAR_PROVIDER="$2"
                 shift 1
                 ;;
             # Options
@@ -344,6 +407,7 @@ function fMain()
                 ;;
             *)
                 var_question="${*}"
+                break
                 ;;
         esac
         shift 1
@@ -358,7 +422,7 @@ function fMain()
     fi
     if [ "${var_action}" = "question" ]
     then
-        ask_ollama "${var_promote}" "${var_question}"
+        ask_llm "${var_promote}" "${var_question}"
     elif [ "${var_action}" = "git" ]; then
         ai_git_commit
     elif [ "${var_action}" = "file" ]; then
