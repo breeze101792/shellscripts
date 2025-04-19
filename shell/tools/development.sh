@@ -3136,7 +3136,7 @@ function pyvenv()
                 var_exe_cmd=("$@")
                 break
                 ;;
-            -p|--profiling|p)
+            -P|--profiling|p)
                 var_action="profiling"
                 shift 1
                 var_exe_cmd=("$@")
@@ -3166,7 +3166,7 @@ function pyvenv()
                 cli_helper -o "-d|--deactivate|d" -d "deactivate Pyvenv"
                 cli_helper -o "-r|--require|r" -d "Install require package(requirements.txt)."
                 cli_helper -o "-x|--execute|x" -d "Execute Pyvenv script. ex. pyvenv -x main.py"
-                cli_helper -o "-p|--profiling|p" -d "Execute Pyvenv script. ex. pyvenv -p main.py"
+                cli_helper -o "-P|--profiling|p" -d "Execute Pyvenv script. ex. pyvenv -p main.py"
                 cli_helper -o "-u|--update|u" -d "update pip"
                 cli_helper -o "-p|--path" -d "setting pyen path, default path:${HS_PATH_PYTHEN_ENV}"
                 cli_helper -o "--pip|pip" -d "Do pip install with trust host"
