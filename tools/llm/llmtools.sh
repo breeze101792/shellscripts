@@ -218,7 +218,7 @@ EOF
     promote_msg=$(echo -E "${prompt}")
     question_msg=$(echo -E "${diff_buffer}")
     # printf "Diff: ${diff_buffer}"
-    review_message=$(ask_llm "${promote_msg}" "${question_msg}" | sed 's/^Answser: //g')
+    review_message=$(ask_llm "${promote_msg}" "${question_msg}")
     echo -E "${review_message}" | less
 }
 function ai_git_commit() {
@@ -236,7 +236,7 @@ function ai_git_commit() {
     promote_msg=$(echo -E "${prompt}")
     question_msg=$(echo -E "${diff_buffer}")
     # printf "Diff: ${diff_buffer}"
-    git_message=$(ask_llm "${promote_msg}" "${question_msg}" | sed 's/^Answser: //g')
+    git_message=$(ask_llm "${promote_msg}" "${question_msg}" | sed 's/^Answser: //g' | sed 's/^```$//g')
     echo -E "##################################################################\n"
     echo -E "${git_message}"
     echo -E "##################################################################\n"
