@@ -1132,7 +1132,7 @@ zession()
             -s|--session-name)
                 tmp_session_name="${2}"
 
-                local tmp_name=$(${def_fun_name} ls | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" | grep -v 'EXITED' | grep "${tmp_session_name}" | cut -d ' ' -f 1| sed 's/:$//g' | tr -d  ' ')
+                local tmp_name=$(${def_fun_name} ls | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" | grep "${tmp_session_name}" | cut -d ' ' -f 1| sed 's/:$//g' | tr -d  ' ')
                 if [ "${tmp_name}" != "" ]
                 then
                     var_action="attach"
@@ -1153,7 +1153,7 @@ zession()
                     var_hostname="$(cat /etc/hostname)"
                 fi
 
-                local tmp_name=$(${def_fun_name} ls | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" | grep -v 'EXITED' | grep --color=none "${var_hostname}" | cut -d ' ' -f 1| sed 's/:$//g' | tr -d  ' ')
+                local tmp_name=$(${def_fun_name} ls | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" | grep --color=none "${var_hostname}" | cut -d ' ' -f 1| sed 's/:$//g' | tr -d  ' ')
                 if [ "${tmp_name}" != "" ]
                 then
                     var_action="attach"
