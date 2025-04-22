@@ -1086,6 +1086,147 @@ function session()
 
     # ${var_cmd[@]} a -t ${var_taget_socket} || ${var_cmd[@]} new -s ${var_taget_socket}
 }
+zession()
+{
+    local def_fun_name='zession'
+    local var_taget_socket=""
+    local var_action=""
+    local var_remove_list=()
+    if command -v zellij 2>&1 > /dev/null; then
+        local var_cmd='zellij'
+    elif command -v tmux 2>&1 > /dev/null; then
+        local var_cmd='tmux'
+    else
+        echo "no tmux or zellij found."
+    fi
+    local var_cmd_opts=('')
+
+    local var_taget_name=""
+
+    while [[ "$#" != 0 ]]
+    do
+        case $1 in
+            -ls|--list|ls)
+                var_action="list"
+                ;;
+            -S|--socket)
+                if [ "${var_cmd}" = "tmux"  ] ; then
+                    var_cmd_opts+=("-S ${2}")
+                fi
+                shift 1
+                ;;
+            -f|--file)
+                if test -f ${2}
+                then
+                    if [ "${var_cmd}" = "tmux"  ] ; then
+                        var_cmd_opts+=("-f ${2}")
+                    elif [ "${var_cmd}" = "zellij"  ] ; then
+                        var_cmd_opts+=("-c ${2}")
+                    fi
+                else
+                    echo "Config file not found. $2"
+                    return 1
+                fi
+                shift 1
+                ;;
+            -s|--session-name)
+                tmp_session_name="${2}"
+
+                local tmp_name=$(${def_fun_name} ls | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" | grep -v 'EXITED' | grep "${tmp_session_name}" | cut -d ' ' -f 1| sed 's/:$//g' | tr -d  ' ')
+                if [ "${tmp_name}" != "" ]
+                then
+                    var_action="attach"
+                    var_taget_name=${tmp_name}
+                else
+                    var_action="create"
+                    var_taget_name=${tmp_session_name}
+                fi
+                shift 1
+                ;;
+            --host|host|hostname|h)
+                local var_hostname=""
+                if command -v hostname 2>&1 > /dev/null
+                then
+                    var_hostname="$(hostname)"
+                elif test -f "/etc/hostname"
+                then
+                    var_hostname="$(cat /etc/hostname)"
+                fi
+
+                local tmp_name=$(${def_fun_name} ls | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" | grep -v 'EXITED' | grep --color=none "${var_hostname}" | cut -d ' ' -f 1| sed 's/:$//g' | tr -d  ' ')
+                if [ "${tmp_name}" != "" ]
+                then
+                    var_action="attach"
+                    var_taget_name=${tmp_name}
+                else
+                    var_action="create"
+                    var_taget_name=${var_hostname}
+                fi
+                ;;
+            -o|--options)
+                var_cmd_opts+=($*)
+                ;;
+            -h|--help)
+                echo "${def_fun_name} " "${def_fun_name} lite is an independ instance of ${var_cmd}"
+                echo "SYNOPSIS"
+                echo "${def_fun_name} [Options] [Value]"
+                echo "Options"
+                echo "    -f|--file"              -d "Specify config file"
+                echo "    -S|--socket"            -d "Specify socket file"
+                echo "    --host|host|hostname|h" -d "detach all session"
+                echo "    -ls|--list|ls|list"     -d "List sessions"
+                echo "    -s|--session"           -d "specify session name"
+                echo "    -o|--options"           -d "specify command options"
+                return 0
+                ;;
+            *)
+                tmp_session_name="${*}"
+
+                local tmp_name=$(${def_fun_name} ls | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" | grep "${tmp_session_name}" | cut -d ' ' -f 1| sed 's/:$//g' | tr -d  ' ')
+                if [ "${tmp_name}" != "" ]
+                then
+                    var_action="attach"
+                    var_taget_name=${tmp_name}
+                else
+                    var_action="create"
+                    var_taget_name=${tmp_session_name}
+                fi
+                break
+                ;;
+        esac
+        shift 1
+    done
+
+    if [ "${var_action}" = "attach" ]
+    then
+        echo "[${var_action}]Session Name: '${var_taget_name}'"
+        if [ "${var_cmd}" = "tmux"  ] ; then
+            var_cmd_opts+=("attach -t ${var_taget_name}")
+        elif [ "${var_cmd}" = "zellij"  ] ; then
+            var_cmd_opts+=("-s ${var_taget_name} attach")
+        fi
+    elif [ "${var_action}" = "create" ]
+    then
+        echo "[${var_action}]Session Name: '${var_taget_name}'"
+        if [ "${var_cmd}" = "tmux"  ] ; then
+            var_cmd_opts+=("-u -2 new -s ${var_taget_name}")
+        elif [ "${var_cmd}" = "zellij" ] ; then
+            var_cmd_opts+=("-s ${var_taget_name}")
+        fi
+    elif [ "${var_action}" = "list" ]
+    then
+        echo "List sessions:"
+        var_cmd_opts+=("ls")
+        # if [ "${var_cmd}" = "tmux"  ] ; then
+        #     var_cmd_opts+=("ls")
+        # elif [ "${var_cmd}" = "zellij" ] ; then
+        #     var_cmd_opts+=("ls")
+        # fi
+    fi
+
+    # echo "export TERM='xterm-256color' && ${var_cmd} ${var_cmd_opts[@]}"
+    eval "export TERM='xterm-256color' && ${var_cmd} ${var_cmd_opts[@]}"
+}
 function sanity_check()
 {
     local threshold=95

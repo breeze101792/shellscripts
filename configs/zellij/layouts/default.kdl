@@ -1,0 +1,97 @@
+layout {
+    default_tab_template {
+        children
+        pane size=1 borderless=true {
+            plugin location="https://github.com/dj95/zjstatus/releases/latest/download/zjstatus.wasm" {
+            // plugin configuration...
+
+            // UI Settings
+            // hide_frame_for_single_pane "true"
+
+            // status bar settings
+            format_left   "#[bg=#606060,fg=#e0e0e0,bold] {session} #[bg=#404040,fg=#606060,bold]{mode}#[bg=#404040] {tabs}"
+            format_center ""
+            format_right  "#[bg=#404040,fg=#808080,bold] [{command_weekday}]{datetime}#[bg=#404040] {command_root_disk}#[bg=#404040] {command_memory}#[bg=#404040] {command_cpu_avg}{command_cpu_cnt}"
+            format_space  "#[bg=#404040]"
+            format_hide_on_overlength "true"
+            format_precedence "crl"
+
+            border_enabled  "false"
+            border_char     "─"
+            border_format   "#[fg=#6C7086]{char}"
+            border_position "top"
+
+            mode_normal        "#[bg=#a6da95,fg=#404040,bold] N#[bg=#404040,fg=#a6da95]█"
+            mode_locked        "#[bg=#909090,fg=#404040,bold] L#[bg=#404040,fg=#909090]█"
+            mode_tmux          "#[bg=#f5a97f,fg=#404040,bold] T#[bg=#404040,fg=#f5a97f]█"
+            mode_pane          "#[bg=#e0e0e0,fg=#404040,bold] P#[bg=#404040,fg=#e0e0e0]█"
+            mode_scroll        "#[bg=#f9e2af,fg=#404040,bold] SCROLL#[bg=#404040,fg=#f9e2af]█"
+            mode_tab           "#[bg=#b4befe,fg=#404040,bold] TAB#[bg=#404040,fg=#b4befe]█"
+            mode_resize        "#[bg=#f38ba8,fg=#404040,bold] RESIZE#[bg=#404040,fg=#f38ba8]█"
+            mode_enter_search  "#[bg=#8aadf4,fg=#404040,bold] ENT-SEARCH#[bg=#404040,fg=#8aadf4]█"
+            mode_search        "#[bg=#8aadf4,fg=#404040,bold] SEARCHARCH#[bg=#404040,fg=#8aadf4]█"
+            mode_rename_tab    "#[bg=#b4befe,fg=#404040,bold] RENAME-TAB#[bg=#404040,fg=#b4befe]█"
+            mode_rename_pane   "#[bg=#e0e0e0,fg=#404040,bold] RENAME-PANE#[bg=#404040,fg=#e0e0e0]█"
+            mode_session       "#[bg=#74c7ec,fg=#404040,bold] SESSION#[bg=#404040,fg=#74c7ec]█"
+            mode_move          "#[bg=#f5c2e7,fg=#404040,bold] MOVE#[bg=#404040,fg=#f5c2e7]█"
+            mode_prompt        "#[bg=#8aadf4,fg=#404040,bold] PROMPT#[bg=#404040,fg=#8aadf4]█"
+
+            // formatting for inactive tabs
+            tab_normal              "#[bg=#404040,fg=#e0e0e0]█#[bg=#e0e0e0,fg=#1e2030,bold]{index} #[bg=#606060,fg=#e0e0e0,bold] {name}{floating_indicator}#[bg=#404040,fg=#606060,bold]█"
+            tab_normal_fullscreen   "#[bg=#404040,fg=#e0e0e0]█#[bg=#e0e0e0,fg=#1e2030,bold]{index} #[bg=#606060,fg=#e0e0e0,bold] {name}{fullscreen_indicator}#[bg=#404040,fg=#606060,bold]█"
+            tab_normal_sync         "#[bg=#404040,fg=#e0e0e0]█#[bg=#e0e0e0,fg=#1e2030,bold]{index} #[bg=#606060,fg=#e0e0e0,bold] {name}{sync_indicator}#[bg=#404040,fg=#606060,bold]█"
+
+            // formatting for the current active tab
+            tab_active              "#[bg=#404040,fg=#fab387]█#[bg=#fab387,fg=#1e2030,bold]{index} #[bg=#606060,fg=#fab387,bold] {name}{floating_indicator}#[bg=#404040,fg=#606060,bold]█"
+            tab_active_fullscreen   "#[bg=#404040,fg=#fab387]█#[bg=#fab387,fg=#1e2030,bold]{index} #[bg=#606060,fg=#fab387,bold] {name}{fullscreen_indicator}#[bg=#404040,fg=#606060,bold]█"
+            tab_active_sync         "#[bg=#404040,fg=#fab387]█#[bg=#fab387,fg=#1e2030,bold]{index} #[bg=#606060,fg=#fab387,bold] {name}{sync_indicator}#[bg=#404040,fg=#606060,bold]█"
+
+            // separator between the tabs
+            tab_separator           "#[bg=#404040] "
+
+            // indicators
+            tab_sync_indicator       " "
+            tab_fullscreen_indicator " +"
+            tab_floating_indicator   " 󰹙"
+
+            datetime        " {format} "
+            // datetime_format "%A, %d %b %Y %H:%M"
+            datetime_format "%b %d %H:%M"
+            datetime_timezone "Asia/Taipei"
+
+            // Customize widges
+            // ----------------------------------------------------------------
+            // command_git_branch_command     "git rev-parse --abbrev-ref HEAD"
+            // command_git_branch_format      "#[fg=blue] {stdout} "
+            // command_git_branch_interval    "10"
+            // command_git_branch_rendermode  "static"
+
+            command_weekday_command     "bash -c \"date +%V-%a\""
+            command_weekday_format      "W{stdout}"
+            command_weekday_interval    "1"
+            command_weekday_rendermode  "static"
+
+            command_memory_command     "bash -c \"free -t -h | grep -i Total | tr -s ' ' | cut -d ' ' -f 4 | tail -n 1\""
+            command_memory_format      "#[bg=#606060,fg=#e0e0e0,bold] M {stdout} "
+            command_memory_interval    "1"
+            command_memory_rendermode  "static"
+
+            command_cpu_avg_command     "bash -c \"uptime | sed 's/.*average: //g' | cut -d ',' -f 1 \""
+            command_cpu_avg_format      "#[bg=#606060,fg=#e0e0e0,bold] C {stdout}"
+            command_cpu_avg_interval    "1"
+            command_cpu_avg_rendermode  "static"
+
+            command_cpu_cnt_command     "nproc"
+            command_cpu_cnt_format      "#[bg=#606060,fg=#e0e0e0,bold]/{stdout} "
+            command_cpu_cnt_interval    "1"
+            command_cpu_cnt_rendermode  "static"
+
+            command_root_disk_command     "bash -c \"df -h / | tail -n 1 | tr -s ' ' | cut -d ' ' -f 4\""
+            command_root_disk_format      "#[bg=#606060,fg=#e0e0e0,bold] R {stdout} "
+            command_root_disk_interval    "1"
+            command_root_disk_rendermode  "static"
+
+        }
+    }
+}
+                                                                                }

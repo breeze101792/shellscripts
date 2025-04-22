@@ -23,7 +23,7 @@ export OPTION_VERBOSE=false
 ###########################################################
 export ARG_PROGRAM_NAME="Config"
 export ARG_CONFIG_DESCRIPTION_FILE=""
-export ARG_CONFIG_TEMPLATE_PATH=""
+export ARG_CONFIG_TEMPLATE_PATH=("")
 export ARG_TARGET_PATH=""
 export ARG_TARGET_CONFIG_NAME=""
 
@@ -105,7 +105,7 @@ fInfo()
     printf "==  Args\n"
     printf "===========================================================\n"
     printf "==    %- 28s\t: %- 16s\n" "ARG_CONFIG_DESCRIPTION_FILE" "${ARG_CONFIG_DESCRIPTION_FILE}"
-    printf "==    %- 28s\t: %- 16s\n" "ARG_CONFIG_TEMPLATE_PATH" "${ARG_CONFIG_TEMPLATE_PATH}"
+    printf "==    %- 28s\t: %- 16s\n" "ARG_CONFIG_TEMPLATE_PATH" "${ARG_CONFIG_TEMPLATE_PATH[@]}"
     printf "==    %- 28s\t: %- 16s\n" "ARG_TARGET_PATH" "${ARG_TARGET_PATH}"
     printf "==    %- 28s\t: %- 16s\n" "ARG_TARGET_CONFIG_NAME" "${ARG_TARGET_CONFIG_NAME}"
     printf "===========================================================\n"
@@ -159,7 +159,7 @@ function fexample()
 
 }
 
-function fSetup()
+function fSetup_bak()
 {
     fPrintHeader ${FUNCNAME[0]}
     var_root_path=${PATH_ROOT}
@@ -193,6 +193,47 @@ function fSetup()
     else
         fEval ln -s "${var_template_file}" "${ARG_TARGET_PATH}/${ARG_TARGET_CONFIG_NAME}"
     fi
+
+    echo -e "${DEF_COLOR_GREEN}!!! ${ARG_PROGRAM_NAME} Setup finished. !!!${DEF_COLOR_NORMAL}"
+
+}
+function fSetup()
+{
+    fPrintHeader ${FUNCNAME[0]}
+    var_root_path=${PATH_ROOT}
+    for each_config in "${ARG_CONFIG_TEMPLATE_PATH[@]}"; do
+        var_template_file="${PATH_ROOT}/${each_config}"
+        if test -e "${var_template_file}"; then
+            var_template_file="${var_template_file}"
+        else
+            echo "Config file not exist. ${var_template_file}"
+            exit 1
+        fi
+
+        if ! test -d "${ARG_TARGET_PATH}"; then
+            echo "mkdir ${ARG_TARGET_PATH}"
+            mkdir "${ARG_TARGET_PATH}" || (echo "Can't create ${ARG_TARGET_PATH}" && exit 1)
+        fi
+
+        target_config=$(basename ${each_config})
+        echo "Check ${ARG_TARGET_PATH}/${target_config}"
+        if test -e "${ARG_TARGET_PATH}/${target_config}" || test -L "${ARG_TARGET_PATH}/${target_config}"; then
+            printf "%s exist, overwrite it?(y/N)" "${ARG_TARGET_PATH}/${target_config}"
+            read var_ans
+            if [ "${var_ans}" = "y" ]; then
+                # backup
+                echo mv "${ARG_TARGET_PATH}/${target_config}" "${ARG_TARGET_PATH}/${target_config}_backup_$(date +%s)"
+                mv "${ARG_TARGET_PATH}/${target_config}" "${ARG_TARGET_PATH}/${target_config}_backup_$(date +%s)"
+
+                echo "Overwrite ${target_config}"
+                fEval ln -sf "${var_template_file}" "${ARG_TARGET_PATH}/${target_config}"
+            else
+                echo "Ignore settings."
+            fi
+        else
+            fEval ln -s "${var_template_file}" "${ARG_TARGET_PATH}/${target_config}"
+        fi
+    done
 
     echo -e "${DEF_COLOR_GREEN}!!! ${ARG_PROGRAM_NAME} Setup finished. !!!${DEF_COLOR_NORMAL}"
 
@@ -233,7 +274,7 @@ function fMain()
         case $1 in
             -c | --config-file)
                 if test -e "${2}"; then
-                    ARG_CONFIG_TEMPLATE_PATH="${2}"
+                    ARG_CONFIG_TEMPLATE_PATH+=("${2}")
                     shift 1
                 else
                     echo "config file not found."
