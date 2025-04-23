@@ -3,6 +3,7 @@ layout {
         children
         pane size=1 borderless=true {
             plugin location="https://github.com/dj95/zjstatus/releases/latest/download/zjstatus.wasm" {
+            // plugin location="file:~/.config/zellij/plugins/zjstatus.wasm" {
             // plugin configuration...
 
             // UI Settings
@@ -11,7 +12,7 @@ layout {
             // status bar settings
             format_left   "#[bg=#606060,fg=#e0e0e0,bold] {session} #[bg=#404040,fg=#606060,bold]{mode}#[bg=#404040] {tabs}"
             format_center ""
-            format_right  "#[bg=#404040,fg=#808080,bold] [{command_weekday}]{datetime}#[bg=#404040] {command_root_disk}#[bg=#404040] {command_memory}#[bg=#404040] {command_cpu_avg}{command_cpu_cnt}"
+            format_right  "#[bg=#404040,fg=#808080] [{command_weekday}]{datetime}#[bg=#404040]{command_root_disk}{command_home_disk}#[bg=#404040] {command_memory}#[bg=#404040] {command_cpu_avg}{command_cpu_cnt}"
             format_space  "#[bg=#404040]"
             format_hide_on_overlength "true"
             format_precedence "crl"
@@ -68,29 +69,33 @@ layout {
 
             command_weekday_command     "bash -c \"date +%V-%a\""
             command_weekday_format      "W{stdout}"
-            command_weekday_interval    "1"
+            command_weekday_interval    "60"
             command_weekday_rendermode  "static"
 
             command_memory_command     "bash -c \"free -t -h | grep -i Total | tr -s ' ' | cut -d ' ' -f 4 | tail -n 1\""
-            command_memory_format      "#[bg=#606060,fg=#e0e0e0,bold] M {stdout} "
-            command_memory_interval    "1"
+            command_memory_format      "#[bg=#606060,fg=#e0e0e0] M {stdout} "
+            command_memory_interval    "3"
             command_memory_rendermode  "static"
 
             command_cpu_avg_command     "bash -c \"uptime | sed 's/.*average: //g' | cut -d ',' -f 1 \""
-            command_cpu_avg_format      "#[bg=#606060,fg=#e0e0e0,bold] C {stdout}"
-            command_cpu_avg_interval    "1"
+            command_cpu_avg_format      "#[bg=#606060,fg=#e0e0e0] C {stdout}"
+            command_cpu_avg_interval    "3"
             command_cpu_avg_rendermode  "static"
 
             command_cpu_cnt_command     "nproc"
-            command_cpu_cnt_format      "#[bg=#606060,fg=#e0e0e0,bold]/{stdout} "
-            command_cpu_cnt_interval    "1"
+            command_cpu_cnt_format      "#[bg=#606060,fg=#e0e0e0]/{stdout} "
+            command_cpu_cnt_interval    "0"
             command_cpu_cnt_rendermode  "static"
 
             command_root_disk_command     "bash -c \"df -h / | tail -n 1 | tr -s ' ' | cut -d ' ' -f 4\""
-            command_root_disk_format      "#[bg=#606060,fg=#e0e0e0,bold] R {stdout} "
-            command_root_disk_interval    "1"
+            command_root_disk_format      "#[bg=#606060,fg=#e0e0e0] R {stdout}"
+            command_root_disk_interval    "60"
             command_root_disk_rendermode  "static"
 
+            command_home_disk_command     "bash -c \"df -h ~/ | tail -n 1 | tr -s ' ' | cut -d ' ' -f 4\""
+            command_home_disk_format      "#[bg=#606060,fg=#e0e0e0]/H {stdout} "
+            command_home_disk_interval    "60"
+            command_home_disk_rendermode  "static"
         }
     }
 }

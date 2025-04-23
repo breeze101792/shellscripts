@@ -1211,7 +1211,7 @@ zession()
         if [ "${var_cmd}" = "tmux"  ] ; then
             var_cmd_opts+=("attach -t ${var_taget_name}")
         elif [ "${var_cmd}" = "zellij"  ] ; then
-            var_cmd_opts+=("-s ${var_taget_name} attach")
+            var_cmd_opts+=("attach ${var_taget_name}")
         fi
     elif [ "${var_action}" = "create" ]
     then
@@ -1229,7 +1229,7 @@ zession()
     then
         echo "Purage sessions"
         if [ "${var_cmd}" = "zellij" ] ; then
-            for each_exit_session in "$(zellij ls | sed -r 's/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g' | grep 'EXITED' | cut -d ' ' -f 1| sed 's/:$//g' | tr -d  ' ' )"; do
+            for each_exit_session in $(zellij ls | sed -r 's/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g' | grep 'EXITED' | cut -d ' ' -f 1| sed 's/:$//g' | tr -d  ' ' ); do
                 if [ ${flag_verbose} = true ]
                 then
                     echo remove sesson: ${each_exit_session}
