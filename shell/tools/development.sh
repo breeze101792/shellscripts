@@ -1089,6 +1089,7 @@ function session()
 zession()
 {
     local def_fun_name='zession'
+    local flag_verbose=false
     local var_taget_socket=""
     local var_action=""
     local var_remove_list=()
@@ -1108,6 +1109,9 @@ zession()
         case $1 in
             -ls|--list|ls)
                 var_action="list"
+                ;;
+            -p|--purge)
+                var_action="purge"
                 ;;
             -S|--socket)
                 if [ "${var_cmd}" = "tmux"  ] ; then
@@ -1166,17 +1170,21 @@ zession()
             -o|--options)
                 var_cmd_opts+=($*)
                 ;;
+            -v|--verbose)
+                flag_verbose=true
+                ;;
             -h|--help)
                 echo "${def_fun_name} " "${def_fun_name} lite is an independ instance of ${var_cmd}"
                 echo "SYNOPSIS"
                 echo "${def_fun_name} [Options] [Value]"
                 echo "Options"
-                echo "    -f|--file"              -d "Specify config file"
-                echo "    -S|--socket"            -d "Specify socket file"
-                echo "    --host|host|hostname|h" -d "detach all session"
-                echo "    -ls|--list|ls|list"     -d "List sessions"
-                echo "    -s|--session"           -d "specify session name"
-                echo "    -o|--options"           -d "specify command options"
+                printf "    % 12s %s\n" "    -f|--file"               "Specify config file"
+                printf "    % 12s %s\n" "    -S|--socket"             "Specify socket file"
+                printf "    % 12s %s\n" "    --host|host|hostname|h"  "detach all session"
+                printf "    % 12s %s\n" "    -ls|--list|ls|list"      "List sessions"
+                printf "    % 12s %s\n" "    -s|--session"            "specify session name"
+                printf "    % 12s %s\n" "    -o|--options"            "specify command options"
+                printf "    % 12s %s\n" "    -v|--verbose"            "Enable verbose mode"
                 return 0
                 ;;
             *)
@@ -1217,14 +1225,26 @@ zession()
     then
         echo "List sessions:"
         var_cmd_opts+=("ls")
-        # if [ "${var_cmd}" = "tmux"  ] ; then
-        #     var_cmd_opts+=("ls")
-        # elif [ "${var_cmd}" = "zellij" ] ; then
-        #     var_cmd_opts+=("ls")
-        # fi
+    elif [ "${var_action}" = "purge" ]
+    then
+        echo "Purage sessions"
+        if [ "${var_cmd}" = "zellij" ] ; then
+            for each_exit_session in "$(zellij ls | sed -r 's/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g' | grep 'EXITED' | cut -d ' ' -f 1| sed 's/:$//g' | tr -d  ' ' )"; do
+                if [ ${flag_verbose} = true ]
+                then
+                    echo remove sesson: ${each_exit_session}
+                fi
+                zellij delete-session ${each_exit_session}
+            done
+
+        fi
+        return 0
     fi
 
-    # echo "export TERM='xterm-256color' && ${var_cmd} ${var_cmd_opts[@]}"
+    if [ ${flag_verbose} = true ]
+    then
+        echo "export TERM='xterm-256color' && ${var_cmd} ${var_cmd_opts[@]}"
+    fi
     eval "export TERM='xterm-256color' && ${var_cmd} ${var_cmd_opts[@]}"
 }
 function sanity_check()
