@@ -3241,7 +3241,9 @@ function hex2bin()
 ########################################################
 function pymodule()
 {
-    python -m $@
+    local module_path=$(echo "$@" | sed 's/\.py$//' | sed 's/\//./g')
+    echo "python -m ${module_path}"
+    python -m ${module_path}
 }
 function pyvenv()
 {
