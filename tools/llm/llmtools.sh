@@ -22,10 +22,12 @@ fi
 if test -n "${HS_ENV_AI_MODEL}"; then
     export VAR_DEFAULT_MODEL="${HS_ENV_AI_MODEL}"
 else
-    export VAR_DEFAULT_MODEL="qwen2.5:7b-instruct-q8_0"
+    export VAR_DEFAULT_MODEL="qwen3:8b-q8_0"
 fi
+export VAR_API_KEY=""
+
 export VAR_DEFAULT_PROMPT="It's an simple anwser system."
-# google/ollama
+# google/google_2/ollama
 export VAR_PROVIDER='google'
 
 ###########################################################
@@ -77,7 +79,7 @@ fHelp()
     printf "    %- 16s\t%s\n " " -g|--git-commit " " Git comimt mode."
     printf "    %- 16s\t%s\n " " -m|--model      " " Specify model to use (Default: ${VAR_DEFAULT_MODEL})"
     printf "    %- 16s\t%s\n " " -q|--question   " " Question to ask."
-    printf "    %- 16s\t%s\n " " --provider      " " Specify AI provider (google/ollama, Default: ${VAR_PROVIDER})"
+    printf "    %- 16s\t%s\n " " --provider      " " Specify AI provider (google/google_2/ollama, Default: ${VAR_PROVIDER})"
     printf "    %- 16s\t%s\n " " -v|--verbose    " " Print in verbose mode"
     printf "    %- 16s\t%s\n " " -h|--help       " " Print helping"
     echo "[Actions]"
@@ -273,10 +275,12 @@ function ai_file() {
 
 function ask_gemini()
 {
-    # local model="gemini-2.0-flash"
-    local model="gemini-2.5-pro-exp-03-25"
-    local service_url="https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
-    local api_key="${GEMINI_API_KEY}"
+    # local model="gemini-2.5-pro-exp-03-25"
+    # local service_url="https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+    # local api_key="${GEMINI_API_KEY}"
+    local model="$VAR_DEFAULT_MODEL"
+    local service_url="$VAR_SERVER_URL"
+    local api_key="${VAR_API_KEY}"
 
     local prompt="$1"
     local question="$2"
@@ -310,7 +314,7 @@ function ask_gemini()
     echo "Answser: $answer"
 }
 
-function ask_llm() {
+function ask_ollama() {
     local model=${VAR_DEFAULT_MODEL}
     # it must be: http://localhost:11434/api/chat
     local service_url="${VAR_SERVER_URL}/api/chat"
@@ -347,6 +351,14 @@ function ask_llm() {
     then
         ask_ollama "$1" "$2"
     elif [ "${VAR_PROVIDER}" = "google" ];then
+        VAR_SERVER_URL="https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+        VAR_DEFAULT_MODEL="gemini-2.5-pro-exp-03-25"
+        VAR_API_KEY="${GEMINI_API_KEY}"
+        ask_gemini "$1" "$2"
+    elif [ "${VAR_PROVIDER}" = "google_2" ];then
+        VAR_SERVER_URL="https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+        VAR_DEFAULT_MODEL="gemini-2.5-pro-exp-03-25"
+        VAR_API_KEY="${GEMINI_API_KEY_2}"
         ask_gemini "$1" "$2"
     else
         echo "Unknow provider ${VAR_PROVIDER}"
