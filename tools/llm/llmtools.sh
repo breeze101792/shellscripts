@@ -33,7 +33,7 @@ export VAR_PROVIDER='wrt'
 ###########################################################
 ## Options
 ###########################################################
-export OPTION_VERBOSE=false
+export OPTION_VERBOSE=n
 
 ###########################################################
 ## Path
@@ -309,7 +309,10 @@ function ask_openai()
             }")
 
     # Show, result.
-    # printf "%s\n" "${response}"
+    if [ ${OPTION_VERBOSE} = y ]
+    then
+        printf "Respone: %s\n" "${response}" >&2
+    fi
     answer=$(echo $response | jq -r '.choices[0].message.content')
     echo "Answser: $answer"
 }
@@ -340,6 +343,10 @@ function ask_ollama() {
     }")
 
     # Show, result.
+    if [ ${OPTION_VERBOSE} = y ]
+    then
+        printf "Respone: %s\n" "${response}" >&2
+    fi
     answer=$(echo $response | jq -r '.message.content')
     echo "Answser: $answer"
 }
@@ -433,7 +440,7 @@ function fMain()
     ## Download
     if [ ${flag_verbose} = true ]
     then
-        OPTION_VERBOSE=y
+        OPTION_VERBOSE='y'
         echo SERVER:${VAR_SERVER_URL}
         # fInfo; fErrControl ${FUNCNAME[0]} ${LINENO}
     fi
