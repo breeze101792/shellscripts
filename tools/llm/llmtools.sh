@@ -27,7 +27,7 @@ fi
 export VAR_API_KEY=""
 
 export VAR_DEFAULT_PROMPT="It's an simple anwser system."
-# google/google_2/ollama
+# google/ollama
 export VAR_PROVIDER='wrt'
 
 ###########################################################
@@ -79,7 +79,7 @@ fHelp()
     printf "    %- 16s\t%s\n " " -g|--git-commit " " Git comimt mode."
     printf "    %- 16s\t%s\n " " -m|--model      " " Specify model to use (Default: ${VAR_DEFAULT_MODEL})"
     printf "    %- 16s\t%s\n " " -q|--question   " " Question to ask."
-    printf "    %- 16s\t%s\n " " --provider      " " Specify AI provider (google/google_2/ollama/wrt, Default: ${VAR_PROVIDER})"
+    printf "    %- 16s\t%s\n " " --provider      " " Specify AI provider (google/ollama/wrt, Default: ${VAR_PROVIDER})"
     printf "    %- 16s\t%s\n " " -v|--verbose    " " Print in verbose mode"
     printf "    %- 16s\t%s\n " " -h|--help       " " Print helping"
     echo "[Actions]"
@@ -352,17 +352,12 @@ function ask_llm() {
         ask_ollama "$1" "$2"
     elif [ "${VAR_PROVIDER}" = "google" ];then
         VAR_SERVER_URL="https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
-        VAR_DEFAULT_MODEL="gemini-2.5-pro-exp-03-25"
+        VAR_DEFAULT_MODEL="gemini-2.5-flash-preview-04-17"
         VAR_API_KEY="${GEMINI_API_KEY}"
-        ask_openai "$1" "$2"
-    elif [ "${VAR_PROVIDER}" = "google_2" ];then
-        VAR_SERVER_URL="https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
-        VAR_DEFAULT_MODEL="gemini-2.5-pro-exp-03-25"
-        VAR_API_KEY="${GEMINI_API_KEY_2}"
         ask_openai "$1" "$2"
     elif [ "${VAR_PROVIDER}" = "wrt" ];then
         VAR_SERVER_URL="https://openrouter.ai/api/v1/chat/completions"
-        VAR_DEFAULT_MODEL="google/gemini-2.5-pro-exp-03-25"
+        VAR_DEFAULT_MODEL="deepseek/deepseek-chat-v3-0324:free"
         VAR_API_KEY="${OPENROUTER_API_KEY}"
         ask_openai "$1" "$2"
     else
