@@ -359,7 +359,7 @@ function ask_llm() {
         ask_ollama "$1" "$2"
     elif [ "${VAR_PROVIDER}" = "google" ];then
         VAR_SERVER_URL="https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
-        VAR_DEFAULT_MODEL="gemini-2.5-flash-preview-04-17"
+        VAR_DEFAULT_MODEL="gemini-2.5-flash-preview-05-20"
         VAR_API_KEY="${GEMINI_API_KEY}"
         ask_openai "$1" "$2"
     elif [ "${VAR_PROVIDER}" = "wrt" ];then
