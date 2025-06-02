@@ -227,21 +227,23 @@ function ai_git_commit() {
     local prompt="Help user to generate git commit message with given template.\n"
     prompt+="1. The first none-# line is title line, update it inline.\n"
     prompt+="2. For each following sessions, update it as template dose.\n"
-    prompt+="3. # is for comment, will be removed latter. it's not a valid message."
+    prompt+="3. You could add note/comment strating with # as comment."
+    prompt+="4. Put your review in the end of commit message. All reviews should start with '# '."
+    prompt+="5. Don't use markdown syntax."
 
     local diff_buffer="git diff content as follow:\n"
-    local git_template=("$(eval "cat $(git config --get commit.template)")")
+    local git_template=("$(eval "cat $(git config --get commit.template) | sed 's/#AI- //g'")")
     diff_buffer+="$(git diff --cached)\n"
-    diff_buffer+="Please help me to fill out the git commit message, and only output the message with unreated words.\n"
-    diff_buffer+="Template as follow:\n${git_template[*]}\n"
+    diff_buffer+="Please help me to fill out the git commit message, and dont' output the message with unrelated words.\n"
+    diff_buffer+="Template as below in content tag:\n<content>${git_template[*]}</content>\n"
 
     promote_msg=$(echo -E "${prompt}")
     question_msg=$(echo -E "${diff_buffer}")
     # printf "Diff: ${diff_buffer}"
     git_message=$(ask_llm "${promote_msg}" "${question_msg}" | sed 's/^Answser: //g' | sed 's/^```$//g')
-    echo -E "##################################################################\n"
+    echo -E "##################################################################"
     echo -E "${git_message}"
-    echo -E "##################################################################\n"
+    echo -E "##################################################################"
     git status
     result=$(fAskInput "n" "Do you want to procced git commmit?(y/N)")
     if [ "${result}" = "y" ]
