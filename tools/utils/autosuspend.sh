@@ -69,6 +69,11 @@ fHelp()
     printf "    %s\n" "run script: .sh -v"
     echo "[Options]"
     printf "    %- 16s\t%s\n" "-v|--verbose" "Print in verbose mode"
+    printf "    %- 16s\t%s\n" "-i|--idle-minutes" "Suspend if idle for this many minutes (default: ${DEF_IDLE_MINUTES})"
+    printf "    %- 16s\t%s\n" "-c|--check-interval" "How often to check in seconds (default: ${DEF_CHECK_INTERVAL})"
+    printf "    %- 16s\t%s\n" "-p|--cpu-threshold" "% CPU usage to be considered \"idle\" (default: ${DEF_CPU_THRESHOLD})"
+    printf "    %- 16s\t%s\n" "-n|--net-threshold" "Bytes sent+received to be considered \"idle\" (default: ${DEF_NET_THRESHOLD})"
+    printf "    %- 16s\t%s\n" "-x|--input-threshold" "Milliseconds of input idle time to be considered \"idle\" (default: ${DEF_INPUT_IDLE_THRESHOLD_MS})"
     printf "    %- 16s\t%s\n" "-h|--help" "Print helping"
 }
 fInfo()
@@ -229,6 +234,11 @@ fIsSystemIdle() {
 # --- Main logic ---
 fMain() {
     local flag_verbose=false
+    local arg_idle_minutes=""
+    local arg_check_interval=""
+    local arg_cpu_threshold=""
+    local arg_net_threshold=""
+    local arg_input_threshold=""
 
     while [[ $# != 0 ]]
     do
@@ -236,6 +246,26 @@ fMain() {
             # Options
             -v|--verbose)
                 flag_verbose=true
+                ;;
+            -i|--idle-minutes)
+                shift
+                arg_idle_minutes="$1"
+                ;;
+            -c|--check-interval)
+                shift
+                arg_check_interval="$1"
+                ;;
+            -p|--cpu-threshold)
+                shift
+                arg_cpu_threshold="$1"
+                ;;
+            -n|--net-threshold)
+                shift
+                arg_net_threshold="$1"
+                ;;
+            -x|--input-threshold)
+                shift
+                arg_input_threshold="$1"
                 ;;
             -h|--help)
                 fHelp
@@ -250,10 +280,26 @@ fMain() {
         shift 1
     done
 
-    if [ ${flag_verbose} = true ]
-    then
+    if [ "${flag_verbose}" = true ]; then
         OPTION_VERBOSE=true
         fInfo; fErrControl ${FUNCNAME[0]} ${LINENO}
+    fi
+
+    # Apply arguments if provided
+    if [[ -n "$arg_idle_minutes" ]]; then
+        DEF_IDLE_MINUTES="$arg_idle_minutes"
+    fi
+    if [[ -n "$arg_check_interval" ]]; then
+        DEF_CHECK_INTERVAL="$arg_check_interval"
+    fi
+    if [[ -n "$arg_cpu_threshold" ]]; then
+        DEF_CPU_THRESHOLD="$arg_cpu_threshold"
+    fi
+    if [[ -n "$arg_net_threshold" ]]; then
+        DEF_NET_THRESHOLD="$arg_net_threshold"
+    fi
+    if [[ -n "$arg_input_threshold" ]]; then
+        DEF_INPUT_IDLE_THRESHOLD_MS="$arg_input_threshold"
     fi
 
     fLogDebug "Starting auto-suspend idle monitor script..."
