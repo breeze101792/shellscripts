@@ -8,11 +8,11 @@ export DEF_COLOR_GREEN='\033[0;32m'
 export DEF_COLOR_NORMAL='\033[0m'
 
 # --- Configuration ---
-export DEF_IDLE_MINUTES=10          # Suspend if idle for this many minutes
-export DEF_CHECK_INTERVAL=20        # How often to check (seconds)
-export DEF_CPU_THRESHOLD=20          # % CPU usage to be considered "idle"
-export DEF_NET_THRESHOLD=100000      # 100 KBytes sent+received to be considered "idle"
-export DEF_INPUT_IDLE_THRESHOLD_MS=300000 # Milliseconds of input idle time to be considered "idle" (5 minutes)
+export DEF_IDLE_MINUTES=10                  # Suspend if idle for this many minutes
+export DEF_CHECK_INTERVAL=20                # How often to check (seconds)
+export DEF_CPU_THRESHOLD=20                 # % CPU usage to be considered "idle"
+export DEF_NET_THRESHOLD=10000              # 10 KBytes sent+received to be considered "idle"
+export DEF_INPUT_IDLE_THRESHOLD_MS=300000   # Milliseconds of input idle time to be considered "idle" (5 minutes)
 export DEF_LOG_FILE="/tmp/auto_suspend.log"
 
 ###########################################################
@@ -29,6 +29,7 @@ export VAR_MAX_IDLE_CHECKS=0
 ## Options
 ###########################################################
 export OPTION_VERBOSE=false
+export OPTION_DEV_MODE=false
 
 ###########################################################
 ## Path
@@ -64,16 +65,18 @@ fErrControl()
 }
 fHelp()
 {
-    echo "${VAR_SCRIPT_NAME}"
-    echo "[Example]"
+    printf "%s\n" "${VAR_SCRIPT_NAME}"
+    printf "%s\n" "[Example]"
     printf "    %s\n" "run script: .sh -v"
-    echo "[Options]"
+    printf "%s\n" "[Options]"
     printf "    %- 16s\t%s\n" "-v|--verbose" "Print in verbose mode"
     printf "    %- 16s\t%s\n" "-i|--idle-minutes" "Suspend if idle for this many minutes (default: ${DEF_IDLE_MINUTES})"
     printf "    %- 16s\t%s\n" "-c|--check-interval" "How often to check in seconds (default: ${DEF_CHECK_INTERVAL})"
     printf "    %- 16s\t%s\n" "-p|--cpu-threshold" "% CPU usage to be considered \"idle\" (default: ${DEF_CPU_THRESHOLD})"
     printf "    %- 16s\t%s\n" "-n|--net-threshold" "Bytes sent+received to be considered \"idle\" (default: ${DEF_NET_THRESHOLD})"
     printf "    %- 16s\t%s\n" "-x|--input-threshold" "Milliseconds of input idle time to be considered \"idle\" (default: ${DEF_INPUT_IDLE_THRESHOLD_MS})"
+    printf "    %- 16s\t%s\n" "-e|--interface" "Network interface to monitor (e.g., eth0, wlan0)"
+    printf "    %- 16s\t%s\n" "-d|--dev" "Enable development mode (no actual suspend)"
     printf "    %- 16s\t%s\n" "-h|--help" "Print helping"
 }
 fInfo()
@@ -93,6 +96,7 @@ fInfo()
     printf "##  Options\n"
     printf "###########################################################\n"
     printf "##    %s\t: %- 16s\n" "Verbose" "${OPTION_VERBOSE}"
+    printf "##    %s\t: %- 16s\n" "Development Mode" "${OPTION_DEV_MODE}"
     printf "###########################################################\n"
 }
 fEval()
@@ -175,29 +179,60 @@ fGetSshUsage() {
 # --- Helper: Input activity (mouse/keyboard) ---
 fGetInputActivity() {
     if command -v xprintidle &> /dev/null; then
-        local idle_ms=$(xprintidle)
-        echo "$idle_ms"
+        local idle_ms
+        # Run xprintidle and capture its output and exit status
+        if idle_ms=$(xprintidle 2>/dev/null); then
+            # If xprintidle ran successfully
+            echo "$idle_ms"
+        else
+            # If xprintidle failed to execute (e.g., no X server running)
+            fLogDebug "Warning: xprintidle failed to execute (e.g., no X server running). Cannot monitor keyboard/mouse activity."
+            echo "999999999"
+        fi
     else
-        fLogDebug "Warning: xprintidle not found. Cannot monitor keyboard/mouse activity."
+        # If xprintidle command is not found at all
+        fLogDebug "Warning: xprintidle command not found. Cannot monitor keyboard/mouse activity."
         echo "999999999"
     fi
 }
 
 # --- Idle check function ---
+fIsScreenIdle() {
+    if ! command -v xprintidle &> /dev/null; then
+        fLogDebug "Warning: xprintidle command not found. Cannot monitor keyboard/mouse activity. Assuming screen is NOT idle for suspend purposes."
+        return 1 # Cannot determine, so assume active to prevent accidental suspend/screen off
+    fi
+
+    local idle_ms
+    if ! idle_ms=$(xprintidle 2>/dev/null); then
+        fLogDebug "Warning: xprintidle failed to execute (e.g., no X server running). Cannot monitor keyboard/mouse activity. Assuming screen is NOT idle for suspend purposes."
+        return 1 # Cannot determine, so assume active
+    fi
+
+    fLogDebug "Input idle time   : $idle_ms ms"
+    fLog "INPUT_IDLE=${idle_ms}ms"
+
+    if [[ $idle_ms -ge $DEF_INPUT_IDLE_THRESHOLD_MS ]]; then
+        fLogDebug "Screen is idle."
+        return 0
+    else
+        fLogDebug "Screen is active. input_idle_time:$idle_ms ms (threshold: $DEF_INPUT_IDLE_THRESHOLD_MS ms)"
+        return 1
+    fi
+}
+
 fIsSystemIdle() {
     local logged_in_count=$(who | wc -l)
     local cpu_usage=$(fGetCpuUsage)
     local net_usage=$(fGetNetworkUsage)
     local ssh_count=$(fGetSshUsage)
-    local input_idle_time=$(fGetInputActivity)
 
-    fLogDebug "CPU Load: $cpu_usage"
-    fLogDebug "Net triffic: $net_usage"
-    fLogDebug "Logged-in users: $logged_in_count"
-    fLogDebug "SSH session count: $ssh_count"
-    fLogDebug "Input idle time: $input_idle_time ms"
+    fLogDebug "CPU Load          : $cpu_usage"
+    fLogDebug "Net triffic       : $(echo "scale=2; $net_usage / 1024" | bc) KBytes"
+    fLogDebug "Logged-in users   : $logged_in_count"
+    fLogDebug "SSH session count : $ssh_count"
 
-    fLog "CPU=${cpu_usage}%, NET=${net_usage}B, USERS=${logged_in_count}, SSH=${ssh_count}, INPUT_IDLE=${input_idle_time}ms"
+    fLog "CPU=${cpu_usage}%, NET=${net_usage}B, USERS=${logged_in_count}, SSH=${ssh_count}"
 
     # Only update SSH activity state if count changed
     if [[ "$ssh_count" -ne "$VAR_LAST_SSH_COUNT" ]]; then
@@ -208,25 +243,30 @@ fIsSystemIdle() {
         ssh_activity_counter=0
         fLogDebug "No SSH activity change for $ssh_activity_counter check(s)."
     fi
+    active_reasons=""
 
     if [[ $(echo "$cpu_usage >= $DEF_CPU_THRESHOLD" | bc) -eq 1 ]]; then
         fLogDebug "Active detect. cpu_usage:$cpu_usage"
+        active_reasons+="CPU usage ($cpu_usage%) >= threshold ($DEF_CPU_THRESHOLD%). "
     fi
     if [[ $net_usage -ge $DEF_NET_THRESHOLD ]]; then
         fLogDebug "Active detect. net_usage:$net_usage"
+        active_reasons+="Network usage ($(echo "scale=2; $net_usage / 1024" | bc) KB) >= threshold ($(echo "scale=2; $DEF_NET_THRESHOLD / 1024" | bc) KB). "
     fi
     if [[ $ssh_activity_counter -ne 0 ]]; then
         fLogDebug "Active detect. ssh_activity_counter:$ssh_activity_counter"
-    fi
-    if [[ $input_idle_time -lt $DEF_INPUT_IDLE_THRESHOLD_MS ]]; then
-        fLogDebug "Active detect. input_idle_time:$input_idle_time ms (threshold: $DEF_INPUT_IDLE_THRESHOLD_MS ms)"
+        active_reasons+="SSH activity detected. "
     fi
 
-    if [[ $(echo "$cpu_usage < $DEF_CPU_THRESHOLD" | bc) -eq 1 && $net_usage -lt $DEF_NET_THRESHOLD && $ssh_activity_counter -eq 0 && $input_idle_time -ge $DEF_INPUT_IDLE_THRESHOLD_MS ]]; then
+    if [[ $(echo "$cpu_usage < $DEF_CPU_THRESHOLD" | bc) -eq 1 && $net_usage -lt $DEF_NET_THRESHOLD && $ssh_activity_counter -eq 0 ]]; then
         fLogDebug "System is idle."
         return 0
     else
-        fLogDebug "System is active."
+        if [[ "$OPTION_VERBOSE" == true ]]; then
+            fLogDebug "System is active because: $active_reasons"
+        elif [[ "$OPTION_DEV_MODE" == true ]]; then
+            printf "%s\n" "System is active because: ${active_reasons}"
+        fi
         return 1
     fi
 }
@@ -234,11 +274,13 @@ fIsSystemIdle() {
 # --- Main logic ---
 fMain() {
     local flag_verbose=false
+    local flag_dev_mode=false
     local arg_idle_minutes=""
     local arg_check_interval=""
     local arg_cpu_threshold=""
     local arg_net_threshold=""
     local arg_input_threshold=""
+    local arg_interface=""
 
     while [[ $# != 0 ]]
     do
@@ -246,6 +288,9 @@ fMain() {
             # Options
             -v|--verbose)
                 flag_verbose=true
+                ;;
+            -d|--dev)
+                flag_dev_mode=true
                 ;;
             -i|--idle-minutes)
                 shift
@@ -267,6 +312,10 @@ fMain() {
                 shift
                 arg_input_threshold="$1"
                 ;;
+            -e|--interface)
+                shift
+                arg_interface="$1"
+                ;;
             -h|--help)
                 fHelp
                 exit 0
@@ -282,6 +331,13 @@ fMain() {
 
     if [ "${flag_verbose}" = true ]; then
         OPTION_VERBOSE=true
+    fi
+
+    if [ "${flag_dev_mode}" = true ]; then
+        OPTION_DEV_MODE=true
+    fi
+
+    if [ "${flag_dev_mode}" = true ] || [ "${flag_dev_mode}" = true ]; then
         fInfo; fErrControl ${FUNCNAME[0]} ${LINENO}
     fi
 
@@ -301,9 +357,18 @@ fMain() {
     if [[ -n "$arg_input_threshold" ]]; then
         DEF_INPUT_IDLE_THRESHOLD_MS="$arg_input_threshold"
     fi
+    if [[ -n "$arg_interface" ]]; then
+        if ! ip link show "$arg_interface" &> /dev/null; then
+            echo -e "${DEF_COLOR_RED}Error: Network interface '$arg_interface' not found.${DEF_COLOR_NORMAL}"
+            fSelectInterface # Call fSelectInterface to list available interfaces for user to choose
+        else
+            VAR_IFACE="$arg_interface"
+        fi
+    else
+        fSelectInterface
+    fi
 
     fLogDebug "Starting auto-suspend idle monitor script..."
-    fSelectInterface
 
     local idle_counter=0
     local ssh_activity_counter=0
@@ -315,27 +380,61 @@ fMain() {
         rm -f "$DEF_LOG_FILE"
     fi
 
-    if ! command -v xprintidle &> /dev/null; then
-        fLogDebug "Warning: xprintidle not found. Please install it."
-        return -1
+    if [[ "$OPTION_DEV_MODE" == false ]] && ! command -v xprintidle &> /dev/null; then
+        fLogDebug "Warning: xprintidle not found. Please install it if you want screen idle detection."
+        # Do not return -1, allow script to run without xprintidle if not in dev mode
     fi
 
     while true; do
         fLogDebug "## Running idle check loop... ##"
+        local system_is_idle=false
+        local screen_is_idle=false
+
+        # Check system idle status
         if fIsSystemIdle; then
+            system_is_idle=true
+        fi
+
+        # check screen idle status
+        if fIsScreenIdle; then
+            screen_is_idle=true
+
+            fLog "Screen idle for $(echo "scale=2; $DEF_INPUT_IDLE_THRESHOLD_MS / 60000" | bc) minutes. Suspending..."
+            fLogDebug "Triggering screen off ..."
+            if [[ "$OPTION_DEV_MODE" == true ]]; then
+                echo "Development mode: Would turn off screen now."
+                fLog "Development mode: Would turn off screen now."
+            else
+                if command -v xset &> /dev/null; then
+                    fLogDebug "Turning off screen using xset dpms force off..."
+                    fLog "Turning off screen."
+                    xset dpms force off
+                else
+                    fLogDebug "Warning: xset command not found. Cannot turn off screen."
+                fi
+            fi
+        fi
+
+        # System suspend logic: only if system is idle for the duration
+        if [[ "$system_is_idle" == true ]] && [[ "$screen_is_idle" == true ]]; then
             idle_counter=$((idle_counter + 1))
             fLogDebug "Idle count: $idle_counter / $VAR_MAX_IDLE_CHECKS"
             fLog "Idle check $idle_counter / $VAR_MAX_IDLE_CHECKS"
             if [[ $idle_counter -ge $VAR_MAX_IDLE_CHECKS ]]; then
                 fLog "System idle for $DEF_IDLE_MINUTES minutes. Suspending..."
                 fLogDebug "Triggering system suspend..."
-                echo "System suspend."
-                systemctl suspend
-                sleep 1
-                echo "System wake up."
+                if [[ "$OPTION_DEV_MODE" == true ]]; then
+                    echo "Development mode: Would suspend system now."
+                    fLog "Development mode: Would suspend system now."
+                else
+                    echo "System suspend."
+                    systemctl suspend
+                    sleep 1
+                    echo "System wake up."
+                fi
             fi
         else
-            fLogDebug "Resetting idle counter to 0."
+            fLogDebug "Resetting system idle counter to 0."
             idle_counter=0
         fi
         sleep "$DEF_CHECK_INTERVAL"
