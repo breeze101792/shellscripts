@@ -14,6 +14,8 @@ export VAR_SCRIPT_NAME="$(basename ${BASH_SOURCE[0]%=.})"
 # export VAR_CPU_CNT=$(nproc --all)
 export VAR_TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
+export VAR_ASSIGNED_PIDS=()
+
 ###########################################################
 ## Options
 ###########################################################
@@ -27,7 +29,7 @@ export OPTION_CUSTOM_PATTERNS=()
 # taskpolicy -c background  Strongly push to E-cores (low power)
 # taskpolicy -c utility     Mildly low priority
 # taskpolicy -c maintenance Background system-related tasks
-export OPTION_TASK_POLICY_MODE="background"
+# export OPTION_TASK_POLICY_MODE="background"
 ###########################################################
 ## Path
 ###########################################################
@@ -201,7 +203,6 @@ function fStartEfficiencyScript()
 {
     fPrintHeader ${FUNCNAME[0]}
 
-    local assigned_pids=()
     local sleep_time=50
 
     echo "Setting current script ($$) to efficiency cores."
@@ -227,19 +228,17 @@ function fStartEfficiencyScript()
 
         # Main loop: monitor processes based on selected modes
         for pid in $(eval ${ps_command}); do
-            if [[ ! " ${assigned_pids[@]} " =~ " ${pid} " ]]; then
+            if [[ ! " ${VAR_ASSIGNED_PIDS[@]} " =~ " ${pid} " ]]; then
                 [[ $sleep_time -gt 200 ]] && sleep_time=$((sleep_time - 46))
                 [[ $sleep_time -gt 90 ]]  && sleep_time=$((sleep_time - 19))
                 [[ $sleep_time -gt 15 ]]  && sleep_time=$((sleep_time - 3))
-                # -b means background / efficiency cores
-                # -c bacground is equal to -b
-                fEval "taskpolicy -c ${OPTION_TASK_POLICY_MODE} -p ${pid}"
+                fEval "taskpolicy -b -p ${pid}"
                 local full_path=$(ps -p ${pid} -o comm=)
                 local process_name=$(echo "$full_path" | sed -E 's#.*/([^/]*\.app)/.*MacOS/##')
                 if [ "${OPTION_VERBOSE}" = 'y' ]; then
                     echo "Assigned '${process_name}' (PID ${pid}) to efficiency cores"
                 fi
-                assigned_pids+=(${pid})
+                VAR_ASSIGNED_PIDS+=(${pid})
             fi
         done
 
@@ -250,7 +249,7 @@ function fStartEfficiencyScript()
             if [[ -n "$front_pid" ]]; then
                 echo "Frontmost process PID: $front_pid"
                 echo "Sending PID $front_pid to efficiency cores."
-                fEval "taskpolicy -c ${OPTION_TASK_POLICY_MODE} -p \"$front_pid\""
+                fEval "taskpolicy -b -p \"$front_pid\""
             else
                 echo "Could not get frontmost application PID."
                 # exit 1 # Do not exit, just log
@@ -286,16 +285,6 @@ function fStartEfficiencyScript()
         # echo -e "\\n\\n"
         sleep $sleep_time
     done
-    # restore it? or with commands.
-    # Main loop: monitor processes based on selected modes
-    # for pid in ${assigned_pids[@]}; do
-    #     fEval "taskpolicy -B -p ${pid}"
-    #     local full_path=$(ps -p ${pid} -o comm=)
-    #     local process_name=$(echo "$full_path" | sed -E 's#.*/([^/]*\.app)/.*MacOS/##')
-    #     if [ "${OPTION_VERBOSE}" = 'y' ]; then
-    #         echo "Restore '${process_name}' (PID ${pid}) to user initiated mode."
-    #     fi
-    # done
 }
 function fRestoreEfficiencyScript()
 {
@@ -304,21 +293,9 @@ function fRestoreEfficiencyScript()
     local timestamp=$(date "+%H:%M")
     echo "[$timestamp] restore to normal mode."
 
-    local ps_command=""
-    if ${OPTION_USE_ALT_PS_COMMAND}; then
-        ps_command="ps aux | grep -v grep | grep -v GPU | awk '\$1!=\"root\" && \$1!=\"Apple\" && \$1 !~ /^_/{ print \$2 }'"
-    else
-        local combined_patterns=("${OPTION_DEFAULT_PATTERNS[@]}" "${OPTION_CUSTOM_PATTERNS[@]}")
-        local regex=$(IFS='|'; echo "${combined_patterns[*]}")
-        ps_command="ps aux | grep -E '${regex}' | grep -v grep | grep -v GPU | grep -v server | awk '{print \$2}'"
-    fi
-
-    if [ "${OPTION_VERBOSE}" = 'y' ]; then
-        echo "Executing ps command: ${ps_command}"
-    fi
-
+    # restore it? or with commands.
     # Main loop: monitor processes based on selected modes
-    for pid in $(eval ${ps_command}); do
+    for pid in ${VAR_ASSIGNED_PIDS[@]}; do
         fEval "taskpolicy -B -p ${pid}"
         local full_path=$(ps -p ${pid} -o comm=)
         local process_name=$(echo "$full_path" | sed -E 's#.*/([^/]*\.app)/.*MacOS/##')
@@ -328,6 +305,12 @@ function fRestoreEfficiencyScript()
     done
 }
 
+function fCleanupAndExit() {
+    echo -e "\n${DEF_COLOR_YELLOW}Ctrl+C detected. Restoring processes to normal mode...${DEF_COLOR_NORMAL}"
+    fRestoreEfficiencyScript
+    exit 0
+}
+
 ## Main Functions
 ###########################################################
 function fMain()
@@ -335,6 +318,8 @@ function fMain()
     # fPrintHeader "Launch ${VAR_SCRIPT_NAME}"
     local flag_verbose=false
     local flag_mode='efficiency'
+
+    trap fCleanupAndExit SIGINT
 
     while [[ $# != 0 ]]
     do
