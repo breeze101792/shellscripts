@@ -63,6 +63,7 @@ keybinds clear-defaults=true {
         bind "l" { Resize "Increase right"; }
         bind "r" { SwitchToMode "normal"; }
     }
+    // Key: m
     move {
         bind "left" { MovePane "left"; }
         bind "down" { MovePane "down"; }
@@ -77,6 +78,7 @@ keybinds clear-defaults=true {
         bind "p" { MovePaneBackwards; }
         bind "tab" { MovePane; }
     }
+    // Key: s
     scroll {
         bind "Alt left" { MoveFocusOrTab "left"; SwitchToMode "locked"; }
         bind "Alt down" { MoveFocus "down"; SwitchToMode "locked"; }
@@ -89,6 +91,7 @@ keybinds clear-defaults=true {
         bind "Alt l" { MoveFocusOrTab "right"; SwitchToMode "locked"; }
         bind "s" { SwitchToMode "normal"; }
     }
+    // Key: o
     search {
         bind "c" { SearchToggleOption "CaseSensitivity"; }
         bind "n" { Search "down"; }
@@ -96,6 +99,7 @@ keybinds clear-defaults=true {
         bind "p" { Search "up"; }
         bind "w" { SearchToggleOption "Wrap"; }
     }
+    // Key: o
     session {
         bind "c" {
             LaunchOrFocusPlugin "configuration" {

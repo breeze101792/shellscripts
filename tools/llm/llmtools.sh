@@ -235,7 +235,7 @@ function ai_git_commit() {
     local git_template=("$(eval "cat $(git config --get commit.template) | sed 's/#AI- //g'")")
     diff_buffer+="$(git diff --cached)\n"
     diff_buffer+="Please help me to fill out the git commit message, and dont' output the message with unrelated words.\n"
-    diff_buffer+="Template as below in content tag:\n<content>${git_template[*]}</content>\n"
+    diff_buffer+="Template as below in content tag:\n${git_template[*]}\n"
 
     promote_msg=$(echo -E "${prompt}")
     question_msg=$(echo -E "${diff_buffer}")
