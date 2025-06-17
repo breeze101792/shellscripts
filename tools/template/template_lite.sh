@@ -161,4 +161,4 @@ function fMain()
     fi
 }
 
-fMain $@
+fMain "$@"

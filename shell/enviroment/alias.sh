@@ -68,6 +68,11 @@ alias nlfsgit="GIT_LFS_SKIP_SMUDGE=1 git "
 alias mdebug="sdebug --device /dev/ttyUSB1"
 
 ########################################################
+#####    Scrips Tools                              #####
+########################################################
+alias autosuspend="${HS_PATH_LIB}/tools/utils/autosuspend.sh"
+
+########################################################
 #####    Safe commands                             #####
 ########################################################
 if [ "${HS_CONFIG_SAFE_COMMAND_REPLACEMENT}" = "y" ]

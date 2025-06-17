@@ -188,4 +188,5 @@ function fMain()
     fi
 }
 
-fMain $@
+# quote is test it under mac os.
+fMain "$@"
