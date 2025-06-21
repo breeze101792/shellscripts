@@ -245,11 +245,23 @@ function ai_git_commit() {
     echo -E "${git_message}"
     echo -E "##################################################################"
     git status
-    result=$(fAskInput "n" "Do you want to procced git commmit?(y/N)")
-    if [ "${result}" = "y" ]
-    then
-        git commit -m "${git_message}" && git commit --amend
-    fi
+    local result=""
+    while true; do
+        result=$(fAskInput "n" "Do you want to proceed with git commit?(y/N)")
+        case "${result}" in
+            [yY])
+                git commit -m "${git_message}" && git commit --amend
+                break
+                ;;
+            [nN])
+                echo "Git commit aborted."
+                break
+                ;;
+            *)
+                echo "Invalid input. Please enter 'y' or 'n'."
+                ;;
+        esac
+    done
 }
 function ai_file() {
     local var_file_path=$1
