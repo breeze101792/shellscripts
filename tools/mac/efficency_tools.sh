@@ -22,7 +22,7 @@ export VAR_ASSIGNED_PIDS=()
 export OPTION_VERBOSE=false
 export OPTION_USE_ALT_PS_COMMAND=false
 export OPTION_ENABLE_FOCUS_CHECK=false
-export OPTION_DEFAULT_PATTERNS=("Renderer" "Safari" "Terminal" "Alacritty" "Podcasts") # Default selected patterns
+export OPTION_DEFAULT_PATTERNS=("Renderer" "Safari" "Terminal" "Podcasts" "Messages" "Preview"  "Alacritty") # Default selected patterns
 export OPTION_CUSTOM_PATTERNS=()
 
 # Command                   Effect
@@ -70,8 +70,14 @@ fHelp()
     echo "[Options]"
     printf "    %- 16s\t%s\n" "-v|--verbose" "Enable verbose output, showing more detailed information about script execution and process assignments."
     printf "    %- 16s\t%s\n" "-h|--help" "Display this help message and exit."
+    printf "    %- 16s\t%s\n" "--hibernate" "Immediately put the system into hibernate mode (hibernatemode 25) and then sleep."
+    printf "    %- 16s\t%s\n" "--sleep" "Immediately put the system into deep sleep mode (hibernatemode 3) and then sleep."
+    printf "    %- 16s\t%s\n" "-g|--guardian" "Run the script in battery guardian mode, which automatically manages sleep/hibernate based on time of day and lid status."
+    printf "    %- 16s\t%s\n" "-e|--efficiency" "Run the script in efficiency mode, continuously assigning specified processes to efficiency cores."
+    printf "    %- 16s\t%s\n" "-r|--restore" "Restore all assigned processes to their normal priority and reset pmset to default sleep mode."
+    printf "    %- 16s\t%s\n" "-o|--optimize-settings" "Optimize system settings like PowerNap and TCPKeepAlive for battery efficiency."
     printf "    %- 16s\t%s\n" "-a|--alt-ps" "Use an alternative 'ps' command for broader process detection across all users, useful if default patterns miss processes."
-    printf "    %- 16s\t%s\n" "-f|--focus-check" "Enable detection of the frontmost application and assign its PID to efficiency cores, prioritizing the active app."
+    printf "    %- 16s\t%s\n" "-f|--focus-check" "Enable detection of the frontmost application and assign its PID to efficiency cores, prioritizing the active app. (Currently not supported)"
     printf "    %- 16s\t%s\n" "-p|--patterns <list>" "Set the initial comma-separated list of default process name patterns to monitor (e.g., 'Chrome,Edge'). Overrides built-in defaults."
     printf "    %- 16s\t%s\n" "-c|--custom-patterns <list>" "Add custom comma-separated process name patterns to the existing list (e.g., 'MyGame,AnotherApp'). These are appended to default patterns."
     printf "    %- 16s\t%s\n" "Current Default Patterns" "${OPTION_DEFAULT_PATTERNS[*]}"
@@ -143,6 +149,47 @@ fSleepSeconds()
     printf "\nwakeup from sleep(${var_sleep_cnt})\n"
     return 1
 }
+fSleepUntil()
+{
+    # Input: HH:MM:SS , 16:32:23, sleep to next 16:32:23.
+    local target_time_str="${1}"
+    local current_timestamp=$(date +%s)
+    local target_hour=$(echo "${target_time_str}" | cut -d':' -f1)
+    local target_minute=$(echo "${target_time_str}" | cut -d':' -f2)
+    local target_second=$(echo "${target_time_str}" | cut -d':' -f3)
+
+    # Get today's date
+    local today_date=$(date +%Y%m%d)
+
+    # Calculate target timestamp for today
+    local target_timestamp_today=$(date -j -f "%Y%m%d %H:%M:%S" "${today_date} ${target_hour}:${target_minute}:${target_second}" +%s 2>/dev/null)
+
+    if [[ -z "${target_timestamp_today}" ]]; then
+        echo "Error: Invalid time format. Please use HH:MM:SS."
+        return 1
+    fi
+
+    local sleep_seconds=$((target_timestamp_today - current_timestamp))
+
+    # If target time is in the past, calculate for tomorrow
+    if [[ ${sleep_seconds} -le 0 ]]; then
+        local tomorrow_date=$(date -v+1d +%Y%m%d)
+        local target_timestamp_tomorrow=$(date -j -f "%Y%m%d %H:%M:%S" "${tomorrow_date} ${target_hour}:${target_minute}:${target_second}" +%s 2>/dev/null)
+        if [[ -z "${target_timestamp_tomorrow}" ]]; then
+            echo "Error: Could not calculate tomorrow's timestamp."
+            return 1
+        fi
+        sleep_seconds=$((target_timestamp_tomorrow - current_timestamp))
+    fi
+
+    if [[ ${sleep_seconds} -gt 0 ]]; then
+        echo "Sleeping until ${target_time_str} (for ${sleep_seconds} seconds)..."
+        fSleepSeconds "${sleep_seconds}"
+    else
+        echo "Target time is already passed and cannot be reached today or tomorrow."
+    fi
+    return 0
+}
 fEval()
 {
     local var_commands=0
@@ -194,16 +241,160 @@ fAskInput()
 ###########################################################
 ## Functions
 ###########################################################
+
+## Get Functions
+###########################################################
+function fGetLidStatus()
+{
+    if ioreg -r -k AppleClamshellState -d 1 | grep -q '"AppleClamshellState" = Yes'; then
+        echo "closed"
+    else
+        echo "open"
+    fi
+}
+## Functions
+###########################################################
 function fexample()
 {
     fPrintHeader ${FUNCNAME[0]}
 
+}
+function fHibernate()
+{
+    local timestamp=$(date "+%H:%M")
+    echo "[$timestamp] Setting to hibernate mode."
+    sudo pmset -b hibernatemode 25
+    sleep 1
+    sudo pmset sleepnow
+
+    # sleep after 10 minutes, before setting it back.
+    echo wiat for restore settings.
+    sleep 60
+    local timestamp=$(date "+%H:%M")
+    echo "[$timestamp] Rollback to default mode."
+    sudo pmset -b hibernatemode 3
+}
+function fDeepSleep()
+{
+    local timestamp=$(date "+%H:%M")
+    echo "[$timestamp] Setting to hibernate mode."
+    sudo pmset -b hibernatemode 3
+    sleep 1
+    sudo pmset sleepnow
+}
+function fOptimizeSettings()
+{
+    fPrintHeader ${FUNCNAME[0]}
+    
+    echo "Checking powernap and tcpkeepalive settings..."
+
+    # Check and set ttyskeepawake
+    local ttyskeepawake_status=$(pmset -g | grep "ttyskeepawake" | awk '{print $2}')
+    if [[ "${ttyskeepawake_status}" == "1" ]]; then
+        echo "ttyskeepawake is enabled. Disabling..."
+        fEval "sudo pmset -b ttyskeepawake 0"
+    else
+        echo "ttyskeepawake is already disabled."
+    fi
+
+    # Check and set womp
+    local womp_status=$(pmset -g | grep "womp" | awk '{print $2}')
+    if [[ "${womp_status}" == "1" ]]; then
+        echo "womp is enabled. Disabling..."
+        fEval "sudo pmset -b womp 0"
+    else
+        echo "womp is already disabled."
+    fi
+
+    # Check and set networkoversleep
+    local networkoversleep_status=$(pmset -g | grep "networkoversleep" | awk '{print $2}')
+    if [[ "${networkoversleep_status}" == "1" ]]; then
+        echo "networkoversleep is enabled. Disabling..."
+        fEval "sudo pmset -b networkoversleep 0"
+    else
+        echo "networkoversleep is already disabled."
+    fi
+
+    # Check powernap
+    local powernap_status=$(pmset -g | grep "powernap" | awk '{print $2}')
+    if [[ "${powernap_status}" == "1" ]]; then
+        echo "PowerNap is enabled. Disabling for battery mode..."
+        fEval "sudo pmset -b powernap 0"
+    else
+        echo "PowerNap is already disabled."
+    fi
+
+    # Check tcpkeepalive
+    local tcpkeepalive_status=$(pmset -g | grep "tcpkeepalive" | awk '{print $2}')
+    if [[ "${tcpkeepalive_status}" == "1" ]]; then
+        echo "TCPKeepAlive is enabled. Disabling for battery mode..."
+        fEval "sudo pmset -b tcpkeepalive 0"
+    else
+        echo "TCPKeepAlive is already disabled."
+    fi
+    fEval "sudo pmset -g custom"
 }
 function fStartEfficiencyScript()
 {
     fPrintHeader ${FUNCNAME[0]}
 
     local sleep_time=50
+
+    # put script to background script.
+    echo "Setting current script ($$) to efficiency cores."
+    fEval "taskpolicy -b -p $$"
+    echo "sent $$ bash"
+
+    local timestamp=$(date "+%H:%M")
+    echo "[$timestamp] Check on new spawn process."
+
+    local ps_command=""
+    if ${OPTION_USE_ALT_PS_COMMAND}; then
+        ps_command="ps aux | grep -v grep | grep -v GPU | awk '\$1!=\"root\" && \$1!=\"Apple\" && \$1 !~ /^_/{ print \$2 }'"
+    else
+        local combined_patterns=("${OPTION_DEFAULT_PATTERNS[@]}" "${OPTION_CUSTOM_PATTERNS[@]}")
+        local regex=$(IFS='|'; echo "${combined_patterns[*]}")
+        ps_command="ps aux | grep -E '${regex}' | grep -v grep | grep -v GPU | grep -v server | awk '{print \$2}'"
+    fi
+
+    if [ "${OPTION_VERBOSE}" = 'y' ]; then
+        echo "Executing ps command: ${ps_command}"
+    fi
+
+    # Main loop: monitor processes based on selected modes
+    for pid in $(eval ${ps_command}); do
+        if [[ ! " ${VAR_ASSIGNED_PIDS[@]} " =~ " ${pid} " ]]; then
+            fEval "taskpolicy -b -p ${pid}"
+            local full_path=$(ps -p ${pid} -o comm=)
+            local process_name=$(echo "$full_path" | sed -E 's#.*/([^/]*\.app)/.*MacOS/##')
+            if [ "${OPTION_VERBOSE}" = 'y' ]; then
+                echo "Assigned '${process_name}' (PID ${pid}) to efficiency cores"
+            fi
+            VAR_ASSIGNED_PIDS+=(${pid})
+        fi
+    done
+
+    # If Minecraft/Java detection is enabled, append relevant logic
+    if ${OPTION_ENABLE_FOCUS_CHECK}; then
+        local front_pid=$(osascript -e 'tell application "System Events" to get unix id of first process whose frontmost is true')
+
+        if [[ -n "$front_pid" ]]; then
+            echo "Frontmost process PID: $front_pid"
+            echo "Sending PID $front_pid to efficiency cores."
+            fEval "taskpolicy -b -p \"$front_pid\""
+        else
+            echo "Could not get frontmost application PID."
+            # exit 1 # Do not exit, just log
+        fi
+    fi
+
+}
+function fStartEfficiencyScriptLoop()
+{
+    fPrintHeader ${FUNCNAME[0]}
+
+    # 10 minutes.
+    local sleep_time=600
 
     echo "Setting current script ($$) to efficiency cores."
     fEval "taskpolicy -b -p $$"
@@ -213,74 +404,48 @@ function fStartEfficiencyScript()
         local timestamp=$(date "+%H:%M")
         echo "[$timestamp] Check on new spawn process."
 
-        local ps_command=""
-        if ${OPTION_USE_ALT_PS_COMMAND}; then
-            ps_command="ps aux | grep -v grep | grep -v GPU | awk '\$1!=\"root\" && \$1!=\"Apple\" && \$1 !~ /^_/{ print \$2 }'"
-        else
-            local combined_patterns=("${OPTION_DEFAULT_PATTERNS[@]}" "${OPTION_CUSTOM_PATTERNS[@]}")
-            local regex=$(IFS='|'; echo "${combined_patterns[*]}")
-            ps_command="ps aux | grep -E '${regex}' | grep -v grep | grep -v GPU | grep -v server | awk '{print \$2}'"
-        fi
+        # local ps_command=""
+        # if ${OPTION_USE_ALT_PS_COMMAND}; then
+        #     ps_command="ps aux | grep -v grep | grep -v GPU | awk '\$1!=\"root\" && \$1!=\"Apple\" && \$1 !~ /^_/{ print \$2 }'"
+        # else
+        #     local combined_patterns=("${OPTION_DEFAULT_PATTERNS[@]}" "${OPTION_CUSTOM_PATTERNS[@]}")
+        #     local regex=$(IFS='|'; echo "${combined_patterns[*]}")
+        #     ps_command="ps aux | grep -E '${regex}' | grep -v grep | grep -v GPU | grep -v server | awk '{print \$2}'"
+        # fi
+        #
+        # if [ "${OPTION_VERBOSE}" = 'y' ]; then
+        #     echo "Executing ps command: ${ps_command}"
+        # fi
+        #
+        # # Main loop: monitor processes based on selected modes
+        # for pid in $(eval ${ps_command}); do
+        #     if [[ ! " ${VAR_ASSIGNED_PIDS[@]} " =~ " ${pid} " ]]; then
+        #         [[ $sleep_time -gt 200 ]] && sleep_time=$((sleep_time - 46))
+        #         [[ $sleep_time -gt 90 ]]  && sleep_time=$((sleep_time - 19))
+        #         [[ $sleep_time -gt 15 ]]  && sleep_time=$((sleep_time - 3))
+        #         fEval "taskpolicy -b -p ${pid}"
+        #         local full_path=$(ps -p ${pid} -o comm=)
+        #         local process_name=$(echo "$full_path" | sed -E 's#.*/([^/]*\.app)/.*MacOS/##')
+        #         echo "Assigned '${process_name}' (PID ${pid}) to efficiency cores"
+        #         VAR_ASSIGNED_PIDS+=(${pid})
+        #     fi
+        # done
+        #
+        # # If Minecraft/Java detection is enabled, append relevant logic
+        # if ${OPTION_ENABLE_FOCUS_CHECK}; then
+        #     local front_pid=$(osascript -e 'tell application "System Events" to get unix id of first process whose frontmost is true')
+        #
+        #     if [[ -n "$front_pid" ]]; then
+        #         echo "Frontmost process PID: $front_pid"
+        #         echo "Sending PID $front_pid to efficiency cores."
+        #         fEval "taskpolicy -b -p \"$front_pid\""
+        #     else
+        #         echo "Could not get frontmost application PID."
+        #         # exit 1 # Do not exit, just log
+        #     fi
+        # fi
+        fStartEfficiencyScript
 
-        if [ "${OPTION_VERBOSE}" = 'y' ]; then
-            echo "Executing ps command: ${ps_command}"
-        fi
-
-        # Main loop: monitor processes based on selected modes
-        for pid in $(eval ${ps_command}); do
-            if [[ ! " ${VAR_ASSIGNED_PIDS[@]} " =~ " ${pid} " ]]; then
-                [[ $sleep_time -gt 200 ]] && sleep_time=$((sleep_time - 46))
-                [[ $sleep_time -gt 90 ]]  && sleep_time=$((sleep_time - 19))
-                [[ $sleep_time -gt 15 ]]  && sleep_time=$((sleep_time - 3))
-                fEval "taskpolicy -b -p ${pid}"
-                local full_path=$(ps -p ${pid} -o comm=)
-                local process_name=$(echo "$full_path" | sed -E 's#.*/([^/]*\.app)/.*MacOS/##')
-                if [ "${OPTION_VERBOSE}" = 'y' ]; then
-                    echo "Assigned '${process_name}' (PID ${pid}) to efficiency cores"
-                fi
-                VAR_ASSIGNED_PIDS+=(${pid})
-            fi
-        done
-
-        # If Minecraft/Java detection is enabled, append relevant logic
-        if ${OPTION_ENABLE_FOCUS_CHECK}; then
-            local front_pid=$(osascript -e 'tell application "System Events" to get unix id of first process whose frontmost is true')
-
-            if [[ -n "$front_pid" ]]; then
-                echo "Frontmost process PID: $front_pid"
-                echo "Sending PID $front_pid to efficiency cores."
-                fEval "taskpolicy -b -p \"$front_pid\""
-            else
-                echo "Could not get frontmost application PID."
-                # exit 1 # Do not exit, just log
-            fi
-        fi
-
-        # If PID is already in the assigned list
-        if [[ $sleep_time -gt 305 ]]; then
-            sleep_time=$((sleep_time - 17))
-        fi
-        if [[ $sleep_time -gt 10 ]]; then
-            sleep_time=$((sleep_time + 1))
-        fi
-        if [[ $sleep_time -gt 90 ]]; then
-            sleep_time=$((sleep_time + 1))
-        fi
-        if [[ $sleep_time -gt 120 ]]; then
-            sleep_time=$((sleep_time + 2))
-        fi
-        if [[ $sleep_time -gt 180 ]]; then
-            sleep_time=$((sleep_time + 3))
-        fi
-        if [[ $sleep_time -gt 200 ]]; then
-            sleep_time=$((sleep_time + 5))
-        fi
-        if [[ $sleep_time -lt 15 ]]; then
-            sleep_time=$((sleep_time + 25))
-        fi
-        if [[ $sleep_time -lt 1 ]]; then
-            sleep_time=$((10))
-        fi
         echo "Current sleep time: $sleep_time seconds"
         # echo -e "\\n\\n"
         sleep $sleep_time
@@ -305,9 +470,67 @@ function fRestoreEfficiencyScript()
     done
 }
 
+function fBatteryGuardian()
+{
+    fPrintHeader ${FUNCNAME[0]}
+
+    # Customizable time ranges
+    local VAR_HIBERNATE_START_HOUR=0
+    local VAR_HIBERNATE_END_HOUR=8 # Exclusive, so up to 06:59
+    local VAR_SLEEP_UNTIL_NEXT_HOUR_START_HOUR=8
+    local VAR_SLEEP_UNTIL_NEXT_HOUR_END_HOUR=24 # Exclusive, so up to 23:59
+    local VAR_DEFAULT_SLEEP_SECONDS=3600 # Default sleep for an hour
+    local VAR_WORKING_SLEEP_SECONDS=600 # Default sleep for an hour
+
+    # initial sleep time.
+    local sleep_time=5
+    echo "Starting battery guardian."
+
+    while true; do
+        local timestamp=$(date "+%H:%M")
+        local current_hour=$(date +%H)
+        echo "[${timestamp}] new loop start."
+
+        # Check what time it is.
+        if [[ ${current_hour} -ge ${VAR_HIBERNATE_START_HOUR} && ${current_hour} -lt ${VAR_HIBERNATE_END_HOUR} ]]; then
+            echo "[$timestamp] It's between ${VAR_HIBERNATE_START_HOUR}:00 and $((VAR_HIBERNATE_END_HOUR-1)):59. Initiating hibernate."
+            local lid_status=$(fGetLidStatus)
+            ## Long term hibernate.
+            if [[ "${lid_status}" == "closed" ]]; then
+                fHibernate
+            else
+                echo "[$timestamp] Lid is open. Skipping hibernate."
+            fi
+            # next wake up.
+            sleep_time=$VAR_DEFAULT_SLEEP_SECONDS # After hibernate, wait for an hour before checking again
+        elif [[ ${current_hour} -ge ${VAR_SLEEP_UNTIL_NEXT_HOUR_START_HOUR} && ${current_hour} -lt ${VAR_SLEEP_UNTIL_NEXT_HOUR_END_HOUR} ]]; then
+            echo "[$timestamp] It's between ${VAR_SLEEP_UNTIL_NEXT_HOUR_START_HOUR}:00 and $((VAR_SLEEP_UNTIL_NEXT_HOUR_END_HOUR-1)):59. Working hour."
+            # Working Stand by mode.
+            if [[ "${lid_status}" == "closed" ]]; then
+                echo "[$timestamp] Lid is closed."
+            else
+                echo "[$timestamp] Lid is open. Do efficent script."
+                fStartEfficiencyScript
+            fi
+
+            # next wake up.
+            sleep_time=$VAR_WORKING_SLEEP_SECONDS # wait for an hour before checking again
+        else
+            echo "[$timestamp] Current hour is ${current_hour}. Default sleep."
+            sleep_time=${VAR_DEFAULT_SLEEP_SECONDS}
+        fi
+
+        echo "Current sleep time: ${sleep_time} seconds"
+        sleep ${sleep_time}
+    done
+}
+
 function fCleanupAndExit() {
     echo -e "\n${DEF_COLOR_YELLOW}Ctrl+C detected. Restoring processes to normal mode...${DEF_COLOR_NORMAL}"
     fRestoreEfficiencyScript
+    echo "Restore pmset to sleep mode."
+    sudo pmset -b hibernatemode 3
+    echo "End of script."
     exit 0
 }
 
@@ -317,7 +540,7 @@ function fMain()
 {
     # fPrintHeader "Launch ${VAR_SCRIPT_NAME}"
     local flag_verbose=false
-    local flag_mode='efficiency'
+    local flag_mode='guardian'
 
     trap fCleanupAndExit SIGINT
 
@@ -332,8 +555,26 @@ function fMain()
                 fHelp
                 exit 0
                 ;;
+            --hibernate)
+                fHibernate
+                exit 0
+                ;;
+            --sleep)
+                fDeepSleep
+                exit 0
+                ;;
+            -g|--gurdian)
+                flag_mode='gurdian'
+                ;;
+            -e|--efficiency)
+                flag_mode='efficiency'
+                ;;
             -r|--restore)
                 flag_mode='normal'
+                ;;
+            -o|--optimize-settings)
+                fOptimizeSettings
+                exit 0
                 ;;
             -a|--alt-ps)
                 OPTION_USE_ALT_PS_COMMAND=true
@@ -359,6 +600,12 @@ function fMain()
         shift 1
     done
 
+    # Check if the script is run as root
+    if [[ $EUID -ne 0 ]]; then
+        echo "This script must be run with sudo or as root."
+        exit 1
+    fi
+
     if [ ${flag_verbose} = true ]
     then
         OPTION_VERBOSE=y
@@ -367,7 +614,10 @@ function fMain()
 
     if [ ${flag_mode} = 'efficiency' ]
     then
-        fStartEfficiencyScript; fErrControl ${FUNCNAME[0]} ${LINENO}
+        fStartEfficiencyScriptLoop; fErrControl ${FUNCNAME[0]} ${LINENO}
+    elif [ ${flag_mode} = 'guardian' ]
+    then
+        fBatteryGuardian; fErrControl ${FUNCNAME[0]} ${LINENO}
     elif [ ${flag_mode} = 'normal' ]
     then
         fRestoreEfficiencyScript; fErrControl ${FUNCNAME[0]} ${LINENO}
