@@ -479,8 +479,7 @@ function fBatteryGuardian()
     local VAR_HIBERNATE_END_HOUR=8 # Exclusive, so up to 06:59
     local VAR_SLEEP_UNTIL_NEXT_HOUR_START_HOUR=8
     local VAR_SLEEP_UNTIL_NEXT_HOUR_END_HOUR=24 # Exclusive, so up to 23:59
-    local VAR_DEFAULT_SLEEP_SECONDS=3600 # Default sleep for an hour
-    local VAR_WORKING_SLEEP_SECONDS=600 # Default sleep for an hour
+    local VAR_DEFAULT_SLEEP_SECONDS=300 # Default sleep for an hour
 
     # initial sleep time.
     local sleep_time=5
@@ -514,7 +513,7 @@ function fBatteryGuardian()
             fi
 
             # next wake up.
-            sleep_time=$VAR_WORKING_SLEEP_SECONDS # wait for an hour before checking again
+            sleep_time=$VAR_DEFAULT_SLEEP_SECONDS # wait for an hour before checking again
         else
             echo "[$timestamp] Current hour is ${current_hour}. Default sleep."
             sleep_time=${VAR_DEFAULT_SLEEP_SECONDS}
