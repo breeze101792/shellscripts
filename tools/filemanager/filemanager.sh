@@ -71,6 +71,9 @@ export VAR_TERM_TAB_LINE_LIST_PATH
 export VAR_TERM_TAB_LINE_LIST_START_IDX
 export VAR_TERM_TAB_LINE_LIST_IDX
 
+export VAR_TERM_TAB_LINE_LIST_FILE_LIST
+export VAR_TERM_TAB_LINE_LIST_FILE_INFO_LIST
+
 ## Main window vars
 #-----------------
 export VAR_TERM_WIN_CURRENT_CURSOR=0
@@ -1575,7 +1578,7 @@ EOF
 
         # local tmp_ls_output="$(ls ${var_ls_args[*]} ${PWD}/${var_pattern})"
         local tmp_ls_output=$(ls ${var_ls_args[*]} "${PWD}"/${var_pattern})
-        flog_msg_debug "LS args: 'ls ${var_ls_args[*]} ${PWD}/${var_pattern}'"
+        # flog_msg_debug "LS args: 'ls ${var_ls_args[*]} ${PWD}/${var_pattern}'"
 
         # flog_msg_debug "Fast mode:idx[0]=>'${tmp_ls_output[0]}'"
         # flog_msg_debug "LS args: '${var_ls_args[*]}'"
@@ -1764,10 +1767,17 @@ fterminal_tab_save_contex() {
     VAR_TERM_TAB_LINE_LIST_START_IDX[var_tab_id]="${VAR_TERM_CONTENT_SCROLL_START_IDX}"
     VAR_TERM_TAB_LINE_LIST_IDX[var_tab_id]="${VAR_TERM_CONTENT_SCROLL_IDX}"
     # flog_msg_debug "Store: ${VAR_TERM_TAB_LINE_LIST_START_IDX[var_tab_id]}/${VAR_TERM_TAB_LINE_LIST_IDX[var_tab_id]}/${VAR_TERM_TAB_LINE_LIST_PATH[var_tab_id]}"
+    # Serialize arrays into strings using a safe delimiter
+    local IFS_OLD=$IFS
+    IFS=$'\x1e' # Record Separator
+    VAR_TERM_TAB_LINE_LIST_FILE_LIST[var_tab_id]="${VAR_TERM_DIR_FILE_LIST[*]}"
+    VAR_TERM_TAB_LINE_LIST_FILE_INFO_LIST[var_tab_id]="${VAR_TERM_DIR_FILE_INFO_LIST[*]}"
+    IFS=$IFS_OLD
 }
 fterminal_tab_load_contex() {
     local var_tab_id=${1}
 
+        # echo "${VAR_TERM_DIR_FILE_INFO_LIST[@]}"
     if test -d "${VAR_TERM_TAB_LINE_LIST_PATH[var_tab_id]}"
     then
         cd "${VAR_TERM_TAB_LINE_LIST_PATH[var_tab_id]}"
@@ -1775,6 +1785,17 @@ fterminal_tab_load_contex() {
         VAR_TERM_CONTENT_SCROLL_START_IDX=${VAR_TERM_TAB_LINE_LIST_START_IDX[var_tab_id]}
         VAR_TERM_CONTENT_SCROLL_IDX=${VAR_TERM_TAB_LINE_LIST_IDX[var_tab_id]}
         VAR_TERM_WIN_CURRENT_CURSOR=$((VAR_TERM_CONTENT_SCROLL_START_IDX - VAR_TERM_CONTENT_SCROLL_IDX))
+
+        # Deserialize strings back into arrays
+        local IFS_OLD=$IFS
+        IFS=$'\x1e'
+        # Clear existing arrays before loading
+        VAR_TERM_DIR_FILE_LIST=()
+        VAR_TERM_DIR_FILE_INFO_LIST=()
+        # Use read -r -a to correctly parse the string into an array
+        read -r -a VAR_TERM_DIR_FILE_LIST <<< "${VAR_TERM_TAB_LINE_LIST_FILE_LIST[var_tab_id]}"
+        read -r -a VAR_TERM_DIR_FILE_INFO_LIST <<< "${VAR_TERM_TAB_LINE_LIST_FILE_INFO_LIST[var_tab_id]}"
+        IFS=$IFS_OLD
     else
         cd "${HOME}"
 
@@ -2043,7 +2064,8 @@ fgui_tab_go_previous()
             VAR_TERM_TAB_LINE_IDX=$(($VAR_TERM_TAB_LINE_IDX - 1))
             cd ${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}
             fterminal_tab_load_contex ${VAR_TERM_TAB_LINE_IDX}
-            fterminal_redraw full
+            # fterminal_redraw full
+            fterminal_redraw
             flog_msg "Go PREVIOUS_TAB."
     fi
 }
@@ -2061,7 +2083,7 @@ fgui_tab_go_next()
         VAR_TERM_TAB_LINE_IDX=$(($VAR_TERM_TAB_LINE_IDX + 1))
         cd ${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}
         fterminal_tab_load_contex ${VAR_TERM_TAB_LINE_IDX}
-        fterminal_redraw full
+        fterminal_redraw
         flog_msg "Go NEXT_TAB"
     fi
 }
@@ -2249,12 +2271,14 @@ fmode_setup()
             VAR_TERM_VISUAL_START_IDX=$VAR_TERM_CONTENT_SCROLL_IDX
             fterminal_mark_add "$VAR_TERM_CONTENT_SCROLL_IDX"
             VAR_TERM_SELECTION_FILE_LIST=()
+            fterminal_draw_command_line
             ;;
         "${DEF_TERM_MODE_SELECT}")
             VAR_TERM_MODE_CURRENT="${DEF_TERM_MODE_SELECT}"
             # setup selection mode
             fterminal_mark_add "$VAR_TERM_CONTENT_SCROLL_IDX"
             VAR_TERM_SELECTION_FILE_LIST=()
+            fterminal_draw_command_line
             ;;
         "${DEF_TERM_MODE_COMMAND}")
             VAR_TERM_MODE_CURRENT="${DEF_TERM_MODE_COMMAND}"
@@ -2315,9 +2339,10 @@ fmode_setup()
         *|"${DEF_TERM_MODE_NORMAL}")
             VAR_TERM_MODE_CURRENT="${DEF_TERM_MODE_NORMAL}"
             fterminal_mark_reset
+            # we don't flush command on enter normal mode, it will erase message.
             ;;
     esac
-    # fterminal_draw_status_line
+    fterminal_draw_status_line
     # fterminal_draw_command_line
 }
 fnormal_mode_handler() {
@@ -4676,6 +4701,24 @@ fsave_session() {
     do
         echo "VAR_TERM_TAB_LINE_LIST_PATH+=(\"${each_tab}\")" >> ${HSFM_FILE_SESSION}
     done
+    
+    # We read it from dirs, don't restore it.
+    # # Save VAR_TERM_TAB_LINE_LIST_FILE_LIST and VAR_TERM_TAB_LINE_LIST_FILE_INFO_LIST
+    # echo "export VAR_TERM_TAB_LINE_LIST_FILE_LIST" >> ${HSFM_FILE_SESSION}
+    # echo "export VAR_TERM_TAB_LINE_LIST_FILE_INFO_LIST" >> ${HSFM_FILE_SESSION}
+    #
+    # local IFS_OLD=$IFS
+    # IFS=$'\x1e' # Record Separator
+    #
+    # # Ensure the current tab's data is saved to its respective array element before saving the session
+    # fterminal_tab_save_contex "${VAR_TERM_TAB_LINE_IDX}"
+    #
+    # for i in "${!VAR_TERM_TAB_LINE_LIST_PATH[@]}"; do
+    #     echo "VAR_TERM_TAB_LINE_LIST_FILE_LIST[${i}]=\"${VAR_TERM_TAB_LINE_LIST_FILE_LIST[${i}]}\"" >> ${HSFM_FILE_SESSION}
+    #     echo "VAR_TERM_TAB_LINE_LIST_FILE_INFO_LIST[${i}]=\"${VAR_TERM_TAB_LINE_LIST_FILE_INFO_LIST[${i}]}\"" >> ${HSFM_FILE_SESSION}
+    # done
+    # IFS=$IFS_OLD
+    
     echo "cd '${PWD}'" >> ${HSFM_FILE_SESSION}
 }
 fload_session() {
