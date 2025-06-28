@@ -79,6 +79,31 @@ fInfo()
     printf "##    %s\t: %- 16s\n" "Verbose" "${OPTION_VERBOSE}"
     printf "###########################################################\n"
 }
+fParsePatterns()
+{
+    echo ${@}
+    local input_string="${1}"
+    local array_var_name="${2}" # The name of the array variable to modify
+
+    # Create a temporary array to hold the parsed elements
+    local temp_array=()
+    IFS=',' read -r -a temp_array <<< "${input_string}"
+
+    # Construct the command to assign the temporary array to the target array variable
+    # This approach uses eval to set the array by name, ensuring elements with spaces and special characters are handled correctly.
+    local assign_cmd="${array_var_name}=("
+    for item in "${temp_array[@]}"; do
+        # Use printf %q to safely quote each item for shell re-evaluation.
+        # This handles spaces, quotes, and other special characters within the item.
+        local escaped_item=$(printf %q "${item}")
+        assign_cmd+="${escaped_item} "
+    done
+    assign_cmd+=")"
+
+    # Execute the assignment command. This will modify the array variable
+    # whose name was passed as the second argument.
+    eval "${assign_cmd}"
+}
 fSleepSeconds()
 {
     local var_sleep_cnt=0
@@ -97,25 +122,79 @@ fSleepSeconds()
     printf "\nwakeup from sleep(${var_sleep_cnt})\n"
     return 1
 }
+fSleepUntil()
+{
+    # Input: HH:MM:SS , 16:32:23, sleep to next 16:32:23.
+    local target_time_str="${1}"
+    local current_timestamp=$(date +%s)
+    local target_hour=$(echo "${target_time_str}" | cut -d':' -f1)
+    local target_minute=$(echo "${target_time_str}" | cut -d':' -f2)
+    local target_second=$(echo "${target_time_str}" | cut -d':' -f3)
+
+    # Get today's date
+    local today_date=$(date +%Y%m%d)
+
+    # Calculate target timestamp for today
+    local target_timestamp_today=$(date -j -f "%Y%m%d %H:%M:%S" "${today_date} ${target_hour}:${target_minute}:${target_second}" +%s 2>/dev/null)
+
+    if [[ -z "${target_timestamp_today}" ]]; then
+        echo "Error: Invalid time format. Please use HH:MM:SS."
+        return 1
+    fi
+
+    local sleep_seconds=$((target_timestamp_today - current_timestamp))
+
+    # If target time is in the past, calculate for tomorrow
+    if [[ ${sleep_seconds} -le 0 ]]; then
+        local tomorrow_date=$(date -v+1d +%Y%m%d)
+        local target_timestamp_tomorrow=$(date -j -f "%Y%m%d %H:%M:%S" "${tomorrow_date} ${target_hour}:${target_minute}:${target_second}" +%s 2>/dev/null)
+        if [[ -z "${target_timestamp_tomorrow}" ]]; then
+            echo "Error: Could not calculate tomorrow's timestamp."
+            return 1
+        fi
+        sleep_seconds=$((target_timestamp_tomorrow - current_timestamp))
+    fi
+
+    if [[ ${sleep_seconds} -gt 0 ]]; then
+        echo "Sleeping until ${target_time_str} (for ${sleep_seconds} seconds)..."
+        fSleepSeconds "${sleep_seconds}"
+    else
+        echo "Target time is already passed and cannot be reached today or tomorrow."
+    fi
+    return 0
+}
 fEval()
 {
-    local var_commands=0
-    if [[ $# = 1 ]]
-    then
-        var_commands=${1}
-    elif [[ $# > 1 ]]
-    then
-        if [[ "${1}" = "-s" ]]
-        then
-            shift 1
-            var_commands="sudo ${@}"
-        else
-            var_commands=${@}
-        fi
-    else
+    local var_commands=""
+    local var_quiet_mode=false
+
+    # Parse options for fEval
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -q|--quiet)
+                var_quiet_mode=true
+                shift
+                ;;
+            -s|--sudo)
+                var_commands="sudo ${@:2}" # Take all remaining arguments as command
+                shift $# # Consume all arguments
+                break
+                ;;
+            *)
+                var_commands="${@}" # Take all remaining arguments as command
+                shift $# # Consume all arguments
+                break
+                ;;
+        esac
+    done
+
+    if [[ -z "${var_commands}" ]]; then
         return -1
     fi
-    echo -e "Executing: ${DEF_COLOR_YELLOW}${var_commands}${DEF_COLOR_NORMAL} "
+
+    if ! ${var_quiet_mode}; then
+        echo -e "Executing: ${DEF_COLOR_YELLOW}${var_commands}${DEF_COLOR_NORMAL} "
+    fi
     ${var_commands}
     return $?
 }
@@ -144,6 +223,11 @@ fAskInput()
         echo "${var_default_value}"
     fi
     return 0
+}
+fLogInfo()
+{
+    local timestamp=$(date "+%Y-%m-%d %H:%M:%S")
+    printf "[%s][%s] %s\n" "${timestamp}" "${VAR_SCRIPT_NAME}" "${@}"
 }
 ###########################################################
 ## Functions

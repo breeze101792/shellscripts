@@ -107,8 +107,7 @@ fInfo()
 }
 fParsePatterns()
 {
-
-        echo ${@}
+    echo ${@}
     local input_string="${1}"
     local array_var_name="${2}" # The name of the array variable to modify
 
@@ -192,23 +191,36 @@ fSleepUntil()
 }
 fEval()
 {
-    local var_commands=0
-    if [[ $# = 1 ]]
-    then
-        var_commands=${1}
-    elif [[ $# > 1 ]]
-    then
-        if [[ "${1}" = "-s" ]]
-        then
-            shift 1
-            var_commands="sudo ${@}"
-        else
-            var_commands=${@}
-        fi
-    else
+    local var_commands=""
+    local var_quiet_mode=false
+
+    # Parse options for fEval
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -q|--quiet)
+                var_quiet_mode=true
+                shift
+                ;;
+            -s|--sudo)
+                var_commands="sudo ${@:2}" # Take all remaining arguments as command
+                shift $# # Consume all arguments
+                break
+                ;;
+            *)
+                var_commands="${@}" # Take all remaining arguments as command
+                shift $# # Consume all arguments
+                break
+                ;;
+        esac
+    done
+
+    if [[ -z "${var_commands}" ]]; then
         return -1
     fi
-    echo -e "Executing: ${DEF_COLOR_YELLOW}${var_commands}${DEF_COLOR_NORMAL} "
+
+    if ! ${var_quiet_mode}; then
+        echo -e "Executing: ${DEF_COLOR_YELLOW}${var_commands}${DEF_COLOR_NORMAL} "
+    fi
     ${var_commands}
     return $?
 }
@@ -238,6 +250,11 @@ fAskInput()
     fi
     return 0
 }
+fLogInfo()
+{
+    local timestamp=$(date "+%Y-%m-%d %H:%M:%S")
+    printf "[%s][%s] %s\n" "${timestamp}" "${VAR_SCRIPT_NAME}" "${@}"
+}
 ###########################################################
 ## Functions
 ###########################################################
@@ -261,26 +278,23 @@ function fexample()
 }
 function fHibernate()
 {
-    local timestamp=$(date "+%H:%M")
-    echo "[$timestamp] Setting to hibernate mode."
-    sudo pmset -b hibernatemode 25
+    fLogInfo "Setting to hibernate mode."
+    fEval -s pmset -b hibernatemode 25
     sleep 1
-    sudo pmset sleepnow
+    fEval -s pmset sleepnow
 
     # sleep after 10 minutes, before setting it back.
-    echo wiat for restore settings.
+    fLogInfo "Wait for restore settings."
     sleep 60
-    local timestamp=$(date "+%H:%M")
-    echo "[$timestamp] Rollback to default mode."
-    sudo pmset -b hibernatemode 3
+    fLogInfo "Rollback to default mode."
+    fEval -s pmset -b hibernatemode 3
 }
 function fDeepSleep()
 {
-    local timestamp=$(date "+%H:%M")
-    echo "[$timestamp] Setting to hibernate mode."
-    sudo pmset -b hibernatemode 3
+    fLogInfo "Setting to sleep mode."
+    fEval -s pmset -b hibernatemode 3
     sleep 1
-    sudo pmset sleepnow
+    fEval -s pmset sleepnow
 }
 function fOptimizeSettings()
 {
@@ -292,7 +306,7 @@ function fOptimizeSettings()
     local ttyskeepawake_status=$(pmset -g | grep "ttyskeepawake" | awk '{print $2}')
     if [[ "${ttyskeepawake_status}" == "1" ]]; then
         echo "ttyskeepawake is enabled. Disabling..."
-        fEval "sudo pmset -b ttyskeepawake 0"
+        fEval -s "pmset -b ttyskeepawake 0"
     else
         echo "ttyskeepawake is already disabled."
     fi
@@ -301,7 +315,7 @@ function fOptimizeSettings()
     local womp_status=$(pmset -g | grep "womp" | awk '{print $2}')
     if [[ "${womp_status}" == "1" ]]; then
         echo "womp is enabled. Disabling..."
-        fEval "sudo pmset -b womp 0"
+        fEval -s "pmset -b womp 0"
     else
         echo "womp is already disabled."
     fi
@@ -310,7 +324,7 @@ function fOptimizeSettings()
     local networkoversleep_status=$(pmset -g | grep "networkoversleep" | awk '{print $2}')
     if [[ "${networkoversleep_status}" == "1" ]]; then
         echo "networkoversleep is enabled. Disabling..."
-        fEval "sudo pmset -b networkoversleep 0"
+        fEval -s "pmset -b networkoversleep 0"
     else
         echo "networkoversleep is already disabled."
     fi
@@ -319,7 +333,7 @@ function fOptimizeSettings()
     local powernap_status=$(pmset -g | grep "powernap" | awk '{print $2}')
     if [[ "${powernap_status}" == "1" ]]; then
         echo "PowerNap is enabled. Disabling for battery mode..."
-        fEval "sudo pmset -b powernap 0"
+        fEval -s "pmset -b powernap 0"
     else
         echo "PowerNap is already disabled."
     fi
@@ -328,25 +342,22 @@ function fOptimizeSettings()
     local tcpkeepalive_status=$(pmset -g | grep "tcpkeepalive" | awk '{print $2}')
     if [[ "${tcpkeepalive_status}" == "1" ]]; then
         echo "TCPKeepAlive is enabled. Disabling for battery mode..."
-        fEval "sudo pmset -b tcpkeepalive 0"
+        fEval -s "pmset -b tcpkeepalive 0"
     else
         echo "TCPKeepAlive is already disabled."
     fi
-    fEval "sudo pmset -g custom"
+    fEval -s "pmset -g custom"
 }
 function fStartEfficiencyScript()
 {
-    fPrintHeader ${FUNCNAME[0]}
-
     local sleep_time=50
 
     # put script to background script.
-    echo "Setting current script ($$) to efficiency cores."
-    fEval "taskpolicy -b -p $$"
-    echo "sent $$ bash"
+    fLogInfo "Setting current script ($$) to efficiency cores."
+    fEval -q "taskpolicy -b -p $$"
+    fLogInfo "sent $$ bash"
 
-    local timestamp=$(date "+%H:%M")
-    echo "[$timestamp] Check on new spawn process."
+    fLogInfo "Check on new spawn process."
 
     local ps_command=""
     if ${OPTION_USE_ALT_PS_COMMAND}; then
@@ -364,7 +375,7 @@ function fStartEfficiencyScript()
     # Main loop: monitor processes based on selected modes
     for pid in $(eval ${ps_command}); do
         if [[ ! " ${VAR_ASSIGNED_PIDS[@]} " =~ " ${pid} " ]]; then
-            fEval "taskpolicy -b -p ${pid}"
+            fEval -q "taskpolicy -b -p ${pid}"
             local full_path=$(ps -p ${pid} -o comm=)
             local process_name=$(echo "$full_path" | sed -E 's#.*/([^/]*\.app)/.*MacOS/##')
             if [ "${OPTION_VERBOSE}" = 'y' ]; then
@@ -381,7 +392,7 @@ function fStartEfficiencyScript()
         if [[ -n "$front_pid" ]]; then
             echo "Frontmost process PID: $front_pid"
             echo "Sending PID $front_pid to efficiency cores."
-            fEval "taskpolicy -b -p \"$front_pid\""
+            fEval -q "taskpolicy -b -p \"$front_pid\""
         else
             echo "Could not get frontmost application PID."
             # exit 1 # Do not exit, just log
@@ -401,8 +412,7 @@ function fStartEfficiencyScriptLoop()
     echo "sent $$ bash"
 
     while true; do
-        local timestamp=$(date "+%H:%M")
-        echo "[$timestamp] Check on new spawn process."
+        fLogInfo "Check on new spawn process."
 
         # local ps_command=""
         # if ${OPTION_USE_ALT_PS_COMMAND}; then
@@ -455,8 +465,7 @@ function fRestoreEfficiencyScript()
 {
     fPrintHeader ${FUNCNAME[0]}
 
-    local timestamp=$(date "+%H:%M")
-    echo "[$timestamp] restore to normal mode."
+    fLogInfo "Restore to normal mode."
 
     # restore it? or with commands.
     # Main loop: monitor processes based on selected modes
@@ -483,43 +492,42 @@ function fBatteryGuardian()
 
     # initial sleep time.
     local sleep_time=5
-    echo "Starting battery guardian."
+    fLogInfo "Starting battery guardian."
 
     while true; do
-        local timestamp=$(date "+%H:%M")
         local current_hour=$(date +%H)
-        echo "[${timestamp}] new loop start."
+        fLogInfo "New loop start."
 
         # Check what time it is.
         if [[ ${current_hour} -ge ${VAR_HIBERNATE_START_HOUR} && ${current_hour} -lt ${VAR_HIBERNATE_END_HOUR} ]]; then
-            echo "[$timestamp] It's between ${VAR_HIBERNATE_START_HOUR}:00 and $((VAR_HIBERNATE_END_HOUR-1)):59. Initiating hibernate."
+            fLogInfo "It's between ${VAR_HIBERNATE_START_HOUR}:00 and $((VAR_HIBERNATE_END_HOUR-1)):59. Initiating hibernate."
             local lid_status=$(fGetLidStatus)
             ## Long term hibernate.
             if [[ "${lid_status}" == "closed" ]]; then
                 fHibernate
             else
-                echo "[$timestamp] Lid is open. Skipping hibernate."
+                fLogInfo "Lid is open. Skipping hibernate."
             fi
             # next wake up.
             sleep_time=$VAR_DEFAULT_SLEEP_SECONDS # After hibernate, wait for an hour before checking again
         elif [[ ${current_hour} -ge ${VAR_SLEEP_UNTIL_NEXT_HOUR_START_HOUR} && ${current_hour} -lt ${VAR_SLEEP_UNTIL_NEXT_HOUR_END_HOUR} ]]; then
-            echo "[$timestamp] It's between ${VAR_SLEEP_UNTIL_NEXT_HOUR_START_HOUR}:00 and $((VAR_SLEEP_UNTIL_NEXT_HOUR_END_HOUR-1)):59. Working hour."
+            fLogInfo "It's between ${VAR_SLEEP_UNTIL_NEXT_HOUR_START_HOUR}:00 and $((VAR_SLEEP_UNTIL_NEXT_HOUR_END_HOUR-1)):59. Working hour."
             # Working Stand by mode.
             if [[ "${lid_status}" == "closed" ]]; then
-                echo "[$timestamp] Lid is closed."
+                fLogInfo "Lid is closed."
             else
-                echo "[$timestamp] Lid is open. Do efficent script."
+                fLogInfo "Lid is open. Do efficent script."
                 fStartEfficiencyScript
             fi
 
             # next wake up.
             sleep_time=$VAR_DEFAULT_SLEEP_SECONDS # wait for an hour before checking again
         else
-            echo "[$timestamp] Current hour is ${current_hour}. Default sleep."
+            fLogInfo "Current hour is ${current_hour}. Default sleep."
             sleep_time=${VAR_DEFAULT_SLEEP_SECONDS}
         fi
 
-        echo "Current sleep time: ${sleep_time} seconds"
+        fLogInfo "Current sleep time: ${sleep_time} seconds"
         sleep ${sleep_time}
     done
 }
@@ -555,12 +563,10 @@ function fMain()
                 exit 0
                 ;;
             --hibernate)
-                fHibernate
-                exit 0
+                flag_mode='hibernate'
                 ;;
             --sleep)
-                fDeepSleep
-                exit 0
+                flag_mode='sleep'
                 ;;
             -g|--gurdian)
                 flag_mode='gurdian'
@@ -620,6 +626,12 @@ function fMain()
     elif [ ${flag_mode} = 'normal' ]
     then
         fRestoreEfficiencyScript; fErrControl ${FUNCNAME[0]} ${LINENO}
+    elif [ ${flag_mode} = 'hibernate' ]
+    then
+        fHibernate; fErrControl ${FUNCNAME[0]} ${LINENO}
+    elif [ ${flag_mode} = 'sleep' ]
+    then
+        fDeepSleep; fErrControl ${FUNCNAME[0]} ${LINENO}
     fi
 }
 
