@@ -1986,6 +1986,50 @@ fgui_scroll_down_visual() {
         fterminal_flush
     fi
 }
+fgui_scroll_top_visual() {
+    if ((VAR_TERM_CONTENT_SCROLL_IDX == 0)); then
+        return
+    fi
+
+    VAR_TERM_CONTENT_SCROLL_IDX=0
+    fterminal_mark_reset
+
+    local start_idx=${VAR_TERM_VISUAL_START_IDX}
+    local end_idx=${VAR_TERM_CONTENT_SCROLL_IDX}
+
+    if ((start_idx > end_idx)); then
+        local tmp=${start_idx}
+        start_idx=${end_idx}
+        end_idx=${tmp}
+    fi
+
+    for ((i=start_idx; i<=end_idx; i++)); do
+        fterminal_mark_add "$i"
+    done
+    # fterminal_redraw
+}
+fgui_scroll_bottom_visual() {
+    if ((VAR_TERM_CONTENT_SCROLL_IDX == VAR_TERM_DIR_LIST_CNT)); then
+        return
+    fi
+
+    VAR_TERM_CONTENT_SCROLL_IDX=${VAR_TERM_DIR_LIST_CNT}
+    fterminal_mark_reset
+
+    local start_idx=${VAR_TERM_VISUAL_START_IDX}
+    local end_idx=${VAR_TERM_CONTENT_SCROLL_IDX}
+
+    if ((start_idx > end_idx)); then
+        local tmp=${start_idx}
+        start_idx=${end_idx}
+        end_idx=${tmp}
+    fi
+
+    for ((i=start_idx; i<=end_idx; i++)); do
+        fterminal_mark_add "$i"
+    done
+    # fterminal_redraw
+}
 fgui_tab_go_previous()
 {
     if [[ ${#VAR_TERM_TAB_LINE_LIST_PATH[@]} -eq 1 ]] ||
@@ -2592,7 +2636,6 @@ fvisual_mode_handler() {
             ${HSFM_KEY_SCROLL_DOWN3:=$'\eOB'})
             fgui_scroll_down_visual
             ;;
-
         # Scroll up.
         # 'A' is what bash sees when the up arrow is pressed
         # ('\e[A' or '\eOA').
@@ -2600,6 +2643,15 @@ fvisual_mode_handler() {
             ${HSFM_KEY_SCROLL_UP2:=$'\e[A'} | \
             ${HSFM_KEY_SCROLL_UP3:=$'\eOA'})
             fgui_scroll_up_visual
+            ;;
+        # Go to top.
+        ${HSFM_KEY_TO_TOP:=g})
+            fgui_scroll_top_visual
+            ;;
+
+        # Go to bottom.
+        ${HSFM_KEY_TO_BOTTOM:=G})
+            fgui_scroll_bottom_visual
             ;;
         # open file with command
         ${HSFM_KEY_OPEN_CMD:=:})
@@ -2664,6 +2716,21 @@ fselection_mode_handler() {
             ${HSFM_KEY_SCROLL_UP2:=$'\e[A'} | \
             ${HSFM_KEY_SCROLL_UP3:=$'\eOA'})
             fgui_scroll_up
+            ;;
+        # Go to top.
+        ${HSFM_KEY_TO_TOP:=g})
+            ((VAR_TERM_CONTENT_SCROLL_IDX != 0)) && {
+                VAR_TERM_CONTENT_SCROLL_IDX=0
+                fterminal_redraw
+            }
+            ;;
+
+        # Go to bottom.
+        ${HSFM_KEY_TO_BOTTOM:=G})
+            ((VAR_TERM_CONTENT_SCROLL_IDX != VAR_TERM_DIR_LIST_CNT)) && {
+                ((VAR_TERM_CONTENT_SCROLL_IDX = VAR_TERM_DIR_LIST_CNT))
+                fterminal_redraw
+            }
             ;;
 
         ${HSFM_KEY_SELECTION})
