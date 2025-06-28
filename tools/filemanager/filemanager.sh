@@ -139,7 +139,7 @@ export VAR_TERM_FIND_HISTORY
 
 export VAR_TERM_CMD_INPUT_BUFFER=""
 export VAR_TERM_CMD_LIST=( "redraw" "help" "exit" "shell" "cd" "reenter" "colorscheme")
-VAR_TERM_CMD_LIST+=( "set" "title" )
+VAR_TERM_CMD_LIST+=( "set" "title" "config")
 # Debug
 VAR_TERM_CMD_LIST+=( "debug" "select" "stat" "eval" "dump" "test" "task" "msg")
 # File operation
@@ -248,10 +248,10 @@ export HSFM_ENV_TITLE="HSFM"
 # Text Editor
 export HSFM_TEXT_EDITOR="vim"
 export HSFM_MEDIA_PLAYER="vlc"
-export HSFM_PICTURE_VIEWER="firefox"
+export HSFM_PICTURE_VIEWER="loupe"
 
 # File Opener
-export HSFM_OPENER="xdg\-open"
+export HSFM_OPENER="xdg-open"
 
 # File Attributes Command
 export HSFM_STAT_CMD="stat"
@@ -1795,6 +1795,7 @@ fterminal_tab_load_contex() {
         # Use read -r -a to correctly parse the string into an array
         read -r -a VAR_TERM_DIR_FILE_LIST <<< "${VAR_TERM_TAB_LINE_LIST_FILE_LIST[var_tab_id]}"
         read -r -a VAR_TERM_DIR_FILE_INFO_LIST <<< "${VAR_TERM_TAB_LINE_LIST_FILE_INFO_LIST[var_tab_id]}"
+        ((VAR_TERM_DIR_LIST_CNT=${#VAR_TERM_DIR_FILE_LIST[@]}-1))
         IFS=$IFS_OLD
     else
         cd "${HOME}"
@@ -3669,14 +3670,11 @@ cmd_editor()
 
     if [[ -f "${var_file}" ]]; then
         fterminal_reset
-
-        if command -v xim 2>&1 > /dev/null;then
-            {
-                export VIDE_SH_TITLE=${HSFM_NAME}
-                xim "${var_file}"
-            }
+        
+        if command -v "${HSFM_TEXT_EDITOR%% *}" 2>&1 > /dev/null;then
+            ${HSFM_TEXT_EDITOR} "${var_file}"
         else
-            vim "${var_file}"
+            flog_msg "warn: command '$HSFM_TEXT_EDITOR' not found"
         fi
 
         fterminal_setup
@@ -4262,6 +4260,26 @@ cmd_quitngo()
 
     exit 0
 }
+cmd_config()
+{
+    local var_file="${HSFM_FILE_CONFIG}"
+    fterminal_reset
+
+    if command -v "${HSFM_TEXT_EDITOR%% *}" 2>&1 > /dev/null;then
+        ${HSFM_TEXT_EDITOR} "${var_file}"
+    elif command -v "vim" 2>&1 > /dev/null;then
+        vim "${var_file}"
+    elif command -v "vi" 2>&1 > /dev/null;then
+        vi "${var_file}"
+    elif command -v "nano" 2>&1 > /dev/null;then
+        nano "${var_file}"
+    else
+        flog_msg "warn: no editor found. editor: '$HSFM_TEXT_EDITOR'"
+    fi
+
+    fterminal_setup
+    fterminal_redraw
+}
 cmd_exit()
 {
     exit 0
@@ -4294,36 +4312,12 @@ fsys_open() {
             local tmp_file_type=($(fprase_mime_type "$var_file"))
             tmp_file_type=${tmp_file_type[@]}
 
-            # Figure out what kind of file we're working with.
-            # Open all text-based files in '$HSFM_TEXT_EDITOR'.
-            # Everything else goes through 'xdg-open'/'open'.
-            if [[ $DISPLAY ]]; then
-                case "${tmp_file_type}" in
-                    audio/*)
-                        cmd_media "$var_file"
-                        break
-                        ;;
-                    video/*)
-                        cmd_media "$var_file"
-                        break
-                        ;;
-                    image/*)
-                        cmd_image "$var_file"
-                        break
-                        ;;
-                        # text/*|*x-empty*|*json*)
-                        #     cmd_editor "$var_file"
-                        #     break
-                        #     ;;
-                esac
-            fi
-
             # cli preview
             case "${tmp_file_type}" in
-                image/*)
-                    cmd_preview "$var_file"
-                    break
-                    ;;
+                # image/*)
+                #     cmd_preview "$var_file"
+                #     break
+                #     ;;
                 text/* | *x-empty* | *json*)
                     cmd_editor "$var_file"
                     break
@@ -4347,16 +4341,37 @@ fsys_open() {
                     ;;
             esac
 
-            # 'nohup':  Make the process immune to hangups.
-            # '&':      Send it to the background.
-            # 'disown': Detach it from the shell.
-            if command -v ${HSFM_OPENER} >/dev/null; then
-                flog_msg_debug "Open file via ${HSFM_OPENER}"
-                nohup "${HSFM_OPENER}" "$var_file" &>/dev/null &
-                disown
-            else
-                flog_msg "Unknown file type: '${tmp_file_type}'"
+            # Figure out what kind of file we're working with.
+            # Open all text-based files in '$HSFM_TEXT_EDITOR'.
+            # Everything else goes through 'xdg-open'/'open'.
+            if [[ $DISPLAY ]]; then
+                # case "${tmp_file_type}" in
+                #     # audio/*)
+                #     #     cmd_media "$var_file"
+                #     #     break
+                #     #     ;;
+                #     # video/*)
+                #     #     cmd_media "$var_file"
+                #     #     break
+                #     #     ;;
+                #     # image/*)
+                #     #     cmd_image "$var_file"
+                #     #     break
+                #     #     ;;
+                # esac
+
+                # 'nohup':  Make the process immune to hangups.
+                # '&':      Send it to the background.
+                # 'disown': Detach it from the shell.
+                if command -v ${HSFM_OPENER%% *} >/dev/null; then
+                    flog_msg_debug "Open file via ${HSFM_OPENER}"
+                    nohup "${HSFM_OPENER}" "$var_file" &>/dev/null &
+                    disown
+                    break
+                fi
             fi
+
+            flog_msg "Unknown file type: '${tmp_file_type}'"
         done
     fi
     VAR_TERM_OPEN_FILE=""
