@@ -2062,7 +2062,7 @@ fgui_tab_go_previous()
             fterminal_tab_save_contex ${VAR_TERM_TAB_LINE_IDX}
             VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]="$(realpath .)"
             VAR_TERM_TAB_LINE_IDX=$(($VAR_TERM_TAB_LINE_IDX - 1))
-            cd ${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}
+            cd "${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}"
             fterminal_tab_load_contex ${VAR_TERM_TAB_LINE_IDX}
             # fterminal_redraw full
             fterminal_redraw
@@ -2073,7 +2073,7 @@ fgui_tab_go_next()
 {
     if [[ ${#VAR_TERM_TAB_LINE_LIST_PATH[@]} -eq 1 ]] ||
         (( ${VAR_TERM_TAB_LINE_IDX} + 1 == ${#VAR_TERM_TAB_LINE_LIST_PATH[@]} )) ||
-        ! test -d ${VAR_TERM_TAB_LINE_LIST_PATH[(( ${VAR_TERM_TAB_LINE_IDX} + 1))]}
+        ! test -d "${VAR_TERM_TAB_LINE_LIST_PATH[(( ${VAR_TERM_TAB_LINE_IDX} + 1))]}"
     then
         flog_msg "NEXT_TAB ignored."
         return
@@ -2081,7 +2081,7 @@ fgui_tab_go_next()
         fterminal_tab_save_contex ${VAR_TERM_TAB_LINE_IDX}
         VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]="$(realpath .)"
         VAR_TERM_TAB_LINE_IDX=$(($VAR_TERM_TAB_LINE_IDX + 1))
-        cd ${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}
+        cd "${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}"
         fterminal_tab_load_contex ${VAR_TERM_TAB_LINE_IDX}
         fterminal_redraw
         flog_msg "Go NEXT_TAB"
@@ -2215,7 +2215,7 @@ fgui_tab_close()
 
         VAR_TERM_TAB_LINE_IDX=0
         # fterminal_tab_load_contex ${VAR_TERM_TAB_LINE_IDX}
-        # cd ${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}
+        # cd "${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}"
         #
         # fterminal_redraw full
         # flog_msg "Tab closed."
@@ -2235,7 +2235,7 @@ fgui_tab_close()
 
         VAR_TERM_TAB_LINE_IDX=0
         # fterminal_tab_load_contex ${VAR_TERM_TAB_LINE_IDX}
-        # cd ${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}
+        # cd "${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}"
         #
         # fterminal_redraw full
         # flog_msg "Tab closed."
@@ -2248,14 +2248,14 @@ fgui_tab_close()
         fi
 
         fterminal_tab_load_contex ${VAR_TERM_TAB_LINE_IDX}
-        cd ${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}
+        cd "${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}"
 
         # fterminal_redraw full
         # flog_msg "Tab closed."
     fi
 
     # fterminal_tab_load_contex ${VAR_TERM_TAB_LINE_IDX}
-    # cd ${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}
+    # cd "${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}"
 
     fterminal_redraw full
     flog_msg "Tab closed."
