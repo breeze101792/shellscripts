@@ -1786,17 +1786,22 @@ fterminal_tab_load_contex() {
         VAR_TERM_CONTENT_SCROLL_IDX=${VAR_TERM_TAB_LINE_LIST_IDX[var_tab_id]}
         VAR_TERM_WIN_CURRENT_CURSOR=$((VAR_TERM_CONTENT_SCROLL_START_IDX - VAR_TERM_CONTENT_SCROLL_IDX))
 
-        # Deserialize strings back into arrays
-        local IFS_OLD=$IFS
-        IFS=$'\x1e'
-        # Clear existing arrays before loading
-        VAR_TERM_DIR_FILE_LIST=()
-        VAR_TERM_DIR_FILE_INFO_LIST=()
-        # Use read -r -a to correctly parse the string into an array
-        read -r -a VAR_TERM_DIR_FILE_LIST <<< "${VAR_TERM_TAB_LINE_LIST_FILE_LIST[var_tab_id]}"
-        read -r -a VAR_TERM_DIR_FILE_INFO_LIST <<< "${VAR_TERM_TAB_LINE_LIST_FILE_INFO_LIST[var_tab_id]}"
-        ((VAR_TERM_DIR_LIST_CNT=${#VAR_TERM_DIR_FILE_LIST[@]}-1))
-        IFS=$IFS_OLD
+        if test -n "${VAR_TERM_TAB_LINE_LIST_FILE_LIST[var_tab_id]}"; then
+            # Deserialize strings back into arrays
+            local IFS_OLD=$IFS
+            IFS=$'\x1e'
+            # Clear existing arrays before loading
+            VAR_TERM_DIR_FILE_LIST=()
+            VAR_TERM_DIR_FILE_INFO_LIST=()
+            # Use read -r -a to correctly parse the string into an array
+            read -r -a VAR_TERM_DIR_FILE_LIST <<< "${VAR_TERM_TAB_LINE_LIST_FILE_LIST[var_tab_id]}"
+            read -r -a VAR_TERM_DIR_FILE_INFO_LIST <<< "${VAR_TERM_TAB_LINE_LIST_FILE_INFO_LIST[var_tab_id]}"
+            ((VAR_TERM_DIR_LIST_CNT=${#VAR_TERM_DIR_FILE_LIST[@]}-1))
+                IFS=$IFS_OLD
+        else
+            # flog_msg_debug "Dir info not found, reload it."
+            fterminal_read_dir
+        fi
     else
         cd "${HOME}"
 
