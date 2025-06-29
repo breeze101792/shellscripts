@@ -143,7 +143,7 @@ VAR_TERM_CMD_LIST+=( "set" "title" "config")
 # Debug
 VAR_TERM_CMD_LIST+=( "debug" "select" "stat" "eval" "dump" "test" "task" "msg")
 # File operation
-VAR_TERM_CMD_LIST+=( "mkdir" "touch" "rename" "search" "find" "sort" )
+VAR_TERM_CMD_LIST+=( "mkdir" "touch" "rename" "search" "find" "sort" "backfile" )
 # Tab operation
 VAR_TERM_CMD_LIST+=( "quitngo" "tabclose" "tabcloseright" "tabcloseleft" "tabcloseothers")
 # Open ralted.
@@ -3630,6 +3630,23 @@ cmd_rename()
 
     elif [[ -w ${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]} ]]; then
         mv "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" "${PWD}/${var_new_name}"
+        fterminal_redraw full
+    else
+        flog_msg "warn: no write access to file."
+    fi
+}
+cmd_backfile()
+{
+    local var_original_file="${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
+    local var_original_name="$(basename ${var_original_file})"
+    local var_original_path="$(dirname ${var_original_file})"
+    local var_timestamp=$(date +%Y%m%d_%H%M%S)
+    local var_new_file="$var_original_path/backup_${var_timestamp}_${var_original_name}"
+
+    if [[ -e $var_new_file ]]; then
+        flog_msg "warn: '$var_new_file' already exists."
+    elif [[ -w ${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]} ]]; then
+        cp "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" "${var_new_file}"
         fterminal_redraw full
     else
         flog_msg "warn: no write access to file."
