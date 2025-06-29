@@ -119,12 +119,12 @@ class PlayerManager:
         track_info = ""
         if player_name == "spotify" and "mpris:trackid" in metadata.keys() and ":ad:" in player.props.metadata["mpris:trackid"]:
             track_info = "Advertisement"
-        elif artist is not None and title is not None:
+        elif artist is not None and title is not None and len(artist) != 0:
             track_info = f"{artist} - {title}"
         else:
             track_info = title
 
-        if track_info:
+        if len(track_info) != 0:
             if player.props.status == "Playing":
                 track_info = " " + track_info
             else:
@@ -132,6 +132,7 @@ class PlayerManager:
         # only print output if no other player is playing
         current_playing = self.get_first_playing_player()
         if current_playing is None or current_playing.props.player_name == player.props.player_name:
+            print(f"track_info: {track_info}")
             self.write_output(track_info, player)
         else:
             logger.debug(f"Other player {current_playing.props.player_name} is playing, skipping")
