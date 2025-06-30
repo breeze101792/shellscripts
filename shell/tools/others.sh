@@ -648,7 +648,7 @@ function rv()
     local var_file_extension="mkv"
     local var_video_dev="/dev/video0"
     local var_video_codec="h265"
-    local var_audio_dev="hw:0"
+    local var_audio_dev="hw:0,0"
     local var_recording_time="3600"
     local var_video_input_formate="mjpeg"
 
@@ -660,6 +660,12 @@ function rv()
     do
         echo $1
         case $1 in
+            -c|--cap)
+                v4l2-ctl --list-devices
+                v4l2-ctl --device=${var_video_dev} --list-formats-ext
+                arecord -l
+                return 0
+                ;;
             -a|--audio)
                 var_audio_dev="${2}"
                 shift 1
@@ -715,10 +721,11 @@ function rv()
                 cli_helper -o "-t|--time" -d "recording time"
                 cli_helper -o "-v|--video" -d "video device"
                 cli_helper -o "--vdec" -d "video codec, h265,h264,copy"
-                cli_helper -o "-a|--audio" -d "audio device"
+                cli_helper -o "-a|--audio" -d "audio device, you could use command to list.'arecord -l'"
                 cli_helper -o "-f|--fake" -d "fake run"
                 cli_helper -o "--file" -d "recorder file"
                 cli_helper -o "--type" -d "recorder type, default av, optinal audio, video"
+                cli_helper -o "-c|--cap" -d "List audio/video cap."
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;
@@ -745,6 +752,10 @@ function rv()
     var_cmd=("ffmpeg")
     var_cmd+=(" -async 1")
 
+    # var_cmd+=(" -fflags +genpts")
+    # var_cmd+=(" -use_wallclock_as_timestamps 1")
+    # var_cmd+=(" -af aresample=async=1")
+
     if [ "${flag_audio}" = "y" ]
     then
         # Audio Settings
@@ -761,10 +772,11 @@ function rv()
         # ffmpeg -f v4l2 -list_formats all -i /dev/video0
 
         var_cmd+=(" -f video4linux2")
+        var_cmd+=(" -thread_queue_size 1024")
 
         ## Video Settings
         var_cmd+=(" -framerate 30")
-        var_cmd+=(" -video_size 1280x720")
+        var_cmd+=(" -video_size 2560x1440")
         # var_cmd+=(" -video_size 640x480")
 
         if [ "${var_video_input_formate}" = "mjpeg" ]
@@ -783,8 +795,18 @@ function rv()
 
     if [ "${flag_audio}" = "y" ]
     then
-        var_cmd+=(" -acodec aac -ab 128k")
+        # ffmpeg \
+        #     -f alsa -thread_queue_size 1024 -ac 1 -i hw:4,0 \
+        #     -fflags +genpts -use_wallclock_as_timestamps 1 \
+        #     -af aresample=async=1 \
+        #     -acodec aac -b:a 128k -t 10 -f adts test.aac
+        # var_cmd+=(" -acodec aac -ab 128k")
+        var_cmd+=(" -acodec aac -b:a 128k")
         var_file_extension="aac"
+
+        # var_cmd+=(" -c:a libopus -b:a 128k")
+        # var_file_extension="opus"
+        var_cmd+=(" -fflags +genpts -use_wallclock_as_timestamps 1 -af aresample=async=1")
     fi
 
     if [ "${flag_video}" = "y" ]

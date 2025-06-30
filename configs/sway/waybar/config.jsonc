@@ -7,9 +7,9 @@
     "spacing": 4, // Gaps between modules (4px)
     // Choose the order of the modules
     "modules-left": [
-        "sway/workspaces",
         "sway/mode",
-        "sway/scratchpad"
+        "sway/scratchpad",
+        "sway/workspaces"
     ],
     //"modules-center": [
     //    "sway/window"
@@ -60,7 +60,8 @@
         }
     },
     "sway/mode": {
-        "format": "<span style=\"italic\">{}</span>"
+        // "format": "<span style=\"italic\">{}</span>",
+        "format": "<span >{}</span>"
     },
     "sway/scratchpad": {
         "format": "{icon} {count}",
@@ -203,9 +204,27 @@
             "default": "🎜"
         },
         "escape": true,
+        "on-click": "playerctl play-pause",
+        "on-scroll-up": "playerctl next",
+        "on-scroll-down": "playerctl previous",
         "exec": "python $HOME/.config/waybar/mediaplayer.py 2> /dev/null" // Script in resources folder
         // "exec": "$HOME/.config/waybar/mediaplayer.py --player spotify 2> /dev/null" // Filter player based on name
     },
+    // "custom/media": {
+    //     "format": "{icon}",
+    //     "interval": 1,
+    //     "exec": "playerctl status",
+    //     "return-type": "json",
+    //     "format-icons": {
+    //         "Playing": "⏸",
+    //         "Paused": "▶",
+    //         "Stopped": "⏹",
+    //         "default": "♫"
+    //     },
+    //     "on-click": "playerctl play-pause",
+    //     "on-scroll-up": "playerctl next",
+    //     "on-scroll-down": "playerctl previous"
+    // },
     "custom/power": {
         "format" : " ⏻  ",
         "tooltip": false,
