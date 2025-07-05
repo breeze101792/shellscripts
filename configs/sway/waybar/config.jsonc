@@ -39,16 +39,22 @@
         "disable-scroll": true,
         "all-outputs": true,
         "warp-on-scroll": false,
-        "format": "{name}: {icon}",
+        "format": "{index} {icon} {name}",
         "format-icons": {
-            "1": "",
-            "2": "",
-            "3": "",
-            "4": "",
-            "5": "",
-            "urgent": "",
+            "Entry": "",//"",
+            "Editor": "",       // Edit
+            "Coding": "",       // Code (requires Nerd Fonts), 
+            "Experiment": "",   // Flask/experiment
+            "Monitor": " ",      // Monitor
+            "Workspace": "",     // Default dot
+            "default": "",       // Fallback
             "focused": "",
-            "default": ""
+            "workspace0": "",    // Another dot
+
+            "urgent": "",
+            "Web": "",
+            "Media": "",
+            "Chat": ""
         }
     },
     "keyboard-state": {
