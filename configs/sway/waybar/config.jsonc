@@ -20,7 +20,6 @@
         "custom/media",
         "pulseaudio",
         "network",
-        //"power-profiles-daemon",
         "cpu",
         "memory",
         //"temperature",
@@ -29,27 +28,29 @@
         //"sway/language",
         //"battery",
         //"battery#bat2",
+        "power-profiles-daemon",
         "tray",
         "clock",
+        "custom/notification",
         "custom/power"
     ],
     // Modules configuration
-    // "sway/workspaces": {
-    //     "disable-scroll": true,
-    //     "all-outputs": true,
-    //     "warp-on-scroll": false,
-    //     "format": "{name}: {icon}",
-    //     "format-icons": {
-    //         "1": "",
-    //         "2": "",
-    //         "3": "",
-    //         "4": "",
-    //         "5": "",
-    //         "urgent": "",
-    //         "focused": "",
-    //         "default": ""
-    //     }
-    // },
+    "sway/workspaces": {
+        "disable-scroll": true,
+        "all-outputs": true,
+        "warp-on-scroll": false,
+        "format": "{name}: {icon}",
+        "format-icons": {
+            "1": "",
+            "2": "",
+            "3": "",
+            "4": "",
+            "5": "",
+            "urgent": "",
+            "focused": "",
+            "default": ""
+        }
+    },
     "keyboard-state": {
         "numlock": true,
         "capslock": true,
@@ -225,16 +226,37 @@
     //     "on-scroll-up": "playerctl next",
     //     "on-scroll-down": "playerctl previous"
     // },
+    "custom/notification": {
+        "tooltip": false,
+        "format": "{icon}",
+        "format-icons": {
+            "notification": "  <span foreground='red'><sup> </sup></span>",
+            "none": "  ",
+            "dnd-notification": "  <span foreground='red'><sup> </sup></span>",
+            "dnd-none": "  ",
+            "inhibited-notification": "  <span foreground='red'><sup> </sup></span>",
+            "inhibited-none": "  ",
+            "dnd-inhibited-notification": "  <span foreground='red'><sup> </sup></span>",
+            "dnd-inhibited-none": "  "
+        },
+        "return-type": "json",
+        "exec-if": "which swaync-client",
+        "exec": "swaync-client -swb",
+        "on-click": "swaync-client -t -sw",
+        "on-click-right": "swaync-client -d -sw",
+        "escape": true
+    },
     "custom/power": {
         "format" : " ⏻  ",
         "tooltip": false,
         "menu": "on-click",
         "menu-file": "$HOME/.config/waybar/power_menu.xml", // Menu file in resources folder
         "menu-actions": {
-            "shutdown": "shutdown",
-            "reboot": "reboot",
+            "logout": "swaynag -t warning -m 'You pressed the exit shortcut. Do you really want to exit i3? This will end your X session.' -B 'Yes, exit sway' 'swaymsg exit'",
             "suspend": "systemctl suspend",
-            "hibernate": "systemctl hibernate"
+            "hibernate": "systemctl hibernate",
+            "reboot": "reboot",
+            "shutdown": "shutdown"
         }
     }
 }

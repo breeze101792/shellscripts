@@ -99,6 +99,21 @@ fInfo()
     printf "##    %s\t: %- 16s\n" "Development Mode" "${OPTION_DEV_MODE}"
     printf "###########################################################\n"
 }
+
+fPrintConfig()
+{
+    fPrintHeader "Configuration"
+    printf "##  %-24s: %s\n" "Idle Minutes" "$DEF_IDLE_MINUTES"
+    printf "##  %-24s: %s\n" "Check Interval (s)" "$DEF_CHECK_INTERVAL"
+    printf "##  %-24s: %s\n" "CPU Threshold (%%)" "$DEF_CPU_THRESHOLD"
+    printf "##  %-24s: %s\n" "Net Threshold (Bytes)" "$DEF_NET_THRESHOLD"
+    printf "##  %-24s: %s\n" "Input Threshold (ms)" "$DEF_INPUT_IDLE_THRESHOLD_MS"
+    printf "##  %-24s: %s\n" "Network Interface" "$VAR_IFACE"
+    printf "##  %-24s: %s\n" "Log File" "$DEF_LOG_FILE"
+    printf "##  %-24s: %s\n" "Development Mode" "$OPTION_DEV_MODE"
+    printf "###########################################################\n\n"
+}
+
 fEval()
 {
     local var_commands=0
@@ -136,13 +151,28 @@ fLog() {
 
 # --- Select interface function ---
 fSelectInterface() {
-    local interfaces=($(ls /sys/class/net | grep -v lo))
+    local all_interfaces=($(ls /sys/class/net | grep -v lo))
+    local interfaces_with_ip=()
+    for iface in "${all_interfaces[@]}"; do
+        # Check if the interface has an IPv4 or IPv6 address
+        if ip addr show "$iface" | grep -q "inet "; then
+            interfaces_with_ip+=("$iface")
+        fi
+    done
+
+    local interfaces=("${interfaces_with_ip[@]}")
+
+    if [[ ${#interfaces[@]} -eq 0 ]]; then
+        echo -e "${DEF_COLOR_RED}Error: No active network interface with an IP address found.${DEF_COLOR_NORMAL}"
+        exit 1
+    fi
+
     if [[ ${#interfaces[@]} -eq 1 ]]; then
         VAR_IFACE="${interfaces[0]}"
-        echo "Only one network interface found: $VAR_IFACE. Auto-selecting."
+        # echo "Only one active network interface with an IP found: $VAR_IFACE. Auto-selecting."
         fLogDebug "Monitoring interface set to: $VAR_IFACE (auto-selected)"
     else
-        echo "Available network interfaces:"
+        echo "Available active network interfaces:"
         for i in "${!interfaces[@]}"; do
             echo "  [$i] ${interfaces[$i]}"
         done
@@ -150,6 +180,25 @@ fSelectInterface() {
         VAR_IFACE="${interfaces[$idx]}"
         echo "Selected interface: $VAR_IFACE"
         fLogDebug "Monitoring interface set to: $VAR_IFACE"
+    fi
+}
+
+# --- Set screen off  ---
+fScreenOff() {
+    if [ "$XDG_SESSION_TYPE" = "wayland" ]; then
+        fLogDebug "Not supported on wayland."
+        return 1
+    elif [ "$XDG_SESSION_TYPE" = "x11" ]; then
+        if command -v xset &> /dev/null; then
+            fLogDebug "Turning off screen using xset dpms force off..."
+            fLog "Turning off screen."
+            xset dpms force off
+        else
+            fLogDebug "Warning: xset command not found. Cannot turn off screen."
+        fi
+    else
+        echo "Unknown or fallback session"
+        return 1
     fi
 }
 
@@ -177,36 +226,52 @@ fGetSshUsage() {
 }
 
 # --- Helper: Input activity (mouse/keyboard) ---
-fGetInputActivity() {
-    if command -v xprintidle &> /dev/null; then
-        local idle_ms
-        # Run xprintidle and capture its output and exit status
-        if idle_ms=$(xprintidle 2>/dev/null); then
-            # If xprintidle ran successfully
-            echo "$idle_ms"
-        else
-            # If xprintidle failed to execute (e.g., no X server running)
-            fLogDebug "Warning: xprintidle failed to execute (e.g., no X server running). Cannot monitor keyboard/mouse activity."
-            echo "999999999"
-        fi
+fWprintidle() {
+    WAYPRINTIDLE_IDLE_FILE="/tmp/.wayland_idle_timestamp"
+    if test -z "${WPRINTIDLE_INIT}"; then
+        test -f $WAYPRINTIDLE_IDLE_FILE && rm -f $WAYPRINTIDLE_IDLE_FILE
+        swayidle -w timeout 1 "date +%s > $WAYPRINTIDLE_IDLE_FILE" resume "rm -f $WAYPRINTIDLE_IDLE_FILE"
+        export WPRINTIDLE_INIT=true
+    fi
+
+    if [[ -f "$WAYPRINTIDLE_IDLE_FILE" ]]; then
+        NOW=$(date +%s)
+        IDLE=$(<"$WAYPRINTIDLE_IDLE_FILE")
+        echo $(( (NOW - IDLE) * 1000 ))
     else
-        # If xprintidle command is not found at all
-        fLogDebug "Warning: xprintidle command not found. Cannot monitor keyboard/mouse activity."
-        echo "999999999"
+        echo 0
     fi
 }
 
 # --- Idle check function ---
 fIsScreenIdle() {
-    if ! command -v xprintidle &> /dev/null; then
-        fLogDebug "Warning: xprintidle command not found. Cannot monitor keyboard/mouse activity. Assuming screen is NOT idle for suspend purposes."
-        return 1 # Cannot determine, so assume active to prevent accidental suspend/screen off
-    fi
-
     local idle_ms
-    if ! idle_ms=$(xprintidle 2>/dev/null); then
-        fLogDebug "Warning: xprintidle failed to execute (e.g., no X server running). Cannot monitor keyboard/mouse activity. Assuming screen is NOT idle for suspend purposes."
-        return 1 # Cannot determine, so assume active
+    if [ "$XDG_SESSION_TYPE" = "wayland" ]; then
+        # if ! command -v fWprintidle &> /dev/null; then
+        #     fLogDebug "fWprintidle not found."
+        #     return 1 
+        # fi
+        #
+        # if ! idle_ms=$(fWprintidle 2>/dev/null); then
+        #     fLogDebug "Warning: fWprintidle failed to execute (e.g., no wayland server running)."
+        #     return 1 # Cannot determine, so assume active 
+        # fi
+        # for now, we don't support wayland.
+        return 1 # Cannot determine, so assume active 
+    elif [ "$XDG_SESSION_TYPE" = "x11" ]; then
+        # echo "Running on X11"
+        if ! command -v xprintidle &> /dev/null; then
+            fLogDebug "Warning: xprintidle command not found. Cannot monitor keyboard/mouse activity. Assuming screen is NOT idle for suspend purposes."
+            return 1 # Cannot determine, so assume active to prevent accidental suspend/screen off 
+        fi
+
+        if ! idle_ms=$(xprintidle 2>/dev/null); then
+            fLogDebug "Warning: xprintidle failed to execute (e.g., no X server running). Cannot monitor keyboard/mouse activity. Assuming screen is NOT idle for suspend purposes."
+            return 1 # Cannot determine, so assume active 
+        fi
+    else
+        echo "Unknown or fallback session"
+        return 1
     fi
 
     fLogDebug "Input idle time   : $idle_ms ms"
@@ -337,7 +402,7 @@ fMain() {
         OPTION_DEV_MODE=true
     fi
 
-    if [ "${flag_dev_mode}" = true ] || [ "${flag_dev_mode}" = true ]; then
+    if [ "${flag_verbose}" = true ] || [ "${flag_dev_mode}" = true ]; then
         fInfo; fErrControl ${FUNCNAME[0]} ${LINENO}
     fi
 
@@ -368,7 +433,9 @@ fMain() {
         fSelectInterface
     fi
 
-    fLogDebug "Starting auto-suspend idle monitor script..."
+    fPrintConfig
+
+    echo "Starting auto-suspend idle monitor script..."
 
     local idle_counter=0
     local ssh_activity_counter=0
@@ -396,7 +463,9 @@ fMain() {
         fi
 
         # check screen idle status
-        if fIsScreenIdle; then
+        fIsScreenIdle
+        ret_screen_idle=$?
+        if [[ ${ret_screen_idle} = 0 ]]; then
             screen_is_idle=true
 
             fLog "Screen idle for $(echo "scale=2; $DEF_INPUT_IDLE_THRESHOLD_MS / 60000" | bc) minutes. Suspending..."
@@ -405,18 +474,13 @@ fMain() {
                 echo "Development mode: Would turn off screen now."
                 fLog "Development mode: Would turn off screen now."
             else
-                if command -v xset &> /dev/null; then
-                    fLogDebug "Turning off screen using xset dpms force off..."
-                    fLog "Turning off screen."
-                    xset dpms force off
-                else
-                    fLogDebug "Warning: xset command not found. Cannot turn off screen."
-                fi
+                fScreenOff
             fi
         fi
 
         # System suspend logic: only if system is idle for the duration
-        if [[ "$system_is_idle" == true ]] && [[ "$screen_is_idle" == true ]]; then
+        # for current we only support x11
+        if [[ "$system_is_idle" == true ]] && [[ "$screen_is_idle" == true && "$XDG_SESSION_TYPE" = "x11" ]]; then
             idle_counter=$((idle_counter + 1))
             fLogDebug "Idle count: $idle_counter / $VAR_MAX_IDLE_CHECKS"
             fLog "Idle check $idle_counter / $VAR_MAX_IDLE_CHECKS"
@@ -431,6 +495,8 @@ fMain() {
                     systemctl suspend
                     sleep 1
                     echo "System wake up."
+                    fLogDebug "Resetting system idle counter to 0 after wake up."
+                    idle_counter=0
                 fi
             fi
         else
