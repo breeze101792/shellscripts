@@ -247,7 +247,7 @@ function ai_git_commit() {
     git status
     local result=""
     while true; do
-        result=$(fAskInput "n" "Do you want to proceed with git commit?(y/N)")
+        result=$(fAskInput " " "Do you want to proceed with git commit?(y/N)")
         case "${result}" in
             [yY])
                 git commit -m "${git_message}" && git commit --amend
@@ -373,8 +373,9 @@ function ask_llm() {
         ask_ollama "$1" "$2"
     elif [ "${VAR_PROVIDER}" = "google" ];then
         VAR_SERVER_URL="https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
-        # VAR_DEFAULT_MODEL="gemini-2.5-flash-preview-05-20"
-        VAR_DEFAULT_MODEL="gemini-2.5-pro"
+        # switch back to flash, it's too slow on pro modle.
+        VAR_DEFAULT_MODEL="gemini-2.5-flash-preview-05-20"
+        # VAR_DEFAULT_MODEL="gemini-2.5-pro"
         VAR_API_KEY="${GEMINI_API_KEY}"
         ask_openai "$1" "$2"
     elif [ "${VAR_PROVIDER}" = "ort" ];then
