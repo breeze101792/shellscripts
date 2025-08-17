@@ -2017,6 +2017,7 @@ fgui_scroll_top_visual() {
     if ((VAR_TERM_CONTENT_SCROLL_IDX == 0)); then
         return
     fi
+    VAR_TERM_PRINT_BUFFER_ENABLE=true
 
     VAR_TERM_CONTENT_SCROLL_IDX=0
     fterminal_mark_reset
@@ -2033,12 +2034,14 @@ fgui_scroll_top_visual() {
     for ((i=start_idx; i<=end_idx; i++)); do
         fterminal_mark_add "$i"
     done
-    # fterminal_redraw
+    # we need to remove the marked line previously.
+    fterminal_redraw
 }
 fgui_scroll_bottom_visual() {
     if ((VAR_TERM_CONTENT_SCROLL_IDX == VAR_TERM_DIR_LIST_CNT)); then
         return
     fi
+    VAR_TERM_PRINT_BUFFER_ENABLE=true
 
     VAR_TERM_CONTENT_SCROLL_IDX=${VAR_TERM_DIR_LIST_CNT}
     fterminal_mark_reset
@@ -2055,7 +2058,8 @@ fgui_scroll_bottom_visual() {
     for ((i=start_idx; i<=end_idx; i++)); do
         fterminal_mark_add "$i"
     done
-    # fterminal_redraw
+    # we need to remove the marked line previously.
+    fterminal_redraw
 }
 fgui_tab_go_previous()
 {
