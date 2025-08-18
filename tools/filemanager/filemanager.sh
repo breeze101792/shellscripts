@@ -5017,45 +5017,47 @@ fsetup_theme() {
 
 fHelp_keymap() {
     fterminal_print "[KeyMap]\n"
-    if false
-    then
-        fterminal_print "    % -32s: %s\n"  "HSFM_KEY_CHILD1"                ${HSFM_KEY_CHILD1}
-        fterminal_print "    % -32s: %s\n"  "HSFM_KEY_CHILD2"                ${HSFM_KEY_CHILD2}
-        fterminal_print "    % -32s: %s\n"  "HSFM_KEY_CHILD3"                ${HSFM_KEY_CHILD3}
-        fterminal_print "    % -32s: %s\n"  "HSFM_KEY_PARENT1"               ${HSFM_KEY_PARENT1}
-        fterminal_print "    % -32s: %s\n"  "HSFM_KEY_PARENT2"               ${HSFM_KEY_PARENT2}
-        fterminal_print "    % -32s: %s\n"  "HSFM_KEY_PARENT3"               ${HSFM_KEY_PARENT3}
-        fterminal_print "    % -32s: %s\n"  "HSFM_KEY_PARENT4"               ${HSFM_KEY_PARENT4}
-        fterminal_print "    % -32s: %s\n"  "HSFM_KEY_SCROLL_DOWN1"          ${HSFM_KEY_SCROLL_DOWN1}
-        fterminal_print "    % -32s: %s\n"  "HSFM_KEY_SCROLL_DOWN2"          ${HSFM_KEY_SCROLL_DOWN2}
-        fterminal_print "    % -32s: %s\n"  "HSFM_KEY_SCROLL_UP1"            ${HSFM_KEY_SCROLL_UP1}
-        fterminal_print "    % -32s: %s\n"  "HSFM_KEY_SCROLL_UP2"            ${HSFM_KEY_SCROLL_UP2}
-    fi
+    fterminal_print "\n%s\n" "## Movement."
+    fterminal_print "    % -32s: %s\n"  "Go to child directory"          "${HSFM_KEY_CHILD1}, ${HSFM_KEY_CHILD2}, ${HSFM_KEY_CHILD3}"
+    fterminal_print "    % -32s: %s\n"  "Go to parent directory"         "${HSFM_KEY_PARENT1}, ${HSFM_KEY_PARENT2}, ${HSFM_KEY_PARENT3}, ${HSFM_KEY_PARENT4}"
+    fterminal_print "    % -32s: %s\n"  "Scroll down"                    "${HSFM_KEY_SCROLL_DOWN1}, ${HSFM_KEY_SCROLL_DOWN2}"
+    fterminal_print "    % -32s: %s\n"  "Scroll up"                      "${HSFM_KEY_SCROLL_UP1}, ${HSFM_KEY_SCROLL_UP2}"
+    fterminal_print "    % -32s: %s\n"  "Go to top"                      "${HSFM_KEY_TO_TOP}"
+    fterminal_print "    % -32s: %s\n"  "Go to bottom"                   "${HSFM_KEY_TO_BOTTOM}"
+    fterminal_print "    % -32s: %s\n"  "Go to previous directory"       "${HSFM_KEY_PREVIOUS}"
+    fterminal_print "    % -32s: %s\n"  "Go to home"                     "${HSFM_KEY_GO_HOME}"
+    fterminal_print "    % -32s: %s\n"  "Go to trash"                    "${HSFM_KEY_GO_TRASH}"
 
-    fterminal_print "\n%s\n" "## Shortcut operations."
-    fterminal_print "    % -32s: %s\n"  "HSFM_KEY_TO_TOP"                ${HSFM_KEY_TO_TOP}
-    fterminal_print "    % -32s: %s\n"  "HSFM_KEY_TO_BOTTOM"             ${HSFM_KEY_TO_BOTTOM}
-    fterminal_print "    % -32s: %s\n"  "HSFM_KEY_GO_HOME"               ${HSFM_KEY_GO_HOME}
-    fterminal_print "    % -32s: %s\n"  "HSFM_KEY_GO_TRASH"              ${HSFM_KEY_GO_TRASH}
-    fterminal_print "    % -32s: %s\n"  "HSFM_KEY_PREVIOUS"              ${HSFM_KEY_PREVIOUS}
-    fterminal_print "    % -32s: %s\n"  "HSFM_KEY_SEARCH"                ${HSFM_KEY_SEARCH}
-    fterminal_print "    % -32s: %s\n"  "HSFM_KEY_SHELL"                 ${HSFM_KEY_SHELL}
-    fterminal_print "    % -32s: %s\n"  "HSFM_KEY_OPEN_CMD"              ${HSFM_KEY_OPEN_CMD}
-    fterminal_print "    % -32s: %s\n"  "HSFM_KEY_HELP"                  ${HSFM_KEY_HELP}
+    fterminal_print "\n%s\n" "## Tab operations."
+    fterminal_print "    % -32s: %s\n"  "Go to previous tab"             "${HSFM_KEY_GO_PREVIOUS_TAB}"
+    fterminal_print "    % -32s: %s\n"  "Go to next tab"                 "${HSFM_KEY_GO_NEXT_TAB}"
+    fterminal_print "    % -32s: %s\n"  "Open new tab"                   "${HSFM_KEY_OPEN_TAB}"
+    fterminal_print "    % -32s: %s\n"  "Close current tab"              "${HSFM_KEY_CLOSE_TAB}"
+    fterminal_print "    % -32s: %s\n"  "Move tab previous"              "${HSFM_KEY_MOVE_TAB_PREVIOUS}"
+    fterminal_print "    % -32s: %s\n"  "Move tab next"                  "${HSFM_KEY_MOVE_TAB_NEXT}"
+
+    fterminal_print "\n%s\n" "## Mode switches."
+    fterminal_print "    % -32s: %s\n"  "Visual select mode"             "${HSFM_KEY_VISUAL_SELECT}"
+    fterminal_print "    % -32s: %s\n"  "Selection mode"                 "${HSFM_KEY_SELECTION}"
+    fterminal_print "    % -32s: %s\n"  "Command mode"                   "${HSFM_KEY_OPEN_CMD}"
+    fterminal_print "    % -32s: %s\n"  "Search mode"                    "${HSFM_KEY_SEARCH}"
+    fterminal_print "    % -32s: %s\n"  "Find mode"                      "${HSFM_KEY_FIND}"
 
     fterminal_print "\n%s\n" "## File operations."
-    fterminal_print "    % -32s: %s\n"  "HSFM_KEY_YANK"                  ${HSFM_KEY_YANK}
-    fterminal_print "    % -32s: %s\n"  "HSFM_KEY_CUT"                   ${HSFM_KEY_CUT}
-    fterminal_print "    % -32s: %s\n"  "HSFM_KEY_TRASH"                 ${HSFM_KEY_TRASH}
-    # fterminal_print "    % -32s: %s\n"  "HSFM_KEY_LINK"                  ${HSFM_KEY_LINK}
-    fterminal_print "    % -32s: %s\n"  "HSFM_KEY_PASTE"                 ${HSFM_KEY_PASTE}
-    # fterminal_print "    % -32s: %s\n"  "HSFM_KEY_MKDIR"                 ${HSFM_KEY_MKDIR}
-    # fterminal_print "    % -32s: %s\n"  "HSFM_KEY_MKFILE"                ${HSFM_KEY_MKFILE}
+    fterminal_print "    % -32s: %s\n"  "Yank (copy)"                    "${HSFM_KEY_YANK}"
+    fterminal_print "    % -32s: %s\n"  "Cut (move)"                     "${HSFM_KEY_CUT}"
+    fterminal_print "    % -32s: %s\n"  "Trash (delete)"                 "${HSFM_KEY_TRASH}"
+    fterminal_print "    % -32s: %s\n"  "Paste"                          "${HSFM_KEY_PASTE}"
 
-    fterminal_print "\n%s\n" "## Miscellaneous"
-    fterminal_print "    % -32s: %s\n"  "HSFM_KEY_ATTRIBUTES"            ${HSFM_KEY_ATTRIBUTES}
-    # fterminal_print "    % -32s: %s\n"  "HSFM_KEY_EXECUTABLE"            ${HSFM_KEY_EXECUTABLE}
-    fterminal_print "    % -32s: %s\n"  "HSFM_KEY_HIDDEN"                ${HSFM_KEY_HIDDEN}
+    fterminal_print "\n%s\n" "## Miscellaneous."
+    fterminal_print "    % -32s: %s\n"  "Show file attributes"           "${HSFM_KEY_ATTRIBUTES}"
+    fterminal_print "    % -32s: %s\n"  "Toggle hidden files"            "${HSFM_KEY_HIDDEN}"
+    fterminal_print "    % -32s: %s\n"  "Toggle sorting"                 "${HSFM_KEY_SORTING}"
+    fterminal_print "    % -32s: %s\n"  "Spawn a shell"                  "${HSFM_KEY_SHELL}"
+    fterminal_print "    % -32s: %s\n"  "Show help info"                 "${HSFM_KEY_HELP}"
+    fterminal_print "    % -32s: %s\n"  "Refresh window"                 "${HSFM_KEY_REFRESH}"
+    fterminal_print "    % -32s: %s\n"  "Toggle message window"          "${HSFM_KEY_TOGGLE_MSGWIN}"
+    fterminal_print "    % -32s: %s\n"  "Toggle task window"             "${HSFM_KEY_TOGGLE_TASKWIN}"
 }
 fHelp_commands() {
     echo "FileManager"
@@ -5068,29 +5070,53 @@ fHelp_commands() {
     fterminal_print "    %- 16s\t%s\n" "-l|--last   " "Print last path & remove the last path file."
     fterminal_print "    %- 16s\t%s\n" "--history   " "Store history."
     fterminal_print "[Commands]\n"
-    fterminal_print "    % -16s: %s\n"  "redraw" "Commands."
-    fterminal_print "    % -16s: %s\n"  "search" "Commands."
-    fterminal_print "    % -16s: %s\n"  "mkdir " "Commands."
-    fterminal_print "    % -16s: %s\n"  "mkfile" "Commands."
-    fterminal_print "    % -16s: %s\n"  "touch " "Commands."
-    fterminal_print "    % -16s: %s\n"  "open  " "Commands."
-    fterminal_print "    % -16s: %s\n"  "exit  " "Commands."
-    fterminal_print "    % -16s: %s\n"  "rename" "Commands."
-    fterminal_print "    % -16s: %s\n"  "more  " "Commands."
-    fterminal_print "    % -16s: %s\n"  "help  " "Commands. Accept option for key/map"
-    fterminal_print "[Other commands]\n"
-    # fterminal_print "    % -16s: %s\n" ""  "${VAR_TERM_CMD_LIST[@]}"
-    fterminal_print "    % -16s: " "Normal Command"
-    fterminal_print "%s, "   "${VAR_TERM_CMD_LIST[@]}"
-    fterminal_print "\n"
-    fterminal_print "    % -16s: " "Selction Command"
-    fterminal_print "%s, "   "${VAR_TERM_SELECT_CMD_LIST[@]}"
-    fterminal_print "\n"
-    fterminal_print "[TODO Funcion]\n"
-    fterminal_print "    %s\n"  "The following function is under constructure."
-    fterminal_print "    %s\n"  "#. Add find function and Search/find list persistent."
-    fterminal_print "    %s\n"  "#. Support 256 color and colorscheme."
-    fterminal_print "    %s\n"  "#. Mini window, collecting various window. replace check in command line."
+    fterminal_print "    % -16s: %s\n"  "redraw" "Redraws the current window."
+    fterminal_print "    % -16s: %s\n"  "help" "Shows help information. Accepts 'key' or 'map' for keybindings."
+    fterminal_print "    % -16s: %s\n"  "exit" "Exits the file manager."
+    fterminal_print "    % -16s: %s\n"  "shell" "Spawns a new shell."
+    fterminal_print "    % -16s: %s\n"  "cd" "Changes the current directory."
+    fterminal_print "    % -16s: %s\n"  "reenter" "Re-enters the current directory."
+    fterminal_print "    % -16s: %s\n"  "colorscheme" "Changes the color scheme (e.g., 'black', 'color')."
+    fterminal_print "    % -16s: %s\n"  "set" "Sets various options (e.g., 'set read fast', 'set hidden on')."
+    fterminal_print "    % -16s: %s\n"  "title" "Sets the window title."
+    fterminal_print "    % -16s: %s\n"  "config" "Opens the configuration file in the default editor."
+    fterminal_print "    % -16s: %s\n"  "debug" "Toggles debug mode ('on'/'off')."
+    fterminal_print "    % -16s: %s\n"  "select" "Shows selected files."
+    fterminal_print "    % -16s: %s\n"  "stat" "Displays file attributes for the current file."
+    fterminal_print "    % -16s: %s\n"  "eval" "Evaluates a shell command."
+    fterminal_print "    % -16s: %s\n"  "dump" "Dumps HSFM environment variables."
+    fterminal_print "    % -16s: %s\n"  "test" "Runs a test function."
+    fterminal_print "    % -16s: %s\n"  "task" "Toggles the task window."
+    fterminal_print "    % -16s: %s\n"  "msg" "Toggles the message window."
+    fterminal_print "    % -16s: %s\n"  "mkdir" "Creates a new directory."
+    fterminal_print "    % -16s: %s\n"  "touch" "Creates a new empty file."
+    fterminal_print "    % -16s: %s\n"  "rename" "Renames the current file."
+    fterminal_print "    % -16s: %s\n"  "search" "Searches for files in the current directory."
+    fterminal_print "    % -16s: %s\n"  "find" "Finds files recursively from the current directory."
+    fterminal_print "    % -16s: %s\n"  "sort" "Sorts files by 'none', 'size', 'time', 'version', or 'extension'."
+    fterminal_print "    % -16s: %s\n"  "backfile" "Creates a backup of the current file."
+    fterminal_print "    % -16s: %s\n"  "quitngo" "Quits and changes to the current directory in the parent shell."
+    fterminal_print "    % -16s: %s\n"  "tabclose" "Closes the current tab."
+    fterminal_print "    % -16s: %s\n"  "tabcloseright" "Closes tabs to the right of the current tab."
+    fterminal_print "    % -16s: %s\n"  "tabcloseleft" "Closes tabs to the left of the current tab."
+    fterminal_print "    % -16s: %s\n"  "tabcloseothers" "Closes all other tabs except the current one."
+    fterminal_print "    % -16s: %s\n"  "open" "Opens the current file with the default opener."
+    fterminal_print "    % -16s: %s\n"  "editor" "Opens the current file in the default text editor."
+    fterminal_print "    % -16s: %s\n"  "vim" "Opens the current file in Vim."
+    fterminal_print "    % -16s: %s\n"  "hex" "Opens the current file in a hex viewer (xxd)."
+    fterminal_print "    % -16s: %s\n"  "media" "Opens the current file in the default media player."
+    fterminal_print "    % -16s: %s\n"  "play" "Opens the current file in the default media player."
+    fterminal_print "    % -16s: %s\n"  "image" "Opens the current file in the default image viewer."
+    fterminal_print "    % -16s: %s\n"  "preview" "Previews the current file (requires catimg for images)."
+    fterminal_print "    % -16s: %s\n"  "unzip" "Extracts a zip archive."
+    fterminal_print "    % -16s: %s\n"  "extract" "Extracts various archive types."
+    fterminal_print "    % -16s: %s\n"  "disk" "Displays disk usage information."
+
+    fterminal_print "\n%s\n" "## Selection Commands."
+    fterminal_print "    % -16s: %s\n"  "compress" "Compresses selected files."
+
+    fterminal_print "\n%s\n" "## TODO Function."
+    fterminal_print "    %s\n"  "The following functions are under construction."
     fterminal_print "    %s\n"  "#. Background task & task manager."
 }
 fHelp() {
