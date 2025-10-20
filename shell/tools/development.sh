@@ -3243,8 +3243,17 @@ function pymodule()
 {
     local module_path=$(echo "$1" | sed 's/\.py$//' | sed 's/\//./g')
     shift 1
-    echo "python -m ${module_path} $@"
-    python -m ${module_path} $@
+
+    if command -v "python"; then
+        echo "python -m ${module_path} $@"
+        python -m ${module_path} $@
+    elif command -v "python3"; then
+        echo "python3 -m ${module_path} $@"
+        python3 -m ${module_path} $@
+    else
+        echo "python3 and python not found."
+    fi
+
 }
 function pyvenv()
 {

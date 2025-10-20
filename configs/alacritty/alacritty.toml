@@ -20,7 +20,7 @@
 
 [env]
 TERM = "xterm-256color"
-
+# CROSSFONT_FALLBACK_FONTS = ""
 
 [window]
 opacity = 0.90
@@ -32,13 +32,14 @@ decorations = "Full"
 decorations_theme_variant = "Light" # "Dark"
 
 [font]
+# builtin_box_drawing = true
 
 # normal.family = "Cascadia Code PL"
 # bold.family = "Cascadia Code PL"
 # italic.family = "Cascadia Code PL"
 # bold_italic.family = "Cascadia Code PL"
 
-size = 13.0
+size = 15.0
 
 # Tip: for inspiration, look for values in the source code files of your favorite VS Code themes, and use the color picker in
 # Google to test colors before setting a value, or simply using an editor such as VS Code where colors are displayed in a 
