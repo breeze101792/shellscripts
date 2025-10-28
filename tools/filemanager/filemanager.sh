@@ -374,6 +374,7 @@ export HSFM_KEY_SORTING="S"
 # export HSFM_KEY_EXECUTABLE="X"
 
 ### File operations.
+export HSFM_KEY_QUICK_EDIT="e"
 export HSFM_KEY_YANK="y"
 export HSFM_KEY_CUT="x"
 export HSFM_KEY_TRASH="d"
@@ -2601,6 +2602,18 @@ fnormal_mode_handler() {
             ;;
 
         # File operation
+        # HSFM_KEY_QUICK_EDIT
+        ${HSFM_KEY_QUICK_EDIT:=e})
+            # Sets a threshold to prevent accidental opening.
+            var_threshold_quick_open_size=102400
+            if [[ -e "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" ]]; then
+                if [[ $(stat -f %z "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}") -lt ${var_threshold_quick_open_size} ]]; then
+                    cmd_editor "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
+                else
+                    flog_msg "file is bigger then ${var_threshold_quick_open_size}, please use edit command instead."
+                fi
+            fi
+            ;;
         ${HSFM_KEY_YANK:=y})
             VAR_TERM_FILE_PROGRAM=(fselect_copy)
             VAR_TERM_SELECTION_FILE_LIST=("${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}")
