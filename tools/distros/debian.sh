@@ -89,25 +89,31 @@ function fapt_init()
 function fpkg_basic()
 {
     fPrintHeader ${FUNCNAME[0]}
-    VAR_PKG_LIST+=("bc")
-    VAR_PKG_LIST+=("nmap")
-    VAR_PKG_LIST+=("bc")
+    VAR_PKG_LIST+=("screen")
+    VAR_PKG_LIST+=("tmux")
+    VAR_PKG_LIST+=("vim")
+    VAR_PKG_LIST+=("nvim")
     # VAR_PKG_LIST+=("dhcpcd")
-    VAR_PKG_LIST+=("dhcpcd5")
-    VAR_PKG_LIST+=("openssh-server")
+    # if you want to start this, make sure that not net work conflict
+    # VAR_PKG_LIST+=("dhcpcd5")
+    # put it to different function.
+    # VAR_PKG_LIST+=("openssh-server")
 }
 function fpkg_dev()
 {
     # VAR_PKG_LIST+=("python")
+    VAR_PKG_LIST+=("build-essential")
+    VAR_PKG_LIST+=("python3-dev")
     VAR_PKG_LIST+=("cscope")
     VAR_PKG_LIST+=("universal-ctags")
-    VAR_PKG_LIST+=("virtualenv")
+    # we use uv.
+    # VAR_PKG_LIST+=("virtualenv")
 }
 function fpkg_tools()
 {
     VAR_PKG_LIST+=("nmap")
     VAR_PKG_LIST+=("p7zip-full")
-    VAR_PKG_LIST+=("bpzip2")
+    VAR_PKG_LIST+=("pbzip2")
 }
 function fpkg_install()
 {

@@ -2607,11 +2607,7 @@ fnormal_mode_handler() {
             # Sets a threshold to prevent accidental opening.
             var_threshold_quick_open_size=102400
             if [[ -e "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}" ]]; then
-                if [[ $(stat -f %z "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}") -lt ${var_threshold_quick_open_size} ]]; then
-                    cmd_editor "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
-                else
-                    flog_msg "file is bigger then ${var_threshold_quick_open_size}, please use edit command instead."
-                fi
+                cmd_editor "${VAR_TERM_DIR_FILE_LIST[VAR_TERM_CONTENT_SCROLL_IDX]}"
             fi
             ;;
         ${HSFM_KEY_YANK:=y})
