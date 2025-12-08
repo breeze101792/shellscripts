@@ -383,7 +383,7 @@ function ask_llm() {
         ask_openai "$1" "$2"
     elif [ "${VAR_PROVIDER}" = "ort" ];then
         VAR_SERVER_URL="https://openrouter.ai/api/v1/chat/completions"
-        VAR_DEFAULT_MODEL="deepseek/deepseek-r1-0528:free"
+        VAR_DEFAULT_MODEL="tngtech/deepseek-r1t2-chimera:free"
         VAR_API_KEY="${OPENROUTER_API_KEY}"
         ask_openai "$1" "$2"
     else
