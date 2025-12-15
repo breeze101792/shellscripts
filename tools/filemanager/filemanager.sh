@@ -5286,7 +5286,7 @@ function fMain()
                 ;;
             *)
                 if test -d "$*"; then
-                    var_new_path="${*}"
+                    var_new_path="$(realpath ${*})"
                 else
                     echo "Unknown Options: ${1}"
                     fHelp
@@ -5321,8 +5321,11 @@ function fMain()
 
     # add new for page.
     if test -n ${var_new_path} && test -d "${var_new_path}"; then
-        VAR_TERM_TAB_LINE_LIST_PATH+=("${PWD}")
-        VAR_TERM_TAB_LINE_IDX=${#VAR_TERM_TAB_LINE_LIST_PATH[@]}
+        # TODO, use api for create new page?
+        VAR_TERM_TAB_LINE_LIST_PATH+=("${var_new_path}")
+        # 0 base idx.
+        VAR_TERM_TAB_LINE_IDX=$((${#VAR_TERM_TAB_LINE_LIST_PATH[@]} - 1))
+        cd ${var_new_path}
     fi
 
 
