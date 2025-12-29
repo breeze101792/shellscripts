@@ -137,7 +137,7 @@ function ltsync()
 function ltbuild()
 {
     local def_lite_name="hslite"
-    local var_build_path="${HS_PATH_LIB}/projects/lite/${def_lite_name}"
+    local var_build_path="${HS_PATH_LIB}/../${def_lite_name}"
     local var_script_path="${var_build_path}/scripts"
     local var_configs_path="${var_build_path}/configs"
     local var_binary_path="${var_build_path}/bin"
@@ -201,7 +201,7 @@ function ltbuild()
                 cli_helper -t "SYNOPSIS"
                 cli_helper -d "ltbuild [Options] [Value]"
                 cli_helper -t "Options"
-                cli_helper -o "-p|--path" -d "Specify build path root."
+                cli_helper -o "-p|--path" -d "Specify build path root.(default will store path on ${var_build_path})"
                 cli_helper -o "-i|--init-script" -d "add init script"
                 cli_helper -o "-s|--add-script" -d "add extra script"
                 cli_helper -o "-c|--add-config" -d "add extra config"

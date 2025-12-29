@@ -268,15 +268,27 @@ export HSFM_CD_ON_EXIT=1
 export HSFM_TRASH_CMD=""
 
 # Favourites (Bookmarks) (keys 1-9) (dir or file)
+export HSFM_FAV0=${PWD}
 export HSFM_FAV1=~
-export HSFM_FAV2=~/tools
-export HSFM_FAV3=~/lab
-export HSFM_FAV4=~/projects
+export HSFM_FAV2=~/documents
+export HSFM_FAV3=~/downloads
+export HSFM_FAV4=
 export HSFM_FAV5=~/workspace
-export HSFM_FAV6=~/documents
-export HSFM_FAV7=~/downloads
+export HSFM_FAV6=~/lab
+export HSFM_FAV7=~/projects
 export HSFM_FAV8=~/media
 export HSFM_FAV9=${HSFM_PATH_CACHE}
+
+if test -d "documents"; then
+    export HSFM_FAV2=~/documents
+elif test -d "Documents"; then
+    export HSFM_FAV2=~/Documents
+fi
+if test -d "downloads"; then
+    export HSFM_FAV3=~/downloads
+elif test -d "Downloads"; then
+    export HSFM_FAV3=~/Downloads
+fi
 
 # Dir alias
 # FIXME, only work on command cd, and newer bash
@@ -1060,14 +1072,15 @@ fterminal_draw_bookmark_line() {
     # bookmark bar
     local def_bookmark_start_line=2
     local tmp_bookmark_buf=""
-    local tmp_cnt=1
+    local tmp_cnt=0
     if [ ${HSFM_PERFORMANCE_DEBUG} = true ]
     then
         flog_msg_debug "Enter fterminal_draw_bookmark_line, $((var_run_bk_cnt++))"
     fi
     for each_fav in "${!HSFM_FAV@}"
     do
-        if test -n "${!each_fav}"
+        # we ignore 0 for current path.
+        if test -n "${!each_fav}" && [ "${tmp_cnt}" != '0' ]
         then
             tmp_bookmark_buf+=" ${tmp_cnt}: ${!each_fav##*/} |"
         fi
@@ -2593,7 +2606,7 @@ fnormal_mode_handler() {
             ;;
 
         # Directory favourites.
-        [1-9])
+        [0-9])
             tmp_favorite_name="HSFM_FAV${1}"
             tmp_favorite="${!tmp_favorite_name}"
 
@@ -4776,6 +4789,10 @@ fload_session() {
     then
         source ${HSFM_FILE_SESSION}
         flog_msg_debug "Load Session Tab: ${VAR_TERM_TAB_LINE_IDX}-${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]##*/}"
+    else
+        # load sessio fail, start a new one.
+        VAR_TERM_TAB_LINE_IDX=0
+        VAR_TERM_TAB_LINE_LIST_PATH=("${PWD}")
     fi
 }
 fload_env() {
@@ -5190,7 +5207,8 @@ function fMain()
 {
     # fPrintHeader "Launch ${VAR_SCRIPT_NAME}"
     local flag_verbose=false
-    local flag_load_session="false"
+    local flag_load_session="true"
+    local var_new_path=""
 
     while [[ $# != 0 ]]
     do
@@ -5267,9 +5285,13 @@ function fMain()
                 exit 0
                 ;;
             *)
-                echo "Unknown Options: ${1}"
-                fHelp
-                exit 1
+                if test -d "$*"; then
+                    var_new_path="$(realpath ${*})"
+                else
+                    echo "Unknown Options: ${1}"
+                    fHelp
+                    exit 1
+                fi
                 ;;
         esac
         shift 1
@@ -5295,11 +5317,17 @@ function fMain()
     then
         VAR_TERM_TAB_LINE_IDX=0
         VAR_TERM_TAB_LINE_LIST_PATH=("${PWD}")
-    # else
-    #     VAR_TERM_TAB_LINE_LIST_PATH+=("${PWD}")
-    #     fload_session
-    #     VAR_TERM_TAB_LINE_IDX=0
     fi
+
+    # add new for page.
+    if test -n ${var_new_path} && test -d "${var_new_path}"; then
+        # TODO, use api for create new page?
+        VAR_TERM_TAB_LINE_LIST_PATH+=("${var_new_path}")
+        # 0 base idx.
+        VAR_TERM_TAB_LINE_IDX=$((${#VAR_TERM_TAB_LINE_LIST_PATH[@]} - 1))
+        cd ${var_new_path}
+    fi
+
 
     if [[ $HSFM_DEBUG = true ]]
     then

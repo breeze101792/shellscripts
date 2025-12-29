@@ -54,6 +54,7 @@ alias f='ffind '
 alias g='grep '
 alias s='sgrep '
 alias uva='source .venv/bin/activate'
+alias rp='printf "Realplath: " && realpath $@'
 
 alias fm="xfm"
 ########################################################

@@ -209,6 +209,7 @@ I will provide you with a `git diff` output that contains code changes between d
 - Focus only on the changed lines provided in the diff.
 - Provide detailed explanations for any issues found.
 - Suggest safer or more efficient alternatives where applicable.
+- Avoid vague language, such as 'around' or 'could be'. Use precise language and terminology.
 EOF
 )
 
@@ -374,13 +375,15 @@ function ask_llm() {
     elif [ "${VAR_PROVIDER}" = "google" ];then
         VAR_SERVER_URL="https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
         # switch back to flash, it's too slow on pro modle.
-        VAR_DEFAULT_MODEL="gemini-2.5-flash-preview-05-20"
+        # VAR_DEFAULT_MODEL="gemini-2.5-flash-preview-05-20"
+        VAR_DEFAULT_MODEL="gemini-2.5-flash"
         # VAR_DEFAULT_MODEL="gemini-2.5-pro"
+        # VAR_DEFAULT_MODEL="gemini-3-pro-preview"
         VAR_API_KEY="${GEMINI_API_KEY}"
         ask_openai "$1" "$2"
     elif [ "${VAR_PROVIDER}" = "ort" ];then
         VAR_SERVER_URL="https://openrouter.ai/api/v1/chat/completions"
-        VAR_DEFAULT_MODEL="deepseek/deepseek-r1-0528:free"
+        VAR_DEFAULT_MODEL="tngtech/deepseek-r1t2-chimera:free"
         VAR_API_KEY="${OPENROUTER_API_KEY}"
         ask_openai "$1" "$2"
     else
