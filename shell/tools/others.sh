@@ -1450,3 +1450,56 @@ function reminder
         sleep $interval
     done
 }
+function sway_caffine()
+{
+    while true
+    do
+        if [ "$#" = 0 ]
+        then
+            break
+        fi
+        case $1 in
+            -f|--freeze)
+                pkill -STOP swayidle   # Pause (freeze) the process
+                ;;
+            -c|--continue)
+                pkill -CONT swayidle   # Continue (unpause) the process
+                ;;
+            -s|--status)
+                local pid=$(pgrep swayidle)
+                if [ -z "${pid}" ]; then
+                    echo "swayidle is not running."
+                else
+                    local state=$(ps -o state= -p "${pid}")
+                    case "${state}" in
+                        S|R|D)
+                            echo "swayidle is active (not caffeinated)."
+                            ;;
+                        T)
+                            echo "swayidle is paused (caffeinated)."
+                            ;;
+                        *)
+                            echo "swayidle is in an unknown state: ${state}"
+                            ;;
+                    esac
+                fi
+                ;;
+            -h|--help)
+                cli_helper -c "sway_caffine" -cd "sway_caffine function, a wrapper for swayidle"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "sway_caffine [Options]"
+                cli_helper -t "Options"
+                cli_helper -o "-f|--freeze" -d "Pause (freeze) swayidle process"
+                cli_helper -o "-c|--continue" -d "Continue (unpause) swayidle process"
+                cli_helper -o "-s|--status" -d "Check swayidle status"
+                cli_helper -o "-h|--help" -d "Print help function"
+                return 0
+                ;;
+            *)
+                echo "Unknown Options"
+                return 1
+                ;;
+        esac
+        shift 1
+    done
+}
