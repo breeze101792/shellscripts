@@ -1,7 +1,7 @@
 * {
     /* `otf-font-awesome` is required to be installed for icons */
     /* font-family: "Noto Sans",FontAwesome, Roboto, Helvetica, Arial, sans-serif; */
-    font-family: "Source Code Pro Medium", "JetBrains Mono";
+    font-family: "Source Code Pro Medium", "Font Awesome 7 Free", "JetBrains Mono", "monospace";
     font-size: 14px;
     padding: 0px;
     margin: 0px;

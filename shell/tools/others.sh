@@ -1460,9 +1460,11 @@ function sway_caffine()
         fi
         case $1 in
             -f|--freeze)
+                echo "Pause swayidle"
                 pkill -STOP swayidle   # Pause (freeze) the process
                 ;;
             -c|--continue)
+                echo "Continue swayidle"
                 pkill -CONT swayidle   # Continue (unpause) the process
                 ;;
             -s|--status)

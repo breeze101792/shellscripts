@@ -176,10 +176,11 @@
     },
     "network": {
         // "interface": "wlp2*", // (Optional) To force the use of this interface
+        //  not found, so use 🖧, instead.
         "format-wifi": "{essid} ({signalStrength}%) ",
-        "format-ethernet": "{ipaddr}/{cidr} ",
-        "tooltip-format": "{ifname} via {gwaddr} ",
-        "format-linked": "{ifname} (No IP) ",
+        "format-ethernet": "{ipaddr}/{cidr} 🖧",
+        "tooltip-format": "{ifname} via {gwaddr} 🖧",
+        "format-linked": "{ifname} (No IP) 🖧",
         "format-disconnected": "Disconnected ⚠",
         "format-alt": "{ifname}: {ipaddr}/{cidr}"
     },
@@ -258,6 +259,7 @@
         "menu": "on-click",
         "menu-file": "$HOME/.config/waybar/power_menu.xml", // Menu file in resources folder
         "menu-actions": {
+            "lock": "swaymsg 'output * power off'",
             "logout": "swaynag -t warning -m 'You pressed the exit shortcut. Do you really want to exit i3? This will end your X session.' -B 'Yes, exit sway' 'swaymsg exit'",
             "suspend": "systemctl suspend",
             "hibernate": "systemctl hibernate",

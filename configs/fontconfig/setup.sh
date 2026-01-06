@@ -32,8 +32,8 @@ _update_font_cache() {
 
 # Function to list available fonts
 _list_available_fonts() {
-    echo -e "\nListing first 10 available fonts:"
-    fc-list | head -n 10
+    echo -e "\nListing available fonts:"
+    fc-list
 }
 
 # Function to list available font families
@@ -59,11 +59,33 @@ _check_common_font_matches() {
 _test_multilingual_emoji() {
     echo -e "\nTesting emoji and multilingual output:"
     echo -e "English 中文 عربى हिंदी 😄 🧠 ⛩️ 🎵"
+    echo -e "English 中文 عربى हिंदी 😄 🧠 ⛩️ 🎵"
+    echo -e "Firefox  | Emoji 😎 | Nerd  | Network "
+
+    # pango-view \-\-text "Firefox  | Emoji 😎 | Nerd  | Network " \-\-font="sans-serif 24" &
+    # pango-view \-\-text "Firefox  | Emoji 😎 | Nerd  | Network " \-\-font="Font Awesome 7 Free 24" &
+    # pango-view --text "Firefox  | Emoji 😎 | Nerd  | Network " --font="JetBrainsMono Nerd Font 24" &
+    # pango-view --text "Firefox  | Emoji 😎 | Nerd  | Network " --font="Helvetica Neue 24" &
+    # "DuckSansProduct",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",Arial,"Noto Sans",sans-serif
 }
+_test_char() {
+    if [ $# == 1 ]; then
+        input_char="$1"
+    else
+        input_char=""
+    fi
+    # var_char=$(printf "%x" "")
+    printf "Find %s in list.\n" "${input_char}"
+    var_char=$(printf "%x" "'${input_char}")
+
+    fc-list :charset=${var_char}
+    fc-match -v "monospace:charset=${var_char}" | grep -E "family|file"
+}
+
 
 # Function to link the font configuration file
 _link_config_file() {
-    local source_path="$(dirname "$0")/fonts.conf"
+    local source_path="$(realpath $(dirname "$0")/fonts.conf)"
     local target_dir="${HOME}/.config/fontconfig"
     local target_path="${target_dir}/fonts.conf"
 
@@ -116,6 +138,8 @@ main() {
     local test_output=false
     local list_families=false
     local link_config=false
+    local test_char=false
+    local var_char=""
 
     # Parse arguments
     for arg in "$@"; do
@@ -139,6 +163,12 @@ main() {
             -t|--test-output)
                 test_output=true
                 run_all=false
+                ;;
+            -c|--test-char)
+                test_char=true
+                var_char=$2
+                run_all=false
+                shift 1
                 ;;
             -f|--list-families)
                 list_families=true
@@ -165,7 +195,7 @@ main() {
         _update_font_cache
         _list_available_fonts
         _check_common_font_matches
-        _test_multilingual_emoji
+        # _test_multilingual_emoji
         _list_font_families
         _link_config_file
     else
@@ -189,6 +219,9 @@ main() {
         fi
         if $link_config; then
             _link_config_file
+        fi
+        if $test_char; then
+            _test_char ${var_char}
         fi
     fi
 
