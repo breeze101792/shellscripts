@@ -9,9 +9,10 @@
 
 if false; then
     # Please export things like the follings
-    # ~ may not suitable for all system. use absolute path instead.
+    # FIXME, "~" may not suitable for all system. use absolute path instead.
     export HSL_SHELL=zsh
-    export HSL_ROOT_PATH="~/tools/hslite"
+    # export HSL_ROOT_PATH="~/tools/hslite"
+    export HSL_ROOT_PATH="/home/$(whoami)/tools/hslite"
     export HSL_LOCAL_VAR="${HSL_ROOT_PATH}/.var"
 fi
 ################################################################
