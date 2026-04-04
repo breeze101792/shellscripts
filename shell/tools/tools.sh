@@ -1659,7 +1659,7 @@ function wol()
         esac
         shift 1
     done
-    if command -v etherwake 2>&1 > /dev/null; then
+    if ! command -v etherwake 2>&1 > /dev/null; then
         echo "etherwake not found. please install it."
         return -1
     fi
