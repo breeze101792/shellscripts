@@ -67,11 +67,18 @@ function ltactivate()
 }
 function ltsync()
 {
+    local def_lite_name="hslite"
     local var_remote_host=""
     local var_remote_path=""
 
     local var_src_host=""
-    local var_src_lite_path="${HS_PATH_LIB}/projects/lite/hslite"
+    local var_src_lite_path="${HS_PATH_LIB}/../${def_lite_name}"
+
+    ## Check path
+    if test -d ~/tools/${def_lite_name}; then
+        var_src_lite_path="$(realpath ~/tools/${def_lite_name})"
+        echo "Found exist path. Default set src path to ${var_src_lite_path}"
+    fi
 
     while [[ "$#" != 0 ]]
     do
