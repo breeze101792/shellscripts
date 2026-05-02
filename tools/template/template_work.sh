@@ -40,7 +40,7 @@ testnset -e -v HS_WORK_ZERO -c "zero.eth"
 ################################################################################
 case $(hostname) in
     "zero"|${HS_WORK_ZERO})
-        if -f "${HS_PATH_WORK}/hosts/zero.sh"
+        if test -f "${HS_PATH_WORK}/hosts/zero.sh"
         then
             source ${HS_PATH_WORK}/hosts/zero.sh
         else
@@ -48,7 +48,7 @@ case $(hostname) in
         fi
         ;;
     "*")
-        if -f "${HS_PATH_WORK}/hosts/$(hostname)"
+        if test -f "${HS_PATH_WORK}/hosts/$(hostname)"
         then
             source "${HS_PATH_WORK}/hosts/$(hostname)"
         fi
@@ -56,19 +56,22 @@ case $(hostname) in
 esac
 
 # source hosts
-if -f "${HS_PATH_WORK}/hosts/$(hostname)"
+if test -f "${HS_PATH_WORK}/hosts/$(hostname)"
 then
     source ${HS_PATH_WORK}/wlab.sh
 fi
 
 # source tools
-if -f "${HS_WORK_TOOLS}"
+if test -f "${HS_WORK_TOOLS}"
 then
     epath ${HS_WORK_TOOLS}
 fi
 
 # source scripts
-for each_scripts in ${HS_WORK_SCRIPT}/*.sh;
-do
-    source ${each_scripts};
-done
+if test -f "${HS_WORK_SCRIPT}"
+then
+    for each_scripts in ${HS_WORK_SCRIPT}/*.sh;
+    do
+        source ${each_scripts};
+    done
+fi

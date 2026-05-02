@@ -1958,6 +1958,114 @@ function gforall()
         echo ""
     done
 }
+function gworktree()
+{
+
+    local var_cpath="$(pwd)"
+    local var_git_jobs="8"
+    local var_action="setup"
+    local var_url=""
+
+    local var_branch="main"
+    local var_work_name="main"
+    local var_new_branch=""
+
+    while true
+    do
+        if [ "$#" = 0 ]
+        then
+            break
+        fi
+        case $1 in
+            -u|--url)
+                var_url=$2
+                shift 1
+                ;;
+            -b|--branch)
+                var_branch=$2
+                shift 1
+                ;;
+            -n|--new-branch)
+                var_new_branch="$2"
+                shift 1
+                ;;
+            setup)
+                var_action="setup"
+                ;;
+            add)
+                var_action="add"
+                var_work_name=$2
+                shift 1
+                ;;
+            -h|--help)
+                cli_helper -c "gworktree" -cd "git worktree setup/add function"
+                cli_helper -t "SYNOPSIS"
+                cli_helper -d "gworktree [Options] [Action]"
+                cli_helper -t "Options"
+                cli_helper -o "-u|--url" -d "Set git url"
+                cli_helper -o "-b|--branch" -d "Set branch name, default is main"
+                cli_helper -t "Actions"
+                cli_helper -o "setup" -d "Setup bare repository and first worktree"
+                cli_helper -o "add [name]" -d "Add new worktree with specified name"
+                cli_helper -o "-h|--help" -d "Print help function"
+                return 0
+                ;;
+            *)
+                echo "Unknown Options"
+                return 1
+                ;;
+        esac
+        shift 1
+    done
+
+    if [ "${var_action}" = "setup" ]; then
+        if test -z "${var_url}"; then
+            echo "Please specify git url"
+            return -1
+        fi
+        # 1. Clone bare repository
+        git clone --bare ${var_url} .bare
+
+        # 2. Create the gitfile redirect
+        echo "gitdir: ./.bare" > .git
+
+        # 3. Fix the fetch behavior to track all remote branches
+        git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
+
+        # 4. Fetch everything from origin
+        git fetch origin
+
+        # 5. Add the initial worktree
+        git worktree add ${var_work_name} ${var_branch}
+
+        cd ${var_work_name}
+        # git submodule update --init --recursive --jobs ${var_git_jobs}
+        git submodule update --init --recursive --reference ../.bare --dissociate --jobs ${var_git_jobs}
+    elif [ "${var_action}" = "add" ]; then
+        if ! test -d ".bare"; then
+            echo "Bare worktree not found."
+            return -1
+        fi
+        if test -d "${var_work_name}"; then
+            echo "${var_work_name} exist!!"
+            return -1
+        fi
+
+        if test -z "${var_new_branch}"; then
+            # Add a new worktree
+            git worktree add ${var_work_name} ${var_branch}
+        else
+            # Add a new worktree with new branch
+            echo git worktree add ${var_new_branch} ${var_work_name} ${var_branch}
+            git worktree add -b ${var_new_branch} ${var_work_name} ${var_branch}
+        fi
+
+        cd ${var_work_name}
+        # git submodule update --init --recursive --jobs ${var_git_jobs}
+        git submodule update --init --recursive --reference ../.bare --dissociate --jobs ${var_git_jobs}
+    fi
+    cd ${var_cpath}
+}
 function gclone()
 {
     echo "new"
