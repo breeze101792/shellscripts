@@ -3261,19 +3261,25 @@ function pyvenv()
     local var_action=""
     local var_exe_cmd=""
     local var_pip_cmd=""
-    local def_env_name='.pyvenv'
+    local def_env_name='.venv'
     if [[ "$#" = "0" ]]
     then
         var_action="active"
     fi
+
+    # check default path.
     if test -d "./${def_env_name}"
     then
         var_target_path="./${def_env_name}"
-    fi
-
-    if test -d "$(froot -f ${def_env_name})/${def_env_name}" 2>&1 > /dev/null
+    elif test -d "./venv"
+    then
+        var_target_path="./venv"
+    elif test -d "$(froot -f ${def_env_name})/${def_env_name}" 2>&1 > /dev/null
     then
         var_target_path="$(froot -f ${def_env_name})/${def_env_name}"
+    elif test -d "$(froot -f venv)/venv" 2>&1 > /dev/null
+    then
+        var_target_path="$(froot -f venv)/venv"
     fi
 
     while [[ "$#" != 0 ]]
@@ -3355,7 +3361,7 @@ function pyvenv()
         shift 1
     done
 
-    echo "PyVenv: ${var_target_path}"
+    echo "venv path: ${var_target_path}"
     if [ "${var_action}" = "active" ]
     then
         source ${var_target_path}/bin/activate
@@ -3369,7 +3375,8 @@ function pyvenv()
             # local target_path=$(realpath ${1})
             # virtualenv --system-site-packages -p python3 ${target_path}
             # echo virtualenv --system-site-packages -p python ${var_target_path}
-            virtualenv --system-site-packages -p python ${var_target_path}
+            # virtualenv --system-site-packages -p python ${var_target_path}
+            python3 -m venv ${var_target_path}
         fi
         # after creating, source it.
         source ${var_target_path}/bin/activate
