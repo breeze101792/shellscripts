@@ -14,7 +14,7 @@ export VAR_SCRIPT_NAME="$(basename ${BASH_SOURCE[0]%=.})"
 export VAR_CPU_CNT=$(nproc --all)
 export VAR_TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
-export VAR_OVERLAY_ROOT="$(pwd)/overlays_$(date +%Y%m%d)"
+export VAR_OVERLAY_ROOT="/mnt/overlay"
 export VAR_TARGET_NAME=""
 export VAR_BASE_DIR="$(pwd)/main"
 export VAR_WORK_SPACE=""
