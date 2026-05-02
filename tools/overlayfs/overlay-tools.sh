@@ -60,13 +60,17 @@ fHelp()
 {
     echo "${VAR_SCRIPT_NAME}"
     echo "[Example]"
-    printf "    %s\n" "run test: .sh -a"
+    printf "    %s\n" "Mount overlay  : ${VAR_SCRIPT_NAME} -t my_feature"
+    printf "    %s\n" "Remove overlay : ${VAR_SCRIPT_NAME} -r my_feature"
+    printf "    %s\n" "List overlays  : ${VAR_SCRIPT_NAME} -l"
     echo "[Options]"
     printf "    %- 16s\t%s\n" "-b|--base" "base folder"
-    printf "    %- 16s\t%s\n" "-t|--target-name" "taret name"
+    printf "    %- 16s\t%s\n" "-t|--target-name" "target name"
     printf "    %- 16s\t%s\n" "-o|--overlay-root" "overlay root path."
+    printf "    %- 16s\t%s\n" "-l|--list|ls" "List all overlays"
+    printf "    %- 16s\t%s\n" "-r|--remove|rm" "Remove specific overlays"
     printf "    %- 16s\t%s\n" "-v|--verbose" "Print in verbose mode"
-    printf "    %- 16s\t%s\n" "-h|--help" "Print helping"
+    printf "    %- 16s\t%s\n" "-h|--help" "Print help"
 }
 fInfo()
 {
