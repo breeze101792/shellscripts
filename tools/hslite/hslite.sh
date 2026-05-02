@@ -14,6 +14,7 @@ if false; then
     # export HSL_ROOT_PATH="~/tools/hslite"
     export HSL_ROOT_PATH="/home/$(whoami)/tools/hslite"
     export HSL_LOCAL_VAR="${HSL_ROOT_PATH}/.var"
+    source "${HSL_ROOT_PATH}/scripts/hslite.sh"
 fi
 ################################################################
 ####    Auto Env
