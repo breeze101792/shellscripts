@@ -28,7 +28,7 @@ export VAR_API_KEY=""
 
 export VAR_DEFAULT_PROMPT="It's an simple anwser system."
 # google/ollama/ort
-export VAR_PROVIDER='google'
+test -z "${VAR_PROVIDER}" && export VAR_PROVIDER='google'
 
 ###########################################################
 ## Options

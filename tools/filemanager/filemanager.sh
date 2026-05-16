@@ -26,6 +26,8 @@ export DEF_TERM_READ_DIR_MODE_NONE=0
 export DEF_TERM_READ_DIR_MODE_SORT=1
 export DEF_TERM_READ_DIR_MODE_LS=2
 export DEF_TERM_READ_DIR_MODE_FAST_LS=3
+# For mac use, sort by command.
+export DEF_TERM_READ_DIR_MODE_LS_SORT=4
 export DEF_TERM_READ_DIR_MODE_FIND=10
 # FIXME, default use exp to test stabibility
 export HSFM_READ_DIR_MODE=${DEF_TERM_READ_DIR_MODE_FAST_LS}
@@ -1577,6 +1579,72 @@ EOF
             ((var_item_index++))
         done << EOF
 $(ls ${var_ls_args[@]} "${PWD}"/${var_pattern} 2>&1)
+EOF
+    elif [[ $HSFM_READ_DIR_MODE == ${DEF_TERM_READ_DIR_MODE_LS_SORT} ]]
+    then
+        # ${DEF_TERM_READ_DIR_MODE_LS_SORT}
+        local var_ls_args=(${VAR_TERM_DIR_LS_ARGS[@]})
+        if test -n "${HSFM_LS_SORTING}"
+        then
+            var_ls_args+=("${HSFM_LS_SORTING}")
+        fi
+
+        # for each_line in "$(ls -al ${PWD}/)";
+        while read each_line;
+        do
+            local item
+            local info
+
+            if ! [[ "${each_line}" =~ / ]]
+            then
+                continue
+            fi
+            if [[ ${each_line} =~ ^ls:* ]]
+            then
+                # Access fail
+                each_line="${each_line/: Permission denied/}"
+                each_line="${each_line/cannot access /}"
+
+                info="Permission denied"
+                # item=${each_line/#*[0-9]? \//\/}
+                item=${each_line/*: /}
+                item=${item//\'/}
+
+                tmp_file_list+=("$item")
+                tmp_file_info_list+=("$info")
+
+                flog_msg_debug "${item}"
+                continue
+            else
+                each_line="${each_line%% ->*}"
+
+                info="${each_line%% /*}"
+                item=${each_line/#*[0-9]? \//\/}
+            fi
+
+
+            if [[ -d $item ]]; then
+                # var_dirs+=("$item")
+                VAR_TERM_DIR_FILE_LIST+=("$item")
+                VAR_TERM_DIR_FILE_INFO_LIST+=("$info")
+
+                # Find the position of the child directory in the
+                # parent directory list.
+                [[ $item == "$OLDPWD" ]] &&
+                    ((previous_index=var_item_index))
+            elif [[ -f $item ]]; then
+                # var_files+=("$item")
+                VAR_TERM_DIR_FILE_LIST+=("$item")
+                VAR_TERM_DIR_FILE_INFO_LIST+=("$info")
+            else
+                # debug
+                # var_files+=("$item")
+                VAR_TERM_DIR_FILE_LIST+=("$item")
+                VAR_TERM_DIR_FILE_INFO_LIST+=("$info")
+            fi
+            ((var_item_index++))
+        done << EOF
+$(ls ${var_ls_args[@]} "${PWD}"/${var_pattern} | sort -rk1,1 2>&1)
 EOF
     elif [[ $HSFM_READ_DIR_MODE == ${DEF_TERM_READ_DIR_MODE_FAST_LS} ]] || true
     then
@@ -4293,6 +4361,9 @@ cmd_set()
             elif [ "${args_value}" = "${DEF_TERM_READ_DIR_MODE_FAST_LS}" ] || [ "${args_value}" = "fast" ]
             then
                 HSFM_READ_DIR_MODE=${DEF_TERM_READ_DIR_MODE_FAST_LS}
+            elif [ "${args_value}" = "${DEF_TERM_READ_DIR_MODE_LS_SORT}" ] || [ "${args_value}" = "mac" ]
+            then
+                HSFM_READ_DIR_MODE=${DEF_TERM_READ_DIR_MODE_LS_SORT}
             else
                 flog_msg "Unknown value: ${args_value}"
                 return -1
@@ -4897,7 +4968,9 @@ fsetup_env() {
             # VAR_TERM_DIR_LS_ARGS+=("-quote-name")
 
             # Patch
-            HSFM_READ_DIR_MODE=${DEF_TERM_READ_DIR_MODE_LS}
+            # HSFM_READ_DIR_MODE=${DEF_TERM_READ_DIR_MODE_LS}
+            HSFM_READ_DIR_MODE=${DEF_TERM_READ_DIR_MODE_LS_SORT}
+
         ;;
 
         linux*|*)
