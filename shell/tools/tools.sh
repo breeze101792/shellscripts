@@ -496,6 +496,15 @@ function clip()
             -ca|--copy-all)
                 clip -b ${var_clipidx} -x cp -r "%p/*" .
                 ;;
+            -mv|--move-file)
+                if [[ "${#}" -ge "2" ]] && ! [[ $2 =~ -.* ]]
+                then
+                    clip -b ${var_clipidx} -x mv "%p" ./$2
+                    shift 1
+                else
+                    clip -b ${var_clipidx} -x mv "%p" ./
+                fi
+                ;;
             -h|--help)
                 cli_helper -c "clip" -cd "clip function"
                 cli_helper -t "SYNOPSIS"
@@ -510,6 +519,7 @@ function clip()
                 cli_helper -o "-c|-cf|--copy-file" -d "cp file to current folder"
                 cli_helper -o "-ca|--copy-all" -d "cp all file too current folder"
                 cli_helper -o "-cd" -d "Change to dir"
+                cli_helper -o "-mv" -d "Move target"
                 cli_helper -o "-ln|--link" -d "Link file to the current folder"
                 cli_helper -o "-f|--fake-run" -d "Do fake run on -x"
                 cli_helper -o "-x|--excute" -d "Excute command, replace %p with clip buffer."

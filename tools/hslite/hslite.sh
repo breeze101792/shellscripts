@@ -25,6 +25,7 @@ fi
 [ -z ${HSL_FLAG_INITED} ] && export HSL_FLAG_INITED=false
 [ -z ${HSL_FLAG_DEBUG} ] && export HSL_FLAG_DEBUG=false
 [ -z ${HSL_FLAG_MOTD} ] && export HSL_FLAG_MOTD=false
+[ -z ${HSL_FLAG_LANG} ] && export HSL_FLAG_LANG=false
 
 ## Path
 #===============================================================
@@ -35,6 +36,7 @@ fi
 [ -z ${HSL_ROOT_PATH} ] && test -d ${HOME}/tools/hslite && export HSL_ROOT_PATH="${HOME}/tools/hslite"
 [ -z ${HSL_ROOT_PATH} ] && test -f ${HOME}/tools/hslite.sh && export HSL_ROOT_PATH="${HOME}/tools"
 [ -z ${HSL_ROOT_PATH} ] && test -f ${HOME}/tools/scripts/hslite.sh && export HSL_ROOT_PATH="${HOME}/tools"
+[ -z ${HSL_ROOT_PATH} ] && test -d ${HOME} && export HSL_ROOT_PATH="${HOME}"
 
 # Congis path
 [ -z ${HSL_CONFIG_PATH} ] && test -d ${HSL_ROOT_PATH}/configs && export HSL_CONFIG_PATH="${HSL_ROOT_PATH}/configs"
@@ -100,9 +102,12 @@ case "$TERM" in
 esac
 
 # Overridge lang settings
-export LANG=en_US.UTF-8
-export LANGUAGE=en_US.UTF-8
-export LC_ALL=en_US.UTF-8
+if [ ${HSL_FLAG_LANG} = true ]
+then
+    export LANG=en_US.UTF-8
+    export LANGUAGE=en_US.UTF-8
+    export LC_ALL=en_US.UTF-8
+fi
 
 ####    Path init
 #===============================================================

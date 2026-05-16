@@ -145,7 +145,7 @@ VAR_TERM_CMD_LIST+=( "debug" "select" "stat" "eval" "dump" "test" "task" "msg")
 # File operation
 VAR_TERM_CMD_LIST+=( "mkdir" "touch" "rename" "search" "find" "sort" "backfile" )
 # Tab operation
-VAR_TERM_CMD_LIST+=( "quitngo" "tabclose" "tabcloseright" "tabcloseleft" "tabcloseothers")
+VAR_TERM_CMD_LIST+=( "quitngo" "tabclose" "tabcloseright" "tabcloseleft" "tabcloseothers" "tabcloseduplicate")
 # Open ralted.
 VAR_TERM_CMD_LIST+=( "open" "editor" "vim" "hex" "media" "play" "image" "preview" "unzip" "extract")
 
@@ -2174,6 +2174,34 @@ fgui_tab_open()
     # VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]="$(realpath .)"
     fterminal_redraw full
 }
+# fgui_tab_create()
+# {
+#     local var_open_path="$@"
+#     flog_msg_debug "Create: ${VAR_TERM_TAB_LINE_LIST_PATH[@]}"
+#
+#     fterminal_tab_save_contex ${VAR_TERM_TAB_LINE_IDX}
+#
+#     # move tab to insert a new tab.
+#     local each_idx=$((${#VAR_TERM_TAB_LINE_LIST_PATH[@]} - 1))
+#     # while ((${each_idx} > ${VAR_TERM_TAB_LINE_IDX}))
+#     while ((${each_idx} > ${VAR_TERM_TAB_LINE_IDX})) &&  ((each_idx != VAR_TERM_TAB_LINE_IDX))
+#     do
+#         VAR_TERM_TAB_LINE_LIST_PATH[$((${each_idx} + 1))]="${VAR_TERM_TAB_LINE_LIST_PATH[$((${each_idx}))]}"
+#         VAR_TERM_TAB_LINE_LIST_START_IDX[$((${each_idx} + 1))]="${VAR_TERM_TAB_LINE_LIST_START_IDX[$((${each_idx}))]}"
+#         VAR_TERM_TAB_LINE_LIST_IDX[$((${each_idx} + 1))]="${VAR_TERM_TAB_LINE_LIST_IDX[$((${each_idx}))]}"
+#         ((each_idx-=1))
+#     done
+#
+#     VAR_TERM_TAB_LINE_IDX=$((${VAR_TERM_TAB_LINE_IDX} + 1))
+#
+#     if [ -d "${var_open_path}" ]; then
+#         cd "${var_open_path}"
+#     fi
+#
+#     fterminal_tab_reset_contex ${VAR_TERM_TAB_LINE_IDX}
+#     fterminal_redraw full
+#     flog_msg_debug "After: ${VAR_TERM_TAB_LINE_LIST_PATH[@]}"
+# }
 fgui_tab_duplicate()
 {
     VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]="$(realpath .)"
@@ -2263,6 +2291,37 @@ fgui_tab_close()
         #
         # fterminal_redraw full
         # flog_msg "Tab closed."
+    elif [ "${var_action}" = "duplicate" ];then
+        # flog_msg_debug "Duplicate: ${VAR_TERM_TAB_LINE_IDX} / ${#VAR_TERM_TAB_LINE_LIST_PATH[@]}"
+        tmp_current_idx=$((${#VAR_TERM_TAB_LINE_LIST_PATH[@]} - 1))
+
+        while ((tmp_current_idx >= 1));do
+            local var_current_path=${VAR_TERM_TAB_LINE_LIST_PATH[${tmp_current_idx}]}
+            local found_duplicate=false
+
+            # flog_msg_debug "Checking tab[${tmp_current_idx}]: ${var_current_path}"
+            for each_idx in $(seq 0 $((tmp_current_idx - 1))); do
+                local tmp_path=${VAR_TERM_TAB_LINE_LIST_PATH[${each_idx}]}
+                # flog_msg_debug "${each_idx}: ${tmp_path},${var_current_path} "
+                if [ "${tmp_path}" = "${var_current_path}" ] ; then
+                    fterminal_tab_remove ${tmp_current_idx}
+                    found_duplicate=true
+                    break
+                fi
+            done
+
+            if [ "${found_duplicate}" = "false" ]; then
+                ((tmp_current_idx = tmp_current_idx - 1))
+            fi
+        done
+
+        if [[ ${VAR_TERM_TAB_LINE_IDX} -ge ${#VAR_TERM_TAB_LINE_LIST_PATH[@]} ]]
+        then
+            VAR_TERM_TAB_LINE_IDX=$((${#VAR_TERM_TAB_LINE_LIST_PATH[@]} - 1))
+        fi
+
+        fterminal_tab_load_contex ${VAR_TERM_TAB_LINE_IDX}
+        cd "${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}"
     else
         fterminal_tab_remove ${VAR_TERM_TAB_LINE_IDX}
 
@@ -4296,6 +4355,10 @@ cmd_tabcloseothers()
 {
     fgui_tab_close others
 }
+cmd_tabcloseduplicate()
+{
+    fgui_tab_close duplicate
+}
 cmd_quitngo()
 {
     : "${HSFM_FILE_CD_LASTPATH}"
@@ -5126,6 +5189,7 @@ fHelp_commands() {
     fterminal_print "    % -16s: %s\n"  "tabcloseright" "Closes tabs to the right of the current tab."
     fterminal_print "    % -16s: %s\n"  "tabcloseleft" "Closes tabs to the left of the current tab."
     fterminal_print "    % -16s: %s\n"  "tabcloseothers" "Closes all other tabs except the current one."
+    fterminal_print "    % -16s: %s\n"  "tabcloseduplicate" "Closes duplicate tabs."
     fterminal_print "    % -16s: %s\n"  "open" "Opens the current file with the default opener."
     fterminal_print "    % -16s: %s\n"  "editor" "Opens the current file in the default text editor."
     fterminal_print "    % -16s: %s\n"  "vim" "Opens the current file in Vim."
@@ -5321,11 +5385,30 @@ function fMain()
 
     # add new for page.
     if test -n ${var_new_path} && test -d "${var_new_path}"; then
-        # TODO, use api for create new page?
-        VAR_TERM_TAB_LINE_LIST_PATH+=("${var_new_path}")
-        # 0 base idx.
-        VAR_TERM_TAB_LINE_IDX=$((${#VAR_TERM_TAB_LINE_LIST_PATH[@]} - 1))
-        cd ${var_new_path}
+        local new_abs_path="$(realpath ${var_new_path})"
+        local flash_found_tab=false
+        for each_idx in "${!VAR_TERM_TAB_LINE_LIST_PATH[@]}"; do
+            local tmp_path=${VAR_TERM_TAB_LINE_LIST_PATH[${each_idx}]}
+            flog_msg_debug "${each_idx}: ${tmp_path}, ${new_abs_path}"
+            if [ "${tmp_path}" = "${new_abs_path}" ] ; then
+                VAR_TERM_TAB_LINE_IDX=${each_idx}
+                flash_found_tab=true
+                # break
+            fi
+        done
+
+        if [ ${flash_found_tab} = false ]
+        then
+            flog_msg_debug "Open$(pwd), ${var_new_path}"
+            # cd ${var_new_path}
+            # flog_msg_debug "New Path: ${var_new_path}"
+            # TODO, use api for create new page?
+            # fgui_tab_create "${var_new_path}"
+            VAR_TERM_TAB_LINE_LIST_PATH+=("${var_new_path}")
+            # 0 base idx.
+            VAR_TERM_TAB_LINE_IDX=$((${#VAR_TERM_TAB_LINE_LIST_PATH[@]} - 1))
+            cd ${var_new_path}
+        fi
     fi
 
 
