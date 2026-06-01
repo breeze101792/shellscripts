@@ -19,16 +19,22 @@ if test -n "${HS_ENV_AI_SERVICE_URL}"; then
 else
     export VAR_SERVER_URL="http://localhost:11434"
 fi
-if test -n "${HS_ENV_AI_MODEL}"; then
+if test -n "${HS_ENV_AI_MODEL}" && ollama list | cut -d ' ' -f 1 | grep "${HS_ENV_AI_MODEL}" >/dev/null 2>&1; then
     export VAR_DEFAULT_MODEL="${HS_ENV_AI_MODEL}"
+# don't use cloud modle by default
+# elif ollama list | cut -d ' ' -f 1 | grep "deepseek-v4-pro:cloud" >/dev/null 2>&1; then
+#     export VAR_DEFAULT_MODEL="deepseek-v4-pro:cloud"
+# elif ollama list | cut -d ' ' -f 1 | grep "minimax-m3:cloud" >/dev/null 2>&1; then
+#     export VAR_DEFAULT_MODEL="minimax-m3:cloud"
 else
-    export VAR_DEFAULT_MODEL="qwen3:8b-q8_0"
+    # export VAR_DEFAULT_MODEL="qwen3:8b-q8_0"
+    export VAR_DEFAULT_MODEL="gemma4:e4b"
 fi
 export VAR_API_KEY=""
 
 export VAR_DEFAULT_PROMPT="It's an simple anwser system."
 # google/ollama/ort
-test -z "${VAR_PROVIDER}" && export VAR_PROVIDER='google'
+test -z "${VAR_PROVIDER}" && export VAR_PROVIDER='ollama'
 
 ###########################################################
 ## Options
@@ -87,13 +93,26 @@ fHelp()
 }
 fInfo()
 {
-    local var_title_pading""
+    local var_title_pading=""
+    local var_api_key_status=""
+    if test -n "${VAR_API_KEY}"; then
+        var_api_key_status="configured (${#VAR_API_KEY} chars)"
+    else
+        var_api_key_status="not set"
+    fi
 
     fPrintHeader ${FUNCNAME[0]}
     printf "###########################################################\n"
     printf "##  Vars\n"
     printf "###########################################################\n"
     printf "##    %s\t: %- 16s\n" "Script" "${VAR_SCRIPT_NAME}"
+    printf "###########################################################\n"
+    printf "##  Server/Model\n"
+    printf "###########################################################\n"
+    printf "##    %s\t: %- 16s\n" "Provider" "${VAR_PROVIDER}"
+    printf "##    %s\t: %- 16s\n" "Server URL" "${VAR_SERVER_URL}"
+    printf "##    %s\t: %- 16s\n" "Model" "${VAR_DEFAULT_MODEL}"
+    printf "##    %s\t: %- 16s\n" "API Key" "${var_api_key_status}"
     printf "###########################################################\n"
     printf "##  Path\n"
     printf "###########################################################\n"
@@ -455,8 +474,8 @@ function fMain()
     if [ ${flag_verbose} = true ]
     then
         OPTION_VERBOSE='y'
-        echo SERVER:${VAR_SERVER_URL}
-        # fInfo; fErrControl ${FUNCNAME[0]} ${LINENO}
+        # echo SERVER:${VAR_SERVER_URL}
+        fInfo; fErrControl ${FUNCNAME[0]} ${LINENO}
     fi
     if [ "${var_action}" = "question" ]
     then
