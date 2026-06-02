@@ -583,7 +583,7 @@ function fCAS_Main()
             fi
 
             if ! test -e ${tmp_link}; then
-                echo "Remove link ${VAR_TARGET_NAME}."
+                echo "Remove link ${tmp_link}."
                 rm ${tmp_link}
             fi
         done

@@ -70,7 +70,7 @@ alias mdebug="sdebug --device /dev/ttyUSB1"
 ########################################################
 #####    Scrips Tools                              #####
 ########################################################
-alias autosuspend="${HS_PATH_LIB}/tools/utils/autosuspend.sh"
+## Note. Use tools.sh under tools for alias.
 
 ########################################################
 #####    Safe commands                             #####
