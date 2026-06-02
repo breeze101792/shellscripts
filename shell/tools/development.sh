@@ -1565,6 +1565,10 @@ function xcd()
                     target_path=${tmp_path}
                 fi
                 ;;
+            # Others
+            --cas|cas)
+                target_path="/mnt/casws/workspace"
+                ;;
             *)
                 tmp_args=$@
                 if [ -z "${target_path}" ]
