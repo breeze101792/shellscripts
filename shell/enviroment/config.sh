@@ -47,6 +47,7 @@ test -z "${HS_CONFIG_SAFE_COMMAND_REPLACEMENT}" && export HS_CONFIG_SAFE_COMMAND
 # Only work on bash
 test -z "${HS_CONFIG_FUNCTION_EXPORT}" && export HS_CONFIG_FUNCTION_EXPORT=n
 test -z "${HS_CONFIG_IGNORE_SUBSHELL_FUNCTION_SOURCE}" && export HS_CONFIG_IGNORE_SUBSHELL_FUNCTION_SOURCE=n
+test -z "${HS_CONFIG_LANGUAGE}" && export HS_CONFIG_LANGUAGE=n
 ########################################################
 ########################################################
 #####                                              #####
