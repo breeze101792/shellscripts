@@ -26,9 +26,12 @@ if test -n "${HS_ENV_AI_MODEL}" && ollama list | cut -d ' ' -f 1 | grep "${HS_EN
 #     export VAR_DEFAULT_MODEL="deepseek-v4-pro:cloud"
 # elif ollama list | cut -d ' ' -f 1 | grep "minimax-m3:cloud" >/dev/null 2>&1; then
 #     export VAR_DEFAULT_MODEL="minimax-m3:cloud"
-else
-    # export VAR_DEFAULT_MODEL="qwen3:8b-q8_0"
+elif ollama list | cut -d ' ' -f 1 | grep "gemma4:e4b" >/dev/null 2>&1; then
     export VAR_DEFAULT_MODEL="gemma4:e4b"
+elif ollama list | cut -d ' ' -f 1 | grep "gemma4:e2b" >/dev/null 2>&1; then
+    export VAR_DEFAULT_MODEL="gemma4:e2b"
+else
+    export VAR_DEFAULT_MODEL=""
 fi
 export VAR_API_KEY=""
 
@@ -477,6 +480,10 @@ function fMain()
         # echo SERVER:${VAR_SERVER_URL}
         fInfo; fErrControl ${FUNCNAME[0]} ${LINENO}
     fi
+    if test -z "${VAR_DEFAULT_MODEL}"; then
+        echo "Model not specify or not found. Model: ${VAR_DEFAULT_MODEL}"
+    fi
+
     if [ "${var_action}" = "question" ]
     then
         ask_llm "${var_promote}" "${var_question}"

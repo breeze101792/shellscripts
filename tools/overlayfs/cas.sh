@@ -328,7 +328,7 @@ function fof_remove()
         fi
         if mountpoint -q ${tmp_merged}; then
             # echo umount ${tmp_merged}
-            sudo umount ${tmp_merged} || echo "Umount fail." &&  continue
+            sudo umount ${tmp_merged} || (echo "Umount fail." &&  continue)
 
         fi
 
@@ -572,6 +572,22 @@ function fCAS_Main()
     elif [ "${var_action}" = "remove" ]; then
         # fof_remove ${var_target_list[@]}
         fOF_Main rm ${var_target_list[@]}
+
+        for each_target in ${var_target_list[@]}; do
+            local tmp_merged="${PATH_OVERLAY_ROOT}/${each_target}/merged"
+            local tmp_link="${PATH_WORKSPACE_ROOT}/${each_target}"
+
+            if test -d ${tmp_merged}; then
+                echo ${tmp_merged} not removed.
+                continue
+            fi
+
+            if ! test -e ${tmp_link}; then
+                echo "Remove link ${VAR_TARGET_NAME}."
+                rm ${tmp_link}
+            fi
+        done
+
     elif [ "${var_action}" = "create" ]; then
 
         if test -z "${VAR_BASE_DIR}"; then
