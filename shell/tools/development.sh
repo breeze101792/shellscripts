@@ -660,7 +660,7 @@ function session()
     local var_cmd=('tmux')
     local var_config_file=""
     local flag_multiple_instance=y
-    local var_session_tmp_path=${HS_TMP_SESSION_PATH}/$(hostname)
+    local var_session_tmp_path=${HS_TMP_SESSION_PATH}/$(hostname -s)
 
     local var_target_name=""
 
@@ -782,7 +782,7 @@ function session()
                 local var_hostname=""
                 if command -v hostname 2>&1 > /dev/null
                 then
-                    var_hostname="$(hostname)"
+                    var_hostname="$(hostname -s)"
                 elif test -f "/etc/hostname"
                 then
                     var_hostname="$(cat /etc/hostname)"
@@ -1151,7 +1151,7 @@ zession()
                 local var_hostname=""
                 if command -v hostname 2>&1 > /dev/null
                 then
-                    var_hostname="$(hostname)"
+                    var_hostname="$(hostname -s)"
                 elif test -f "/etc/hostname"
                 then
                     var_hostname="$(cat /etc/hostname)"
