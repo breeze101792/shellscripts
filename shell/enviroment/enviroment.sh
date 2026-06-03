@@ -8,10 +8,9 @@
 
 ## Terminal Session configs
 ########################################################
-export LANGUAGE=en_US.UTF-8
-export LANG="en_US.utf8"
-if true
-then
+if [ ${HS_CONFIG_LANGUAGE} = y ]; then
+    export LANGUAGE=en_US.UTF-8
+    export LANG="en_US.utf8"
     # override all settings with en_US.utf8
     LC_ALL="en_US.utf8"
     # LC_CTYPE="en_US.utf8"

@@ -1489,39 +1489,6 @@ function xcd()
                 [ ! -z ${HS_VAR_ECD_NAME_29} ] && cli_helper -o  "$(echo ${HS_VAR_ECD_NAME_29} | sed 's/[()@]//g')" -d "cd to ${HS_PATH_ECD_29}"
                 return 0
                 ;;
-
-            ${HS_VAR_ECD_NAME_0}) target_path="${HS_PATH_ECD_0}" ;;
-            ${HS_VAR_ECD_NAME_1}) target_path="${HS_PATH_ECD_1}" ;;
-            ${HS_VAR_ECD_NAME_2}) target_path="${HS_PATH_ECD_2}" ;;
-            ${HS_VAR_ECD_NAME_3}) target_path="${HS_PATH_ECD_3}" ;;
-            ${HS_VAR_ECD_NAME_4}) target_path="${HS_PATH_ECD_4}" ;;
-            ${HS_VAR_ECD_NAME_5}) target_path="${HS_PATH_ECD_5}" ;;
-            ${HS_VAR_ECD_NAME_6}) target_path="${HS_PATH_ECD_6}" ;;
-            ${HS_VAR_ECD_NAME_7}) target_path="${HS_PATH_ECD_7}" ;;
-            ${HS_VAR_ECD_NAME_8}) target_path="${HS_PATH_ECD_8}" ;;
-            ${HS_VAR_ECD_NAME_9}) target_path="${HS_PATH_ECD_9}" ;;
-
-            ${HS_VAR_ECD_NAME_10}) target_path="${HS_PATH_ECD_10}" ;;
-            ${HS_VAR_ECD_NAME_11}) target_path="${HS_PATH_ECD_11}" ;;
-            ${HS_VAR_ECD_NAME_12}) target_path="${HS_PATH_ECD_12}" ;;
-            ${HS_VAR_ECD_NAME_13}) target_path="${HS_PATH_ECD_13}" ;;
-            ${HS_VAR_ECD_NAME_14}) target_path="${HS_PATH_ECD_14}" ;;
-            ${HS_VAR_ECD_NAME_15}) target_path="${HS_PATH_ECD_15}" ;;
-            ${HS_VAR_ECD_NAME_16}) target_path="${HS_PATH_ECD_16}" ;;
-            ${HS_VAR_ECD_NAME_17}) target_path="${HS_PATH_ECD_17}" ;;
-            ${HS_VAR_ECD_NAME_18}) target_path="${HS_PATH_ECD_18}" ;;
-            ${HS_VAR_ECD_NAME_19}) target_path="${HS_PATH_ECD_19}" ;;
-
-            ${HS_VAR_ECD_NAME_20}) target_path="${HS_PATH_ECD_20}" ;;
-            ${HS_VAR_ECD_NAME_21}) target_path="${HS_PATH_ECD_21}" ;;
-            ${HS_VAR_ECD_NAME_22}) target_path="${HS_PATH_ECD_22}" ;;
-            ${HS_VAR_ECD_NAME_23}) target_path="${HS_PATH_ECD_23}" ;;
-            ${HS_VAR_ECD_NAME_24}) target_path="${HS_PATH_ECD_24}" ;;
-            ${HS_VAR_ECD_NAME_25}) target_path="${HS_PATH_ECD_25}" ;;
-            ${HS_VAR_ECD_NAME_26}) target_path="${HS_PATH_ECD_26}" ;;
-            ${HS_VAR_ECD_NAME_27}) target_path="${HS_PATH_ECD_27}" ;;
-            ${HS_VAR_ECD_NAME_28}) target_path="${HS_PATH_ECD_28}" ;;
-            ${HS_VAR_ECD_NAME_29}) target_path="${HS_PATH_ECD_29}" ;;
             # NOTE. Default path settings, it will gbe replace by custom settings.
             -s|--hs-script|hs)
                 target_path=${HS_PATH_LIB}
@@ -1565,6 +1532,45 @@ function xcd()
                     target_path=${tmp_path}
                 fi
                 ;;
+            # Others
+            --tools|tools)
+                target_path="~/tools"
+                ;;
+            --cas|cas)
+                target_path="/mnt/casws/workspace"
+                ;;
+            ${HS_VAR_ECD_NAME_0}) target_path="${HS_PATH_ECD_0}" ;;
+            ${HS_VAR_ECD_NAME_1}) target_path="${HS_PATH_ECD_1}" ;;
+            ${HS_VAR_ECD_NAME_2}) target_path="${HS_PATH_ECD_2}" ;;
+            ${HS_VAR_ECD_NAME_3}) target_path="${HS_PATH_ECD_3}" ;;
+            ${HS_VAR_ECD_NAME_4}) target_path="${HS_PATH_ECD_4}" ;;
+            ${HS_VAR_ECD_NAME_5}) target_path="${HS_PATH_ECD_5}" ;;
+            ${HS_VAR_ECD_NAME_6}) target_path="${HS_PATH_ECD_6}" ;;
+            ${HS_VAR_ECD_NAME_7}) target_path="${HS_PATH_ECD_7}" ;;
+            ${HS_VAR_ECD_NAME_8}) target_path="${HS_PATH_ECD_8}" ;;
+            ${HS_VAR_ECD_NAME_9}) target_path="${HS_PATH_ECD_9}" ;;
+
+            ${HS_VAR_ECD_NAME_10}) target_path="${HS_PATH_ECD_10}" ;;
+            ${HS_VAR_ECD_NAME_11}) target_path="${HS_PATH_ECD_11}" ;;
+            ${HS_VAR_ECD_NAME_12}) target_path="${HS_PATH_ECD_12}" ;;
+            ${HS_VAR_ECD_NAME_13}) target_path="${HS_PATH_ECD_13}" ;;
+            ${HS_VAR_ECD_NAME_14}) target_path="${HS_PATH_ECD_14}" ;;
+            ${HS_VAR_ECD_NAME_15}) target_path="${HS_PATH_ECD_15}" ;;
+            ${HS_VAR_ECD_NAME_16}) target_path="${HS_PATH_ECD_16}" ;;
+            ${HS_VAR_ECD_NAME_17}) target_path="${HS_PATH_ECD_17}" ;;
+            ${HS_VAR_ECD_NAME_18}) target_path="${HS_PATH_ECD_18}" ;;
+            ${HS_VAR_ECD_NAME_19}) target_path="${HS_PATH_ECD_19}" ;;
+
+            ${HS_VAR_ECD_NAME_20}) target_path="${HS_PATH_ECD_20}" ;;
+            ${HS_VAR_ECD_NAME_21}) target_path="${HS_PATH_ECD_21}" ;;
+            ${HS_VAR_ECD_NAME_22}) target_path="${HS_PATH_ECD_22}" ;;
+            ${HS_VAR_ECD_NAME_23}) target_path="${HS_PATH_ECD_23}" ;;
+            ${HS_VAR_ECD_NAME_24}) target_path="${HS_PATH_ECD_24}" ;;
+            ${HS_VAR_ECD_NAME_25}) target_path="${HS_PATH_ECD_25}" ;;
+            ${HS_VAR_ECD_NAME_26}) target_path="${HS_PATH_ECD_26}" ;;
+            ${HS_VAR_ECD_NAME_27}) target_path="${HS_PATH_ECD_27}" ;;
+            ${HS_VAR_ECD_NAME_28}) target_path="${HS_PATH_ECD_28}" ;;
+            ${HS_VAR_ECD_NAME_29}) target_path="${HS_PATH_ECD_29}" ;;
             *)
                 tmp_args=$@
                 if [ -z "${target_path}" ]

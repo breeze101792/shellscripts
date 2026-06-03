@@ -56,6 +56,9 @@ alias s='sgrep '
 alias rp='printf "Realplath: " && realpath $@'
 
 alias fm="xfm"
+if hash claude >& /dev/null; then
+    alias xclaude="claude --dangerously-skip-permissions"
+fi
 ########################################################
 #####    Dev                                       #####
 ########################################################
@@ -70,7 +73,7 @@ alias mdebug="sdebug --device /dev/ttyUSB1"
 ########################################################
 #####    Scrips Tools                              #####
 ########################################################
-alias autosuspend="${HS_PATH_LIB}/tools/utils/autosuspend.sh"
+## Note. Use tools.sh under tools for alias.
 
 ########################################################
 #####    Safe commands                             #####

@@ -30,7 +30,7 @@ test -z "${HS_ENV_MAIL}" && export HS_ENV_MAIL=""
 
 # Service env
 test -z "${HS_ENV_AI_SERVICE_URL}" && export HS_ENV_AI_SERVICE_URL="http://localhost:11434"
-test -z "${HS_ENV_AI_MODEL}" && export HS_ENV_AI_MODEL="qwen2.5:7b-instruct-q8_0"
+test -z "${HS_ENV_AI_MODEL}" && export HS_ENV_AI_MODEL="gemma4:e4b"
 
 ########################################################
 ########################################################
@@ -47,6 +47,7 @@ test -z "${HS_CONFIG_SAFE_COMMAND_REPLACEMENT}" && export HS_CONFIG_SAFE_COMMAND
 # Only work on bash
 test -z "${HS_CONFIG_FUNCTION_EXPORT}" && export HS_CONFIG_FUNCTION_EXPORT=n
 test -z "${HS_CONFIG_IGNORE_SUBSHELL_FUNCTION_SOURCE}" && export HS_CONFIG_IGNORE_SUBSHELL_FUNCTION_SOURCE=n
+test -z "${HS_CONFIG_LANGUAGE}" && export HS_CONFIG_LANGUAGE=n
 ########################################################
 ########################################################
 #####                                              #####
