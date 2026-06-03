@@ -56,6 +56,9 @@ alias s='sgrep '
 alias rp='printf "Realplath: " && realpath $@'
 
 alias fm="xfm"
+if command -v claude; then
+    alias xclaude="claude --dangerously-skip-permissions"
+fi
 ########################################################
 #####    Dev                                       #####
 ########################################################
