@@ -322,7 +322,7 @@ function fof_remove()
     for each_target in ${@}; do
         local tmp_merged="${PATH_OVERLAY_ROOT}/${each_target}/merged"
         local tmp_work="${PATH_OVERLAY_ROOT}/${each_target}"
-        if ! test -d ${tmp_merged}; then
+        if ! test -d "${tmp_merged}"; then
             echo ${tmp_merged} not found.
             continue
         fi
@@ -561,8 +561,9 @@ function fCAS_Main()
     if [ "${var_action}" = "remount" ]; then
         for each_cas in $(ls ${PATH_OVERLAY_ROOT}); do
             tmp_each_cas=${PATH_OVERLAY_ROOT}/${each_cas}
-            if test -f ${tmp_each_cas}/mount.sh;then
+            if test -f "${tmp_each_cas}/mount.sh";then
                 echo "Re-mount ${each_cas}"
+                bash ${tmp_each_cas}/mount.sh
             fi
         done
     elif [ "${var_action}" = "list" ]; then
@@ -577,12 +578,12 @@ function fCAS_Main()
             local tmp_merged="${PATH_OVERLAY_ROOT}/${each_target}/merged"
             local tmp_link="${PATH_WORKSPACE_ROOT}/${each_target}"
 
-            if test -d ${tmp_merged}; then
+            if test -d "${tmp_merged}"; then
                 echo ${tmp_merged} not removed.
                 continue
             fi
 
-            if ! test -e ${tmp_link}; then
+            if ! test -e "${tmp_link}"; then
                 echo "Remove link ${tmp_link}."
                 rm ${tmp_link}
             fi
