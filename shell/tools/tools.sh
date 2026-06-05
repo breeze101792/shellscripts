@@ -715,12 +715,15 @@ function hstemp()
             -l|--lite)
                 var_temp_file="${HS_PATH_LIB}/tools/template/template_lite.sh"
                 ;;
-            -w|--work)
-                var_temp_file="${HS_PATH_LIB}/tools/template/template_work.sh"
-                var_target_file="${HS_PATH_LIB}/../work/work.sh"
-                ;;
             -f|--full)
                 var_temp_file="${HS_PATH_LIB}/tools/template/template.sh"
+                ;;
+            -s|--tmux-split)
+                var_temp_file="${HS_PATH_LIB}/tools/template/template_split.sh"
+                ;;
+            -w|--work)
+                var_temp_file="${HS_PATH_LIB}/tools/template/template_work.sh"
+                var_target_file="${HS_PATH_WORK}/work.sh"
                 ;;
             -t|--target)
                 if (( "$#" >= "2" ))
@@ -740,12 +743,14 @@ function hstemp()
                 cli_helper -t "Options"
                 cli_helper -o "-l|--lite" -d "Copy template lite file, default copy this one."
                 cli_helper -o "-w|--work" -d "Copy template work file"
+                cli_helper -o "-s|--tmux-split" -d "Copy template tmux file"
                 cli_helper -o "-f|--full" -d "Copy template full file"
                 cli_helper -o "-t|--target" -d "Copy template file to target folder/name, default copy to the current folder."
                 cli_helper -o "-h|--help" -d "Print help function "
                 return 0
                 ;;
             *)
+                var_target_file="$@"
                 break;
                 ;;
         esac
