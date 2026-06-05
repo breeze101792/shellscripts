@@ -114,8 +114,16 @@ function setup_tmux()
         echo "bc not found on your shell"
         exit -1
     fi
-    ln -sf ${HS_SCRIPT_PATH}/configs/tmux/tmux.conf ${HOME}/.tmux.conf
-    ln -sf ${HS_SCRIPT_PATH}/configs/home/screenrc ${HOME}/.screenrc
+    if ! test -e "${HOME}/.tmux.conf"; then
+        ln -sf ${HS_SCRIPT_PATH}/configs/tmux/tmux.conf ${HOME}/.tmux.conf
+    else
+        echo ".tmux.config exist, skip copy."
+    fi
+    if ! test -e "${HOME}/.screenrc"; then
+        ln -sf ${HS_SCRIPT_PATH}/configs/home/screenrc ${HOME}/.screenrc
+    else
+        echo ".screenrc exist, skip copy."
+    fi
 }
 function setup_git()
 {
