@@ -1,13 +1,11 @@
 #!/bin/bash
 
-
 ################################################################################
 ##
 ##    Env
 ##
 ################################################################################
 hs_print Work Script
-
 
 # scripts env
 testnset -e -v HS_WORK_TOOLS -c "${HS_PATH_WORK}/tools"
@@ -38,36 +36,36 @@ testnset -e -v HS_WORK_ZERO -c "zero.eth"
 ##    Hosts Settings
 ##
 ################################################################################
-case $(hostname) in
+
+## Host specify script
+case $(hostname -s) in
     "zero"|${HS_WORK_ZERO})
         if test -f "${HS_PATH_WORK}/hosts/zero.sh"
         then
             source ${HS_PATH_WORK}/hosts/zero.sh
-        else
-            echo "zero.sh not found."
-        fi
-        ;;
-    "*")
-        if test -f "${HS_PATH_WORK}/hosts/$(hostname)"
-        then
-            source "${HS_PATH_WORK}/hosts/$(hostname)"
         fi
         ;;
 esac
 
-# source hosts
-if test -f "${HS_PATH_WORK}/hosts/$(hostname)"
+################################################################################
+## source hosts
+################################################################################
+if test -f "${HS_PATH_WORK}/hosts/$(hostname -s)"
 then
-    source ${HS_PATH_WORK}/wlab.sh
+    source "${HS_PATH_WORK}/$(hostname -s)"
 fi
 
-# source tools
+################################################################################
+## source tools
+################################################################################
 if test -f "${HS_WORK_TOOLS}"
 then
-    epath ${HS_WORK_TOOLS}
+    epath "${HS_WORK_TOOLS}"
 fi
 
-# source scripts
+################################################################################
+## source scripts
+################################################################################
 if test -f "${HS_WORK_SCRIPT}"
 then
     for each_scripts in ${HS_WORK_SCRIPT}/*.sh;

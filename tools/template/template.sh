@@ -55,7 +55,7 @@ fHelp()
 {
     echo "${VAR_SCRIPT_NAME}"
     echo "[Example]"
-    printf "    %s\n" "run test: .sh -a"
+    printf "    %s\n" "run help: ${VAR_SCRIPT_NAME} -h"
     echo "[Options]"
     printf "    %- 16s\t%s\n" "-v|--verbose" "Print in verbose mode"
     printf "    %- 16s\t%s\n" "-h|--help" "Print helping"
@@ -241,7 +241,6 @@ function fexample()
 ###########################################################
 function fMain()
 {
-    # fPrintHeader "Launch ${VAR_SCRIPT_NAME}"
     local flag_verbose=false
 
     while [[ $# != 0 ]]
