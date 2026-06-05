@@ -39,12 +39,6 @@ alias cgrep='grep --color=always '
 alias sgrep='grep -rnIi  '
 alias scgrep='grep --color=always -rnIi  '
 
-# Don't use this line, now we auto detect it.
-# alias nvim='TERM=xterm-256color && nvim '
-# alias vim='TERM=xterm-256color && vim '
-# alias vi='TERM=xterm-256color && vim -m '
-alias pnvim='pvim -d nvim '
-
 alias clips="clip -s "
 alias clipx="clip -x "
 
@@ -54,6 +48,15 @@ alias f='ffind '
 alias g='grep '
 alias s='sgrep '
 alias rp='printf "Realplath: " && realpath $@'
+
+## Binary alias
+# Don't use this line, now we auto detect it.
+# alias nvim='TERM=xterm-256color && nvim '
+# alias vim='TERM=xterm-256color && vim '
+# alias vi='TERM=xterm-256color && vim -m '
+if hash nvim >& /dev/null; then
+    alias pnvim='pvim -d nvim '
+fi
 
 alias fm="xfm"
 if hash claude >& /dev/null; then
