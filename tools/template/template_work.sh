@@ -39,10 +39,11 @@ testnset -e -v HS_WORK_ZERO -c "zero.eth"
 
 ## Host specify script
 case $(hostname -s) in
-    "zero"|${HS_WORK_ZERO})
-        if test -f "${HS_PATH_WORK}/hosts/zero.sh"
+    zero|${HS_WORK_ZERO})
+        tmp_host_file="${HS_PATH_WORK}/hosts/zero.sh"
+        if test -f "${tmp_host_file}"
         then
-            source ${HS_PATH_WORK}/hosts/zero.sh
+            source "${tmp_host_file}"
         fi
         ;;
 esac

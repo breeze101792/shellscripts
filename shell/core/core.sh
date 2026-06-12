@@ -377,7 +377,8 @@ function xcdadd()
         local tmp_cmd='test "${var_arg}" = "$'${tmp_name}'" '
         if eval "${tmp_cmd}"
         then
-            # echo "Same pattern"
+            # echo "Same pattern, update path only"
+            export ${tmp_path}="${var_path}"
             break
         fi
 
