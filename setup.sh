@@ -296,7 +296,7 @@ function setup()
                 printf "    %- 32s\n            %s\n" "-u|--usr" "Create a local user directory structure (/.usr/bin, /.usr/lib)."
                 printf "    %- 32s\n            %s\n" "-hs|--hs-excute" "Create hs excutable on .usr/bin"
                 printf "    %- 32s\n            %s\n" "-x|--excute" "Execute commands within the configured environment."
-                printf "    %- 32s\n            %s\n" "-h|--help" "Help me"
+                printf "    %- 32s\n            %s\n" "-h|--help" "Show this help message."
                 return 0
                 ;;
             *)
