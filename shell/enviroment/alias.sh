@@ -58,7 +58,6 @@ if hash nvim >& /dev/null; then
     alias pnvim='pvim -d nvim '
 fi
 
-alias fm="xfm"
 if hash claude >& /dev/null; then
     alias xclaude="claude --dangerously-skip-permissions"
 fi

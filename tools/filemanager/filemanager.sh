@@ -5344,7 +5344,7 @@ function fMain()
 {
     # fPrintHeader "Launch ${VAR_SCRIPT_NAME}"
     local flag_verbose=false
-    local flag_load_session="true"
+    local flag_load_session="false"
     local var_new_path=""
 
     while [[ $# != 0 ]]
