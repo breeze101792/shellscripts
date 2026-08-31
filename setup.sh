@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Get Script Path
 HS_SCRIPT_PATH=""
 HS_ENV_SHELL=""
