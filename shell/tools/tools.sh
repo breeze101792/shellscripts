@@ -761,8 +761,9 @@ function hstemp()
     erun --eval ${var_cmd[@]}
 }
 
-function xfm()
+function cfm()
 {
+    # command line file manager.
     ${HS_PATH_LIB}/tools/filemanager/filemanager.sh $@
     local tmp_path=$(${HS_PATH_LIB}/tools/filemanager/filemanager.sh -l flush)
     # if ${HS_PATH_LIB}/tools/filemanager/filemanager.sh -l 2> /dev/null

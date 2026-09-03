@@ -3845,9 +3845,10 @@ cmd_editor()
 
     if [[ -f "${var_file}" ]]; then
         fterminal_reset
-        
+
         if command -v "${HSFM_TEXT_EDITOR%% *}" 2>&1 > /dev/null;then
-            ${HSFM_TEXT_EDITOR} "${var_file}"
+            # NOTE. VIDE_SH_TITLE use on the title of xim/vim projects.
+            VIDE_SH_TITLE="${HSFM_ENV_TITLE}" ${HSFM_TEXT_EDITOR} "${var_file}"
         else
             flog_msg "warn: command '$HSFM_TEXT_EDITOR' not found"
         fi
