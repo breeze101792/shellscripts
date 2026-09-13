@@ -57,6 +57,13 @@ HS_SCRIPT_PATH=$(realpath ${HS_SCRIPT_PATH})
 function setup_shell()
 {
     local rc_script=''
+    # Mac dosen't have timeout
+    if ! command -v timeout > /dev/null
+    then
+        echo "timeout not found on your shell. you mean need to install coreutils on Mac"
+        exit -1
+    fi
+
     if [ "${HS_ENV_SHELL}" = "bash" ]
     then
         rc_script=~/.bashrc
