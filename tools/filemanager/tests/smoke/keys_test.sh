@@ -53,6 +53,18 @@ compare "startup"
 both 'l'
 sleep 0.5
 compare "cursor down"
+
+# Tab open, switch and close: the context save and restore round trip.
+both 't'
+sleep 0.8
+compare "tab open"
+both_key C-l
+sleep 0.8
+compare "tab switch"
+both 'w'
+sleep 0.8
+compare "tab close"
+
 both_key Enter
 sleep 0.7
 compare "open directory"

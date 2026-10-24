@@ -73,8 +73,6 @@ export VAR_TERM_TAB_LINE_LIST_PATH
 export VAR_TERM_TAB_LINE_LIST_START_IDX
 export VAR_TERM_TAB_LINE_LIST_IDX
 
-export VAR_TERM_TAB_LINE_LIST_FILE_LIST
-export VAR_TERM_TAB_LINE_LIST_FILE_INFO_LIST
 
 ## Main window vars
 #-----------------
@@ -1539,6 +1537,29 @@ fdir_ingest()
     fi
 }
 
+# Set FM_DIR_PREV_IDX to the position of $OLDPWD in the published list.
+# The path is data: a fixed-string whole-line match, first hit only.
+fdir_prev_index()
+{
+    local var_index=""
+
+    if test -z "${OLDPWD}"
+    then
+        FM_DIR_PREV_IDX=0
+        return 0
+    fi
+
+    var_index=$(printf '%s\n' "${VAR_TERM_DIR_FILE_LIST[@]}" |
+        grep -n -F -x -- "${OLDPWD}" 2>/dev/null | head -n 1 | cut -d: -f1)
+
+    if test -z "${var_index}"
+    then
+        FM_DIR_PREV_IDX=0
+    else
+        FM_DIR_PREV_IDX=$((var_index - 1))
+    fi
+}
+
 fterminal_read_dir() {
     # Read a directory to an array and sort it directories first.
     local var_pattern="*"
@@ -1546,9 +1567,6 @@ fterminal_read_dir() {
     local var_files
     local var_item_index=0
 
-    local tmp_grep
-    local test_tmp_index
-    local each_path
     local item
 
     VAR_TERM_DIR_FILE_LIST=()
@@ -1575,43 +1593,8 @@ fterminal_read_dir() {
     then
         VAR_TERM_DIR_FILE_LIST=("$PWD"/${var_pattern})
 
-        if ! [[ "${#VAR_TERM_DIR_FILE_LIST[@]}" -eq "0" ]]; then
-            ## Update previous index
-            ########################
-            local tmp_array_str=$(printf "%s\n" "${VAR_TERM_DIR_FILE_LIST[@]}")
-            local tmp_index
-            if test -n "${OLDPWD}"; then
-                local tmp_index=$(echo "$tmp_array_str" | grep -n "^$OLDPWD$" | cut -d: -f1)
-
-                if test -z "${tmp_index}"; then
-                    tmp_grep=( "echo \"$tmp_array_str\" | grep -n -F \"$OLDPWD\"")
-                    # flog_msg_debug "${tmp_grep[*]}"
-
-                    test_tmp_index=$(eval "${tmp_grep[*]}" 2> /dev/null)
-                    for each_path in "${test_tmp_index}";do
-                        # flog_msg_debug "$each_path"
-                        if [ "${each_path##*:}" = "${OLDPWD}" ]
-                        then
-                            tmp_index=${each_path%%:*}
-                            break
-                        fi
-                    done
-                    # flog_msg_debug "idx $test_tmp_index"
-                fi
-
-                # flog_msg_debug "Array: '${tmp_array_str}'"
-                # flog_msg_debug "Old path: '^$OLDPWD$'"
-                if test -z "${tmp_index}" ;then
-                    # flog_msg_debug "Fail to get index: ${tmp_index}"
-                    FM_DIR_PREV_IDX=0
-                else
-                    FM_DIR_PREV_IDX=$((tmp_index - 1))
-                fi
-                # flog_msg_debug "set tmp_index to ${FM_DIR_PREV_IDX}"
-            else
-                FM_DIR_PREV_IDX=0
-            fi
-        fi
+        # Update previous index.
+        fdir_prev_index
     elif [[ ${HSFM_READ_DIR_MODE} == ${DEF_TERM_READ_DIR_MODE_SORT} ]]
     then
         # for some reason, we should sort in seperate loop.
@@ -1696,42 +1679,8 @@ EOF
             VAR_TERM_DIR_FILE_LIST=("${tmp_ls_file[@]}")
             VAR_TERM_DIR_FILE_INFO_LIST=("${tmp_ls_info[@]}")
 
-            ## Update previous index
-            ########################
-            local tmp_array_str=$(printf "%s\n" "${VAR_TERM_DIR_FILE_LIST[@]}")
-            local tmp_index
-            if test -n "${OLDPWD}" && test -n "${tmp_array_str}"; then
-                # ignore error when greping reg string.
-                local tmp_index=$(echo "$tmp_array_str" | grep -n "^$OLDPWD$" 2>/dev/null |head -n 1| cut -d: -f1)
-
-                if test -z "${tmp_index}"; then
-                    tmp_grep=( "echo \"$tmp_array_str\" | grep -n -F \"$OLDPWD\"")
-                    # flog_msg_debug "${tmp_grep[*]}"
-
-                    test_tmp_index=$(eval "${tmp_grep[*]}" 2> /dev/null)
-                    for each_path in "${test_tmp_index}";do
-                        # flog_msg_debug "$each_path"
-                        if [ "${each_path##*:}" = "${OLDPWD}" ]
-                        then
-                            tmp_index=${each_path%%:*}
-                            break
-                        fi
-                    done
-                    # flog_msg_debug "idx $test_tmp_index"
-                fi
-
-                # flog_msg_debug "Array: '${tmp_array_str}'"
-                # flog_msg_debug "Old path: '^$OLDPWD$'"
-                if test -z "${tmp_index}" ;then
-                    # flog_msg_debug "Fail to get index: ${tmp_index}"
-                    FM_DIR_PREV_IDX=0
-                else
-                    FM_DIR_PREV_IDX=$((tmp_index - 1))
-                fi
-                # flog_msg_debug "set tmp_index to ${FM_DIR_PREV_IDX}"
-            else
-                FM_DIR_PREV_IDX=0
-            fi
+            # Update previous index.
+            fdir_prev_index
         # else
         #     flog_msg_debug "Empty folder"
         fi
@@ -1769,12 +1718,6 @@ fterminal_tab_save_contex() {
     VAR_TERM_TAB_LINE_LIST_START_IDX[var_tab_id]="${VAR_TERM_CONTENT_SCROLL_START_IDX}"
     VAR_TERM_TAB_LINE_LIST_IDX[var_tab_id]="${VAR_TERM_CONTENT_SCROLL_IDX}"
     # flog_msg_debug "Store: ${VAR_TERM_TAB_LINE_LIST_START_IDX[var_tab_id]}/${VAR_TERM_TAB_LINE_LIST_IDX[var_tab_id]}/${VAR_TERM_TAB_LINE_LIST_PATH[var_tab_id]}"
-    # Serialize arrays into strings using a safe delimiter
-    local IFS_OLD=$IFS
-    IFS=$'\x1e' # Record Separator
-    VAR_TERM_TAB_LINE_LIST_FILE_LIST[var_tab_id]="${VAR_TERM_DIR_FILE_LIST[*]}"
-    VAR_TERM_TAB_LINE_LIST_FILE_INFO_LIST[var_tab_id]="${VAR_TERM_DIR_FILE_INFO_LIST[*]}"
-    IFS=$IFS_OLD
 }
 
 fterminal_tab_load_contex() {
@@ -1785,26 +1728,13 @@ fterminal_tab_load_contex() {
     then
         cd "${VAR_TERM_TAB_LINE_LIST_PATH[var_tab_id]}"
 
+        # Read the directory again. A cached list is stale, and serializing one
+        # needs a separator that a file name may contain.
+        fterminal_read_dir
+
         VAR_TERM_CONTENT_SCROLL_START_IDX=${VAR_TERM_TAB_LINE_LIST_START_IDX[var_tab_id]}
         VAR_TERM_CONTENT_SCROLL_IDX=${VAR_TERM_TAB_LINE_LIST_IDX[var_tab_id]}
         VAR_TERM_WIN_CURRENT_CURSOR=$((VAR_TERM_CONTENT_SCROLL_START_IDX - VAR_TERM_CONTENT_SCROLL_IDX))
-
-        if test -n "${VAR_TERM_TAB_LINE_LIST_FILE_LIST[var_tab_id]}"; then
-            # Deserialize strings back into arrays
-            local IFS_OLD=$IFS
-            IFS=$'\x1e'
-            # Clear existing arrays before loading
-            VAR_TERM_DIR_FILE_LIST=()
-            VAR_TERM_DIR_FILE_INFO_LIST=()
-            # Use read -r -a to correctly parse the string into an array
-            read -r -a VAR_TERM_DIR_FILE_LIST <<< "${VAR_TERM_TAB_LINE_LIST_FILE_LIST[var_tab_id]}"
-            read -r -a VAR_TERM_DIR_FILE_INFO_LIST <<< "${VAR_TERM_TAB_LINE_LIST_FILE_INFO_LIST[var_tab_id]}"
-            ((VAR_TERM_DIR_LIST_CNT=${#VAR_TERM_DIR_FILE_LIST[@]}-1))
-                IFS=$IFS_OLD
-        else
-            # flog_msg_debug "Dir info not found, reload it."
-            fterminal_read_dir
-        fi
     else
         cd "${HOME}"
 
@@ -3016,7 +2946,7 @@ cmd_set()
             fi
             ;;
         left)
-            if fenv_left_hande_mode "${args_value}"; then
+            if ! fenv_left_hande_mode "${args_value}"; then
                 return -1
             fi
             ;;
@@ -3190,7 +3120,7 @@ fsys_open() {
                 # 'nohup':  Make the process immune to hangups.
                 # '&':      Send it to the background.
                 # 'disown': Detach it from the shell.
-                if command -v ${HSFM_OPENER%% *} >/dev/null; then
+                if test -n "${HSFM_OPENER}" && command -v ${HSFM_OPENER%% *} >/dev/null; then
                     flog_msg_debug "Open file via ${HSFM_OPENER}"
                     nohup "${HSFM_OPENER}" "$var_file" &>/dev/null &
                     disown
@@ -3210,10 +3140,12 @@ fsys_open() {
 vcmd_compress()
 {
     # currently only take one args.
-    local arg_file_name="${1: }"
+    local arg_file_name="${1:-}"
     # flog_msg_debug "compress:$@"
     local var_compress_cmd=""
     local var_file_ext=""
+    local var_base_name=""
+    local var_stem=""
     if command -v "zip"
     then
         var_compress_cmd="zip -j"
@@ -3234,21 +3166,25 @@ vcmd_compress()
         }
         if test -z "${arg_file_name}"
         then
-            if [[ "${VAR_TERM_SELECTION_FILE_LIST[@]}" -eq "1" ]]
+            if [[ ${#VAR_TERM_SELECTION_FILE_LIST[@]} -eq 1 ]]
             then
-                arg_file_name="${VAR_TERM_SELECTION_FILE_LIST%%.*}.${var_file_ext}"
+                var_base_name="${VAR_TERM_SELECTION_FILE_LIST[0]##*/}"
+                var_stem="${var_base_name%.*}"
+                # A dotfile has no stem to keep; keep the whole name.
+                [[ -n "${var_stem}" ]] || var_stem="${var_base_name}"
+                arg_file_name="${PWD}/${var_stem}.${var_file_ext}"
             else
                 arg_file_name="${PWD##*/}.${var_file_ext}"
             fi
         fi
 
-        if test -e ${arg_file_name}
+        if test -e "${arg_file_name}"
         then
             flog_msg "${arg_file_name} exist, skip compression."
             return 0
         fi
 
-        local tmp_cmd="${var_compress_cmd} ${arg_file_name} "
+        local tmp_cmd="${var_compress_cmd} '${arg_file_name}' "
         for each_file in "${VAR_TERM_SELECTION_FILE_LIST[@]}"
         do
             tmp_cmd+="'${each_file}' "
@@ -3383,11 +3319,15 @@ fselect_copy() {
                         cp -R -f "${tmp_file}" "${var_target_folder}"
                         flag_overwrite=true
                         ;;
-                    *|'d'|'D')
+                    'd'|'D')
                         cp -R "${tmp_file}" "${var_target_folder}/copy_$(date +%s)_${tmp_file##*/}"
                         flag_duplicate=true
                         ;;
-                    *|'n'|'N')
+                    'n'|'N')
+                        cp -R "${tmp_file}" "${var_target_folder}/copy_$(date +%s)_${tmp_file##*/}"
+                        ;;
+                    *)
+                        # Unknown answer: duplicate, as the old wildcard arm did.
                         cp -R "${tmp_file}" "${var_target_folder}/copy_$(date +%s)_${tmp_file##*/}"
                         ;;
                 esac
@@ -4806,24 +4746,8 @@ fsave_session() {
     do
         echo "VAR_TERM_TAB_LINE_LIST_PATH+=(\"${each_tab}\")" >> ${HSFM_FILE_SESSION}
     done
-    
-    # We read it from dirs, don't restore it.
-    # # Save VAR_TERM_TAB_LINE_LIST_FILE_LIST and VAR_TERM_TAB_LINE_LIST_FILE_INFO_LIST
-    # echo "export VAR_TERM_TAB_LINE_LIST_FILE_LIST" >> ${HSFM_FILE_SESSION}
-    # echo "export VAR_TERM_TAB_LINE_LIST_FILE_INFO_LIST" >> ${HSFM_FILE_SESSION}
-    #
-    # local IFS_OLD=$IFS
-    # IFS=$'\x1e' # Record Separator
-    #
-    # # Ensure the current tab's data is saved to its respective array element before saving the session
-    # fterminal_tab_save_contex "${VAR_TERM_TAB_LINE_IDX}"
-    #
-    # for i in "${!VAR_TERM_TAB_LINE_LIST_PATH[@]}"; do
-    #     echo "VAR_TERM_TAB_LINE_LIST_FILE_LIST[${i}]=\"${VAR_TERM_TAB_LINE_LIST_FILE_LIST[${i}]}\"" >> ${HSFM_FILE_SESSION}
-    #     echo "VAR_TERM_TAB_LINE_LIST_FILE_INFO_LIST[${i}]=\"${VAR_TERM_TAB_LINE_LIST_FILE_INFO_LIST[${i}]}\"" >> ${HSFM_FILE_SESSION}
-    # done
-    # IFS=$IFS_OLD
-    
+
+    # The directory lists are read from disk again on restore.
     echo "cd '${PWD}'" >> ${HSFM_FILE_SESSION}
 }
 
@@ -5209,6 +5133,18 @@ fHelp() {
     fi
 }
 
+# '--verbose' diagnostics. fMain calls them before the UI exists, so they write
+# to stderr.
+fInfo()
+{
+    printf '%s\n' "hsfm: verbose mode" >&2
+}
+
+fErrControl()
+{
+    printf '%s\n' "hsfm: ${1:-?}:${2:-?}" >&2
+}
+
 ## Core Function
 ###########################################################
 function fCore() {
@@ -5368,8 +5304,7 @@ function fMain()
     if [ "${flag_load_session}" = "true" ]
     then
         fload_session
-    elif [ "${flag_load_session}" = "false" ] || true
-    then
+    else
         VAR_TERM_TAB_LINE_IDX=0
         VAR_TERM_TAB_LINE_LIST_PATH=("${PWD}")
     fi

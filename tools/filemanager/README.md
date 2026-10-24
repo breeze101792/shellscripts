@@ -40,6 +40,7 @@ tests/unit/state_test.sh                            # declared state and the K6/
 tests/unit/read_dir_test.sh                         # directory model vs filemanager.sh
 tests/unit/ingest_test.sh                           # one parse line at a time
 tests/unit/editor_test.sh                           # editor core, key by key
+tests/unit/bugs_test.sh                             # the bugs REFACTOR.md section 7.1 lists
 tests/smoke/keys_test.sh                            # tmux pane diff vs filemanager.sh
 tests/smoke/nested_prompt_test.sh                   # a prompt inside a : command
 ```

@@ -5,7 +5,7 @@ Status: phases 0-7 implemented in `tools/filemanager/filemanager_llm.sh`.
 point at it.
 Owner: build department.
 Target: `tools/filemanager/filemanager_llm.sh`. Source: `filemanager.sh`
-(5,498 lines, 121 functions). Result: 5,415 lines, 150 functions.
+(5,498 lines, 121 functions). Result: 5,350 lines, 153 functions.
 Line numbers below are from the pre-refactor file.
 Test host: Linux, bash 5.3, GNU coreutils. The bash 3.2 checks in section 8.3
 were a static review, as planned; the fractional-`read` fallback is code, not a
@@ -336,19 +336,20 @@ Exit: no commented-out code remains; the plan reflects the result.
 | K10 | `HSFM_DIR_ALIAS` collapses to index 0 on bash 3.2 and bash 4 (`:297-302`) | Parallel arrays plus a lookup function. |
 | K13 | `VAR_TERM_MAINWIN_START_IDX=(0,0)` is one element (`:62`) | Two-element declaration. |
 | K19 | Prompt editor state is local (`:3400-3401`), so a resize during a prompt repaints from stale globals (`:1193-1194`) | Editor state becomes the declared `FM_ED_*` block, readable by the view. |
+| K5 | `cmd_set left` returned failure on success, skipping the redraw and the message (`:4386-4388`) | `if ! fenv_left_hande_mode "${args_value}"`. |
+| K7 | `fselect_copy` tested `*` before `d`/`n`, so those arms never matched (`:4738-4744`) | Arms split, `*` last and documented as the duplicate fallback. `d` now applies to the rest of the batch; `n` and an unknown answer ask again for the next file instead of silently switching the batch to duplicate. |
+| K11 | `vcmd_compress` compared an array expansion with `-eq` (`:4592`) | `${#VAR_TERM_SELECTION_FILE_LIST[@]} -eq 1`. |
+| K20 | `vcmd_compress` named a single-file archive from the first dot in the whole path (`:4595-4598`), so `/tmp/x.dir/a.tar.gz` became `/tmp/x.txz`; a dotfile lost its name entirely | Strip the directory, then the last extension; keep the whole name when the stem is empty. The name is quoted and separated from the command by a space, so the `zip -j` family keeps one argument per word. Found by the K11 test. |
+| K12 | Tab context serialized the lists with `\x1e`, which a file name can contain (`:1911-1919`, `:1854-1856`) | The cache is gone; a tab load re-reads the directory and restores the cursor. |
+| K15 | The NONE OLDPWD lookup used a regex and could return several line numbers, producing a malformed index | `fdir_prev_index`, shared by the NONE and FAST_LS paths: fixed-string whole-line grep, first hit, no `eval`. |
+| K16 | `fInfo` and `fErrControl` were undefined and `--verbose` failed (`:5442`) | Both defined; they write to stderr. |
+| K17 | `elif ... || true` made the fallback branch unconditional (`:5454`) | `|| true` removed. |
+| K18 | An empty `HSFM_OPENER` passed `command -v`, then `nohup ""` failed (`:4549-4552`) | Non-empty guard before the lookup. |
 
 ### 7.2 Logged only
 
-| ID | Bug | Evidence |
-|---|---|---|
-| K5 | `cmd_set left` returns failure on success, skipping the redraw and message | `:4386-4388` |
-| K7 | `fselect_copy` has `*` before `d`/`n`, so those arms are unreachable and an unknown answer duplicates the file | `:4738-4744` |
-| K11 | `vcmd_compress` uses `-eq` on an array expansion | `:4592` |
-| K12 | Tab-context serialization uses `\x1e` as a separator, which collides with paths containing it | `:1911-1919`, `:1854-1856` |
-| K15 | The two OLDPWD index lookups differ; the NONE path can produce a malformed index | `:1394-1429` versus `:1692-1730` |
-| K16 | `fInfo` and `fErrControl` are undefined, reached only with `--verbose` | `:5442` |
-| K17 | `elif ... || true` makes the fallback branch unconditional | `:5454` |
-| K18 | `HSFM_OPENER` is empty on darwin; `command -v ${HSFM_OPENER%% *}` succeeds on an empty name, then `nohup ""` fails | `:4549-4552`, `:4961` |
+None. Every bug from the first pass is fixed in section 7.1. The remaining
+known-unfixed items are in section 9.
 
 ## 8. Verification
 
@@ -412,7 +413,6 @@ Deferred to a later stage:
 
 - moving scroll normalization out of L1 (section 5, Phase 5);
 - deduplicating the OLDPWD blocks (K15);
-- fixing K5, K7, K11, K12, K16, K17, K18;
 - the upstream `w3m` image preview removed from the fork;
 - bash 5 runtime testing.
 
@@ -429,6 +429,7 @@ Deferred to a later stage:
 | 5 | done | Decision-table comment above the page arithmetic. No code moved; body hashes unchanged. |
 | 6 | done | `fhandler_file_op`, `fhandler_quit`, `fcmd_file_get`, `fcmd_bottomwin_toggle`; `fselect_remove` prompt collapsed. |
 | 7 | done | Dead `fgui_tab_create` and its call removed; commented-out blocks removed; this log updated; `README.md` added. |
+| 8 | done | Section 7.1 bugs fixed: K5, K7, K11, K12, K15, K16, K17, K18, plus K20 found while testing K11. `tests/unit/bugs_test.sh` fails on the pre-fix file and passes now. |
 
 ### 10.1 Behavior changes shipped
 
@@ -445,14 +446,23 @@ Only section 7.1 bugs changed behavior, plus the consequences recorded here:
   command row is cleared instead of keeping the submitted text. Cosmetic.
 - Directory entries that failed to stat are still appended after the readable
   ones, as before; the ingest defers them.
+- A tab switch re-reads the directory instead of restoring a cached list, so a
+  file added or removed in another tab shows up. The cursor and scroll indices
+  are still restored.
+- `vcmd_compress` names a single-file archive from the file's own name instead
+  of the directory's, and quotes it.
+- `fselect_copy` asks once per file for `n` and for an unknown answer; `d`
+  still applies to the rest of the batch.
+- `--verbose` prints two diagnostic lines instead of failing.
 
 ### 10.2 Verified here
 
 `bash -n`; `function_hashes`; two unit suites for the directory pipeline; one for
-state; one for the editor core; an 11-step tmux pane diff against
-`filemanager.sh` covering startup, cursor move, directory open, command typing
-and submit, search, find, escape cancel, and history recall; and a tmux test for
-a prompt opened inside a `:` command.
+state; one for the editor core; one for the section 7.1 bugs; a 14-step tmux
+pane diff against
+`filemanager.sh` covering startup, cursor move, tab open/switch/close, directory
+open, command typing and submit, search, find, escape cancel, and history recall;
+and a tmux test for a prompt opened inside a `:` command.
 
 ### 10.3 Not verified here
 
