@@ -84,13 +84,13 @@ fedit_key $'\e[D'
 check "cursor split before submit" "${FM_ED_BUF}/${FM_ED_POSTBUF}" "l/s"
 fedit_key ""
 check "submit returns 1" "$?" "1"
-check "submit joins the buffers" "${VAR_TERM_CMD_INPUT_BUFFER}" "ls"
+check "submit joins the buffers" "${FM_ED_COMMIT}" "ls"
 
 fedit_begin ":" "command" "mode"
 type_keys x
 fedit_key $'\e'
 check "cancel returns 2" "$?" "2"
-check "cancel clears the input" "${VAR_TERM_CMD_INPUT_BUFFER}" ""
+check "cancel clears the input" "${FM_ED_COMMIT}" ""
 
 # --- history ---------------------------------------------------------------
 
@@ -120,7 +120,7 @@ check "prompt never selects find history" "${FM_ED_BUF}" ""
 
 # --- history trim (K9) -----------------------------------------------------
 
-VAR_TERM_CMD_HISTORY_MAX=3
+FM_ED_HISTORY_MAX=3
 VAR_TERM_CMD_HISTORY=("a" "b" "c")
 fhist_append "VAR_TERM_CMD_HISTORY" "d"
 check "history keeps the newest" "${VAR_TERM_CMD_HISTORY[*]}" "b c d"
@@ -130,7 +130,7 @@ check "history length is capped" "${#VAR_TERM_CMD_HISTORY[@]}" "3"
 
 # --- completion slots ------------------------------------------------------
 
-VAR_TERM_CMD_HISTORY_MAX=100
+FM_ED_HISTORY_MAX=100
 
 # K1: a stale mode list must not survive a new session.
 FM_ED_COMP_MODE_LIST=("stale")
@@ -140,8 +140,8 @@ check "begin resets the mode slot" "${#FM_ED_COMP_MODE_LIST[@]}" "0"
 check "begin resets the mode index" "${FM_ED_COMP_MODE_IDX}" "0"
 
 # K2: completion appends to an array, not to a string.
-VAR_TERM_CMD_LIST=("aaa" "aab")
-VAR_TERM_CMD_INPUT_BUFFER=""
+FM_ED_CMD_LIST=("aaa" "aab")
+FM_ED_COMMIT=""
 fedit_begin "" "command" "prompt"
 type_keys a
 fedit_key $'\t'

@@ -79,7 +79,7 @@ prompts=0
 answer="n"
 fprompt_confirm() {
     prompts=$((prompts + 1))
-    VAR_TERM_CMD_INPUT_BUFFER="${answer}"
+    FM_ED_COMMIT="${answer}"
 }
 
 # The overwrite check looks at the basename in the current directory, so the
@@ -119,7 +119,7 @@ eval() { EVAL_CMD="$*"; }
 cd "${fixture}/k11"
 
 archive_name() {
-    VAR_TERM_SELECTION_FILE_LIST=("${fixture}/k11/$1")
+    FM_CMD_SELECTION_LIST=("${fixture}/k11/$1")
     EVAL_CMD=""
     vcmd_compress "" >/dev/null 2>&1
     printf '%s' "${EVAL_CMD}"
@@ -156,22 +156,22 @@ HSFM_ENABLE_HIDDEN=1
 
 cd "${fixture}/tab_a"
 fterminal_read_dir
-VAR_TERM_CONTENT_SCROLL_START_IDX=0
-VAR_TERM_CONTENT_SCROLL_IDX=1
+FM_DIR_SCROLL_START_IDX=0
+FM_DIR_SCROLL_IDX=1
 fterminal_tab_save_contex 0
 
 cd "${fixture}/tab_b"
 fterminal_read_dir
-VAR_TERM_CONTENT_SCROLL_START_IDX=0
-VAR_TERM_CONTENT_SCROLL_IDX=0
+FM_DIR_SCROLL_START_IDX=0
+FM_DIR_SCROLL_IDX=0
 fterminal_tab_save_contex 1
 
 # A file added while the tab is parked must show up on the way back.
 printf 'x\n' > "${fixture}/tab_a/late"
 fterminal_tab_load_contex 0
 check "K12 tab returns to its directory" "$(basename "${PWD}")" "tab_a"
-check "K12 tab restores the cursor" "${VAR_TERM_CONTENT_SCROLL_IDX}" "1"
-check "K12 tab restores the list from disk" "${#VAR_TERM_DIR_FILE_LIST[@]}" "3"
+check "K12 tab restores the cursor" "${FM_DIR_SCROLL_IDX}" "1"
+check "K12 tab restores the list from disk" "${#FM_DIR_FILE_LIST[@]}" "3"
 
 # --- K15: OLDPWD is a path, not a pattern -----------------------------------
 

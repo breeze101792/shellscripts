@@ -24,9 +24,46 @@ Read top down; each section may call the ones below it.
 | L4 Input and modes | key decoding, mode state machine, line editor |
 | L5 Lifecycle | config, persistence, traps, help, `fCore`, `fMain` |
 
-State rules: every global is declared in the config block at the top; one
-section writes each one; a `local` never reuses a state name, because bash scopes
-dynamically.
+State rules: the header declares constants first, then external
+configuration, then internal state. `HSFM_*` is configuration a user's
+`~/.hsfm.sh` sets, so those names are a contract. `DEF_*` is constant. `FM_*` is
+internal, one group per owner: `FM_VIEW_*`, `FM_DIR_*`, `FM_INPUT_*`, `FM_ED_*`,
+`FM_CMD_*`, `FM_ENV_*`. One section writes each variable, and a `local` never
+reuses a state name, because bash scopes dynamically.
+
+## Global state
+
+Every top-level variable carries one of three prefixes.
+
+| Prefix | Meaning | May be renamed |
+|---|---|---|
+| `HSFM_*` | External configuration. A user's `~/.hsfm.sh` sets these. | No, the names are a contract |
+| `DEF_*` | Constants, read-only after load. | No |
+| `FM_*` | Internal state, one owner per group. | Yes, inside the group |
+
+Internal state, by owner:
+
+| Group | Holds | Owner |
+|---|---|---|
+| `FM_VIEW_*` | window geometry, print buffer, display formats | L1 |
+| `FM_DIR_*` | file list, cursor, scroll, marks, tab indices, previous index | L2 |
+| `FM_CMD_*` | selection list, file program, open file | L3 |
+| `FM_INPUT_*` | key, key buffer, mode, visual start | L4 |
+| `FM_ED_*` | line editor buffers, history cursor, completion slots | L4 |
+| `FM_ENV_*` | per-platform `file` and `ls` arguments | L5 |
+| `FM_*` | running, debug, left-hand mode, alias tables, cache paths | L5 |
+
+Five names keep an older `VAR_TERM_*` spelling because the cache files are
+sourced as bash, so the name is the on-disk format: `VAR_TERM_CMD_HISTORY`,
+`VAR_TERM_SEARCH_HISTORY`, `VAR_TERM_FIND_HISTORY`, `VAR_TERM_TAB_LINE_IDX`,
+`VAR_TERM_TAB_LINE_LIST_PATH`. The same applies to `HSFM_COLOR_THEME`,
+`HSFM_READ_DIR_MODE`, `HSFM_LS_SORTING`, `HSFM_PATH_CACHE` and
+`HSFM_FILE_CONFIG`. Renaming one silently drops a user's history or session.
+`REFACTOR.md` section 4.3 is the full list.
+
+The line editor is one core (`fedit_*`) with two drivers: `fcommand_mode_handler`
+for the `:`, `/` and `?` modes, and `fcommand_line_interact` for prompts.
+Commands reach it only through `fprompt_wait` and `fprompt_confirm`.
 
 The line editor is one core (`fedit_*`) with two drivers: `fcommand_mode_handler`
 for the `:`, `/` and `?` modes, and `fcommand_line_interact` for prompts.

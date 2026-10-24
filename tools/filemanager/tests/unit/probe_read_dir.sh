@@ -34,7 +34,9 @@ HSFM_ENABLE_HIDDEN=1
 # '-d': list the entries themselves. Without it ls recurses into the globbed
 # subdirectories and interleaves stderr with stdout, which is nondeterministic
 # in the original script too.
+# Both spellings: this probe runs against the refactored file and the baseline.
 VAR_TERM_DIR_LS_ARGS=(-l -a -d)
+FM_ENV_DIR_LS_ARGS=(-l -a -d)
 OLDPWD=${oldpwd}
 
 # Redirection only: a pipe or a subshell would lose the model.
@@ -42,11 +44,12 @@ fterminal_read_dir >/dev/null 2>&1
 
 # Accept either the refactored or the original state names.
 prev=${FM_DIR_PREV_IDX:-${previous_index:-}}
-files=${VAR_TERM_DIR_FILE_LIST[*]:-}
-info=${VAR_TERM_DIR_FILE_INFO_LIST[*]:-}
+files=${FM_DIR_FILE_LIST[*]:-${VAR_TERM_DIR_FILE_LIST[*]:-}}
+info=${FM_DIR_FILE_INFO_LIST[*]:-${VAR_TERM_DIR_FILE_INFO_LIST[*]:-}}
+cnt=${FM_DIR_LIST_CNT:-${VAR_TERM_DIR_LIST_CNT:-}}
 
 # The only reader of the previous index is arithmetic, where empty is 0.
 printf 'PREV=%s\n' "${prev:-0}"
-printf 'CNT=%s\n' "${VAR_TERM_DIR_LIST_CNT:-}"
+printf 'CNT=%s\n' "${cnt}"
 printf 'FILES=%s\n' "${files}"
 printf 'INFO=%s\n' "${info}"

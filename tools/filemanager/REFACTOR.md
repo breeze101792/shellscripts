@@ -5,7 +5,7 @@ Status: phases 0-7 implemented in `tools/filemanager/filemanager_llm.sh`.
 point at it.
 Owner: build department.
 Target: `tools/filemanager/filemanager_llm.sh`. Source: `filemanager.sh`
-(5,498 lines, 121 functions). Result: 5,350 lines, 153 functions.
+(5,498 lines, 121 functions). Result: 5,324 lines, 153 functions.
 Line numbers below are from the pre-refactor file.
 Test host: Linux, bash 5.3, GNU coreutils. The bash 3.2 checks in section 8.3
 were a static review, as planned; the fractional-`read` fallback is code, not a
@@ -83,65 +83,68 @@ One upward edge is allowed: L3 commands may call exactly `fprompt_wait` and `fpr
 ### 4.2 Rules
 
 - **R1, declaration.** Every global is declared in the state block at the top of its section. Assigned but undeclared is a defect.
-- **R2, write ownership.** One section writes each global. The matrix in section 4.3 is the authority. Other sections may read published products: `VAR_TERM_KEY_CURRENT_INPUT`, `REPLY`, and the L2 directory lists.
+- **R2, write ownership.** One section writes each global. The matrix in section 4.3 is the authority. Other sections may read published products: `FM_INPUT_KEY`, `REPLY`, and the L2 directory lists.
 - **R3, no shadowing.** A `local` may not reuse a state-block name. Bash dynamic scoping means a local in a callee silently captures an ancestor's read. This already happens by accident: `fenv_left_hande_mode` reads `args_value` from `cmd_set` (`:1951`, `:4349`).
 - **R4, prompts.** L3 does not call editor internals. It calls `fprompt_wait` or `fprompt_confirm`.
 
-### 4.3 State ownership matrix
+### 4.3 State namespaces
 
-| State | Declared at | Target owner | Current violations to document |
-|---|---|---|---|
-| `VAR_TERM_PRINT_BUFFER`, `VAR_TERM_PRINT_BUFFER_ENABLE` | `:92-93` | L0 | none |
-| `VAR_TERM_HEIGHT`, `VAR_TERM_WIDTH`, `VAR_TERM_MAINWIN_*` | `:47-48`, `:62-64` | L1 | none after Phase 2 |
-| `VAR_TERM_MSGWIN_BUFFER`, `VAR_TERM_TASKWIN_BUFFER` | `:121`, `:125` | L1 | `flog_msg_debug` writes them |
-| `VAR_TERM_DIR_FILE_LIST`, `_INFO_LIST`, `_CNT` | `:85-87` | L2 | `fnormal_mode_handler` `:2663-2664`, `fterminal_tab_load_contex` `:1876-1881` |
-| `FM_DIR_PREV_IDX` (was `previous_index`) | undeclared | L2 | `fterminal_read_dir` only |
-| `FM_DIR_BACKUP` (was `cur_list`) | undeclared | L2 | `fterminal_read_dir` `:1752` |
-| `FM_DIR_SEARCH_ACTIVE` (was `VAR_SEARCH_MODE`) | undeclared | L2 | `fnormal_mode_handler` `:2537`, `:2666-2668`; `fsys_open` `:4481` |
-| `VAR_TERM_TAB_LINE_*` | `:70-77` | L2 | tab actions in L3 |
-| `VAR_TERM_MARKED_FILE_LIST`, `VAR_TERM_MARK_DIR` | `:130-131` | L2 | mark helpers and mode handlers |
-| `VAR_TERM_CONTENT_SCROLL_IDX`, `_START_IDX`, `VAR_TERM_WIN_CURRENT_CURSOR` | `:81-83` | L2 | L1 drawing writes them (deferred, section 9) |
-| `VAR_TERM_SELECTION_FILE_LIST`, `VAR_TERM_FILE_PROGRAM` | `:132-133` | L3 | mode handlers set them |
-| `VAR_TERM_OPEN_FILE` | `:89` | L3 | `fsys_open` |
-| `VAR_TERM_MODE_CURRENT`, `VAR_TERM_VISUAL_START_IDX` | `:167-168` | L4 | `fmode_setup` only |
-| `VAR_TERM_KEY_CURRENT_INPUT`, `VAR_TERM_KEY_BUFFER_INPUT` | `:94-95` | L4 | key decoder only |
-| `VAR_TERM_CMD_INPUT_BUFFER` | `:142` | L4 | `fselect_copy`/`fselect_remove` read it |
-| `VAR_TERM_{CMD,SEARCH,FIND}_HISTORY` | `:138-140` | L4 | editors only |
-| `VAR_TERM_CMD_LIST`, `VAR_TERM_SELECT_CMD_LIST`, `VAR_TERM_CMD_HISTORY_MAX` | `:137-154` | L4 | constants |
-| `VAR_TERM_FILE_PRE/POST`, `VAR_TERM_MARK_PRE/POST` | `:100-103` | L5 | `fsetup_options` |
-| `VAR_TERM_READ_ARGS`, `VAR_TERM_DIR_LS_ARGS`, `VAR_TERM_FILE_ARGS` | `:42-44` | L5 | `fsetup_shell`, `fsetup_env` |
-| `VAR_TERM_FLAG_FIND_PREVIOUS`, `VAR_TERM_FLAG_RESET_IDX`, `VAR_TERM_SEARCH_END_EARLY` | `:106-107`, `:171` | L5 | mode handlers and `fsys_open` |
-| `HSFM_*` config | `:4-400` | L5 | external contract, frozen |
-| `DEF_*` constants | `:25-31`, `:111-113`, `:160-165` | L5 | frozen |
-| `FM_ED_*` editor state | new in Phase 4 | L4 | none |
-| `FM_DIR_*` model state | new in Phase 3 | L2 | none |
+Three prefixes, one meaning each. The header declares them in this order:
+constants, then external configuration, then internal state.
+
+| Prefix | Meaning | Renames allowed |
+|---|---|---|
+| `HSFM_*` | External configuration. A user's `~/.hsfm.sh` sets these. | No; the names are a contract |
+| `DEF_*` | Constants. | No |
+| `FM_*` | Internal state, one owner per group. | Yes, inside the group |
+
+Internal state, by owner:
+
+| Group | Names | Owner |
+|---|---|---|
+| `FM_VIEW_*` | height, width, main/sub window geometry, tab line height, status line count, print buffer, the four sub-window show flags, msg and task buffers, file and mark pre/post formats | L1 |
+| `FM_DIR_*` | file list, info list, list count, scroll index and start, cursor row, marked list, mark dir, tab cursor and start indices, previous index, backup list, search active, search end early, find-previous and reset-index flags | L2 |
+| `FM_INPUT_*` | mode, visual start, current key, key buffer, read arguments | L4 |
+| `FM_ED_*` | prefix, func, driver, active, buffer, post buffer, history index and backup, command and args, command list, vcmd list, history max, two completion slots, commit buffer | L4 |
+| `FM_CMD_*` | selection list, file program, open file | L3 |
+| `FM_ENV_*` | per-platform `file` and `ls` arguments | L5 |
+| `FM_*` | running, debug, perf debug, file picker, left-hand mode, dir alias tables, derived cache paths | L5 |
 
 Frozen names that are written to disk and must not be renamed:
 
-- `VAR_TERM_CMD_HISTORY`, `VAR_TERM_SEARCH_HISTORY`, `VAR_TERM_FIND_HISTORY` (`fsave_env` `:4852-4874`);
-- `VAR_TERM_TAB_LINE_IDX`, `VAR_TERM_TAB_LINE_LIST_PATH` (`fsave_session` `:4896-4900`);
-- `HSFM_COLOR_THEME`, `HSFM_READ_DIR_MODE`, `HSFM_LS_SORTING` (`fsave_env` `:4878-4880`).
+- `VAR_TERM_CMD_HISTORY`, `VAR_TERM_SEARCH_HISTORY`, `VAR_TERM_FIND_HISTORY` (`fsave_env`);
+- `VAR_TERM_TAB_LINE_IDX`, `VAR_TERM_TAB_LINE_LIST_PATH` (`fsave_session`);
+- `HSFM_COLOR_THEME`, `HSFM_READ_DIR_MODE`, `HSFM_LS_SORTING`, `HSFM_PATH_CACHE`, `HSFM_FILE_CONFIG` (`fsave_env`, `fsave_session`).
 
-The persisted files are sourced as bash (`fload_env` `:4933-4938`, `fload_session` `:4922-4932`), so renaming any of these breaks existing user caches.
+The persisted files are sourced as bash, so renaming any of these breaks
+existing user caches.
 
 ### 4.4 Rename map
 
-Renames happen in the phase that rewrites the code, not before.
-
-| Current | New | Phase |
+| Group | Was | Now |
 |---|---|---|
-| `previous_index` | `FM_DIR_PREV_IDX` | 3 |
-| `cur_list` | `FM_DIR_BACKUP` | 3 |
-| `VAR_SEARCH_MODE` | `FM_DIR_SEARCH_ACTIVE` | 3 |
-| `var_input_buffer` | `FM_ED_BUF` | 4b |
-| `var_post_input_buffer` | `FM_ED_POSTBUF` | 4b |
-| `var_cmd_prefix` | `FM_ED_PREFIX` | 4b |
-| `var_cmd_function` | `FM_ED_FUNC` | 4b |
-| `var_cmd_history_idx` | `FM_ED_HISTIDX` | 4b |
-| `var_cmd_backup_buffer` | `FM_ED_BACKUP` | 4b |
-| `static_var_comp_*`, `comp`, `c` | `FM_ED_COMP_MODE_*`, `FM_ED_COMP_PROMPT_*` | 4b |
-| `tmp_command`, `tmp_args` | `FM_ED_CMD`, `FM_ED_ARGS` | 4b |
-| `args_value` in `fenv_left_hande_mode` | positional `$1` | 2 |
+| View | `VAR_TERM_HEIGHT`, `VAR_TERM_WIDTH`, `VAR_TERM_MAINWIN_*`, `VAR_TERM_SUBWIN_*` | `FM_VIEW_*` |
+| View | `VAR_TERM_PRINT_BUFFER*`, `VAR_TERM_{MSG,TASK}WIN_BUFFER` | `FM_VIEW_PRINT_BUFFER*`, `FM_VIEW_{MSG,TASK}WIN_BUFFER` |
+| Directory | `VAR_TERM_DIR_FILE_LIST`, `_INFO_LIST`, `_CNT` | `FM_DIR_FILE_LIST`, `_INFO_LIST`, `_LIST_CNT` |
+| Directory | `VAR_TERM_CONTENT_SCROLL_IDX`, `_START_IDX` | `FM_DIR_SCROLL_IDX`, `FM_DIR_SCROLL_START_IDX` |
+| Directory | `VAR_TERM_WIN_CURRENT_CURSOR` | `FM_DIR_CURSOR_ROW` |
+| Directory | `VAR_TERM_MARKED_FILE_LIST`, `VAR_TERM_MARK_DIR` | `FM_DIR_MARKED_LIST`, `FM_DIR_MARK_DIR` |
+| Directory | `VAR_TERM_TAB_LINE_LIST_IDX`, `_START_IDX` | `FM_DIR_TAB_CURSOR_IDX`, `FM_DIR_TAB_START_IDX` |
+| Directory | `previous_index`, `cur_list`, `VAR_SEARCH_MODE` | `FM_DIR_PREV_IDX`, `FM_DIR_BACKUP`, `FM_DIR_SEARCH_ACTIVE` |
+| Input | `VAR_TERM_MODE_CURRENT`, `VAR_TERM_VISUAL_START_IDX` | `FM_INPUT_MODE`, `FM_INPUT_VISUAL_START` |
+| Input | `VAR_TERM_KEY_CURRENT_INPUT`, `_BUFFER_INPUT`, `VAR_TERM_READ_ARGS` | `FM_INPUT_KEY`, `FM_INPUT_KEY_BUFFER`, `FM_INPUT_READ_ARGS` |
+| Editor | `var_input_buffer`, `var_post_input_buffer`, `var_cmd_*` | `FM_ED_*` |
+| Editor | `VAR_TERM_CMD_INPUT_BUFFER`, `VAR_TERM_CMD_LIST`, `VAR_TERM_SELECT_CMD_LIST`, `VAR_TERM_CMD_HISTORY_MAX` | `FM_ED_COMMIT`, `FM_ED_CMD_LIST`, `FM_ED_VCMD_LIST`, `FM_ED_HISTORY_MAX` |
+| Command | `VAR_TERM_SELECTION_FILE_LIST`, `VAR_TERM_FILE_PROGRAM`, `VAR_TERM_OPEN_FILE` | `FM_CMD_SELECTION_LIST`, `FM_CMD_FILE_PROGRAM`, `FM_CMD_OPEN_FILE` |
+| Env | `VAR_TERM_FILE_ARGS`, `VAR_TERM_DIR_LS_ARGS` | `FM_ENV_FILE_ARGS`, `FM_ENV_DIR_LS_ARGS` |
+| Process | `HSFM_RUNNING`, `HSFM_DEBUG`, `HSFM_PERFORMANCE_DEBUG` | `FM_RUNNING`, `FM_DEBUG`, `FM_PERF_DEBUG` |
+| Process | `HSFM_FILE_PICKER`, `HSFM_ENV_TITLE`, `HSFM_ENV_LEFT_HAND_MODE` | `FM_FILE_PICKER`, `FM_ENV_TITLE`, `FM_LEFT_HAND_MODE` |
+| Process | `HSFM_DIR_ALIAS_KEY/PATH` | `FM_DIR_ALIAS_KEY/PATH` |
+| Process | `HSFM_FILE_{RUNTIME_ENV,SESSION,CD_LASTPATH,MESSAGE,LOGS}` | `FM_FILE_*` |
+
+Removed as dead: `HSFM_NAME`, `HSFM_STAT_CMD`, `PATH_SCRIPT_ROOT`,
+`VAR_TERM_MSGWIN_SCROLL_IDX`, `VAR_TERM_TASKWIN_SCROLL_IDX`,
+`VAR_TERM_TAB_LINE_BUFFER`.
 
 ## 5. Line editor specification (Phase 4)
 
@@ -160,7 +163,7 @@ This table is written from the current code and is the acceptance spec for Phase
 | 7 | Rendering stream | `fterminal_print` on stdout `:3305`, `:2970` | `read -p` on stderr `:3406` | Preserve: each driver owns its rendering. |
 | 8 | Early return skips cursor show | `:3148`, `:3159`, `:3166`, `:3178`, `:3183`, `:3189` | always breaks | Preserve per driver. Do not normalize. |
 | 9 | `read -t 0` input flush | no `:5335` | yes `:3689` | Preserve: prompt only. |
-| 10 | ESC drain | `VAR_TERM_READ_ARGS` `:3266`, empty on bash 3.2, so it blocks | `-t 0.02` `:3409`, invalid on bash 3.2 | Fix: one reader. Use `-t 0.02` on bash 4+, a `-t 0` drain loop on bash 3.2 (K4). |
+| 10 | ESC drain | `FM_INPUT_READ_ARGS` `:3266`, empty on bash 3.2, so it blocks | `-t 0.02` `:3409`, invalid on bash 3.2 | Fix: one reader. Use `-t 0.02` on bash 4+, a `-t 0` drain loop on bash 3.2 (K4). |
 | 11 | Return code on submit/cancel | `return 0` `:3148-3260` | `break`, then returns 0 | Core returns 0 continue, 1 submit, 2 cancel. Drivers map to today's codes. |
 | 12 | Completion lifetime | list survives across sessions; reset only on backspace/type `:3067`, `:3300` | `unset comp c` at exit `:3694` and on type `:3679` | Two named slots, both reset by `fedit_begin` (K1 fixed). The prompt slot is also cleared at exit, as today. |
 | 13 | Completion append | array append `:3104`, `:3114`, `:3122` | string append `:3530`, `:3537` | Fix: array append in the one engine (K2). |
@@ -430,6 +433,7 @@ Deferred to a later stage:
 | 6 | done | `fhandler_file_op`, `fhandler_quit`, `fcmd_file_get`, `fcmd_bottomwin_toggle`; `fselect_remove` prompt collapsed. |
 | 7 | done | Dead `fgui_tab_create` and its call removed; commented-out blocks removed; this log updated; `README.md` added. |
 | 8 | done | Section 7.1 bugs fixed: K5, K7, K11, K12, K15, K16, K17, K18, plus K20 found while testing K11. `tests/unit/bugs_test.sh` fails on the pre-fix file and passes now. |
+| 9 | done | Namespace pass: internal state renamed to `FM_*` groups, external config left on `HSFM_*`, the header reordered constants, external, internal. Six dead globals removed. Loaded values are byte-identical to the pre-pass file. |
 
 ### 10.1 Behavior changes shipped
 
