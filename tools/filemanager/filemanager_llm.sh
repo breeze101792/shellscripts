@@ -2257,7 +2257,7 @@ cmd_touch()
 # otherwise the file under the cursor.
 fcmd_file_get()
 {
-    local var_arg=$*
+    local var_arg="$*"
 
     if test -f "${var_arg}"
     then
@@ -4341,7 +4341,8 @@ fedit_dispatch()
 # Driver A: one key per call, driven by fapp_core.
 fin_mode_command()
 {
-    local var_key=$*
+    # Quoted: an unquoted '$*' turns a DEL byte into a CTLESC pair.
+    local var_key="$*"
 
     fout_print '\e[?25l\e[%sH' "$FM_VIEW_HEIGHT"
 

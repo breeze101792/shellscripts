@@ -3066,6 +3066,13 @@ fcommand_mode_handler() {
             # Clear tab-completion.
             unset static_var_comp_list static_var_comp_idx
             ;;
+        # Delete: drop the character under the cursor.
+        $'\e[3~')
+            var_post_input_buffer=${var_post_input_buffer:1}
+
+            # Clear tab-completion.
+            unset static_var_comp_list static_var_comp_idx
+            ;;
 
         # Tab.
         $'\t')
@@ -3503,6 +3510,13 @@ fcommand_line_interact() {
             # Backspace.
             $'\177' | $'\b')
                 var_input_buffer=${var_input_buffer%?}
+
+                # Clear tab-completion.
+                unset comp c
+                ;;
+            # Delete: drop the character under the cursor.
+            $'\e[3~')
+                var_post_input_buffer=${var_post_input_buffer:1}
 
                 # Clear tab-completion.
                 unset comp c
