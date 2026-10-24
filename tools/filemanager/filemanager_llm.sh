@@ -1405,11 +1405,11 @@ fdir_ingest()
     # No -r: the callers rely on backslash processing, as the loops did.
     while read var_line;
     do
-        if ! [[ "${var_line}" =~ / ]]
+        if [[ ${var_line} != */* ]]
         then
             continue
         fi
-        if [[ ${var_line} =~ ^ls:* ]]
+        if [[ ${var_line} == ls:* ]]
         then
             # Access fail
             var_line="${var_line/: Permission denied/}"
@@ -1425,25 +1425,36 @@ fdir_ingest()
             fview_log_debug "${var_item}"
             continue
         else
-            var_line="${var_line%% ->*}"
-
-            var_info="${var_line%% /*}"
-            var_item=${var_line/#*[0-9]? \//\/}
+            case ${var_line:0:1} in
+                # 'ls -l' entry: mode, owner, size and date, then the path. None
+                # of the prefix fields hold a slash, so the first slash starts
+                # the path. A '*/' glob would backtrack over the whole line for
+                # every entry; this does not.
+                [-dlcbps])
+                    var_item="/${var_line#*/}"
+                    # Everything before the path, less the space ahead of it.
+                    var_info="${var_line:0:${#var_line}-${#var_item}-1}"
+                    # A symlink is listed as 'path -> target'.
+                    var_item="${var_item%% ->*}"
+                    ;;
+                # Anything else (a bare path from find, a find error) is kept
+                # whole, as the old pattern left it.
+                *)
+                    var_info="${var_line%% /*}"
+                    var_item="${var_line}"
+                    ;;
+            esac
         fi
 
-        if [[ -d ${var_item} ]]
-        then
-            FM_DIR_FILE_LIST+=("${var_item}")
-            FM_DIR_FILE_INFO_LIST+=("${var_info}")
+        FM_DIR_FILE_LIST+=("${var_item}")
+        FM_DIR_FILE_INFO_LIST+=("${var_info}")
 
-            # Find the position of the child directory in the
-            # parent directory list.
-            [[ ${var_item} == "${OLDPWD}" ]] &&
-                ((FM_DIR_PREV_IDX=var_item_index))
-        else
-            FM_DIR_FILE_LIST+=("${var_item}")
-            FM_DIR_FILE_INFO_LIST+=("${var_info}")
-        fi
+        # Position of the previous directory in the list. Comparing the path is
+        # enough: OLDPWD is a directory, and a stat per entry costs more than
+        # the rest of this loop.
+        [[ ${var_item} == "${OLDPWD}" ]] &&
+            ((FM_DIR_PREV_IDX=var_item_index))
+
         ((var_item_index++))
     done
 

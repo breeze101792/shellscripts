@@ -452,6 +452,7 @@ Deferred to a later stage:
 | 13 | done | One case per function: `tests/unit/functions_test.sh`, 162 cases and 462 assertions, 2.7 s. 146 commented-out code lines removed from function bodies. K22 fixed (zip probe leaked to stdout); K23 logged (FAST_LS phantom entry, macOS path). |
 | 14 | done | Scrolling is per row: the two edge branches of the page arithmetic shift the window by one instead of a page. Verified in a real terminal for normal and visual mode, both directions, plus the `g`/`G` jumps. |
 | 15 | done | Scroll flash and lag: the edge repaints in place (no `fout_clear`) and the draw path uses `printf -v`. Measured on a pty: zero screen clears during an edge sweep (was one per row), 20 edge scrolls in 91 ms (was 585 ms). |
+| 16 | done | Directory read made cheaper, so a tab switch can stay fresh: the `ls -l` parser finds the path at the first slash instead of backtracking a `*/` glob, the per-entry `stat` is gone, and the per-line regexes are globs. 2,000 entries went from 156 ms to 72 ms. |
 
 ### 10.1 Behavior changes shipped
 
@@ -470,7 +471,8 @@ Only section 7.1 bugs changed behavior, plus the consequences recorded here:
   ones, as before; the ingest defers them.
 - A tab switch re-reads the directory instead of restoring a cached list, so a
   file added or removed in another tab shows up. The cursor and scroll indices
-  are still restored.
+  are still restored. The read is about three times cheaper after the parser
+  change below, which keeps that choice affordable.
 - `vcmd_compress` names a single-file archive from the file's own name instead
   of the directory's, and quotes it.
 - `fselect_copy` asks once per file for `n` and for an unknown answer; `d`
