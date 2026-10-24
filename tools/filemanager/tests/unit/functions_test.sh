@@ -866,9 +866,12 @@ setwin
 FM_DIR_SCROLL_IDX=1
 FM_DIR_SCROLL_START_IDX=0
 FM_DIR_CURSOR_ROW=0
+reset_fout
 redraw_n=0
 fnav_scroll_up
-check "fnav_scroll_up: above the first row it repaints" "${redraw_n}" "1"
+check "fnav_scroll_up: above the first row it repaints" "$([[ ${n_print} -gt 0 ]] && echo yes)" "yes"
+check "fnav_scroll_up: without clearing the screen" "${n_clear}" "0"
+check "fnav_scroll_up: without a full redraw" "${redraw_n}" "0"
 check "fnav_scroll_up: the cursor advances" "${FM_DIR_SCROLL_IDX}" "0"
 
 reset_fout
@@ -890,6 +893,25 @@ FM_DIR_SCROLL_IDX=${FM_DIR_LIST_CNT}
 fnav_scroll_down
 check "fnav_scroll_down: at the bottom it does nothing" \
     "${FM_DIR_SCROLL_IDX}" "${FM_DIR_LIST_CNT}"
+
+# At the window edge it repaints in place: no clear, no full redraw.
+setwin
+FM_VIEW_MAINWIN_HEIGHT=20
+FM_DIR_LIST_CNT=39
+for i in $(seq 0 39); do
+    FM_DIR_FILE_LIST[$i]="/tmp/file_${i}"
+    FM_DIR_FILE_INFO_LIST[$i]="info"
+done
+FM_DIR_SCROLL_IDX=$((FM_VIEW_MAINWIN_HEIGHT - 1))
+FM_DIR_SCROLL_START_IDX=0
+FM_DIR_CURSOR_ROW=$((FM_VIEW_MAINWIN_HEIGHT - 1))
+reset_fout
+redraw_n=0
+fnav_scroll_down
+check "fnav_scroll_down: past the bottom it repaints" "$([[ ${n_print} -gt 0 ]] && echo yes)" "yes"
+check "fnav_scroll_down: without clearing the screen" "${n_clear}" "0"
+check "fnav_scroll_down: without a full redraw" "${redraw_n}" "0"
+check "fnav_scroll_down: the window follows" "${FM_DIR_SCROLL_START_IDX}" "1"
 
 # --- fnav_scroll_up_visual -------------------------------------------------
 load_tree

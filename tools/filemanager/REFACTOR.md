@@ -450,6 +450,8 @@ Deferred to a later stage:
 | 11 | done | Function namespace: every function renamed to its layer prefix, and the one straggler moved into its section. 739 references across the script, tests and docs. The `:help` pane still matches the baseline. |
 | 12 | done | K21: the Delete key now deletes under the cursor in both drivers. Unit test plus a real-terminal check (`:cd`, Left, Delete gives `:c`). |
 | 13 | done | One case per function: `tests/unit/functions_test.sh`, 162 cases and 462 assertions, 2.7 s. 146 commented-out code lines removed from function bodies. K22 fixed (zip probe leaked to stdout); K23 logged (FAST_LS phantom entry, macOS path). |
+| 14 | done | Scrolling is per row: the two edge branches of the page arithmetic shift the window by one instead of a page. Verified in a real terminal for normal and visual mode, both directions, plus the `g`/`G` jumps. |
+| 15 | done | Scroll flash and lag: the edge repaints in place (no `fout_clear`) and the draw path uses `printf -v`. Measured on a pty: zero screen clears during an edge sweep (was one per row), 20 edge scrolls in 91 ms (was 585 ms). |
 
 ### 10.1 Behavior changes shipped
 
@@ -474,6 +476,14 @@ Only section 7.1 bugs changed behavior, plus the consequences recorded here:
 - `fselect_copy` asks once per file for `n` and for an unknown answer; `d`
   still applies to the rest of the batch.
 - `--verbose` prints two diagnostic lines instead of failing.
+- `j` and `k` at the window edge move the view by one row, not by a page.
+  They repaint the visible rows in place instead of clearing the screen, so a
+  scroll no longer flashes. `g`, `G`, search results and tab restores still
+  jump as before.
+- The draw path builds strings with `printf -v` instead of `$(printf ...)`, so
+  drawing a row costs one process, not one per row. A row went from 900 us to
+  180 us and a window repaint from 19 ms to 3.4 ms; twenty edge scrolls settled
+  in 91 ms instead of 585 ms.
 
 ### 10.2 Verified here
 

@@ -660,7 +660,6 @@ fview_draw_dir() {
     local var_scroll_new_start
     local var_win_new_cursor
     local var_scroll_len=$(($FM_VIEW_MAINWIN_HEIGHT - 1))
-    local var_scroll_distance=$(($FM_VIEW_MAINWIN_HEIGHT - 3))
 
     # When going up the directory tree, place the cursor on the position
     # of the previous directory.
@@ -697,9 +696,8 @@ fview_draw_dir() {
     #
     # The branches are tested in this order, first match wins:
     #   0  cursor inside the current page                 keep the page
-    #   1  cursor exactly one page past the start         scroll one page down
-    #   2  cursor one row above the start                 scroll one page up,
-    #                                                     or pin to the top
+    #   1  cursor one row past the bottom                 scroll one row down
+    #   2  cursor one row above the start                 scroll one row up
     #   3  list shorter than the window, or near the top  pin to the top
     #   4  cursor within one window of the end            pin to the bottom
     #   5  stored cursor row below the window             follow the cursor
@@ -714,22 +712,17 @@ fview_draw_dir() {
         ((var_win_new_cursor=FM_DIR_SCROLL_IDX - FM_DIR_SCROLL_START_IDX))
         dbg_case="0"
     elif ((FM_DIR_SCROLL_IDX - FM_DIR_SCROLL_START_IDX == FM_VIEW_MAINWIN_HEIGHT)); then
-        # Go to next page, add one for conveint
-        ((var_scroll_new_start=FM_DIR_SCROLL_START_IDX + var_scroll_distance + 1))
-        ((var_win_new_cursor=FM_DIR_CURSOR_ROW-var_scroll_distance))
+        # One row past the bottom: shift the window by one row, the cursor
+        # stays on the last visible row.
+        ((var_scroll_new_start=FM_DIR_SCROLL_START_IDX + 1))
+        ((var_win_new_cursor=FM_VIEW_MAINWIN_HEIGHT - 1))
         dbg_case="1"
     # elif ((FM_DIR_SCROLL_IDX - FM_DIR_SCROLL_START_IDX >= FM_VIEW_MAINWIN_HEIGHT)); then
     elif ((FM_DIR_SCROLL_IDX + 1 == FM_DIR_SCROLL_START_IDX)); then
-        # Go to previous page, add one for conveint
-        # check if hit the top.
-        if ((FM_DIR_SCROLL_START_IDX > var_scroll_distance))
-        then
-            ((var_scroll_new_start=FM_DIR_SCROLL_IDX - var_scroll_distance))
-            ((var_win_new_cursor=var_scroll_distance))
-        else
-            ((var_scroll_new_start=0))
-            ((var_win_new_cursor=FM_DIR_SCROLL_IDX))
-        fi
+        # One row above the top: shift the window up by one row, the cursor
+        # stays on the first visible row.
+        ((var_scroll_new_start=FM_DIR_SCROLL_START_IDX - 1))
+        ((var_win_new_cursor=0))
         dbg_case="2"
     # This will handle other case.
     elif ((FM_DIR_LIST_CNT < FM_VIEW_MAINWIN_HEIGHT || FM_DIR_SCROLL_IDX < FM_VIEW_MAINWIN_HEIGHT)); then
@@ -909,7 +902,7 @@ fview_draw_file_line() {
         var_format+=\\e[${HSFM_COLOR_SELECTION}m${FM_VIEW_MARK_PRE}
         var_prefix=${FM_VIEW_MARK_POST}
     else
-        var_prefix=$(printf "% ${#FM_VIEW_MARK_POST}s" "")
+        printf -v var_prefix "% ${#FM_VIEW_MARK_POST}s" ""
     fi
 
     # Escape the directory string.
@@ -1009,7 +1002,7 @@ fview_draw_tab_line() {
     var_right_cnt="${#var_right}"
     ((var_content_cnt=FM_VIEW_WIDTH-var_left_cnt-var_right_cnt))
     [[ ${var_content_cnt} < 0 ]] && ((${var_content_cnt}=0))
-    var_spacing=$(printf "% ${var_content_cnt}s" "")
+    printf -v var_spacing "% ${var_content_cnt}s" ""
 
 
     # Escape the directory string.
@@ -1085,6 +1078,7 @@ fview_draw_status_line() {
     local var_spacing=""
     local var_content_cnt=""
     local var_pwd_escaped=""
+    local var_tmp=""
 
     # Escape the directory string.
     # Remove all non-printable characters.
@@ -1107,16 +1101,19 @@ fview_draw_status_line() {
 
     # only shows printable chars.
     if [[ ${#FM_INPUT_KEY} -ne 0 ]] && [[ "${FM_INPUT_KEY}" =~ [a-zA-Z0-9!-~] ]]; then
-        var_right+=$(printf "Key %- 5s" "${FM_INPUT_KEY}")
+        printf -v var_tmp "Key %- 5s" "${FM_INPUT_KEY}"
+        var_right+="${var_tmp}"
     fi
 
     if [[ ${#FM_CMD_SELECTION_LIST[@]} -ne 0 ]]
     then
         # var_right+="Sel: ${#FM_CMD_SELECTION_LIST[@]} "
-        var_right+=$(printf "Sel %s" "${#FM_CMD_SELECTION_LIST[@]}")
+        printf -v var_tmp "Sel %s" "${#FM_CMD_SELECTION_LIST[@]}"
+        var_right+="${var_tmp}"
     fi
     # var_right+="($((FM_DIR_SCROLL_IDX + 1))/$((FM_DIR_LIST_CNT + 1))) "
-    var_right+=$(printf "% 4s/%- 4s" "$((FM_DIR_SCROLL_IDX + 1))" "$((FM_DIR_LIST_CNT + 1))")
+    printf -v var_tmp "% 4s/%- 4s" "$((FM_DIR_SCROLL_IDX + 1))" "$((FM_DIR_LIST_CNT + 1))"
+    var_right+="${var_tmp}"
     # var_right+="$(date '+%Y/%m/%d')"
 
     ## calc spacing
@@ -1131,7 +1128,7 @@ fview_draw_status_line() {
         var_center=" ${var_center#*/}"
         var_center_cnt="${#var_center}"
     fi
-    var_spacing=$(printf "% $((var_content_cnt - ${var_center_cnt}))s" "")
+    printf -v var_spacing "% $((var_content_cnt - ${var_center_cnt}))s" ""
 
     ## Update content
     # '\e7':       Save cursor position.
@@ -1770,7 +1767,10 @@ fnav_scroll_up() {
         fview_draw_file_line "$((FM_DIR_SCROLL_IDX+1))"
 
         if ((FM_DIR_CURSOR_ROW < 1)); then
-            fview_redraw
+            # Same at the top edge: repaint in place, do not clear.
+            fview_draw_dir
+            fview_draw_status_line
+            fout_flush
             return 0
         else
             fout_print '\e[A'
@@ -1794,11 +1794,11 @@ fnav_scroll_down() {
             fview_draw_file_line $((FM_DIR_SCROLL_IDX-1))
             ((FM_DIR_CURSOR_ROW++))
         else
-            # FIXME, it's a patch to avoid glitch
-            # clear the first content line
-
-            # Draw new page, this is not partial update.
-            fview_redraw
+            # At the window edge: shift one row and repaint the visible rows in
+            # place. A full redraw clears the screen, which flashes.
+            fview_draw_dir
+            fview_draw_status_line
+            fout_flush
             return 0
         fi
         fview_draw_file_line $((FM_DIR_SCROLL_IDX))
