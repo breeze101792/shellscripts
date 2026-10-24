@@ -15,14 +15,14 @@ A terminal file manager written as one bash script, derived from
 
 Read top down; each section may call the ones below it.
 
-| Section | Owns |
-|---|---|
-| L0 Driver | stdout and escape emission, print buffer, terminal modes, rectangle drawing |
-| L1 View | geometry, every `draw_*`, message and status output |
-| L2 Workspace | directory list, tabs, marks, cursor and scroll numbers, file getters |
-| L3 Commands | `cmd_*`, `vcmd_*`, file operations, `fsys_open`, scroll and tab actions |
-| L4 Input and modes | key decoding, mode state machine, line editor |
-| L5 Lifecycle | config, persistence, traps, help, `fCore`, `fMain` |
+| Section | Prefix | Owns |
+|---|---|---|
+| L0 Driver | `fout_*` | stdout and escape emission, print buffer, terminal modes, rectangle drawing |
+| L1 View | `fview_*` | geometry, every `draw_*`, message and status output |
+| L2 Workspace | `fdir_*` | directory list, tabs, marks, cursor and scroll numbers, file getters |
+| L3 Commands | `cmd_*`, `fcmd_*`, `ftab_*`, `fnav_*` | commands, file operations, scroll and tab actions |
+| L4 Input and modes | `fin_*`, `fedit_*` | key decoding, mode state machine, line editor |
+| L5 Lifecycle | `fapp_*` | config, persistence, traps, help, entry points |
 
 State rules: the header declares constants first, then external
 configuration, then internal state. `HSFM_*` is configuration a user's
@@ -61,12 +61,15 @@ sourced as bash, so the name is the on-disk format: `VAR_TERM_CMD_HISTORY`,
 `HSFM_FILE_CONFIG`. Renaming one silently drops a user's history or session.
 `REFACTOR.md` section 4.3 is the full list.
 
-The line editor is one core (`fedit_*`) with two drivers: `fcommand_mode_handler`
-for the `:`, `/` and `?` modes, and `fcommand_line_interact` for prompts.
-Commands reach it only through `fprompt_wait` and `fprompt_confirm`.
+Families that differ only by data have one helper and thin wrappers:
+`fcmd_page` (full-screen commands), `fcmd_spawn_viewer` (`image`, `media`),
+`fcmd_create` (`mkdir`, `touch`), `fdirsrc_ls` (sorted or not),
+`fview_draw_bottomwin` (message and task windows),
+`fview_draw_actionwin` (mini and check windows), `ftab_insert`,
+`ftab_switch`, `ftab_swap`, `fnav_scroll_edge_visual`.
 
-The line editor is one core (`fedit_*`) with two drivers: `fcommand_mode_handler`
-for the `:`, `/` and `?` modes, and `fcommand_line_interact` for prompts.
+The line editor is one core (`fedit_*`) with two drivers: `fin_mode_command`
+for the `:`, `/` and `?` modes, and `fin_prompt` for prompts.
 Commands reach it only through `fprompt_wait` and `fprompt_confirm`.
 
 ## Tests
@@ -78,6 +81,8 @@ tests/unit/read_dir_test.sh                         # directory model vs fileman
 tests/unit/ingest_test.sh                           # one parse line at a time
 tests/unit/editor_test.sh                           # editor core, key by key
 tests/unit/bugs_test.sh                             # the bugs REFACTOR.md section 7.1 lists
+tests/unit/merge_test.sh                            # the generic helpers
+tests/unit/functions_test.sh                        # one case per function, all 162
 tests/smoke/keys_test.sh                            # tmux pane diff vs filemanager.sh
 tests/smoke/nested_prompt_test.sh                   # a prompt inside a : command
 ```

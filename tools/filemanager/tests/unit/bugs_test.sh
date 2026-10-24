@@ -32,17 +32,17 @@ source "${script}" >/dev/null 2>&1
 set -u
 
 # The UI is out of scope here.
-fterminal_print() { :; }
-fterminal_redraw() { :; }
-fterminal_flush() { :; }
-fterminal_draw_command_line() { :; }
-fterminal_draw_status_line() { :; }
-fterminal_draw_window() { :; }
-fterminal_draw_miniwin() { :; }
-fterminal_mark_reset() { :; }
-fterminal_clear() { :; }
-fmode_setup() { :; }
-flog_msg() { :; }
+fout_print() { :; }
+fview_redraw() { :; }
+fout_flush() { :; }
+fview_draw_command_line() { :; }
+fview_draw_status_line() { :; }
+fout_draw_window() { :; }
+fview_draw_miniwin() { :; }
+fdir_mark_reset() { :; }
+fout_clear() { :; }
+fin_mode_setup() { :; }
+fview_log() { :; }
 
 fail=0
 check() {
@@ -155,20 +155,20 @@ HSFM_READ_DIR_MODE=0
 HSFM_ENABLE_HIDDEN=1
 
 cd "${fixture}/tab_a"
-fterminal_read_dir
+fdir_read
 FM_DIR_SCROLL_START_IDX=0
 FM_DIR_SCROLL_IDX=1
-fterminal_tab_save_contex 0
+fdir_tab_save 0
 
 cd "${fixture}/tab_b"
-fterminal_read_dir
+fdir_read
 FM_DIR_SCROLL_START_IDX=0
 FM_DIR_SCROLL_IDX=0
-fterminal_tab_save_contex 1
+fdir_tab_save 1
 
 # A file added while the tab is parked must show up on the way back.
 printf 'x\n' > "${fixture}/tab_a/late"
-fterminal_tab_load_contex 0
+fdir_tab_load 0
 check "K12 tab returns to its directory" "$(basename "${PWD}")" "tab_a"
 check "K12 tab restores the cursor" "${FM_DIR_SCROLL_IDX}" "1"
 check "K12 tab restores the list from disk" "${#FM_DIR_FILE_LIST[@]}" "3"
@@ -182,7 +182,7 @@ cd "${fixture}/k15"
 HSFM_READ_DIR_MODE=0
 OLDPWD="${fixture}/k15/a.b"
 FM_DIR_PREV_IDX=0
-fterminal_read_dir
+fdir_read
 check "K15 exact path wins over a regex match" "${FM_DIR_PREV_IDX}" "1"
 
 # --- K18: an empty opener is not launched -----------------------------------
@@ -192,7 +192,7 @@ printf '\000\001\002binary\003' > "${fixture}/k18/file.bin"
 
 cmd_editor() { :; }
 FLOG=()
-flog_msg() { FLOG+=("$*"); }
+fview_log() { FLOG+=("$*"); }
 DISPLAY=":0"
 HSFM_OPENER=""
 
@@ -202,16 +202,16 @@ check "K18 empty opener falls through to the message" \
     "$(printf '%s\n' "${FLOG[@]}" | grep -c "Unknown file type")" "1"
 
 unset DISPLAY
-flog_msg() { :; }
+fview_log() { :; }
 
 # --- K16: the verbose hooks exist -------------------------------------------
 
-check "K16 fInfo is defined" "$(type -t fInfo)" "function"
-check "K16 fErrControl is defined" "$(type -t fErrControl)" "function"
-fInfo >/dev/null 2>&1
-check "K16 fInfo runs" "$?" "0"
-fErrControl fMain 42 >/dev/null 2>&1
-check "K16 fErrControl runs" "$?" "0"
+check "K16 fapp_info is defined" "$(type -t fapp_info)" "function"
+check "K16 fapp_err_control is defined" "$(type -t fapp_err_control)" "function"
+fapp_info >/dev/null 2>&1
+check "K16 fapp_info runs" "$?" "0"
+fapp_err_control fapp_main 42 >/dev/null 2>&1
+check "K16 fapp_err_control runs" "$?" "0"
 
 printf '\n%s failure(s)\n' "${fail}"
 [[ "${fail}" -eq 0 ]]

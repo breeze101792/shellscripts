@@ -39,8 +39,13 @@ VAR_TERM_DIR_LS_ARGS=(-l -a -d)
 FM_ENV_DIR_LS_ARGS=(-l -a -d)
 OLDPWD=${oldpwd}
 
-# Redirection only: a pipe or a subshell would lose the model.
-fterminal_read_dir >/dev/null 2>&1
+# Redirection only: a pipe or a subshell would lose the model. The baseline
+# still calls it fterminal_read_dir.
+if declare -F fdir_read >/dev/null; then
+    fdir_read >/dev/null 2>&1
+else
+    fterminal_read_dir >/dev/null 2>&1
+fi
 
 # Accept either the refactored or the original state names.
 prev=${FM_DIR_PREV_IDX:-${previous_index:-}}

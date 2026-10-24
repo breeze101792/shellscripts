@@ -412,32 +412,32 @@ export FM_DIR_ALIAS_PATH=("${HOME}" "/var/log")
 ###########################################################
 ## Utility Functions
 ###########################################################
-futility_stream_purify() {
+fout_sanitize_name() {
     sed "s/ /_/g" | sed -r "s/[^0-9a-zA-Z._-]/_/g" | sed -r "s/\[_\]\+/_/g" | sed -r "s/^_//g" | sed -r "s/_$//g" | tr -s '_'
 }
 
 ###########################################################
 ## Terminal Functions
 ###########################################################
-fterminal_print() {
+fout_print() {
     if [ ${FM_VIEW_PRINT_BUFFER_ENABLE} = true ]
     then
         local tmp_buf=""
         printf -v tmp_buf "$@"
         FM_VIEW_PRINT_BUFFER+="${tmp_buf}"
     else
-        fterminal_flush
+        fout_flush
         printf "$@"
     fi
 }
 
-fterminal_flush() {
+fout_flush() {
     printf "%s" "${FM_VIEW_PRINT_BUFFER}"
     FM_VIEW_PRINT_BUFFER_ENABLE=false
     FM_VIEW_PRINT_BUFFER=""
 }
 
-fterminal_setup() {
+fout_setup() {
     # Setup the terminal for the TUI.
     # '\e[?1049h': Use alternative screen buffer.
     # '\e[?7l':    Disable line wrapping.
@@ -445,13 +445,13 @@ fterminal_setup() {
     # '\e[2J':     Clear the screen.
     # '\e[1;Nr':   Limit scrolling to scrolling area.
     #              Also sets cursor to (0,0).
-    fterminal_print '\e[?1049h\e[?7l\e[?25l\e[2J\e[1;%sr' "$FM_VIEW_MAINWIN_HEIGHT"
+    fout_print '\e[?1049h\e[?7l\e[?25l\e[2J\e[1;%sr' "$FM_VIEW_MAINWIN_HEIGHT"
 
     # Hide echoing of user input
     stty -echo
 }
 
-fterminal_reset() {
+fout_reset() {
     # Reset the terminal to a useable state (undo all changes).
     # '\e[?7h':   Re-enable line wrapping.
     # '\e[?25h':  Unhide the cursor.
@@ -459,14 +459,13 @@ fterminal_reset() {
     # '\e[;r':    Set the FM_DIR_SCROLL_IDX region to its default value.
     #             Also sets cursor to (0,0).
     # '\e[?1049l: Restore main screen buffer.
-    # fterminal_print '\e[?7h\e[?25h\e[2J\e[;r\e[?1049l'
-    fterminal_print '\e[?7h\e[?25h\e[;r\e[?1049l'
+    fout_print '\e[?7h\e[?25h\e[;r\e[?1049l'
 
     # Show user input.
     stty echo
 }
 
-fterminal_clear() {
+fout_clear() {
     # Only clear the scrolling window (dir item list).
     # '\e[%sH':    Move cursor to bottom of FM_DIR_SCROLL_IDX area.
     # '\e[9999C':  Move cursor to right edge of the terminal.
@@ -474,16 +473,15 @@ fterminal_clear() {
     # '\e[2J':     Clear screen fully (if using tmux) (fixes clear issues).
     # '\e[1;%sr':  Clearing the screen resets the FM_DIR_SCROLL_IDX region(?). Re-set it.
     #              Also sets cursor to (0,0).
-    # fterminal_print '\e[%sH\e[9999C\e[1J%b\e[1;%sr' \
     #        "$((FM_VIEW_HEIGHT-2))" "${TMUX:+\e[2J}" "$FM_VIEW_MAINWIN_HEIGHT"
-    fterminal_print '\e[%sH\e[9999C\e[1J%b\e[1;%sr' \
+    fout_print '\e[%sH\e[9999C\e[1J%b\e[1;%sr' \
         "$((FM_VIEW_HEIGHT))" "${TMUX:+\e[2J}" "$(($FM_VIEW_MAINWIN_HEIGHT+$FM_VIEW_TAB_LINE_HEIGHT))"
 }
 
 ###########################################################
 ## raw draw Functions
 ###########################################################
-fterminal_draw_window() {
+fout_draw_window() {
     local def_padding=0
     #  6 Args with order
     local var_start_line=$((1 + ${FM_VIEW_TAB_LINE_HEIGHT} + ${FM_VIEW_MAINWIN_HEIGHT}))
@@ -510,7 +508,6 @@ fterminal_draw_window() {
     # var_height=$((${FM_VIEW_HEIGHT}/2))
     # var_start_line=$((${FM_VIEW_HEIGHT}/4))
     # var_start_col=$((${FM_VIEW_WIDTH}/4))
-    # flog_msg "ORI WH: ${FM_VIEW_HEIGHT}/${FM_VIEW_WIDTH}, WH: ${var_width}/${var_height}, POS: ${var_start_line}/${var_start_col}"
     ############################################################################
 
     # Update length, only print the latest lines. 
@@ -521,13 +518,13 @@ fterminal_draw_window() {
         var_buffer=("${var_buffer[@]}")
     fi
 
-    fterminal_print '\e7'
+    fout_print '\e7'
 
-    fterminal_print '\e[%sH\e[%sm%*s\e[m' \
+    fout_print '\e[%sH\e[%sm%*s\e[m' \
            "${var_start_line};${var_start_col}" \
            "${HSFM_COLOR_FLOAT_WIN_LABEL}" \
            "${var_width}"
-    fterminal_print '\e[%sH\e[%sm %s \e[m' \
+    fout_print '\e[%sH\e[%sm %s \e[m' \
            "${var_start_line};${var_start_col}" \
            "${HSFM_COLOR_FLOAT_WIN_LABEL}" \
            "${var_win_title}"
@@ -537,7 +534,7 @@ fterminal_draw_window() {
     do
         local var_line_buf=""
         # clean lines
-        fterminal_print '\e[%sH\e[%sm%*s\e[m' \
+        fout_print '\e[%sH\e[%sm%*s\e[m' \
             "$((var_start_line + 1 + var_cnt));${var_start_col}" \
             "${HSFM_COLOR_FLOAT_WIN}" \
             "${var_width}"
@@ -545,7 +542,7 @@ fterminal_draw_window() {
         # Draw lines
         if test -n "${each_line}"
         then
-            fterminal_print '\e[%sH\e[%sm%s\e[m' \
+            fout_print '\e[%sH\e[%sm%s\e[m' \
                 "$((var_start_line + 1 + var_cnt));${var_start_col}" \
                 "${HSFM_COLOR_FLOAT_WIN}" \
                 " ${each_line:0:$((var_width - 2))} "
@@ -555,7 +552,7 @@ fterminal_draw_window() {
 $(for each_line in "${var_buffer[@]}"; do printf "${each_line}\n"; done)
 EOF
 
-    fterminal_print '\e8'
+    fout_print '\e8'
 }
 
 ###########################################################
@@ -563,14 +560,12 @@ EOF
 ## geometry, every draw_*, message and status output. Reads; never owns model state.
 ###########################################################
 
-fterminal_get_size() {
+fview_get_size() {
     # Get terminal size ('stty' is POSIX and always available).
     # This can't be done reliably across all bash versions in pure bash.
     read -r FM_VIEW_HEIGHT FM_VIEW_WIDTH < <(stty size)
 
     # Max list items that fit in the FM_DIR_SCROLL_IDX area.
-    # ((FM_VIEW_MAINWIN_HEIGHT=FM_VIEW_HEIGHT-3))
-    # ((FM_VIEW_MAINWIN_HEIGHT=FM_VIEW_HEIGHT-FM_VIEW_TAB_LINE_HEIGHT-FM_VIEW_STATUS_LINE_CNT))
 
     ## size calculation.
     local var_subwin_width=0
@@ -603,12 +598,12 @@ fterminal_get_size() {
 ###########################################################
 ## Drawing Functions
 ###########################################################
-fterminal_redraw() {
+fview_redraw() {
     # Redraw the current window.
     # If 'full' is passed, re-fetch the directory list.
     local tmp_buffer=""
     [[ $1 == full ]] && {
-        fterminal_read_dir
+        fdir_read
         if [ ${FM_DIR_FLAG_RESET_IDX} = true ]
         then
             FM_DIR_SCROLL_IDX=0
@@ -625,15 +620,11 @@ fterminal_redraw() {
     # Update status height
     # FIXME, don't use status cnt for calc.
     # if [ ${FM_VIEW_BOTTOMWIN_SHOW} != ${DEF_TERM_WIN_TYPE_HIDDEN} ]
-    # then
     #     FM_VIEW_STATUS_LINE_CNT=$((${FM_VIEW_SUBWIN_BOTTOM_SIZE} + 2))
-    # else
-    #     FM_VIEW_STATUS_LINE_CNT=2
-    # fi
 
     ## Setup Terminal Env
-    fterminal_get_size
-    fterminal_clear
+    fview_get_size
+    fout_clear
 
     ## Draw left vertical win
     # TODO
@@ -647,24 +638,24 @@ fterminal_redraw() {
     ## Draw bottom win
     if [ ${FM_VIEW_BOTTOMWIN_SHOW} = ${DEF_TERM_WIN_TYPE_MSG} ]
     then
-        fterminal_draw_msgwin
+        fview_draw_msgwin
     elif [ ${FM_VIEW_BOTTOMWIN_SHOW} = ${DEF_TERM_WIN_TYPE_TASK} ]
     then
-        fterminal_draw_taskwin
+        fview_draw_taskwin
     fi
 
     ## Draw main win
-    fterminal_draw_dir
+    fview_draw_dir
 
     ## Draw control UI
-    fterminal_draw_tab_line
-    fterminal_draw_status_line
-    fterminal_draw_command_line
+    fview_draw_tab_line
+    fview_draw_status_line
+    fview_draw_command_line
 
-    fterminal_flush
+    fout_flush
 }
 
-fterminal_draw_dir() {
+fview_draw_dir() {
     # Print the max directory items that fit in the FM_DIR_SCROLL_IDX area.
     local var_scroll_new_start
     local var_win_new_cursor
@@ -676,7 +667,6 @@ fterminal_draw_dir() {
     if ((FM_DIR_FLAG_FIND_PREVIOUS == 1))
     then
         ((FM_DIR_SCROLL_IDX=FM_DIR_PREV_IDX))
-        # ((FM_DIR_SCROLL_START_IDX=FM_DIR_PREV_IDX))
 
         # Clear the directory history. We're here now.
         FM_DIR_FLAG_FIND_PREVIOUS=0
@@ -696,12 +686,7 @@ fterminal_draw_dir() {
             FM_DIR_CURSOR_ROW=${FM_DIR_SCROLL_IDX}
         fi
     # elif [[ ${FM_DIR_SCROLL_IDX} -gt ${#FM_DIR_FILE_LIST[@]} ]]
-    # then
-    #     FM_DIR_SCROLL_IDX=0
-    #     FM_DIR_SCROLL_START_IDX=0
-    #     FM_DIR_CURSOR_ROW=0
     fi
-    # flog_msg_debug "${FM_DIR_SCROLL_IDX} -gt ${#FM_DIR_FILE_LIST[@]}"
     local dbg_case="0"
 
     # Page arithmetic. Inputs: the cursor index in the list
@@ -721,7 +706,6 @@ fterminal_draw_dir() {
     #   *  anything else                                  keep the cursor row
     #
     # Order of the writes below: both values are computed first, then the index,
-    # then the start, then the terminal cursor moves, then the row is stored.
     if ((FM_DIR_SCROLL_IDX - FM_DIR_SCROLL_START_IDX < FM_VIEW_MAINWIN_HEIGHT)) &&
         ((FM_DIR_SCROLL_IDX >= FM_DIR_SCROLL_START_IDX)); then
         # No need to update page, since it could shows all content.
@@ -753,14 +737,12 @@ fterminal_draw_dir() {
         # If the list in shorter then window, or the scroll idx == 0
         ((var_scroll_new_start=0))
         ((var_win_new_cursor=FM_DIR_SCROLL_IDX))
-        # flog_msg "1/$var_scroll_new_start/$var_win_new_cursor"
         dbg_case="3"
     elif ((FM_DIR_SCROLL_IDX + FM_VIEW_MAINWIN_HEIGHT > FM_DIR_LIST_CNT)); then
         # To the bottom.
         # If the list is greater then win size, and in the last page
         ((var_scroll_new_start=FM_DIR_LIST_CNT-FM_VIEW_MAINWIN_HEIGHT + 1))
         ((var_win_new_cursor=FM_DIR_SCROLL_IDX - var_scroll_new_start))
-        # flog_msg "2/$var_scroll_new_start/$var_win_new_cursor"
         dbg_case="4"
     elif ((FM_DIR_CURSOR_ROW > FM_VIEW_MAINWIN_HEIGHT - 1)); then
         # handle cursor out of showing screen.
@@ -773,20 +755,15 @@ fterminal_draw_dir() {
         # If in the midddle of the dir list.
         ((var_scroll_new_start=FM_DIR_SCROLL_IDX-FM_DIR_CURSOR_ROW))
         ((var_win_new_cursor=FM_DIR_CURSOR_ROW))
-        # flog_msg "else/$var_scroll_new_start/$var_win_new_cursor"
         dbg_case="others"
     fi
-    # flog_msg_debug "Case: ${dbg_case}, ${var_scroll_new_start}:${var_win_new_cursor}"
 
     # Update Scroll index
     ((FM_DIR_SCROLL_IDX=var_win_new_cursor+var_scroll_new_start))
     ((FM_DIR_SCROLL_START_IDX=var_scroll_new_start))
-    # flog_msg_debug "dbg case ${dbg_case}: ${FM_DIR_SCROLL_IDX}/${FM_DIR_SCROLL_START_IDX}/${FM_DIR_PREV_IDX}"
 
     # local var_col_offset=15
     # Reset cursor position.
-    # fterminal_print '\e[H'
-    # fterminal_print '\e[%s;%sH' "$((1 + ${FM_VIEW_TAB_LINE_HEIGHT}))" "${var_col_offset}"
 
     # FIXME, impl current window
     # if true; then
@@ -799,8 +776,8 @@ fterminal_draw_dir() {
                 break
             fi
 
-            flog_msg_debug "fterminal_draw_file_line $((${FM_VIEW_WIDTH}/2)) 0 80 $((var_scroll_new_start + idx))"
-            fterminal_draw_file_line "$((var_scroll_new_start + idx))" 0 0
+            fview_log_debug "fview_draw_file_line $((${FM_VIEW_WIDTH}/2)) 0 80 $((var_scroll_new_start + idx))"
+            fview_draw_file_line "$((var_scroll_new_start + idx))" 0 0
         }
         for ((idx=0;idx<=var_scroll_len;idx++)); {
 
@@ -808,8 +785,8 @@ fterminal_draw_dir() {
                 break
             fi
 
-            flog_msg_debug "fterminal_draw_file_line $((${FM_VIEW_WIDTH}/2)) 0 80 $((var_scroll_new_start + idx))"
-            fterminal_draw_file_line "$((var_scroll_new_start + idx))" $((${FM_VIEW_WIDTH} / 2)) 0 $((${FM_VIEW_WIDTH} / 2))
+            fview_log_debug "fview_draw_file_line $((${FM_VIEW_WIDTH}/2)) 0 80 $((var_scroll_new_start + idx))"
+            fview_draw_file_line "$((var_scroll_new_start + idx))" $((${FM_VIEW_WIDTH} / 2)) 0 $((${FM_VIEW_WIDTH} / 2))
         }
 
     else
@@ -817,28 +794,24 @@ fterminal_draw_dir() {
         for ((idx=0;idx<=var_scroll_len;idx++)); {
             # Don't print one too many newlines.
             # if ((idx > 0))
-            # then
-            #     fterminal_print '\e[%s;%sH' "$((1 + ${FM_VIEW_TAB_LINE_HEIGHT} + idx))" "${var_col_offset}"
-            #     # fterminal_print '\n'
-            # fi
+            #     # fout_print '\n'
 
             if [[ -z ${FM_DIR_FILE_LIST[$((var_scroll_new_start + idx))]} ]]; then
                 break
             fi
 
-            fterminal_draw_file_line "$((var_scroll_new_start + idx))"
+            fview_draw_file_line "$((var_scroll_new_start + idx))"
         }
     fi
 
     # Move the cursor to its new position if it changed.
     # If the variable 'var_win_new_cursor' is empty, the cursor
     # is moved to line '0'.
-    fterminal_print '\e[%sH' "$(($var_win_new_cursor+1+FM_VIEW_TAB_LINE_HEIGHT))"
-    # fterminal_print '\e[%sH' "$((${var_win_new_cursor} + ${FM_VIEW_TAB_LINE_HEIGHT}))"
+    fout_print '\e[%sH' "$(($var_win_new_cursor+1+FM_VIEW_TAB_LINE_HEIGHT))"
     ((FM_DIR_CURSOR_ROW=var_win_new_cursor))
 }
 
-fterminal_draw_file_line() {
+fview_draw_file_line() {
     # If the dir item doesn't exist, end here.
     if [[ ${#FM_DIR_FILE_LIST[@]} -eq 0 ]] || [[ -z ${FM_DIR_FILE_LIST[$1]} ]]; then
         return
@@ -856,7 +829,6 @@ fterminal_draw_file_line() {
         local args_line_offset=${FM_VIEW_MAINWIN_START_IDX[1]}
         # local args_col_offset=0
         # local args_line_offset=0
-        # flog_msg_debug "${args_col_offset}:${args_line_offset}"
     fi
 
     local var_file_name=${FM_DIR_FILE_LIST[$var_content_idx]##*/}
@@ -949,25 +921,21 @@ fterminal_draw_file_line() {
     if ((var_content_idx - FM_DIR_SCROLL_START_IDX >= FM_VIEW_MAINWIN_HEIGHT))
     then
         # to next page
-        # flog_msg_debug "file line, Next page"
         ((FM_DIR_SCROLL_START_IDX=$var_content_idx-$FM_VIEW_MAINWIN_HEIGHT+1))
         # tmp_line_offset=$((${args_line_offset}))
         tmp_line_offset=$((${args_line_offset} + ${var_content_idx} - ${FM_DIR_SCROLL_START_IDX}))
     elif ((var_content_idx < FM_DIR_SCROLL_START_IDX))
     then
         # to previous page
-        # flog_msg_debug "file line, Previous page"
         ((FM_DIR_SCROLL_START_IDX=var_content_idx))
         # tmp_line_offset=$((${args_line_offset}))
         tmp_line_offset=$((${args_line_offset} + ${var_content_idx} - ${FM_DIR_SCROLL_START_IDX}))
     else
-        # flog_msg_debug "file line, within page"
         # within page
         tmp_line_offset=$((${args_line_offset} + ${var_content_idx} - ${FM_DIR_SCROLL_START_IDX}))
     fi
 
-    # flog_msg_debug "${1}:${tmp_line_offset}:${args_col_offset}"
-    fterminal_print '\e[%s;%sH' "${tmp_line_offset}" "${args_col_offset}"
+    fout_print '\e[%s;%sH' "${tmp_line_offset}" "${args_col_offset}"
 
     local tmp_content="${var_prefix}${var_file_info} ${FM_VIEW_FILE_PRE}${var_file_name}${FM_VIEW_FILE_POST}${var_postfix}"
 
@@ -975,16 +943,14 @@ fterminal_draw_file_line() {
     # This is for marking with line length
     # if (( ${#tmp_content} > ${FM_VIEW_MAINWIN_WIDTH})); then
     #     local var_content_width=${FM_VIEW_MAINWIN_WIDTH}
-    # else
     #     local var_content_width=${#tmp_content}
-    # fi
 
-    fterminal_print "%b%- ${var_content_width}s\e[m" \
+    fout_print "%b%- ${var_content_width}s\e[m" \
         "${var_format}" \
         "${tmp_content:0:${var_content_width}}"
 }
 
-fterminal_draw_tab_line() {
+fview_draw_tab_line() {
     local var_left=""
     local var_center=" "
     local var_left_cnt=""
@@ -1003,9 +969,8 @@ fterminal_draw_tab_line() {
 
     if [ ${FM_PERF_DEBUG} = true ]
     then
-        flog_msg_debug "Enter fterminal_draw_tab_line, $((var_run_tab_cnt++))"
+        fview_log_debug "Enter fview_draw_tab_line, $((var_run_tab_cnt++))"
     fi
-    # flog_msg_debug "Tab info: ${VAR_TERM_TAB_LINE_IDX}-${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]##*/}"
     # PWD_escaped=${PWD//[^[:print:]]/^[}
     # Escape the directory string.
     # Remove all non-printable characters.
@@ -1016,13 +981,11 @@ fterminal_draw_tab_line() {
     VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]="${PWD:-/}"
     # VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]="$(pwd)"
 
-    # flog_msg_debug "[${PWD}]$VAR_TERM_TAB_LINE_IDX-${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}"
     for each_idx in "${!VAR_TERM_TAB_LINE_LIST_PATH[@]}"
     do
-        # flog_msg_debug "Tab: ${each_idx}-${VAR_TERM_TAB_LINE_LIST_PATH[${each_idx}]##*/}"
         if ! test -d "${VAR_TERM_TAB_LINE_LIST_PATH[${each_idx}]}"
         then
-            flog_msg "Empty idx found. ${each_idx}-${VAR_TERM_TAB_LINE_LIST_PATH[${each_idx}]}"
+            fview_log "Empty idx found. ${each_idx}-${VAR_TERM_TAB_LINE_LIST_PATH[${each_idx}]}"
             VAR_TERM_TAB_LINE_LIST_PATH[${each_idx}]="${HOME}"
             # continue
         fi
@@ -1046,7 +1009,6 @@ fterminal_draw_tab_line() {
     var_right_cnt="${#var_right}"
     ((var_content_cnt=FM_VIEW_WIDTH-var_left_cnt-var_right_cnt))
     [[ ${var_content_cnt} < 0 ]] && ((${var_content_cnt}=0))
-    # flog_msg "test-> ${var_content_cnt}/$FM_VIEW_WIDTH"
     var_spacing=$(printf "% ${var_content_cnt}s" "")
 
 
@@ -1064,12 +1026,11 @@ fterminal_draw_tab_line() {
     #              and fixes issues in 'screen' where '\e[K' doesn't work.
     # '\r':        Move cursor back to column 0 (was at EOL due to above).
     # '\e[m':      Reset text formatting.
-    # '\e[H\e[K':  Clear line below fterminal_draw_status_line.
+    # '\e[H\e[K':  Clear line below fview_draw_status_line.
     # '\e8':       Restore cursor position.
     #              This is more widely supported than '\e[u'.
-    # fterminal_print '\e7\e[%sH\e[%s;%sm%*s\r%s %s%s\e[m\e[%sH\e[K\e8' \
 
-    fterminal_print "\e7\e[%sH\r\e[%sm%s\e[%sm%s\e[%sm%s\e[%sm%s\e[%sm%s\e[m\e8" \
+    fout_print "\e7\e[%sH\r\e[%sm%s\e[%sm%s\e[%sm%s\e[%sm%s\e[%sm%s\e[m\e8" \
            "$((def_tab_start_line))" \
            "${HSFM_COLOR_TITLE}" \
            "${var_left}" \
@@ -1082,17 +1043,17 @@ fterminal_draw_tab_line() {
            "${HSFM_COLOR_TAB_LEBEL}" \
            "${var_right}"
 
-    fterminal_draw_bookmark_line
+    fview_draw_bookmark_line
 }
 
-fterminal_draw_bookmark_line() {
+fview_draw_bookmark_line() {
     # bookmark bar
     local def_bookmark_start_line=2
     local tmp_bookmark_buf=""
     local tmp_cnt=0
     if [ ${FM_PERF_DEBUG} = true ]
     then
-        flog_msg_debug "Enter fterminal_draw_bookmark_line, $((var_run_bk_cnt++))"
+        fview_log_debug "Enter fview_draw_bookmark_line, $((var_run_bk_cnt++))"
     fi
     for each_fav in "${!HSFM_FAV@}"
     do
@@ -1104,7 +1065,7 @@ fterminal_draw_bookmark_line() {
         ((tmp_cnt++))
     done
 
-    fterminal_print '\e7\e[%sH\e[%sm%*s\r BM |%s \e[m\e8' \
+    fout_print '\e7\e[%sH\e[%sm%*s\r BM |%s \e[m\e8' \
            "${def_bookmark_start_line}" \
            "${HSFM_COLOR_TAB_BOOKMARK}" \
            "${FM_VIEW_WIDTH}" "" \
@@ -1113,7 +1074,7 @@ fterminal_draw_bookmark_line() {
            # "1 :${HSFM_FAV1##*/} | 2:${HSFM_FAV2##*/} | 3:${HSFM_FAV3##*/} | 4:${HSFM_FAV4##*/} | 5:${HSFM_FAV5##*/} | 6:${HSFM_FAV6##*/} | 7:${HSFM_FAV7##*/} | 8:${HSFM_FAV8##*/} | 9:${HSFM_FAV9##*/}"
 }
 
-fterminal_draw_status_line() {
+fview_draw_status_line() {
     # Status_line to print when files are marked for operation.
     local var_mark_ui="[${#FM_DIR_MARKED_LIST[@]} selected]"
     local var_left=""
@@ -1136,7 +1097,7 @@ fterminal_draw_status_line() {
 
     if [ ${FM_PERF_DEBUG} = true ]
     then
-        flog_msg_debug "Enter fterminal_draw_status_line, $((var_run_status_cnt++))"
+        fview_log_debug "Enter fview_draw_status_line, $((var_run_status_cnt++))"
     fi
 
     ## Update content
@@ -1146,7 +1107,6 @@ fterminal_draw_status_line() {
 
     # only shows printable chars.
     if [[ ${#FM_INPUT_KEY} -ne 0 ]] && [[ "${FM_INPUT_KEY}" =~ [a-zA-Z0-9!-~] ]]; then
-        # flog_msg_debug "$(echo ${FM_INPUT_KEY}|xxd - )"
         var_right+=$(printf "Key %- 5s" "${FM_INPUT_KEY}")
     fi
 
@@ -1171,7 +1131,6 @@ fterminal_draw_status_line() {
         var_center=" ${var_center#*/}"
         var_center_cnt="${#var_center}"
     fi
-    # flog_msg "test-> ${var_content_cnt}/$FM_VIEW_WIDTH"
     var_spacing=$(printf "% $((var_content_cnt - ${var_center_cnt}))s" "")
 
     ## Update content
@@ -1184,11 +1143,11 @@ fterminal_draw_status_line() {
     #              and fixes issues in 'screen' where '\e[K' doesn't work.
     # '\r':        Move cursor back to column 0 (was at EOL due to above).
     # '\e[m':      Reset text formatting.
-    # '\e[H\e[K':  Clear line below fterminal_draw_status_line.
+    # '\e[H\e[K':  Clear line below fview_draw_status_line.
     # '\e8':       Restore cursor position.
     #              This is more widely supported than '\e[u'.
 
-    fterminal_print "\e7\e[%sH\r\e[%sm%s\e[%sm%s\e[%sm%s\e[m\e8" \
+    fout_print "\e7\e[%sH\r\e[%sm%s\e[%sm%s\e[%sm%s\e[m\e8" \
            "$((FM_VIEW_HEIGHT-1))" \
            "${HSFM_COLOR_STATUS_LABEL}" \
            "${var_left}" \
@@ -1198,85 +1157,73 @@ fterminal_draw_status_line() {
            "${var_right}"
 }
 
-fterminal_draw_command_line() {
+fview_draw_command_line() {
 
     if [[ "${FM_ED_ACTIVE}" = "1" ]] ||
         [ "${FM_INPUT_MODE}" = "${DEF_TERM_MODE_COMMAND}" ] ||
         [ "${FM_INPUT_MODE}" = "${DEF_TERM_MODE_SEARCH}" ] ||
         [ "${FM_INPUT_MODE}" = "${DEF_TERM_MODE_FIND}" ]
     then
-        fterminal_print '\e[?25l\e[%sH' "$FM_VIEW_HEIGHT"
-        fterminal_print $'\r%s\e[K%s\e[?25h' "$(fedit_line)" "$(printf "\e[%dD" "$(fedit_cursor_offset)")"
+        fout_print '\e[?25l\e[%sH' "$FM_VIEW_HEIGHT"
+        fout_print $'\r%s\e[K%s\e[?25h' "$(fedit_line)" "$(printf "\e[%dD" "$(fedit_cursor_offset)")"
     else
-        fterminal_print '\e7\e[%sH\e[K\e[?25l\e8' "$FM_VIEW_HEIGHT"
+        fout_print '\e7\e[%sH\e[K\e[?25l\e8' "$FM_VIEW_HEIGHT"
     fi
 }
 
 # FIXME, need impl a way to acept win type, for input purpose.
-fterminal_draw_miniwin()
+fview_draw_miniwin()
 {
-    local var_start_line=$((${FM_VIEW_HEIGHT}/4))
-    local var_start_col=$((${FM_VIEW_WIDTH}/4))
-    local var_width=$((${FM_VIEW_WIDTH}/2))
-    local var_height=$((${FM_VIEW_HEIGHT}/2))
-    local var_win_title="Action WIN"
-    local var_buffer=()
-    var_buffer+=("Action ongoing")
-    var_buffer+=("$@")
-
-    fterminal_draw_window ${var_start_line} ${var_start_col} ${var_width} ${var_height} "${var_win_title}" "${var_buffer[@]}"
+    fview_draw_actionwin "Action WIN" "$@"
 }
 
 # its an exp miniwin.
-fterminal_draw_checkwin() {
-
+# A message window centred on the screen.
+fview_draw_actionwin()
+{
+    local var_win_title=$1
+    shift
     local var_start_line=$((${FM_VIEW_HEIGHT}/4))
     local var_start_col=$((${FM_VIEW_WIDTH}/4))
     local var_width=$((${FM_VIEW_WIDTH}/2))
     local var_height=$((${FM_VIEW_HEIGHT}/2))
-    local var_win_title="Check WIN"
-    local var_buffer=()
-    var_buffer+=("Action ongoing")
-    var_buffer+=("$@")
 
-    fterminal_draw_window ${var_start_line} ${var_start_col} ${var_width} ${var_height} "${var_win_title}" "${var_buffer[@]}"
-    # sleep 2
-
-    fterminal_redraw full
-    return 0
+    fout_draw_window ${var_start_line} ${var_start_col} ${var_width} ${var_height} "${var_win_title}" "Action ongoing" "$@"
 }
 
-fterminal_draw_msgwin()
+fview_draw_checkwin()
 {
-    local var_start_col=0
+    fview_draw_actionwin "Check WIN" "$@"
+    fview_redraw full
+}
+
+# The bottom window: one geometry, the title and buffer differ.
+fview_draw_bottomwin()
+{
+    local var_win_title=$1
+    shift
     local var_start_line=$((${FM_VIEW_MAINWIN_START_IDX[1]} + ${FM_VIEW_MAINWIN_HEIGHT}))
-    # local var_start_line=20
+    local var_start_col=0
     local var_width=${FM_VIEW_WIDTH}
     local var_height=${FM_VIEW_SUBWIN_BOTTOM_SIZE}
-    local var_win_title="Message WIN"
-    local var_buffer=("${FM_VIEW_MSGWIN_BUFFER[@]}")
 
-    fterminal_draw_window ${var_start_line} ${var_start_col} ${var_width} ${var_height} "${var_win_title}" "${var_buffer[@]}"
+    fout_draw_window ${var_start_line} ${var_start_col} ${var_width} ${var_height} "${var_win_title}" "$@"
 }
 
-fterminal_draw_taskwin()
+fview_draw_msgwin()
 {
-    local var_start_col=0
-    local var_start_line=$((${FM_VIEW_MAINWIN_START_IDX[1]} + ${FM_VIEW_MAINWIN_HEIGHT}))
-    local var_width=${FM_VIEW_WIDTH}
-    local var_height=${FM_VIEW_SUBWIN_BOTTOM_SIZE}
-    local var_win_title="Task WIN"
-    local var_buffer=("${FM_VIEW_TASKWIN_BUFFER[@]}")
-
-    fterminal_draw_window ${var_start_line} ${var_start_col} ${var_width} ${var_height} "${var_win_title}" "${var_buffer[@]}"
+    fview_draw_bottomwin "Message WIN" "${FM_VIEW_MSGWIN_BUFFER[@]}"
 }
 
-flog_msg_debug()
+fview_draw_taskwin()
+{
+    fview_draw_bottomwin "Task WIN" "${FM_VIEW_TASKWIN_BUFFER[@]}"
+}
+
+fview_log_debug()
 {
     # if [ ${FM_DEBUG} = true ]
-    # then
     #     printf "%s\n" "$*" >> ${FM_FILE_MESSAGE}
-    # fi
     # printf -v FM_VIEW_MSGWIN_BUFFER "%s\n" "$*" >> ${FM_FILE_MESSAGE}
     #
     local var_max_msg_cnt=20
@@ -1291,15 +1238,15 @@ flog_msg_debug()
     FM_VIEW_MSGWIN_BUFFER=("${FM_VIEW_MSGWIN_BUFFER[@]}" "$@")
     if [ ${FM_VIEW_BOTTOMWIN_SHOW} = ${DEF_TERM_WIN_TYPE_MSG} ]
     then
-        fterminal_draw_msgwin
+        fview_draw_msgwin
     fi
 }
 
-flog_msg()
+fview_log()
 {
-    fterminal_print '\e7\e[%sH\e[?25h' "$FM_VIEW_HEIGHT"
-    fterminal_print '\r\e[%sH\e[?25h\e[2K%s' "$FM_VIEW_HEIGHT" "$*"
-    fterminal_print '\e[?25l\e8'
+    fout_print '\e7\e[%sH\e[?25h' "$FM_VIEW_HEIGHT"
+    fout_print '\r\e[%sH\e[?25h\e[2K%s' "$FM_VIEW_HEIGHT" "$*"
+    fout_print '\e[?25l\e8'
 }
 
 ###########################################################
@@ -1307,7 +1254,7 @@ flog_msg()
 ## directory list, tabs, marks, cursor and scroll numbers, file getters.
 ###########################################################
 
-fterminal_mark_toggle() {
+fdir_mark_toggle() {
     # Mark file for operation.
     # If an item is marked in a second directory,
     # clear the marked files.
@@ -1326,7 +1273,7 @@ fterminal_mark_toggle() {
             FM_DIR_MARKED_LIST=()
         fi
 
-        fterminal_redraw
+        fview_redraw
     else
         if [[ ${FM_DIR_MARKED_LIST[$1]} == "${FM_DIR_FILE_LIST[$1]}" ]]; then
             unset 'FM_DIR_MARKED_LIST[FM_DIR_SCROLL_IDX]'
@@ -1337,8 +1284,8 @@ fterminal_mark_toggle() {
         fi
 
         # Clear line before changing it.
-        fterminal_print '\e[K'
-        fterminal_draw_file_line "$1"
+        fout_print '\e[K'
+        fview_draw_file_line "$1"
     fi
 
     # Find the program to use.
@@ -1355,16 +1302,14 @@ fterminal_mark_toggle() {
     #     ${HSFM_KEY_BULK_RENAME:=b}|${HSFM_KEY_BULK_RENAME_ALL:=B})
     #         FM_CMD_FILE_PROGRAM=(fselect_rename)
     #     ;;
-    # esac
 
-    # fterminal_draw_status_line
 }
 
-fterminal_mark_reset() {
+fdir_mark_reset() {
     FM_DIR_MARKED_LIST=()
 }
 
-fterminal_mark_add() {
+fdir_mark_add() {
     # Mark file for operation.
     # If an item is marked in a second directory,
     # clear the marked files.
@@ -1382,14 +1327,13 @@ fterminal_mark_add() {
         fi
 
         # Clear line before changing it.
-        fterminal_print '\e[K'
-        fterminal_draw_file_line "$1"
+        fout_print '\e[K'
+        fview_draw_file_line "$1"
     }
 
-    # fterminal_draw_status_line
 }
 
-fterminal_mark_remove() {
+fdir_mark_remove() {
     # Mark file for operation.
     # If an item is marked in a second directory,
     # clear the marked files.
@@ -1406,11 +1350,10 @@ fterminal_mark_remove() {
         fi
 
         # Clear line before changing it.
-        fterminal_print '\e[K'
-        fterminal_draw_file_line "$1"
+        fout_print '\e[K'
+        fview_draw_file_line "$1"
     }
 
-    # fterminal_draw_status_line
 }
 
 # Directory pipeline (L2).
@@ -1426,9 +1369,11 @@ fdirsrc_find()
     timeout 10 find "${PWD}" ${var_find_args[@]} -name "${var_pattern}" 2>&1
 }
 
+# Print a listing fdir_ingest can parse. $2 sorts by the first column.
 fdirsrc_ls()
 {
     local var_pattern=$1
+    local var_sort=$2
     local var_ls_args=(${FM_ENV_DIR_LS_ARGS[@]})
 
     if test -n "${HSFM_LS_SORTING}"
@@ -1436,20 +1381,17 @@ fdirsrc_ls()
         var_ls_args+=("${HSFM_LS_SORTING}")
     fi
 
-    ls ${var_ls_args[@]} "${PWD}"/${var_pattern} 2>&1
+    if [[ ${var_sort:-0} -eq 1 ]]
+    then
+        ls ${var_ls_args[@]} "${PWD}"/${var_pattern} | sort -rk1,1 2>&1
+    else
+        ls ${var_ls_args[@]} "${PWD}"/${var_pattern} 2>&1
+    fi
 }
 
 fdirsrc_ls_sort()
 {
-    local var_pattern=$1
-    local var_ls_args=(${FM_ENV_DIR_LS_ARGS[@]})
-
-    if test -n "${HSFM_LS_SORTING}"
-    then
-        var_ls_args+=("${HSFM_LS_SORTING}")
-    fi
-
-    ls ${var_ls_args[@]} "${PWD}"/${var_pattern} | sort -rk1,1 2>&1
+    fdirsrc_ls "${1}" 1
 }
 
 fdir_ingest()
@@ -1483,7 +1425,7 @@ fdir_ingest()
             var_denied_item_list+=("${var_item}")
             var_denied_info_list+=("${var_info}")
 
-            flog_msg_debug "${var_item}"
+            fview_log_debug "${var_item}"
             continue
         else
             var_line="${var_line%% ->*}"
@@ -1538,7 +1480,7 @@ fdir_prev_index()
     fi
 }
 
-fterminal_read_dir() {
+fdir_read() {
     # Read a directory to an array and sort it directories first.
     local var_pattern="*"
     local var_dirs
@@ -1557,7 +1499,7 @@ fterminal_read_dir() {
     fi
 
     # Set window name.
-    fterminal_print '\e]2;hsfm: %s\e'\\ "$PWD"
+    fout_print '\e]2;hsfm: %s\e'\\ "$PWD"
 
     # If '$PWD' is '/', unset it to avoid '//'.
     [[ $PWD == / ]] && PWD=
@@ -1628,10 +1570,7 @@ EOF
 
         # local tmp_ls_output="$(ls ${var_ls_args[*]} ${PWD}/${var_pattern})"
         local tmp_ls_output=$(ls ${var_ls_args[*]} "${PWD}"/${var_pattern})
-        # flog_msg_debug "LS args: 'ls ${var_ls_args[*]} ${PWD}/${var_pattern}'"
 
-        # flog_msg_debug "Fast mode:idx[0]=>'${tmp_ls_output[0]}'"
-        # flog_msg_debug "LS args: '${var_ls_args[*]}'"
 
         # mapfile -t tmp_ls_info < <(echo "$tmp_ls_output" | cut -d ',' -f 1)
         # mapfile -t tmp_ls_file < <(echo "$tmp_ls_output" | cut -d ',' -f 2)
@@ -1644,12 +1583,8 @@ EOF
 
         # Debug
         # for each_item in "${tmp_ls_info[@]}";do
-        #     flog_msg_debug "info Item=>${each_item}"
-        # done
         #
         # for each_item in "${tmp_ls_file[@]}";do
-        #     flog_msg_debug "file Item=>${each_item}"
-        # done
 
         # if [[ "${#tmp_ls_file[@]}" -eq "1" ]]
         if ! ([[ "${#tmp_ls_file[@]}" -eq "1" ]] && [ "${tmp_ls_file[0]}" = "." ])
@@ -1659,13 +1594,10 @@ EOF
 
             # Update previous index.
             fdir_prev_index
-        # else
-        #     flog_msg_debug "Empty folder"
         fi
 
     fi
     # tmp_end=$(date +%N)
-    # flog_msg_debug "Read Dir Time: $((tmp_end - tmp_start))"
 
     # sort for dir first
     # FM_DIR_FILE_LIST=("${var_dirs[@]}" "${var_files[@]}")
@@ -1680,25 +1612,23 @@ EOF
     FM_DIR_BACKUP=("${FM_DIR_FILE_LIST[@]}")
 }
 
-fterminal_tab_reset_contex() {
+fdir_tab_reset() {
     local var_tab_id=$1
 
     FM_DIR_SCROLL_START_IDX=0
     FM_DIR_SCROLL_IDX=0
     FM_DIR_CURSOR_ROW=$((FM_DIR_SCROLL_START_IDX - FM_DIR_SCROLL_IDX))
-    # flog_msg_debug "Store: ${FM_DIR_TAB_START_IDX[var_tab_id]}/${FM_DIR_TAB_CURSOR_IDX[var_tab_id]}/${VAR_TERM_TAB_LINE_LIST_PATH[var_tab_id]}"
 }
 
-fterminal_tab_save_contex() {
+fdir_tab_save() {
     local var_tab_id=${1}
 
     VAR_TERM_TAB_LINE_LIST_PATH[var_tab_id]="${PWD}"
     FM_DIR_TAB_START_IDX[var_tab_id]="${FM_DIR_SCROLL_START_IDX}"
     FM_DIR_TAB_CURSOR_IDX[var_tab_id]="${FM_DIR_SCROLL_IDX}"
-    # flog_msg_debug "Store: ${FM_DIR_TAB_START_IDX[var_tab_id]}/${FM_DIR_TAB_CURSOR_IDX[var_tab_id]}/${VAR_TERM_TAB_LINE_LIST_PATH[var_tab_id]}"
 }
 
-fterminal_tab_load_contex() {
+fdir_tab_load() {
     local var_tab_id=${1}
 
         # echo "${FM_DIR_FILE_INFO_LIST[@]}"
@@ -1708,7 +1638,7 @@ fterminal_tab_load_contex() {
 
         # Read the directory again. A cached list is stale, and serializing one
         # needs a separator that a file name may contain.
-        fterminal_read_dir
+        fdir_read
 
         FM_DIR_SCROLL_START_IDX=${FM_DIR_TAB_START_IDX[var_tab_id]}
         FM_DIR_SCROLL_IDX=${FM_DIR_TAB_CURSOR_IDX[var_tab_id]}
@@ -1719,12 +1649,11 @@ fterminal_tab_load_contex() {
         FM_DIR_SCROLL_START_IDX=0
         FM_DIR_SCROLL_IDX=0
         FM_DIR_CURSOR_ROW=$((FM_DIR_SCROLL_START_IDX - FM_DIR_SCROLL_IDX))
-        flog_msg "Folder not found. back to HOME folder. '${VAR_TERM_TAB_LINE_LIST_PATH[var_tab_id]}'"
+        fview_log "Folder not found. back to HOME folder. '${VAR_TERM_TAB_LINE_LIST_PATH[var_tab_id]}'"
     fi
-    # flog_msg_debug "Load: ${FM_DIR_CURSOR_ROW}${FM_DIR_SCROLL_START_IDX}/${FM_DIR_SCROLL_IDX}/${VAR_TERM_TAB_LINE_LIST_PATH[var_tab_id]}"
 }
 
-fterminal_tab_remove() {
+fdir_tab_remove() {
     local var_tab_start_idx=${1}
     local each_idx
 
@@ -1754,7 +1683,7 @@ fterminal_tab_remove() {
 
 }
 
-fterminal_tab_swap_contex() {
+fdir_tab_swap() {
     local var_tab_id_a=${1}
     local var_tab_id_b=${2}
     local tmp_path
@@ -1774,18 +1703,18 @@ fterminal_tab_swap_contex() {
     FM_DIR_TAB_CURSOR_IDX[${var_tab_id_b}]=${tmp_idx}
 }
 
-fprase_mime_type() {
+fdir_mime_type() {
     # Get a file's mime_type.
     # mime_type=$(file "-${FM_ENV_FILE_ARGS:-biL}" "$1" 2>/dev/null)
     echo $(file "-${FM_ENV_FILE_ARGS:-biL}" "$*" 2>/dev/null)
 }
 
-fget_cursor_file() {
+fdir_cursor_file() {
     # echo ${FM_DIR_FILE_LIST[FM_DIR_SCROLL_IDX]}
     printf "%s\n" "${FM_DIR_FILE_LIST[FM_DIR_SCROLL_IDX]}"
 }
 
-fget_selection_file() {
+fdir_selection_file() {
     echo ${FM_CMD_SELECTION_LIST[@]}
 }
 
@@ -1798,7 +1727,7 @@ fget_selection_file() {
 ###########################################################
 ## Env Functions
 ###########################################################
-fenv_left_hande_mode() {
+fcmd_left_hand_mode() {
     local args_value="$1"
 
     if [ "${args_value}" = "on" ]
@@ -1820,7 +1749,7 @@ fenv_left_hande_mode() {
         HSFM_KEY_SCROLL_DOWN1="j"
         HSFM_KEY_SCROLL_UP1="k"
     else
-        flog_msg "Unknown value: ${args_value}"
+        fview_log "Unknown value: ${args_value}"
         return -1
     fi
     return 0
@@ -1830,7 +1759,7 @@ fenv_left_hande_mode() {
 ## GUI Functions
 ###########################################################
 
-fgui_scroll_up() {
+fnav_scroll_up() {
     # '\e[1L': Insert a line above the cursor.
     # '\e[A':  Move cursor up a line.
     if ((FM_DIR_SCROLL_IDX > 0))
@@ -1838,24 +1767,22 @@ fgui_scroll_up() {
         FM_VIEW_PRINT_BUFFER_ENABLE=true
         ((FM_DIR_SCROLL_IDX--))
 
-        fterminal_draw_file_line "$((FM_DIR_SCROLL_IDX+1))"
+        fview_draw_file_line "$((FM_DIR_SCROLL_IDX+1))"
 
         if ((FM_DIR_CURSOR_ROW < 1)); then
-            # fterminal_print '\e[L'
-            fterminal_redraw
+            fview_redraw
             return 0
         else
-            fterminal_print '\e[A'
+            fout_print '\e[A'
             ((FM_DIR_CURSOR_ROW--))
         fi
-        fterminal_draw_file_line $FM_DIR_SCROLL_IDX
+        fview_draw_file_line $FM_DIR_SCROLL_IDX
 
-        # fterminal_draw_status_line
-        fterminal_flush
+        fout_flush
     fi
 }
 
-fgui_scroll_down() {
+fnav_scroll_down() {
     if ((FM_DIR_SCROLL_IDX < FM_DIR_LIST_CNT))
     then
         FM_VIEW_PRINT_BUFFER_ENABLE=true
@@ -1864,28 +1791,24 @@ fgui_scroll_down() {
 
         if ((FM_DIR_CURSOR_ROW + 1 < FM_VIEW_MAINWIN_HEIGHT))
         then
-            fterminal_draw_file_line $((FM_DIR_SCROLL_IDX-1))
+            fview_draw_file_line $((FM_DIR_SCROLL_IDX-1))
             ((FM_DIR_CURSOR_ROW++))
         else
             # FIXME, it's a patch to avoid glitch
             # clear the first content line
-            # fterminal_draw_tab_line
-            # fterminal_print "\e[$((FM_VIEW_MAINWIN_HEIGHT + FM_VIEW_TAB_LINE_HEIGHT))H"
-            # fterminal_draw_dir
 
             # Draw new page, this is not partial update.
-            fterminal_redraw
+            fview_redraw
             return 0
         fi
-        fterminal_draw_file_line $((FM_DIR_SCROLL_IDX))
+        fview_draw_file_line $((FM_DIR_SCROLL_IDX))
 
-        # fterminal_draw_status_line
-        fterminal_flush
+        fout_flush
     fi
 }
 
 # FIXME, i dont want to seperate two simlar function for different mode
-fgui_scroll_up_visual() {
+fnav_scroll_up_visual() {
     # '\e[1L': Insert a line above the cursor.
     # '\e[A':  Move cursor up a line.
     if ((FM_DIR_SCROLL_IDX > 0))
@@ -1893,30 +1816,28 @@ fgui_scroll_up_visual() {
         FM_VIEW_PRINT_BUFFER_ENABLE=true
         if [ "${FM_INPUT_MODE}" = "${DEF_TERM_MODE_VISUAL}" ] && [[ ${FM_DIR_SCROLL_IDX} -gt ${FM_INPUT_VISUAL_START} ]]
         then
-            fterminal_mark_remove "$FM_DIR_SCROLL_IDX"
+            fdir_mark_remove "$FM_DIR_SCROLL_IDX"
         fi
         ((FM_DIR_SCROLL_IDX--))
 
-        fterminal_draw_file_line "$((FM_DIR_SCROLL_IDX+1))"
+        fview_draw_file_line "$((FM_DIR_SCROLL_IDX+1))"
 
         if ((FM_DIR_CURSOR_ROW < 1)); then
-            fterminal_print '\e[L'
+            fout_print '\e[L'
         else
-            fterminal_print '\e[A'
+            fout_print '\e[A'
             ((FM_DIR_CURSOR_ROW--))
         fi
-        fterminal_draw_file_line $FM_DIR_SCROLL_IDX
+        fview_draw_file_line $FM_DIR_SCROLL_IDX
         if [ "${FM_INPUT_MODE}" = "${DEF_TERM_MODE_VISUAL}" ] && [[ $FM_DIR_SCROLL_IDX -lt $FM_INPUT_VISUAL_START ]]
         then
-            fterminal_mark_add "$FM_DIR_SCROLL_IDX"
+            fdir_mark_add "$FM_DIR_SCROLL_IDX"
         fi
-        # fterminal_draw_tab_line
-        # fterminal_draw_status_line
-        fterminal_flush
+        fout_flush
     fi
 }
 
-fgui_scroll_down_visual() {
+fnav_scroll_down_visual() {
     if ((FM_DIR_SCROLL_IDX < FM_DIR_LIST_CNT))
     then
         FM_VIEW_PRINT_BUFFER_ENABLE=true
@@ -1924,12 +1845,12 @@ fgui_scroll_down_visual() {
         # We need to mark on visula mode
         if [ "${FM_INPUT_MODE}" = "${DEF_TERM_MODE_VISUAL}" ] && [[ ${FM_DIR_SCROLL_IDX} -lt ${FM_INPUT_VISUAL_START} ]]
         then
-            fterminal_mark_remove "$FM_DIR_SCROLL_IDX"
+            fdir_mark_remove "$FM_DIR_SCROLL_IDX"
         fi
         ((FM_DIR_SCROLL_IDX++))
 
-        fterminal_draw_file_line $((FM_DIR_SCROLL_IDX-1))
-        fterminal_print "\n"
+        fview_draw_file_line $((FM_DIR_SCROLL_IDX-1))
+        fout_print "\n"
 
         if ((FM_DIR_CURSOR_ROW + 1 < FM_VIEW_MAINWIN_HEIGHT))
         then
@@ -1937,279 +1858,246 @@ fgui_scroll_down_visual() {
         else
             # FIXME, it's a patch to avoid glitch
             # clear the first content line
-            fterminal_draw_tab_line
-            fterminal_print "\e[$((FM_VIEW_MAINWIN_HEIGHT + FM_VIEW_TAB_LINE_HEIGHT))H"
+            fview_draw_tab_line
+            fout_print "\e[$((FM_VIEW_MAINWIN_HEIGHT + FM_VIEW_TAB_LINE_HEIGHT))H"
         fi
 
         if [ "${FM_INPUT_MODE}" = "${DEF_TERM_MODE_VISUAL}" ] && [[ $FM_DIR_SCROLL_IDX -gt $FM_INPUT_VISUAL_START ]]
         then
-            fterminal_mark_add "$FM_DIR_SCROLL_IDX"
+            fdir_mark_add "$FM_DIR_SCROLL_IDX"
         else
-            fterminal_draw_file_line $((FM_DIR_SCROLL_IDX))
+            fview_draw_file_line $((FM_DIR_SCROLL_IDX))
         fi
-        # fterminal_draw_status_line
-        fterminal_flush
+        fout_flush
     fi
 }
 
-fgui_scroll_top_visual() {
-    if ((FM_DIR_SCROLL_IDX == 0)); then
+# Extend the visual selection from its anchor to $1.
+fnav_scroll_edge_visual()
+{
+    local var_target=$1
+    local var_start_idx
+    local var_end_idx
+    local var_tmp
+    local var_idx
+
+    if ((FM_DIR_SCROLL_IDX == var_target)); then
         return
     fi
     FM_VIEW_PRINT_BUFFER_ENABLE=true
 
-    FM_DIR_SCROLL_IDX=0
-    fterminal_mark_reset
+    FM_DIR_SCROLL_IDX=${var_target}
+    fdir_mark_reset
 
-    local start_idx=${FM_INPUT_VISUAL_START}
-    local end_idx=${FM_DIR_SCROLL_IDX}
+    var_start_idx=${FM_INPUT_VISUAL_START}
+    var_end_idx=${FM_DIR_SCROLL_IDX}
 
-    if ((start_idx > end_idx)); then
-        local tmp=${start_idx}
-        start_idx=${end_idx}
-        end_idx=${tmp}
+    if ((var_start_idx > var_end_idx)); then
+        var_tmp=${var_start_idx}
+        var_start_idx=${var_end_idx}
+        var_end_idx=${var_tmp}
     fi
 
-    for ((i=start_idx; i<=end_idx; i++)); do
-        fterminal_mark_add "$i"
+    for ((var_idx=var_start_idx; var_idx<=var_end_idx; var_idx++)); do
+        fdir_mark_add "$var_idx"
     done
-    # we need to remove the marked line previously.
-    fterminal_redraw
+
+    # Redraw to drop the marks outside the new range.
+    fview_redraw
 }
 
-fgui_scroll_bottom_visual() {
-    if ((FM_DIR_SCROLL_IDX == FM_DIR_LIST_CNT)); then
-        return
-    fi
-    FM_VIEW_PRINT_BUFFER_ENABLE=true
-
-    FM_DIR_SCROLL_IDX=${FM_DIR_LIST_CNT}
-    fterminal_mark_reset
-
-    local start_idx=${FM_INPUT_VISUAL_START}
-    local end_idx=${FM_DIR_SCROLL_IDX}
-
-    if ((start_idx > end_idx)); then
-        local tmp=${start_idx}
-        start_idx=${end_idx}
-        end_idx=${tmp}
-    fi
-
-    for ((i=start_idx; i<=end_idx; i++)); do
-        fterminal_mark_add "$i"
-    done
-    # we need to remove the marked line previously.
-    fterminal_redraw
-}
-
-fgui_tab_go_previous()
+fnav_scroll_top_visual()
 {
-    if [[ ${#VAR_TERM_TAB_LINE_LIST_PATH[@]} -eq 1 ]] ||
-        [[ ${VAR_TERM_TAB_LINE_IDX} -eq 0 ]]
-        then
-            flog_msg "PREVIOUS_TAB ignored."
-            return
-        else
-            fterminal_tab_save_contex ${VAR_TERM_TAB_LINE_IDX}
-            VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]="$(realpath .)"
-            VAR_TERM_TAB_LINE_IDX=$(($VAR_TERM_TAB_LINE_IDX - 1))
-            cd "${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}"
-            fterminal_tab_load_contex ${VAR_TERM_TAB_LINE_IDX}
-            # fterminal_redraw full
-            fterminal_redraw
-            flog_msg "Go PREVIOUS_TAB."
-    fi
+    fnav_scroll_edge_visual 0
 }
 
-fgui_tab_go_next()
+fnav_scroll_bottom_visual()
 {
-    if [[ ${#VAR_TERM_TAB_LINE_LIST_PATH[@]} -eq 1 ]] ||
-        (( ${VAR_TERM_TAB_LINE_IDX} + 1 == ${#VAR_TERM_TAB_LINE_LIST_PATH[@]} )) ||
-        ! test -d "${VAR_TERM_TAB_LINE_LIST_PATH[(( ${VAR_TERM_TAB_LINE_IDX} + 1))]}"
-    then
-        flog_msg "NEXT_TAB ignored."
-        return
-    else
-        fterminal_tab_save_contex ${VAR_TERM_TAB_LINE_IDX}
-        VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]="$(realpath .)"
-        VAR_TERM_TAB_LINE_IDX=$(($VAR_TERM_TAB_LINE_IDX + 1))
-        cd "${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}"
-        fterminal_tab_load_contex ${VAR_TERM_TAB_LINE_IDX}
-        fterminal_redraw
-        flog_msg "Go NEXT_TAB"
-    fi
+    fnav_scroll_edge_visual "${FM_DIR_LIST_CNT}"
 }
 
-fgui_tab_move_previous()
+ftab_go_previous()
 {
+    local var_target=$((VAR_TERM_TAB_LINE_IDX - 1))
+
     if [[ ${#VAR_TERM_TAB_LINE_LIST_PATH[@]} -eq 1 ]] ||
         [[ ${VAR_TERM_TAB_LINE_IDX} -eq 0 ]]
     then
-        flog_msg "MOVE_PREVIOUS_TAB ignored."
+        fview_log "PREVIOUS_TAB ignored."
         return
-    else
-        fterminal_tab_save_contex ${VAR_TERM_TAB_LINE_IDX}
-        fterminal_tab_swap_contex ${VAR_TERM_TAB_LINE_IDX} $(($VAR_TERM_TAB_LINE_IDX - 1))
-        # tmp_preserved_path=${VAR_TERM_TAB_LINE_LIST_PATH[$((${VAR_TERM_TAB_LINE_IDX}-1))]}
-        # VAR_TERM_TAB_LINE_LIST_PATH[$((${VAR_TERM_TAB_LINE_IDX} - 1))]="$(realpath .)"
-        # VAR_TERM_TAB_LINE_LIST_PATH[$((${VAR_TERM_TAB_LINE_IDX}))]="${tmp_preserved_path}"
-        VAR_TERM_TAB_LINE_IDX=$(($VAR_TERM_TAB_LINE_IDX - 1))
-
-        fterminal_redraw
-        flog_msg "Move to PREVIOUS_TAB."
     fi
+
+    ftab_switch "${var_target}"
+    fview_log "Go PREVIOUS_TAB."
 }
 
-fgui_tab_move_next()
+# Switch to tab $1, which the caller has already validated.
+ftab_switch()
 {
+    fdir_tab_save "${VAR_TERM_TAB_LINE_IDX}"
+    VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]="$(realpath .)"
+    VAR_TERM_TAB_LINE_IDX=$1
+    cd "${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}"
+    fdir_tab_load "${VAR_TERM_TAB_LINE_IDX}"
+    fview_redraw
+}
+
+ftab_go_next()
+{
+    local var_target=$((VAR_TERM_TAB_LINE_IDX + 1))
+
     if [[ ${#VAR_TERM_TAB_LINE_LIST_PATH[@]} -eq 1 ]] ||
-        (( ${VAR_TERM_TAB_LINE_IDX} + 1 == ${#VAR_TERM_TAB_LINE_LIST_PATH[@]} )) ||
-        ! test -d ${VAR_TERM_TAB_LINE_LIST_PATH[(( ${VAR_TERM_TAB_LINE_IDX} + 1))]}
-
+        ((var_target == ${#VAR_TERM_TAB_LINE_LIST_PATH[@]})) ||
+        ! test -d "${VAR_TERM_TAB_LINE_LIST_PATH[${var_target}]}"
     then
-        flog_msg "MOVE_NEXT_TAB ignored."
+        fview_log "NEXT_TAB ignored."
         return
-    else
-        fterminal_tab_save_contex ${VAR_TERM_TAB_LINE_IDX}
-        fterminal_tab_swap_contex ${VAR_TERM_TAB_LINE_IDX} $(($VAR_TERM_TAB_LINE_IDX + 1))
-        # tmp_preserved_path=${VAR_TERM_TAB_LINE_LIST_PATH[$((${VAR_TERM_TAB_LINE_IDX}+1))]}
-        # VAR_TERM_TAB_LINE_LIST_PATH[$((${VAR_TERM_TAB_LINE_IDX}+1))]="$(realpath .)"
-        # VAR_TERM_TAB_LINE_LIST_PATH[$((${VAR_TERM_TAB_LINE_IDX}))]="${tmp_preserved_path}"
-        VAR_TERM_TAB_LINE_IDX=$(($VAR_TERM_TAB_LINE_IDX + 1))
-
-        fterminal_redraw
-        flog_msg "Move to NEXT_TAB"
     fi
+
+    ftab_switch "${var_target}"
+    fview_log "Go NEXT_TAB"
 }
 
-fgui_tab_open()
+ftab_move_previous()
 {
+    local var_target=$((VAR_TERM_TAB_LINE_IDX - 1))
+
+    if [[ ${#VAR_TERM_TAB_LINE_LIST_PATH[@]} -eq 1 ]] ||
+        [[ ${VAR_TERM_TAB_LINE_IDX} -eq 0 ]]
+    then
+        fview_log "MOVE_PREVIOUS_TAB ignored."
+        return
+    fi
+
+    ftab_swap "${var_target}"
+    fview_log "Move to PREVIOUS_TAB."
+}
+
+# Swap tab $1 with the current one and follow it.
+ftab_swap()
+{
+    fdir_tab_save "${VAR_TERM_TAB_LINE_IDX}"
+    fdir_tab_swap "${VAR_TERM_TAB_LINE_IDX}" "$1"
+    VAR_TERM_TAB_LINE_IDX=$1
+    fview_redraw
+}
+
+ftab_move_next()
+{
+    local var_target=$((VAR_TERM_TAB_LINE_IDX + 1))
+
+    if [[ ${#VAR_TERM_TAB_LINE_LIST_PATH[@]} -eq 1 ]] ||
+        ((var_target == ${#VAR_TERM_TAB_LINE_LIST_PATH[@]})) ||
+        ! test -d "${VAR_TERM_TAB_LINE_LIST_PATH[${var_target}]}"
+    then
+        fview_log "MOVE_NEXT_TAB ignored."
+        return
+    fi
+
+    ftab_swap "${var_target}"
+    fview_log "Move to NEXT_TAB"
+}
+
+# Insert a tab after the current one. $1: 1 to also enter the selected
+# directory, 0 to stay.
+ftab_insert()
+{
+    local var_open_selected=$1
+    local each_idx
+
     VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]="$(realpath .)"
 
-    # move tab to insert a new tab.
+    # Shift the tabs after the current one to make room.
     ((each_idx=${#VAR_TERM_TAB_LINE_LIST_PATH[@]} - 1))
-    while ((${each_idx} > ${VAR_TERM_TAB_LINE_IDX})) &&  ((each_idx != VAR_TERM_TAB_LINE_IDX))
+    while ((${each_idx} > ${VAR_TERM_TAB_LINE_IDX})) && ((each_idx != VAR_TERM_TAB_LINE_IDX))
     do
-        VAR_TERM_TAB_LINE_LIST_PATH[$((${each_idx} + 1))]="${VAR_TERM_TAB_LINE_LIST_PATH[$((${each_idx}))]}"
+        VAR_TERM_TAB_LINE_LIST_PATH[$((each_idx + 1))]="${VAR_TERM_TAB_LINE_LIST_PATH[$((each_idx))]}"
         ((each_idx-=1))
     done
 
-    fterminal_tab_save_contex ${VAR_TERM_TAB_LINE_IDX}
-    VAR_TERM_TAB_LINE_IDX=$((${VAR_TERM_TAB_LINE_IDX} + 1))
+    fdir_tab_save ${VAR_TERM_TAB_LINE_IDX}
+    ((VAR_TERM_TAB_LINE_IDX++))
 
-    if test -d "${FM_DIR_FILE_LIST[FM_DIR_SCROLL_IDX]}"
+    if [[ ${var_open_selected} -eq 1 ]] &&
+        test -d "${FM_DIR_FILE_LIST[FM_DIR_SCROLL_IDX]}"
     then
         cd "${FM_DIR_FILE_LIST[FM_DIR_SCROLL_IDX]}"
     fi
-    fterminal_tab_reset_contex ${VAR_TERM_TAB_LINE_IDX}
-    # VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]="$(realpath .)"
-    fterminal_redraw full
+
+    fdir_tab_reset ${VAR_TERM_TAB_LINE_IDX}
+    fview_redraw full
 }
 
-fgui_tab_duplicate()
+ftab_open()
 {
-    VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]="$(realpath .)"
-
-    # move tab to insert a new tab.
-    ((each_idx=${#VAR_TERM_TAB_LINE_LIST_PATH[@]} - 1))
-    while ((${each_idx} > ${VAR_TERM_TAB_LINE_IDX})) &&  ((each_idx != VAR_TERM_TAB_LINE_IDX))
-    do
-        VAR_TERM_TAB_LINE_LIST_PATH[$((${each_idx} + 1))]="${VAR_TERM_TAB_LINE_LIST_PATH[$((${each_idx}))]}"
-        ((each_idx-=1))
-    done
-
-    fterminal_tab_save_contex ${VAR_TERM_TAB_LINE_IDX}
-    VAR_TERM_TAB_LINE_IDX=$((${VAR_TERM_TAB_LINE_IDX} + 1))
-
-    # if test -d "${FM_DIR_FILE_LIST[FM_DIR_SCROLL_IDX]}"
-    # then
-    #     cd "${FM_DIR_FILE_LIST[FM_DIR_SCROLL_IDX]}"
-    # fi
-    fterminal_tab_reset_contex ${VAR_TERM_TAB_LINE_IDX}
-    # VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]="$(realpath .)"
-    fterminal_redraw full
+    ftab_insert 1
 }
 
-fgui_tab_close()
+ftab_duplicate()
+{
+    ftab_insert 0
+}
+
+ftab_close()
 {
     local var_action=${1:- }
     if [[ ${#VAR_TERM_TAB_LINE_LIST_PATH[@]} -eq 1 ]]
     then
-        # flog_msg "CLOSE_TAB ignored."
         exit 0
     elif [ "${var_action}" = "right" ];then
-        # flog_msg "CLOSE_TAB_RIGHT."
         tmp_current_idx=$((${#VAR_TERM_TAB_LINE_LIST_PATH[@]} - 1))
         if (( ${VAR_TERM_TAB_LINE_IDX} + 1 >= ${#VAR_TERM_TAB_LINE_LIST_PATH[@]} ));then
-            flog_msg "Ignore CLOSE_TAB_RIGHT."
+            fview_log "Ignore CLOSE_TAB_RIGHT."
             return 0
         fi
 
         while ((tmp_current_idx > VAR_TERM_TAB_LINE_IDX));do
-            # flog_msg_debug "${tmp_current_idx}: ${VAR_TERM_TAB_LINE_LIST_PATH[tmp_current_idx]}"
-            fterminal_tab_remove ${tmp_current_idx}
+            fdir_tab_remove ${tmp_current_idx}
             ((tmp_current_idx = tmp_current_idx - 1))
         done
 
         VAR_TERM_TAB_LINE_IDX=${tmp_current_idx}
 
-        # fterminal_redraw full
-        # flog_msg "Tab closed."
     elif [ "${var_action}" = "left" ];then
-        # flog_msg "CLOSE_TAB_LEFT."
         tmp_current_idx=$((${VAR_TERM_TAB_LINE_IDX} - 1))
         if (( VAR_TERM_TAB_LINE_IDX <= 0));then
-            flog_msg "Ignore CLOSE_TAB_LEFT."
+            fview_log "Ignore CLOSE_TAB_LEFT."
             return 0
         fi
-        # flog_msg_debug ${tmp_current_idx} < ${#VAR_TERM_TAB_LINE_LIST_PATH[@]}
         while ((tmp_current_idx >= 0));do
-            flog_msg_debug "${tmp_current_idx}: ${VAR_TERM_TAB_LINE_LIST_PATH[tmp_current_idx]}"
+            fview_log_debug "${tmp_current_idx}: ${VAR_TERM_TAB_LINE_LIST_PATH[tmp_current_idx]}"
 
-            fterminal_tab_remove ${tmp_current_idx}
+            fdir_tab_remove ${tmp_current_idx}
             ((tmp_current_idx = tmp_current_idx - 1))
         done
 
         VAR_TERM_TAB_LINE_IDX=0
-        # fterminal_tab_load_contex ${VAR_TERM_TAB_LINE_IDX}
         # cd "${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}"
         #
-        # fterminal_redraw full
-        # flog_msg "Tab closed."
     elif [ "${var_action}" = "others" ];then
-        # flog_msg_debug "Right: ${VAR_TERM_TAB_LINE_IDX} / ${#VAR_TERM_TAB_LINE_LIST_PATH[@]}"
         tmp_current_idx=$((${#VAR_TERM_TAB_LINE_LIST_PATH[@]} - 1))
 
         while ((tmp_current_idx >= 0));do
-            # flog_msg_debug "${tmp_current_idx}: ${VAR_TERM_TAB_LINE_LIST_PATH[tmp_current_idx]}"
             if (( tmp_current_idx != VAR_TERM_TAB_LINE_IDX ));then
-                fterminal_tab_remove ${tmp_current_idx}
-            # else
-            #     flog_msg_debug "Skip current tab."
+                fdir_tab_remove ${tmp_current_idx}
             fi
             ((tmp_current_idx = tmp_current_idx - 1))
         done
 
         VAR_TERM_TAB_LINE_IDX=0
-        # fterminal_tab_load_contex ${VAR_TERM_TAB_LINE_IDX}
         # cd "${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}"
         #
-        # fterminal_redraw full
-        # flog_msg "Tab closed."
     elif [ "${var_action}" = "duplicate" ];then
-        # flog_msg_debug "Duplicate: ${VAR_TERM_TAB_LINE_IDX} / ${#VAR_TERM_TAB_LINE_LIST_PATH[@]}"
         tmp_current_idx=$((${#VAR_TERM_TAB_LINE_LIST_PATH[@]} - 1))
 
         while ((tmp_current_idx >= 1));do
             local var_current_path=${VAR_TERM_TAB_LINE_LIST_PATH[${tmp_current_idx}]}
             local found_duplicate=false
 
-            # flog_msg_debug "Checking tab[${tmp_current_idx}]: ${var_current_path}"
             for each_idx in $(seq 0 $((tmp_current_idx - 1))); do
                 local tmp_path=${VAR_TERM_TAB_LINE_LIST_PATH[${each_idx}]}
-                # flog_msg_debug "${each_idx}: ${tmp_path},${var_current_path} "
                 if [ "${tmp_path}" = "${var_current_path}" ] ; then
-                    fterminal_tab_remove ${tmp_current_idx}
+                    fdir_tab_remove ${tmp_current_idx}
                     found_duplicate=true
                     break
                 fi
@@ -2225,39 +2113,36 @@ fgui_tab_close()
             VAR_TERM_TAB_LINE_IDX=$((${#VAR_TERM_TAB_LINE_LIST_PATH[@]} - 1))
         fi
 
-        fterminal_tab_load_contex ${VAR_TERM_TAB_LINE_IDX}
+        fdir_tab_load ${VAR_TERM_TAB_LINE_IDX}
         cd "${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}"
     else
-        fterminal_tab_remove ${VAR_TERM_TAB_LINE_IDX}
+        fdir_tab_remove ${VAR_TERM_TAB_LINE_IDX}
 
         if [[ ${VAR_TERM_TAB_LINE_IDX} -ne 0 ]]
         then
             VAR_TERM_TAB_LINE_IDX=$((VAR_TERM_TAB_LINE_IDX - 1 ))
         fi
 
-        fterminal_tab_load_contex ${VAR_TERM_TAB_LINE_IDX}
+        fdir_tab_load ${VAR_TERM_TAB_LINE_IDX}
         cd "${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}"
 
-        # fterminal_redraw full
-        # flog_msg "Tab closed."
     fi
 
-    # fterminal_tab_load_contex ${VAR_TERM_TAB_LINE_IDX}
     # cd "${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]}"
 
-    fterminal_redraw full
-    flog_msg "Tab closed."
+    fview_redraw full
+    fview_log "Tab closed."
 }
 
 cmd_newsearch()
 {
     local var_pattern="$*"
 
-    fterminal_read_dir "*${var_pattern}*"
+    fdir_read "*${var_pattern}*"
 
     # Draw the search results on screen.
     FM_DIR_SCROLL_IDX=0
-    fterminal_redraw
+    fview_redraw
 
 }
 
@@ -2268,12 +2153,12 @@ cmd_find()
     local var_read_mode=${HSFM_READ_DIR_MODE}
     # find
     HSFM_READ_DIR_MODE=${DEF_TERM_READ_DIR_MODE_FIND}
-    fterminal_read_dir "*${var_pattern}*"
+    fdir_read "*${var_pattern}*"
     HSFM_READ_DIR_MODE=${var_read_mode}
 
     # Draw the search results on screen.
     FM_DIR_SCROLL_IDX=0
-    fterminal_redraw
+    fview_redraw
 }
 
 cmd_search()
@@ -2281,41 +2166,36 @@ cmd_search()
     local var_pattern="$*"
     # Search on keypress if search passed as an argument.
     # '\e[?25l': Hide the cursor.
-    fterminal_print '\e[?25l'
+    fout_print '\e[?25l'
 
-    fterminal_read_dir "*${var_pattern}*"
+    fdir_read "*${var_pattern}*"
     # if [[ $HSFM_READ_DIR_MODE == 0 ]]
-    # then
     #     # Use a greedy glob to search.
     #     FM_DIR_FILE_LIST=("$PWD"/*"$var_pattern"*)
-    #     ((FM_DIR_LIST_CNT=${#FM_DIR_FILE_LIST[@]}-1))
     #     FM_DIR_FILE_INFO_LIST=()
-    # else
     #     FM_DIR_FILE_LIST=("$PWD"/*"$var_pattern"*)
-    #     ((FM_DIR_LIST_CNT=${#FM_DIR_FILE_LIST[@]}-1))
     #     FM_DIR_FILE_INFO_LIST=()
-    # fi
 
     # Draw the search results on screen.
     FM_DIR_SCROLL_IDX=0
-    fterminal_redraw
+    fview_redraw
 
     # '\e[%sH':  Move cursor back to cmd-line.
     # '\e[?25h': Unhide the cursor.
-    fterminal_print '\e[%sH\e[?25h' "$FM_VIEW_HEIGHT"
+    fout_print '\e[%sH\e[?25h' "$FM_VIEW_HEIGHT"
 }
 
 cmd_rename()
 {
     local var_new_name="$@"
     if [[ -e $var_new_name ]]; then
-        flog_msg "warn: '$var_new_name' already exists."
+        fview_log "warn: '$var_new_name' already exists."
 
     elif [[ -w ${FM_DIR_FILE_LIST[FM_DIR_SCROLL_IDX]} ]]; then
         mv "${FM_DIR_FILE_LIST[FM_DIR_SCROLL_IDX]}" "${PWD}/${var_new_name}"
-        fterminal_redraw full
+        fview_redraw full
     else
-        flog_msg "warn: no write access to file."
+        fview_log "warn: no write access to file."
     fi
 }
 
@@ -2328,43 +2208,49 @@ cmd_backfile()
     local var_new_file="$var_original_path/backup_${var_timestamp}_${var_original_name}"
 
     if [[ -e $var_new_file ]]; then
-        flog_msg "warn: '$var_new_file' already exists."
+        fview_log "warn: '$var_new_file' already exists."
     elif [[ -w ${FM_DIR_FILE_LIST[FM_DIR_SCROLL_IDX]} ]]; then
         cp "${FM_DIR_FILE_LIST[FM_DIR_SCROLL_IDX]}" "${var_new_file}"
-        fterminal_redraw full
+        fview_redraw full
     else
-        flog_msg "warn: no write access to file."
+        fview_log "warn: no write access to file."
+    fi
+}
+
+# Create a directory ($1=dir) or an empty file ($1=file) named by the rest.
+fcmd_create()
+{
+    local var_kind=$1
+    shift
+    local var_name="$*"
+
+    if [[ -e "${PWD}/${var_name}" ]]
+    then
+        fview_log "warn: '${var_name}' already exists."
+    elif [[ -w "${PWD}" ]]
+    then
+        case ${var_kind} in
+            dir)
+                mkdir -p "${PWD}/${var_name}"
+                ;;
+            file)
+                : > "${PWD}/${var_name}"
+                ;;
+        esac
+        fview_redraw full
+    else
+        fview_log "warn: no write access to dir."
     fi
 }
 
 cmd_mkdir()
 {
-    local var_dir_name="$@"
-    if [[ -e $var_dir_name ]]; then
-        flog_msg "warn: '$var_dir_name' already exists."
-
-    elif [[ -w $PWD ]]; then
-        mkdir -p "${PWD}/${var_dir_name}"
-        fterminal_redraw full
-
-    else
-        flog_msg "warn: no write access to dir."
-    fi
+    fcmd_create dir "$@"
 }
 
 cmd_touch()
 {
-    local var_dir_name="$@"
-    if [[ -e $var_dir_name ]]; then
-        flog_msg "warn: '$var_dir_name' already exists."
-
-    elif [[ -w $PWD ]]; then
-        : > "$var_dir_name"
-        fterminal_redraw full
-
-    else
-        flog_msg "warn: no write access to dir."
-    fi
+    fcmd_create file "$@"
 }
 
 # Resolve a command argument to a file: the argument when it is a file,
@@ -2377,7 +2263,7 @@ fcmd_file_get()
     then
         printf '%s\n' "${var_arg}"
     else
-        fget_cursor_file
+        fdir_cursor_file
     fi
 }
 
@@ -2386,19 +2272,19 @@ cmd_editor()
     local var_file=$(fcmd_file_get "$*")
 
     if [[ -f "${var_file}" ]]; then
-        fterminal_reset
+        fout_reset
 
         if command -v "${HSFM_TEXT_EDITOR%% *}" 2>&1 > /dev/null;then
             # NOTE. VIDE_SH_TITLE use on the title of xim/vim projects.
             VIDE_SH_TITLE="${FM_ENV_TITLE}" ${HSFM_TEXT_EDITOR} "${var_file}"
         else
-            flog_msg "warn: command '$HSFM_TEXT_EDITOR' not found"
+            fview_log "warn: command '$HSFM_TEXT_EDITOR' not found"
         fi
 
-        fterminal_setup
-        fterminal_redraw
+        fout_setup
+        fview_redraw
     else
-        flog_msg "warn: '$var_file' not opened"
+        fview_log "warn: '$var_file' not opened"
     fi
 }
 
@@ -2407,42 +2293,46 @@ cmd_hex()
     local var_file=$(fcmd_file_get "$*")
 
     if ! command -v xxd 2>&1 > /dev/null; then
-        flog_msg "warn: 'xxd' not found."
+        fview_log "warn: 'xxd' not found."
         return 1
     fi
 
     if [[ -f "${var_file}" ]]; then
-        fterminal_reset
+        fout_reset
 
         xxd "${var_file}" |less
 
-        fterminal_setup
-        fterminal_redraw
+        fout_setup
+        fview_redraw
     else
-        flog_msg "warn: '$var_file' not opened"
+        fview_log "warn: '$var_file' not opened"
     fi
 }
 
 cmd_media()
 {
+    fcmd_spawn_viewer "${HSFM_MEDIA_PLAYER}" "$@"
+}
+
+# Open a file with an external viewer, detached.
+fcmd_spawn_viewer()
+{
+    local var_viewer=$1
+    shift
     local var_file=$(fcmd_file_get "$*")
-    if [[ -f "${var_file}" ]]; then
-        nohup "${HSFM_MEDIA_PLAYER}" "${var_file}" &>/dev/null &
+
+    if [[ -f "${var_file}" ]]
+    then
+        nohup "${var_viewer}" "${var_file}" &>/dev/null &
         disown
     else
-        flog_msg "warn: '${var_file}' not opened"
+        fview_log "warn: '${var_file}' not opened"
     fi
 }
 
 cmd_image()
 {
-    local var_file=$(fcmd_file_get "$*")
-    if [[ -f "${var_file}" ]]; then
-        nohup "${HSFM_PICTURE_VIEWER}" "${var_file}" &>/dev/null &
-        disown
-    else
-        flog_msg "warn: '${var_file}' not opened"
-    fi
+    fcmd_spawn_viewer "${HSFM_PICTURE_VIEWER}" "$@"
 }
 
 cmd_preview()
@@ -2450,14 +2340,13 @@ cmd_preview()
     local var_file=$(fcmd_file_get "$*")
 
     FM_VIEW_PRINT_BUFFER_ENABLE=true
-    fterminal_clear
+    fout_clear
 
-    fterminal_draw_tab_line
-    fterminal_draw_status_line
-    fterminal_flush
+    fview_draw_tab_line
+    fview_draw_status_line
+    fout_flush
 
-    fterminal_print '\e[%sH\r' "$((FM_VIEW_TAB_LINE_HEIGHT + 1))"
-    # fterminal_print '\e[%sH\rPreview File: %s\e[K\n' "$((FM_VIEW_TAB_LINE_HEIGHT + 1))" "${var_file}"
+    fout_print '\e[%sH\r' "$((FM_VIEW_TAB_LINE_HEIGHT + 1))"
     if command -v "catimg" 2>&1 > /dev/null; then
         local tmp_padding=1
         local tmp_height=$((${FM_VIEW_HEIGHT} - ${tmp_padding} - ${FM_VIEW_TAB_LINE_HEIGHT} - ${FM_VIEW_STATUS_LINE_CNT}))
@@ -2472,7 +2361,7 @@ cmd_preview()
     fi
 
     fprompt_wait "Press Enter Key To Continue..."
-    fterminal_redraw
+    fview_redraw
 }
 
 cmd_extract()
@@ -2492,11 +2381,11 @@ cmd_extract()
         var_file="${1}"
     else
         var_file_type="${1}"
-        var_file="$(fget_cursor_file)"
+        var_file="$(fdir_cursor_file)"
     fi
 
     if [ -f "${var_file}" ] ; then
-        var_extrace_name=($(echo "${var_file##*/}"| futility_stream_purify))
+        var_extrace_name=($(echo "${var_file##*/}"| fout_sanitize_name))
         var_extrace_name="${var_extrace_name[*]}"
         # var_file=($(realpath "${var_file}"))
         # FIXME, not support reltive path.
@@ -2518,7 +2407,7 @@ cmd_extract()
         fi
 
     else
-        flog_msg "'${var_file}' is not a valid file!"
+        fview_log "'${var_file}' is not a valid file!"
         return 1
     fi
     case "${var_file_type}" in
@@ -2553,17 +2442,16 @@ cmd_extract()
             var_cmd="7z x '${var_file}'"
             ;;
         *)
-            flog_msg "Unknown file type, use 7z to extract it"
+            fview_log "Unknown file type, use 7z to extract it"
             var_cmd="7z x '${var_file}'"
             ;;
     esac
 
-    # flog_msg_debug "Creating folder file -${tmp_extrace_path[@]}-."
 
-    fterminal_draw_miniwin "Start extract files."
+    fview_draw_miniwin "Start extract files."
 
-    flog_msg "Starting extract file ${var_file}."
-    flog_msg_debug "Eval: ${var_cmd}"
+    fview_log "Starting extract file ${var_file}."
+    fview_log_debug "Eval: ${var_cmd}"
 
     pushd "${tmp_extrace_path}" > /dev/null
     if ! eval "${var_cmd}" > /dev/null; then
@@ -2572,11 +2460,11 @@ cmd_extract()
     popd > /dev/null
 
     # for redraw miniwin, we must redraw.
-    fterminal_redraw full
+    fview_redraw full
     if [[ -e "${tmp_extrace_path}" ]]; then
-        flog_msg "Extract file to '${tmp_extrace_path}'"
+        fview_log "Extract file to '${tmp_extrace_path}'"
     else
-        flog_msg "Extract file fail '${tmp_extrace_path}'"
+        fview_log "Extract file fail '${tmp_extrace_path}'"
     fi
 }
 
@@ -2584,14 +2472,14 @@ cmd_shell()
 {
     local var_file="$@"
 
-    fterminal_clear
-    fterminal_reset
+    fout_clear
+    fout_reset
 
     # Add hsfm on ps1
     bash --init-file <(echo ". \"$HOME/.bashrc\"; export FM_RUNNING=1; export PS1=\"[HSFM]\$PS1\"; cd ${PWD}")
 
-    fterminal_setup
-    fterminal_redraw
+    fout_setup
+    fview_redraw
 }
 
 cmd_sort()
@@ -2619,16 +2507,16 @@ cmd_sort()
             var_name="extension"
            ;;
         *)
-            flog_msg "Sorting Options: none/size/time/version/extension, default use none."
+            fview_log "Sorting Options: none/size/time/version/extension, default use none."
             return 0
             ;;
     esac
-    fterminal_redraw full
-    flog_msg "Sorting: ${var_name}"
+    fview_redraw full
+    fview_log "Sorting: ${var_name}"
 }
 
 # Resolve a directory alias ("home", "log") to a path.
-fenv_dir_alias_get()
+fcmd_alias_get()
 {
     local var_key=$1
     local var_idx
@@ -2654,25 +2542,25 @@ cmd_cd()
 
         # FIXME, it didn't use anymore, remove it.
         # backup cursor
-        # NOTE. It's a patch for storing cursor position, cuse fcommand_handler will restore it.
-        fterminal_print '\e7'
+        # NOTE. It's a patch for storing cursor position, cuse fin_handler will restore it.
+        fout_print '\e7'
 
-        flog_msg "Change dir to: ${var_dir_path}"
+        fview_log "Change dir to: ${var_dir_path}"
     else
         local var_dir_alias
-        if var_dir_alias=$(fenv_dir_alias_get "${var_dir_path}") && test -d "${var_dir_alias}"
+        if var_dir_alias=$(fcmd_alias_get "${var_dir_path}") && test -d "${var_dir_alias}"
         then
             fsys_open "${var_dir_alias}"
 
             # backup cursor
-            # NOTE. It's a patch for storing cursor position, cuse fcommand_handler will restore it.
-            fterminal_print '\e7'
+            # NOTE. It's a patch for storing cursor position, cuse fin_handler will restore it.
+            fout_print '\e7'
 
-            flog_msg "Change dir to: '${var_dir_path}' -> '${var_dir_alias}'"
+            fview_log "Change dir to: '${var_dir_path}' -> '${var_dir_alias}'"
             return 0
         fi
 
-        flog_msg "${var_dir_path} not found."
+        fview_log "${var_dir_path} not found."
         return 1
     fi
     return 0
@@ -2688,122 +2576,120 @@ cmd_reenter()
 
         # FIXME, it didn't use anymore, remove it.
         # backup cursor
-        # NOTE. It's a patch for storing cursor position, cuse fcommand_handler will restore it.
-        fterminal_print '\e7'
+        # NOTE. It's a patch for storing cursor position, cuse fin_handler will restore it.
+        fout_print '\e7'
 
-        flog_msg "Change dir to: ${var_dir_path}"
+        fview_log "Change dir to: ${var_dir_path}"
     else
-        flog_msg "No dir found. ${var_dir_path}"
+        fview_log "No dir found. ${var_dir_path}"
     fi
     return 0
 }
 
 cmd_select()
 {
-    fterminal_clear
-    fterminal_draw_tab_line
-    fterminal_print '\e[%sH' "$((FM_VIEW_TAB_LINE_HEIGHT + 1))"
+    fout_clear
+    fview_draw_tab_line
+    fout_print '\e[%sH' "$((FM_VIEW_TAB_LINE_HEIGHT + 1))"
     {
-        fterminal_print 'Program: %s\n' "${FM_CMD_FILE_PROGRAM}"
-        fterminal_print 'File list: %s files slected.\n' ${#FM_CMD_SELECTION_LIST[@]}
+        fout_print 'Program: %s\n' "${FM_CMD_FILE_PROGRAM}"
+        fout_print 'File list: %s files slected.\n' ${#FM_CMD_SELECTION_LIST[@]}
         for each_file in "${FM_CMD_SELECTION_LIST[@]}"; do
             if test -e "${each_file}"; then
-                # fterminal_print '%s\n' "$(ls -ld ${each_file})"
-                fterminal_print '    %s\n' "${each_file}"
+                fout_print '    %s\n' "${each_file}"
             else
-                fterminal_print '    %s => Not found.\n' "${each_file}"
+                fout_print '    %s => Not found.\n' "${each_file}"
             fi
         done
     }
-    fterminal_draw_tab_line
-    fterminal_draw_status_line
+    fview_draw_tab_line
+    fview_draw_status_line
     # read -ern 1
     fprompt_wait "Press Enter Key To Continue..."
-    fterminal_redraw
+    fview_redraw
 }
 
 cmd_stat()
 {
-    fterminal_clear
-    fterminal_draw_tab_line
-    # fterminal_draw_status_line "File info"
-    # fterminal_print "\n"
-    # fHelp $@
-    fterminal_print '\e[%sH' "$((FM_VIEW_TAB_LINE_HEIGHT + 1))"
-    stat "$(fget_cursor_file)"
-    fterminal_draw_tab_line
-    fterminal_draw_status_line
+    fcmd_page "" 1 stat "$(fdir_cursor_file)"
+}
+
+# Run a command full screen and wait for Enter. $1 is the status label; $2 is 1
+# to repaint the frame over the output, 0 to leave the output alone.
+fcmd_page()
+{
+    local var_title=$1
+    local var_repaint=$2
+    shift 2
+
+    fout_clear
+    fview_draw_tab_line
+    fview_draw_status_line "${var_title}"
+    fout_print '\e[%sH' "$((FM_VIEW_TAB_LINE_HEIGHT + 1))"
+
+    "$@"
+
+    if [[ ${var_repaint} -eq 1 ]]
+    then
+        fview_draw_tab_line
+        fview_draw_status_line
+    fi
+
     fprompt_wait "Press Enter Key To Continue..."
-    fterminal_redraw
+    fview_redraw
 }
 
 cmd_disk()
 {
-    fterminal_clear
-    fterminal_draw_tab_line
-    # fterminal_draw_status_line "File info"
-    # fterminal_print "\n"
-    # fHelp $@
-    fterminal_print '\e[%sH' "$((FM_VIEW_TAB_LINE_HEIGHT + 1))"
-    df -h
-    fterminal_draw_tab_line
-    fterminal_draw_status_line
-    fprompt_wait "Press Enter Key To Continue..."
-    fterminal_redraw
+    fcmd_page "" 1 df -h
 }
 
 cmd_dump()
 {
-    fterminal_clear
-    fterminal_draw_tab_line
+    fout_clear
+    fview_draw_tab_line
     local var_print_cnt=0
-    fterminal_print '\e[%sH' "$((FM_VIEW_TAB_LINE_HEIGHT + 1 + var_print_cnt++))"
+    fout_print '\e[%sH' "$((FM_VIEW_TAB_LINE_HEIGHT + 1 + var_print_cnt++))"
     ################################################################
-    fterminal_print '\e[%sH\r## %s' "$((FM_VIEW_TAB_LINE_HEIGHT + 1 + var_print_cnt++))" "HSFM_PATH"
+    fout_print '\e[%sH\r## %s' "$((FM_VIEW_TAB_LINE_HEIGHT + 1 + var_print_cnt++))" "HSFM_PATH"
     for each_var in ${!HSFM_PATH_@}
     do
         if [[ ${var_print_cnt} -gt ${FM_VIEW_MAINWIN_HEIGHT} ]]
         then
             break
         fi
-        fterminal_print '\e[%sH\r    %- 24s: %s' "$((FM_VIEW_TAB_LINE_HEIGHT + 1 + var_print_cnt++))" "${each_var}" "${!each_var}"
+        fout_print '\e[%sH\r    %- 24s: %s' "$((FM_VIEW_TAB_LINE_HEIGHT + 1 + var_print_cnt++))" "${each_var}" "${!each_var}"
     done
 
-    fterminal_print '\e[%sH\r## %s' "$((FM_VIEW_TAB_LINE_HEIGHT + 1 + var_print_cnt++))" "HSFM_FILE"
+    fout_print '\e[%sH\r## %s' "$((FM_VIEW_TAB_LINE_HEIGHT + 1 + var_print_cnt++))" "HSFM_FILE"
     for each_var in ${!HSFM_FILE_@}
     do
         if [[ ${var_print_cnt} -gt ${FM_VIEW_MAINWIN_HEIGHT} ]]
         then
             break
         fi
-        fterminal_print '\e[%sH\r    %- 24s: %s' "$((FM_VIEW_TAB_LINE_HEIGHT + 1 + var_print_cnt++))" "${each_var}" "${!each_var}"
+        fout_print '\e[%sH\r    %- 24s: %s' "$((FM_VIEW_TAB_LINE_HEIGHT + 1 + var_print_cnt++))" "${each_var}" "${!each_var}"
     done
 
-    fterminal_print '\e[%sH\r## %s' "$((FM_VIEW_TAB_LINE_HEIGHT + 1 + var_print_cnt++))" "HSFM_FAV"
+    fout_print '\e[%sH\r## %s' "$((FM_VIEW_TAB_LINE_HEIGHT + 1 + var_print_cnt++))" "HSFM_FAV"
     for each_var in ${!HSFM_FAV@}
     do
         if [[ ${var_print_cnt} -gt ${FM_VIEW_MAINWIN_HEIGHT} ]]
         then
             break
         fi
-        fterminal_print '\e[%sH\r    %- 24s: %s' "$((FM_VIEW_TAB_LINE_HEIGHT + 1 + var_print_cnt++))" "${each_var}" "${!each_var}"
+        fout_print '\e[%sH\r    %- 24s: %s' "$((FM_VIEW_TAB_LINE_HEIGHT + 1 + var_print_cnt++))" "${each_var}" "${!each_var}"
     done
     ################################################################
-    fterminal_draw_tab_line
-    fterminal_draw_status_line
+    fview_draw_tab_line
+    fview_draw_status_line
     fprompt_wait "Press Enter Key To Continue..."
-    fterminal_redraw
+    fview_redraw
 }
 
 cmd_help()
 {
-    fterminal_clear
-    fterminal_draw_tab_line
-    fterminal_draw_status_line "Help info"
-    fterminal_print '\e[%sH' "$((FM_VIEW_TAB_LINE_HEIGHT + 1))"
-    fHelp $@
-    fprompt_wait "Press Enter Key To Continue..."
-    fterminal_redraw
+    fcmd_page "Help info" 0 fapp_help "$@"
 }
 
 # Show the requested bottom window, or hide it when it is already showing.
@@ -2816,7 +2702,7 @@ fcmd_bottomwin_toggle()
         FM_VIEW_BOTTOMWIN_SHOW=${DEF_TERM_WIN_TYPE_HIDDEN}
     fi
 
-    fterminal_redraw
+    fview_redraw
 }
 
 cmd_msg()
@@ -2844,28 +2730,25 @@ cmd_eval()
     local var_cmd=""
     if [[ "${#}" -eq "0" ]]
     then
-        flog_msg "No command specify."
+        fview_log "No command specify."
         return 0
     elif ! command -v $1 2>&1 > /dev/null
     then
-        flog_msg "No command ${1} found."
+        fview_log "No command ${1} found."
         return 0
     fi
 
-    fterminal_clear
-    fterminal_draw_tab_line
-    # fterminal_draw_status_line "File info"
-    # fterminal_print "\n"
-    # fHelp $@
-    fterminal_print '\e[%sH' "$((FM_VIEW_TAB_LINE_HEIGHT + 1))"
+    fout_clear
+    fview_draw_tab_line
+    fout_print '\e[%sH' "$((FM_VIEW_TAB_LINE_HEIGHT + 1))"
     printf "Excute: '%s'\n" "${*}"
     printf "%s\n" "################################################################################"
     eval ${@}
 
-    fterminal_draw_tab_line
-    fterminal_draw_status_line
+    fview_draw_tab_line
+    fview_draw_status_line
     fprompt_wait "Press Enter Key To Continue..."
-    fterminal_redraw
+    fview_redraw
 }
 
 cmd_title()
@@ -2873,9 +2756,9 @@ cmd_title()
     if [[ "${#}" -ge "1" ]]
     then
         FM_ENV_TITLE="$@"
-        fterminal_draw_tab_line
+        fview_draw_tab_line
     else
-        flog_msg "${FM_ENV_TITLE}"
+        fview_log "${FM_ENV_TITLE}"
     fi
 }
 
@@ -2883,7 +2766,7 @@ cmd_set()
 {
     if [[ "${#}" -lt "2" ]]
     then
-        flog_msg "No enough args number."
+        fview_log "No enough args number."
         return -1
     fi
     local args_variable=$1
@@ -2907,7 +2790,7 @@ cmd_set()
             then
                 HSFM_READ_DIR_MODE=${DEF_TERM_READ_DIR_MODE_LS_SORT}
             else
-                flog_msg "Unknown value: ${args_value}"
+                fview_log "Unknown value: ${args_value}"
                 return -1
             fi
             ;;
@@ -2919,65 +2802,62 @@ cmd_set()
             then
                 HSFM_ENABLE_HIDDEN=0
             else
-                flog_msg "Unknown value: ${args_value}"
+                fview_log "Unknown value: ${args_value}"
                 return -1
             fi
             ;;
         left)
-            if ! fenv_left_hande_mode "${args_value}"; then
+            if ! fcmd_left_hand_mode "${args_value}"; then
                 return -1
             fi
             ;;
         *)
-            flog_msg "Unknown variable name: ${args_variable}"
+            fview_log "Unknown variable name: ${args_variable}"
             return -1
             ;;
     esac
-    fterminal_redraw full
-    flog_msg "Set ${args_variable} ${args_value}"
+    fview_redraw full
+    fview_log "Set ${args_variable} ${args_value}"
 }
 
 cmd_colorscheme()
 {
-    fsetup_theme $1
-    fterminal_redraw full
+    fapp_setup_theme $1
+    fview_redraw full
 }
 
 cmd_test()
 {
     # local tmp_cmd="sleep 5"
-    # flog_msg_debug "${tmp_cmd} Entered."
     # {
-    #     flog_msg_debug "${tmp_cmd} started."
     #     eval "${tmp_cmd}"
-    #     flog_msg_debug "${tmp_cmd} finished."
     # } &
-    fterminal_draw_checkwin
+    fview_draw_checkwin
 }
 
 cmd_tabclose()
 {
-    fgui_tab_close
+    ftab_close
 }
 
 cmd_tabcloseright()
 {
-    fgui_tab_close right
+    ftab_close right
 }
 
 cmd_tabcloseleft()
 {
-    fgui_tab_close left
+    ftab_close left
 }
 
 cmd_tabcloseothers()
 {
-    fgui_tab_close others
+    ftab_close others
 }
 
 cmd_tabcloseduplicate()
 {
-    fgui_tab_close duplicate
+    ftab_close duplicate
 }
 
 cmd_quitngo()
@@ -2988,7 +2868,7 @@ cmd_quitngo()
         rm "$FM_FILE_CD_LASTPATH"
 
     [[ ${HSFM_CD_ON_EXIT:=1} == 1 ]] &&
-        fterminal_print '%s\n' "$PWD" > "$FM_FILE_CD_LASTPATH"
+        fout_print '%s\n' "$PWD" > "$FM_FILE_CD_LASTPATH"
 
     exit 0
 }
@@ -2996,7 +2876,7 @@ cmd_quitngo()
 cmd_config()
 {
     local var_file="${HSFM_FILE_CONFIG}"
-    fterminal_reset
+    fout_reset
 
     if command -v "${HSFM_TEXT_EDITOR%% *}" 2>&1 > /dev/null;then
         ${HSFM_TEXT_EDITOR} "${var_file}"
@@ -3007,11 +2887,11 @@ cmd_config()
     elif command -v "nano" 2>&1 > /dev/null;then
         nano "${var_file}"
     else
-        flog_msg "warn: no editor found. editor: '$HSFM_TEXT_EDITOR'"
+        fview_log "warn: no editor found. editor: '$HSFM_TEXT_EDITOR'"
     fi
 
-    fterminal_setup
-    fterminal_redraw
+    fout_setup
+    fview_redraw
 }
 
 cmd_exit()
@@ -3021,11 +2901,11 @@ cmd_exit()
 
 fsys_open() {
     local var_file=""
-    flog_msg_debug "Open '$*'"
+    fview_log_debug "Open '$*'"
     if test -e "$*"; then
         var_file="${*}"
     else
-        var_file="$(fget_cursor_file)"
+        var_file="$(fdir_cursor_file)"
     fi
 
     # Open directories and files.
@@ -3034,23 +2914,22 @@ fsys_open() {
         FM_DIR_SEARCH_END_EARLY=
         if test -r "${var_file:-/}"; then
             cd "${var_file:-/}" || :
-            flog_msg_debug "Enter $var_file"
-            fterminal_redraw full
+            fview_log_debug "Enter $var_file"
+            fview_redraw full
         else
-            flog_msg "Access fail on: ${var_file:-/}"
+            fview_log "Access fail on: ${var_file:-/}"
         fi
 
     elif [[ -f "${var_file}" ]]; then
         FM_CMD_OPEN_FILE=""
         while test -z "${FM_CMD_OPEN_FILE}"; do
             FM_CMD_OPEN_FILE="${var_file}"
-            local tmp_file_type=($(fprase_mime_type "$var_file"))
+            local tmp_file_type=($(fdir_mime_type "$var_file"))
             tmp_file_type=${tmp_file_type[@]}
 
             # cli preview
             case "${tmp_file_type}" in
                 # image/*)
-                #     cmd_preview "$var_file"
                 #     break
                 #     ;;
                 text/* | *x-empty* | *json*)
@@ -3058,7 +2937,6 @@ fsys_open() {
                     break
                     ;;
                 application/zip*)
-                    # cmd_unzip "$var_file"
                     cmd_extract "zip" "$var_file"
                     break
                     ;;
@@ -3093,20 +2971,19 @@ fsys_open() {
                 #     #     cmd_image "$var_file"
                 #     #     break
                 #     #     ;;
-                # esac
 
                 # 'nohup':  Make the process immune to hangups.
                 # '&':      Send it to the background.
                 # 'disown': Detach it from the shell.
                 if test -n "${HSFM_OPENER}" && command -v ${HSFM_OPENER%% *} >/dev/null; then
-                    flog_msg_debug "Open file via ${HSFM_OPENER}"
+                    fview_log_debug "Open file via ${HSFM_OPENER}"
                     nohup "${HSFM_OPENER}" "$var_file" &>/dev/null &
                     disown
                     break
                 fi
             fi
 
-            flog_msg "Unknown file type: '${tmp_file_type}'"
+            fview_log "Unknown file type: '${tmp_file_type}'"
         done
     fi
     FM_CMD_OPEN_FILE=""
@@ -3119,12 +2996,11 @@ vcmd_compress()
 {
     # currently only take one args.
     local arg_file_name="${1:-}"
-    # flog_msg_debug "compress:$@"
     local var_compress_cmd=""
     local var_file_ext=""
     local var_base_name=""
     local var_stem=""
-    if command -v "zip"
+    if command -v zip >/dev/null 2>&1
     then
         var_compress_cmd="zip -j"
         var_file_ext="zip"
@@ -3133,13 +3009,13 @@ vcmd_compress()
         var_compress_cmd="tar -C ${PWD} -cvJf "
         var_file_ext="txz"
     else
-        flog_msg "No zip or tar/xz found."
+        fview_log "No zip or tar/xz found."
         return -1
     fi
 
     [[ ${FM_CMD_SELECTION_LIST[*]} ]] && {
         [[ ! -w $PWD ]] && {
-        flog_msg "warn: no write access to dir."
+        fview_log "warn: no write access to dir."
             return -1
         }
         if test -z "${arg_file_name}"
@@ -3158,7 +3034,7 @@ vcmd_compress()
 
         if test -e "${arg_file_name}"
         then
-            flog_msg "${arg_file_name} exist, skip compression."
+            fview_log "${arg_file_name} exist, skip compression."
             return 0
         fi
 
@@ -3168,21 +3044,20 @@ vcmd_compress()
             tmp_cmd+="'${each_file}' "
         done
         # tmp_cmd+="./"
-        flog_msg "Compress started."
-        flog_msg_debug "excute: ${tmp_cmd}"
-        fterminal_draw_miniwin "Start Compress files."
+        fview_log "Compress started."
+        fview_log_debug "excute: ${tmp_cmd}"
+        fview_draw_miniwin "Start Compress files."
         eval "${tmp_cmd}"
         if [ $? != 0 ]
         then
-            fterminal_redraw full
-            flog_msg "File compression fail."
+            fview_redraw full
+            fview_log "File compression fail."
             return -1
         fi
 
-        fmode_setup "${DEF_TERM_MODE_NORMAL}"
-        # fterminal_setup
-        fterminal_redraw full
-        flog_msg "Compress finished."
+        fin_mode_setup "${DEF_TERM_MODE_NORMAL}"
+        fview_redraw full
+        fview_log "Compress finished."
     }
 }
 
@@ -3204,11 +3079,10 @@ fselect_execute_background()
 {
     [[ ${FM_CMD_SELECTION_LIST[*]} ]] && {
         [[ ! -w $PWD ]] && {
-            flog_msg "warn: no write access to dir."
+            fview_log "warn: no write access to dir."
             return
         }
 
-        # fterminal_print '\e[1mhsfm\e[m: %s\n' "Running ${FM_CMD_FILE_PROGRAM[0]}"
         local tmp_cmd="${FM_CMD_FILE_PROGRAM[@]} "
         for each_file in "${FM_CMD_SELECTION_LIST[@]}"
         do
@@ -3218,16 +3092,16 @@ fselect_execute_background()
 
         #==========================
         {
-            flog_msg_debug "${FM_CMD_FILE_PROGRAM} started."
+            fview_log_debug "${FM_CMD_FILE_PROGRAM} started."
             eval "${tmp_cmd}"
-            flog_msg_debug "${FM_CMD_FILE_PROGRAM} finished."
+            fview_log_debug "${FM_CMD_FILE_PROGRAM} finished."
         } &
         #==========================
 
         FM_CMD_SELECTION_LIST=()
-        fmode_setup "${DEF_TERM_MODE_NORMAL}"
-        fterminal_setup
-        fterminal_redraw full
+        fin_mode_setup "${DEF_TERM_MODE_NORMAL}"
+        fout_setup
+        fview_redraw full
     }
 }
 
@@ -3235,33 +3109,30 @@ fselect_execute_block()
 {
     [[ ${FM_CMD_SELECTION_LIST[*]} ]] && {
         [[ ! -w $PWD ]] && {
-            flog_msg "warn: no write access to dir."
+            fview_log "warn: no write access to dir."
             return
         }
 
         # Clear the screen to make room for a prompt if needed.
-        # fterminal_clear
-        # fterminal_reset
 
         stty echo
-        # fterminal_print '\e[1mhsfm\e[m: %s\n' "Running ${FM_CMD_FILE_PROGRAM[0]}"
         local tmp_cmd="${FM_CMD_FILE_PROGRAM[@]} "
         for each_file in "${FM_CMD_SELECTION_LIST[@]}"
         do
             tmp_cmd+="'${each_file}' "
         done
         tmp_cmd+="./"
-        flog_msg "${FM_CMD_FILE_PROGRAM} started."
-        fterminal_draw_miniwin "Start ${FM_CMD_FILE_PROGRAM}"
+        fview_log "${FM_CMD_FILE_PROGRAM} started."
+        fview_draw_miniwin "Start ${FM_CMD_FILE_PROGRAM}"
         eval "${tmp_cmd}"
         # "${FM_CMD_FILE_PROGRAM[@]}" "${FM_CMD_SELECTION_LIST[@]}" .
         stty -echo
 
         # FM_CMD_SELECTION_LIST=()
-        fmode_setup "${DEF_TERM_MODE_NORMAL}"
-        fterminal_setup
-        fterminal_redraw full
-        flog_msg "${FM_CMD_FILE_PROGRAM} finished."
+        fin_mode_setup "${DEF_TERM_MODE_NORMAL}"
+        fout_setup
+        fview_redraw full
+        fview_log "${FM_CMD_FILE_PROGRAM} finished."
     }
 }
 
@@ -3270,7 +3141,6 @@ fselect_copy() {
     local flag_duplicate=false
     local var_target_folder=${@:$#}
 
-    # flog_msg_debug "Arsgs: ${#},${@}, => ${@:1}, |=> ${var_target_folder}"
     # FIXME, don't trash on different device/big file size
     for ((i=1;i<${#};i++)); {
         local tmp_file="${@:i:1}"
@@ -3286,11 +3156,11 @@ fselect_copy() {
                         cp -R -f "${tmp_file}" "${var_target_folder}"
                         ;;
                     'c'|'C')
-                        flog_msg_debug "Copy Abort."
+                        fview_log_debug "Copy Abort."
                         break
                         ;;
                     's'|'S')
-                        flog_msg_debug "Skip copy ${tmp_file} to $(realpath ${var_target_folder})"
+                        fview_log_debug "Skip copy ${tmp_file} to $(realpath ${var_target_folder})"
                         continue
                         ;;
                     'a'|'A')
@@ -3316,10 +3186,9 @@ fselect_copy() {
                 cp -R "${tmp_file}" "${var_target_folder}/copy_$(date +%s)_${tmp_file##*/}"
             fi
         else
-            # flog_msg_debug "No exist: ${tmp_file}"
             cp -iR "${tmp_file}" "${var_target_folder}"
         fi
-        flog_msg_debug "Copy: ${tmp_file} to $(realpath ${var_target_folder})"
+        fview_log_debug "Copy: ${tmp_file} to $(realpath ${var_target_folder})"
     }
 }
 
@@ -3341,14 +3210,11 @@ fselect_remove() {
         rm -rf "${@:1:$#-1}"
 
         # test -d "${HSFM_PATH_TRASH}" || mkdir -p "${HSFM_PATH_TRASH}"
-        # cd "$HSFM_PATH_TRASH" || flog_msg "error: Can't cd to trash directory."
+        # cd "$HSFM_PATH_TRASH" || fview_log "error: Can't cd to trash directory."
         #
         # if cp -alf "$@" &>/dev/null; then
         #     rm -r "${@:1:$#-1}"
-        # else
-        #     flog_msg "mv -f $@"
         #     mv -f "$@"
-        # fi
         #
         # # Go back to where we were.
         # cd "$OLDPWD" ||:
@@ -3361,7 +3227,7 @@ fselect_rename() {
     FM_DIR_MARKED_LIST=("${@:1:$#-1}")
 
     # Save marked files to a file and open them for editing.
-    fterminal_print '%s\n' "${FM_DIR_MARKED_LIST[@]##*/}" > "$rename_file"
+    fout_print '%s\n' "${FM_DIR_MARKED_LIST[@]##*/}" > "$rename_file"
     "${HSFM_TEXT_EDITOR:-vi}" "$rename_file"
 
     # Read the renamed files to an array.
@@ -3370,18 +3236,18 @@ fselect_rename() {
     # If the user deleted a line, stop here.
     ((${#FM_DIR_MARKED_LIST[@]} != ${#changed_files[@]})) && {
         rm "$rename_file"
-        flog_msg "error: Line mismatch in rename file. Doing nothing."
+        fview_log "error: Line mismatch in rename file. Doing nothing."
         return
     }
 
-    fterminal_print '%s\n%s\n' \
+    fout_print '%s\n%s\n' \
         "# This file will be executed when the editor is closed." \
         "# Clear the file to abort." > "$rename_file"
 
     # Construct the rename commands.
     for ((i=0;i<${#FM_DIR_MARKED_LIST[@]};i++)); {
         [[ ${FM_DIR_MARKED_LIST[i]} != "${PWD}/${changed_files[i]}" ]] && {
-            fterminal_print 'mv -i -- %q %q\n' \
+            fout_print 'mv -i -- %q %q\n' \
                 "${FM_DIR_MARKED_LIST[i]}" "${PWD}/${changed_files[i]}"
             local renamed=1
         }
@@ -3396,7 +3262,7 @@ fselect_rename() {
     }
 
     # Fix terminal settings after '$HSFM_TEXT_EDITOR'.
-    fterminal_setup
+    fout_setup
 }
 
 ###########################################################
@@ -3404,7 +3270,7 @@ fselect_rename() {
 ## key decoding, mode state machine, line editor.
 ###########################################################
 
-fterminal_read_key() {
+fin_read_key() {
     # local REPLY
     read "${FM_INPUT_READ_ARGS[@]}" -srn 1
     local ret_value=$?
@@ -3454,7 +3320,6 @@ fterminal_read_key() {
 
         # REPLY=${tmp_buffer}${REPLY}
         FM_INPUT_KEY="^"${REPLY:1}
-        # flog_msg_debug "${FM_INPUT_KEY}"
     elif [[ ${ret_value} ]]
     then
         FM_INPUT_KEY="${REPLY}"
@@ -3463,14 +3328,11 @@ fterminal_read_key() {
     fi
 
     # if test -n "${REPLY}"
-    # then
-    #     fterminal_draw_status_line
-    # fi
 
     return ${ret_value}
 }
 
-fterminal_read_key_timeout() {
+fin_read_key_timeout() {
     local var_input_timeout=${1:-1}
 
     read -t ${var_input_timeout} -srn 1
@@ -3481,13 +3343,10 @@ fterminal_read_key_timeout() {
         FM_INPUT_KEY+="+${REPLY}"
     fi
     # if test -n "${REPLY}"
-    # then
-    #     fterminal_draw_status_line
-    # fi
     return ${ret_value}
 }
 
-fmode_setup()
+fin_mode_setup()
 {
 
     case ${1} in
@@ -3495,43 +3354,42 @@ fmode_setup()
             FM_INPUT_MODE="${DEF_TERM_MODE_VISUAL}"
             # setup visual mode
             FM_INPUT_VISUAL_START=$FM_DIR_SCROLL_IDX
-            fterminal_mark_add "$FM_DIR_SCROLL_IDX"
+            fdir_mark_add "$FM_DIR_SCROLL_IDX"
             FM_CMD_SELECTION_LIST=()
-            fterminal_draw_command_line
+            fview_draw_command_line
             ;;
         "${DEF_TERM_MODE_SELECT}")
             FM_INPUT_MODE="${DEF_TERM_MODE_SELECT}"
             # setup selection mode
-            fterminal_mark_add "$FM_DIR_SCROLL_IDX"
+            fdir_mark_add "$FM_DIR_SCROLL_IDX"
             FM_CMD_SELECTION_LIST=()
-            fterminal_draw_command_line
+            fview_draw_command_line
             ;;
         "${DEF_TERM_MODE_COMMAND}")
             FM_INPUT_MODE="${DEF_TERM_MODE_COMMAND}"
             fedit_begin ":" "${DEF_TERM_MODE_COMMAND}" "${DEF_ED_DRIVER_MODE}"
-            fterminal_draw_command_line
+            fview_draw_command_line
             ;;
         "${DEF_TERM_MODE_SEARCH}")
             FM_INPUT_MODE="${DEF_TERM_MODE_SEARCH}"
             fedit_begin "/" "${DEF_TERM_MODE_SEARCH}" "${DEF_ED_DRIVER_MODE}"
-            fterminal_draw_command_line
+            fview_draw_command_line
             ;;
         "${DEF_TERM_MODE_FIND}")
             FM_INPUT_MODE="${DEF_TERM_MODE_FIND}"
             fedit_begin "?" "${DEF_TERM_MODE_FIND}" "${DEF_ED_DRIVER_MODE}"
-            fterminal_draw_command_line
+            fview_draw_command_line
             ;;
         *|"${DEF_TERM_MODE_NORMAL}")
             FM_INPUT_MODE="${DEF_TERM_MODE_NORMAL}"
-            fterminal_mark_reset
+            fdir_mark_reset
             # we don't flush command on enter normal mode, it will erase message.
             ;;
     esac
-    fterminal_draw_status_line
-    # fterminal_draw_command_line
+    fview_draw_status_line
 }
 
-fnormal_mode_handler() {
+fin_mode_normal() {
 
     case ${var_special_key:-$1} in
         # '' is what bash sees when the enter/return key is pressed.
@@ -3549,12 +3407,11 @@ fnormal_mode_handler() {
                 FM_DIR_FLAG_RESET_IDX=true
                 fsys_open "${FM_DIR_FILE_LIST[FM_DIR_SCROLL_IDX]}"
             elif test -f "${FM_DIR_FILE_LIST[FM_DIR_SCROLL_IDX]}"; then
-                local tmp_mine=$(fprase_mime_type "${FM_DIR_FILE_LIST[FM_DIR_SCROLL_IDX]}")
+                local tmp_mine=$(fdir_mime_type "${FM_DIR_FILE_LIST[FM_DIR_SCROLL_IDX]}")
                 local tmp_info=$(file "${FM_DIR_FILE_LIST[FM_DIR_SCROLL_IDX]}")
-                # flog_msg "File info(${tmp_mine%%;*}):$(file "${FM_DIR_FILE_LIST[FM_DIR_SCROLL_IDX]}" | tail -n 1 | cut -d ':' -f2)"
-                flog_msg "File info(${tmp_mine%%;*}):${tmp_info##*:}"
+                fview_log "File info(${tmp_mine%%;*}):${tmp_info##*:}"
             else
-                flog_msg "File access failed."
+                fview_log "File access failed."
             fi
             ;;
 
@@ -3589,7 +3446,7 @@ fnormal_mode_handler() {
         ${HSFM_KEY_SCROLL_DOWN1:=j} | \
             ${HSFM_KEY_SCROLL_DOWN2:=$'\e[B'} | \
             ${HSFM_KEY_SCROLL_DOWN3:=$'\eOB'})
-            fgui_scroll_down
+            fnav_scroll_down
             ;;
 
         # Scroll up.
@@ -3598,14 +3455,14 @@ fnormal_mode_handler() {
         ${HSFM_KEY_SCROLL_UP1:=k} | \
             ${HSFM_KEY_SCROLL_UP2:=$'\e[A'} | \
             ${HSFM_KEY_SCROLL_UP3:=$'\eOA'})
-            fgui_scroll_up
+            fnav_scroll_up
             ;;
 
         # Go to top.
         ${HSFM_KEY_TO_TOP:=g})
             ((FM_DIR_SCROLL_IDX != 0)) && {
                 FM_DIR_SCROLL_IDX=0
-                fterminal_redraw
+                fview_redraw
             }
             ;;
 
@@ -3613,39 +3470,37 @@ fnormal_mode_handler() {
         ${HSFM_KEY_TO_BOTTOM:=G})
             ((FM_DIR_SCROLL_IDX != FM_DIR_LIST_CNT)) && {
                 ((FM_DIR_SCROLL_IDX = FM_DIR_LIST_CNT))
-                fterminal_redraw
+                fview_redraw
             }
             ;;
 
         # Tab selcet
         ${HSFM_KEY_GO_PREVIOUS_TAB})
-            fgui_tab_go_previous
+            ftab_go_previous
             ;;
 
         ${HSFM_KEY_GO_NEXT_TAB})
-            fgui_tab_go_next
+            ftab_go_next
             ;;
         ${HSFM_KEY_MOVE_TAB_PREVIOUS})
-            fgui_tab_move_previous
+            ftab_move_previous
             ;;
 
         ${HSFM_KEY_MOVE_TAB_NEXT})
-            fgui_tab_move_next
+            ftab_move_next
             ;;
         ${HSFM_KEY_OPEN_TAB})
-            fgui_tab_open
+            ftab_open
             ;;
         ${HSFM_KEY_CLOSE_TAB})
-            fgui_tab_close
+            ftab_close
             ;;
 
         ${HSFM_KEY_VISUAL_SELECT:="V"})
-            fmode_setup "${DEF_TERM_MODE_VISUAL}"
-            # fterminal_redraw
+            fin_mode_setup "${DEF_TERM_MODE_VISUAL}"
             ;;
         ${HSFM_KEY_SELECTION})
-            fmode_setup "${DEF_TERM_MODE_SELECT}"
-            # fterminal_redraw
+            fin_mode_setup "${DEF_TERM_MODE_SELECT}"
             ;;
 
         # Show hidden files.
@@ -3660,8 +3515,7 @@ fnormal_mode_handler() {
             fi
             # shopt_flags=(u s)
             # shopt -"${shopt_flags[$HSFM_ENABLE_HIDDEN]}" dotglob
-            fterminal_redraw full
-            # flog_msg "Hidden: $HSFM_ENABLE_HIDDEN/${shopt_flags[$HSFM_ENABLE_HIDDEN]}"
+            fview_redraw full
             ;;
         # Toggle sorting method
         ${HSFM_KEY_SORTING})
@@ -3672,8 +3526,8 @@ fnormal_mode_handler() {
                 HSFM_LS_SORTING="-X"
                 var_name="extension"
             fi
-            fterminal_redraw full
-            flog_msg "Sorting: ${var_name}.${HSFM_LS_SORTING}"
+            fview_redraw full
+            fview_log "Sorting: ${var_name}.${HSFM_LS_SORTING}"
             ;;
 
         # Spawn a shell.
@@ -3683,21 +3537,21 @@ fnormal_mode_handler() {
 
         # Search.
         ${HSFM_KEY_SEARCH:=/})
-            fmode_setup "${DEF_TERM_MODE_SEARCH}"
+            fin_mode_setup "${DEF_TERM_MODE_SEARCH}"
             ;;
         "${HSFM_KEY_FIND:=?}")
-            fmode_setup "${DEF_TERM_MODE_FIND}"
+            fin_mode_setup "${DEF_TERM_MODE_FIND}"
             ;;
 
         # FIXME, remove this fake command.
         F)
-            fcommand_handler "${DEF_TERM_MODE_SEARCH}"
+            fin_handler "${DEF_TERM_MODE_SEARCH}"
 
-            # If the search came up empty, fterminal_redraw the current dir.
+            # If the search came up empty, fview_redraw the current dir.
             if [[ -z ${FM_DIR_FILE_LIST[*]} ]]; then
                 FM_DIR_FILE_LIST=("${FM_DIR_BACKUP[@]}")
                 ((FM_DIR_LIST_CNT = ${#FM_DIR_FILE_LIST[@]} - 1))
-                fterminal_redraw
+                fview_redraw
                 FM_DIR_SEARCH_ACTIVE=
             else
                 FM_DIR_SEARCH_ACTIVE=1
@@ -3706,13 +3560,12 @@ fnormal_mode_handler() {
 
         # open file with command
         ${HSFM_KEY_OPEN_CMD:=:})
-            fmode_setup "${DEF_TERM_MODE_COMMAND}"
+            fin_mode_setup "${DEF_TERM_MODE_COMMAND}"
             ;;
         # FIXME, remove this fake command.
         C)
             # FIXME, if command change cursor pos, it will be resotre to wier position
-            fcommand_handler "${DEF_TERM_MODE_COMMAND}"
-            # fmode_setup "${DEF_TERM_MODE_COMMAND}"
+            fin_handler "${DEF_TERM_MODE_COMMAND}"
             ;;
 
         # Show file attributes.
@@ -3724,7 +3577,6 @@ fnormal_mode_handler() {
 
         # Show help info.
         ${HSFM_KEY_HELP:=H})
-            # fcommand_handler "help" "${FM_DIR_FILE_LIST[FM_DIR_SCROLL_IDX]##*/}"
             cmd_help "$@"
             ;;
 
@@ -3745,8 +3597,8 @@ fnormal_mode_handler() {
 
         # # Refresh current dir.
         ${HSFM_KEY_REFRESH:=r})
-            fterminal_redraw full
-            flog_msg "Window Refreshed."
+            fview_redraw full
+            fview_log "Window Refreshed."
             ;;
         ${HSFM_KEY_TOGGLE_MSGWIN})
             if [ ${FM_VIEW_BOTTOMWIN_SHOW} != ${DEF_TERM_WIN_TYPE_MSG} ]
@@ -3755,7 +3607,7 @@ fnormal_mode_handler() {
             else
                 FM_VIEW_BOTTOMWIN_SHOW=${DEF_TERM_WIN_TYPE_HIDDEN}
             fi
-            fterminal_redraw
+            fview_redraw
             ;;
         ${HSFM_KEY_TOGGLE_TASKWIN})
             if [ ${FM_VIEW_BOTTOMWIN_SHOW} != ${DEF_TERM_WIN_TYPE_TASK} ]
@@ -3764,7 +3616,7 @@ fnormal_mode_handler() {
             else
                 FM_VIEW_BOTTOMWIN_SHOW=${DEF_TERM_WIN_TYPE_HIDDEN}
             fi
-            fterminal_redraw
+            fview_redraw
             ;;
 
         # Directory favourites.
@@ -3788,20 +3640,19 @@ fnormal_mode_handler() {
         ${HSFM_KEY_YANK:=y})
             FM_CMD_FILE_PROGRAM=(fselect_copy)
             FM_CMD_SELECTION_LIST=("${FM_DIR_FILE_LIST[FM_DIR_SCROLL_IDX]}")
-            fterminal_redraw
-            flog_msg "${FM_DIR_FILE_LIST[FM_DIR_SCROLL_IDX]} yanked."
+            fview_redraw
+            fview_log "${FM_DIR_FILE_LIST[FM_DIR_SCROLL_IDX]} yanked."
             ;;
         ${HSFM_KEY_CUT:=m})
             FM_CMD_FILE_PROGRAM=(mv -i)
             FM_CMD_SELECTION_LIST=("${FM_DIR_FILE_LIST[FM_DIR_SCROLL_IDX]}")
-            fterminal_redraw
-            flog_msg "${FM_DIR_FILE_LIST[FM_DIR_SCROLL_IDX]} cuted."
+            fview_redraw
+            fview_log "${FM_DIR_FILE_LIST[FM_DIR_SCROLL_IDX]} cuted."
             ;;
         ${HSFM_KEY_TRASH:=d})
             FM_CMD_FILE_PROGRAM=(fselect_remove)
             FM_CMD_SELECTION_LIST=("${FM_DIR_FILE_LIST[FM_DIR_SCROLL_IDX]}")
             fselect_execute
-            # flog_msg "${FM_DIR_FILE_LIST[FM_DIR_SCROLL_IDX]} removed."
             ;;
         ${HSFM_KEY_PASTE})
             fselect_execute
@@ -3809,28 +3660,26 @@ fnormal_mode_handler() {
 
         ## Second level list
         '\')
-            fterminal_read_key_timeout 1
+            fin_read_key_timeout 1
             case ${REPLY} in
                 a)
-                    fterminal_mark_toggle "all"
-                    fmode_setup "${DEF_TERM_MODE_SELECT}"
+                    fdir_mark_toggle "all"
+                    fin_mode_setup "${DEF_TERM_MODE_SELECT}"
                     ;;
                 d)
-                    fgui_tab_duplicate
+                    ftab_duplicate
                     ;;
             esac
             ;;
         q)
-            fterminal_read_key_timeout 1
+            fin_read_key_timeout 1
             case ${REPLY} in
                 q)
-                    fgui_tab_close
-                    # cmd_exit
+                    ftab_close
                     ;;
                 g)
                     # quit & go
                     cmd_quitngo
-                    # cmd_exit
                     ;;
                 a)
                     cmd_exit
@@ -3838,11 +3687,11 @@ fnormal_mode_handler() {
             esac
             ;;
     esac
-    fterminal_flush
+    fout_flush
 }
 
 # File-operation arm shared by the visual and selection handlers.
-fhandler_file_op()
+fin_file_op()
 {
     case ${1} in
         yank)
@@ -3850,18 +3699,18 @@ fhandler_file_op()
             FM_CMD_SELECTION_LIST=("${FM_DIR_MARKED_LIST[@]}")
 
             FM_DIR_MARKED_LIST=()
-            fmode_setup "${DEF_TERM_MODE_NORMAL}"
-            fterminal_redraw
-            flog_msg "${#FM_CMD_SELECTION_LIST[@]} files yanked."
+            fin_mode_setup "${DEF_TERM_MODE_NORMAL}"
+            fview_redraw
+            fview_log "${#FM_CMD_SELECTION_LIST[@]} files yanked."
             ;;
         cut)
             FM_CMD_FILE_PROGRAM=(mv -i)
             FM_CMD_SELECTION_LIST=("${FM_DIR_MARKED_LIST[@]}")
 
             FM_DIR_MARKED_LIST=()
-            fmode_setup "${DEF_TERM_MODE_NORMAL}"
-            fterminal_redraw
-            flog_msg "${#FM_CMD_SELECTION_LIST[@]} files cuted."
+            fin_mode_setup "${DEF_TERM_MODE_NORMAL}"
+            fview_redraw
+            fview_log "${#FM_CMD_SELECTION_LIST[@]} files cuted."
             ;;
         trash)
             FM_CMD_FILE_PROGRAM=(fselect_remove)
@@ -3873,18 +3722,18 @@ fhandler_file_op()
     esac
 }
 
-fhandler_quit()
+fin_quit()
 {
-    fmode_setup "${DEF_TERM_MODE_NORMAL}"
-    fterminal_redraw
+    fin_mode_setup "${DEF_TERM_MODE_NORMAL}"
+    fview_redraw
 }
 
-fvisual_mode_handler() {
+fin_mode_visual() {
 
     case ${var_special_key:-$1} in
         # '' is what bash sees when the enter/return key is pressed.
         ${HSFM_KEY_CHILD3:=""})
-            fmode_setup "${DEF_TERM_MODE_NORMAL}"
+            fin_mode_setup "${DEF_TERM_MODE_NORMAL}"
             ;;
         # Scroll down.
         # 'B' is what bash sees when the down arrow is pressed
@@ -3892,7 +3741,7 @@ fvisual_mode_handler() {
         ${HSFM_KEY_SCROLL_DOWN1:=j} | \
             ${HSFM_KEY_SCROLL_DOWN2:=$'\e[B'} | \
             ${HSFM_KEY_SCROLL_DOWN3:=$'\eOB'})
-            fgui_scroll_down_visual
+            fnav_scroll_down_visual
             ;;
         # Scroll up.
         # 'A' is what bash sees when the up arrow is pressed
@@ -3900,46 +3749,46 @@ fvisual_mode_handler() {
         ${HSFM_KEY_SCROLL_UP1:=k} | \
             ${HSFM_KEY_SCROLL_UP2:=$'\e[A'} | \
             ${HSFM_KEY_SCROLL_UP3:=$'\eOA'})
-            fgui_scroll_up_visual
+            fnav_scroll_up_visual
             ;;
         # Go to top.
         ${HSFM_KEY_TO_TOP:=g})
-            fgui_scroll_top_visual
+            fnav_scroll_top_visual
             ;;
 
         # Go to bottom.
         ${HSFM_KEY_TO_BOTTOM:=G})
-            fgui_scroll_bottom_visual
+            fnav_scroll_bottom_visual
             ;;
         # open file with command
         ${HSFM_KEY_OPEN_CMD:=:})
             # FIXME, if command change cursor pos, it will be resotre to wier position
             FM_CMD_SELECTION_LIST=("${FM_DIR_MARKED_LIST[@]}")
-            fcommand_handler "${DEF_TERM_MODE_COMMAND}"
+            fin_handler "${DEF_TERM_MODE_COMMAND}"
             ;;
 
         # File operstions
         ${HSFM_KEY_YANK:=y})
-            fhandler_file_op "yank"
+            fin_file_op "yank"
             ;;
         ${HSFM_KEY_CUT:=m})
-            fhandler_file_op "cut"
+            fin_file_op "cut"
             ;;
         ${HSFM_KEY_TRASH:=d})
-            fhandler_file_op "trash"
+            fin_file_op "trash"
             ;;
         q | $'\e')
-            fhandler_quit
+            fin_quit
             ;;
     esac
 }
 
-fselection_mode_handler() {
+fin_mode_select() {
 
     case ${var_special_key:-$1} in
         # '' is what bash sees when the enter/return key is pressed.
         ${HSFM_KEY_CHILD3:=""})
-            fmode_setup "${DEF_TERM_MODE_NORMAL}"
+            fin_mode_setup "${DEF_TERM_MODE_NORMAL}"
             ;;
         # Scroll down.
         # 'B' is what bash sees when the down arrow is pressed
@@ -3947,7 +3796,7 @@ fselection_mode_handler() {
         ${HSFM_KEY_SCROLL_DOWN1:=j} | \
             ${HSFM_KEY_SCROLL_DOWN2:=$'\e[B'} | \
             ${HSFM_KEY_SCROLL_DOWN3:=$'\eOB'})
-            fgui_scroll_down
+            fnav_scroll_down
             ;;
 
         # Scroll up.
@@ -3956,13 +3805,13 @@ fselection_mode_handler() {
         ${HSFM_KEY_SCROLL_UP1:=k} | \
             ${HSFM_KEY_SCROLL_UP2:=$'\e[A'} | \
             ${HSFM_KEY_SCROLL_UP3:=$'\eOA'})
-            fgui_scroll_up
+            fnav_scroll_up
             ;;
         # Go to top.
         ${HSFM_KEY_TO_TOP:=g})
             ((FM_DIR_SCROLL_IDX != 0)) && {
                 FM_DIR_SCROLL_IDX=0
-                fterminal_redraw
+                fview_redraw
             }
             ;;
 
@@ -3970,32 +3819,32 @@ fselection_mode_handler() {
         ${HSFM_KEY_TO_BOTTOM:=G})
             ((FM_DIR_SCROLL_IDX != FM_DIR_LIST_CNT)) && {
                 ((FM_DIR_SCROLL_IDX = FM_DIR_LIST_CNT))
-                fterminal_redraw
+                fview_redraw
             }
             ;;
 
         ${HSFM_KEY_SELECTION})
-            fterminal_mark_toggle "$FM_DIR_SCROLL_IDX" "$1"
+            fdir_mark_toggle "$FM_DIR_SCROLL_IDX" "$1"
             ;;
 
         # open file with command
         ${HSFM_KEY_OPEN_CMD:=:})
             # FIXME, if command change cursor pos, it will be resotre to wier position
-            fcommand_handler "${DEF_TERM_MODE_COMMAND}"
+            fin_handler "${DEF_TERM_MODE_COMMAND}"
             ;;
 
         # File operstions
         ${HSFM_KEY_YANK:=y})
-            fhandler_file_op "yank"
+            fin_file_op "yank"
             ;;
         ${HSFM_KEY_CUT:=m})
-            fhandler_file_op "cut"
+            fin_file_op "cut"
             ;;
         ${HSFM_KEY_TRASH:=d})
-            fhandler_file_op "trash"
+            fin_file_op "trash"
             ;;
         q | $'\e')
-            fhandler_quit
+            fin_quit
             ;;
     esac
 }
@@ -4036,14 +3885,14 @@ fedit_end()
         "${DEF_ED_DRIVER_MODE}")
             if [[ "${FM_ED_FUNC}" = "${DEF_TERM_MODE_COMMAND}" && -z "${FM_ED_COMMIT}" ]]
             then
-                fterminal_print '\r\e[K\e[?25l'
+                fout_print '\r\e[K\e[?25l'
             fi
-            fmode_setup "${DEF_TERM_MODE_NORMAL}"
+            fin_mode_setup "${DEF_TERM_MODE_NORMAL}"
             ;;
         "${DEF_ED_DRIVER_PROMPT}")
             if [[ "${FM_ED_FUNC}" = "${DEF_TERM_MODE_COMMAND}" && -z "${FM_ED_COMMIT}" ]]
             then
-                fterminal_print '\r\e[K\e[?25l\e8'
+                fout_print '\r\e[K\e[?25l\e8'
             fi
             # The prompt completion slot does not survive the session.
             FM_ED_COMP_PROMPT_LIST=()
@@ -4301,6 +4150,11 @@ fedit_key()
         $'\e[A')
             fedit_history_up
             ;;
+        # Delete: drop the character under the cursor.
+        $'\e[3~')
+            FM_ED_POSTBUF=${FM_ED_POSTBUF:1}
+            fedit_comp_reset
+            ;;
         # ':' clears the line, command flavor only.
         ":")
             if [[ "${FM_ED_FUNC}" = "${DEF_TERM_MODE_COMMAND}" ]]
@@ -4330,10 +4184,10 @@ fedit_key()
             # Ctrl-R inserts the selection, mode driver only.
             if [[ "${FM_ED_DRIVER}" = "${DEF_ED_DRIVER_MODE}" ]]
             then
-                fterminal_read_key_timeout 1
+                fin_read_key_timeout 1
                 case ${REPLY} in
                     \")
-                        FM_ED_BUF+=$(fget_selection_file)
+                        FM_ED_BUF+=$(fdir_selection_file)
                         ;;
                 esac
             else
@@ -4398,20 +4252,20 @@ fedit_cancel()
 
     case "${FM_ED_DRIVER}" in
         "${DEF_ED_DRIVER_MODE}")
-            fmode_setup "${DEF_TERM_MODE_NORMAL}"
+            fin_mode_setup "${DEF_TERM_MODE_NORMAL}"
             if [[ "${FM_ED_FUNC}" = "${DEF_TERM_MODE_SEARCH}" ]]
             then
-                fterminal_redraw full
+                fview_redraw full
             else
-                fterminal_print '\r\e[K\e[?25l'
+                fout_print '\r\e[K\e[?25l'
             fi
             ;;
         "${DEF_ED_DRIVER_PROMPT}")
             if [[ "${FM_ED_FUNC}" = "${DEF_TERM_MODE_SEARCH}" ]]
             then
-                fterminal_redraw full
+                fview_redraw full
             else
-                fterminal_print '\r\e[K\e[?25l\e8'
+                fout_print '\r\e[K\e[?25l\e8'
             fi
             FM_ED_COMP_PROMPT_LIST=()
             FM_ED_COMP_PROMPT_IDX=0
@@ -4442,11 +4296,11 @@ fedit_dispatch()
             then
                 cmd_eval "${FM_ED_COMMIT#!}"
             else
-                fterminal_print '\r\e[K Command "'${FM_ED_CMD}'" not found.\e[?25l\e8'
+                fout_print '\r\e[K Command "'${FM_ED_CMD}'" not found.\e[?25l\e8'
             fi
             ;;
         "redraw")
-            fterminal_redraw full
+            fview_redraw full
             ;;
         "open")
             fsys_open ${FM_ED_ARGS}
@@ -4464,7 +4318,7 @@ fedit_dispatch()
             cmd_preview "${FM_ED_ARGS}"
             ;;
         "echo")
-            flog_msg "${FM_ED_ARGS}"
+            fview_log "${FM_ED_ARGS}"
             ;;
         *)
             if command -v ${var_family}${FM_ED_CMD} >/dev/null
@@ -4473,28 +4327,28 @@ fedit_dispatch()
                 # We should not clear msg, after running.
                 if [[ "${FM_ED_DRIVER}" = "${DEF_ED_DRIVER_MODE}" ]]
                 then
-                    fterminal_print '\e[?25l'
+                    fout_print '\e[?25l'
                 else
-                    fterminal_print '\e[?25l\e8'
+                    fout_print '\e[?25l\e8'
                 fi
             else
-                fterminal_print '\r\e[K Command "'${FM_ED_CMD}'" not found.\e[?25l\e8'
+                fout_print '\r\e[K Command "'${FM_ED_CMD}'" not found.\e[?25l\e8'
             fi
             ;;
     esac
 }
 
-# Driver A: one key per call, driven by fCore.
-fcommand_mode_handler()
+# Driver A: one key per call, driven by fapp_core.
+fin_mode_command()
 {
     local var_key=$*
 
-    fterminal_print '\e[?25l\e[%sH' "$FM_VIEW_HEIGHT"
+    fout_print '\e[?25l\e[%sH' "$FM_VIEW_HEIGHT"
 
     fedit_key "${var_key}"
     case $? in
         0)
-            fterminal_print $'\r%s\e[K%s\e[?25h' "$(fedit_line)" "$(printf "\e[%dD" "$(fedit_cursor_offset)")"
+            fout_print $'\r%s\e[K%s\e[?25h' "$(fedit_line)" "$(printf "\e[%dD" "$(fedit_cursor_offset)")"
             if [[ "${FM_ED_FUNC}" = "${DEF_TERM_MODE_SEARCH}" ]]
             then
                 cmd_newsearch "${FM_ED_BUF}${FM_ED_POSTBUF}"
@@ -4511,23 +4365,21 @@ fcommand_mode_handler()
     return 0
 }
 
-fcommand_handler()
+fin_handler()
 {
     ## Pre settings.
     ################################################################
     # new functon for handle all commands
-    # fterminal_print '\e7\e[%sH\e[?25h' "$FM_VIEW_HEIGHT"
 
     ## Main handler
     ################################################################
     case ${1} in
         "${DEF_TERM_MODE_COMMAND}")
-            fcommand_line_interact "${HSFM_KEY_OPEN_CMD}" "${DEF_TERM_MODE_COMMAND}"
-            # fterminal_print '\e[?25l\e8'
+            fin_prompt "${HSFM_KEY_OPEN_CMD}" "${DEF_TERM_MODE_COMMAND}"
             ;;
         "${DEF_TERM_MODE_SEARCH}")
-            fcommand_line_interact "${HSFM_KEY_SEARCH}" "${DEF_TERM_MODE_SEARCH}"
-            fterminal_redraw
+            fin_prompt "${HSFM_KEY_SEARCH}" "${DEF_TERM_MODE_SEARCH}"
+            fview_redraw
             ;;
     esac
 
@@ -4536,27 +4388,24 @@ fcommand_handler()
     # Unset tab completion variables since we're done.
     # unset comp c
 
-    # '\e[2K':   Clear the entire fcommand_line_check on finish.
+    # '\e[2K':   Clear the entire command line on finish.
     # '\e[?25l': Hide the cursor.
     # '\e8':     Restore cursor position.
-    # fterminal_print '\e[2K\e[?25l\e8'
-    # fterminal_print '\e[?25l\e8'
 
-    # we don't need fterminal_redraw after commands running
-    # this will be clear after fterminal_redraw
-    # fterminal_redraw
+    # we don't need fview_redraw after commands running
+    # this will be clear after fview_redraw
 
 }
 
 # Driver B: owns the read loop, the prompt rendering and the input flush.
-fcommand_line_interact()
+fin_prompt()
 {
     local var_prompt
     local var_read_reply=""
 
     fedit_begin "${1}" "${2:-}" "${DEF_ED_DRIVER_PROMPT}"
 
-    fterminal_print '\e7\e[%sH\e[?25h' "$FM_VIEW_HEIGHT"
+    fout_print '\e7\e[%sH\e[?25h' "$FM_VIEW_HEIGHT"
 
     while true
     do
@@ -4610,7 +4459,7 @@ fprompt_open()
     local var_saved_prompt_list=("${FM_ED_COMP_PROMPT_LIST[@]}")
     local var_saved_prompt_idx="${FM_ED_COMP_PROMPT_IDX}"
 
-    fcommand_line_interact "${var_prefix}" "${var_func}"
+    fin_prompt "${var_prefix}" "${var_func}"
 
     FM_ED_PREFIX="${var_saved_prefix}"
     FM_ED_FUNC="${var_saved_func}"
@@ -4640,31 +4489,30 @@ fprompt_confirm()
 
 ###########################################################
 ## L5 Lifecycle
-## config, persistence, traps, help, fCore, fMain.
+## config, persistence, traps, help, fapp_core, fapp_main.
 ###########################################################
 
-fterminal_resize_win()
+fapp_resize_win()
 {
-    fterminal_get_size
-    fterminal_redraw
+    fview_get_size
+    fview_redraw
     # print size to prevent buffering
-    # flog_msg "Window resized"
 }
 
-fHSFM_exit()
+fapp_exit()
 {
     FM_RUNNING=0
-    fsave_settings
-    fterminal_clear
-    fterminal_reset
-    fterminal_print "FM finished.\n"
+    fapp_save_settings
+    fout_clear
+    fout_reset
+    fout_print "FM finished.\n"
     # exit 0
 }
 
 ###########################################################
 ## Load/Save session
 ###########################################################
-fsave_env() {
+fapp_save_env() {
     if test -f ${FM_FILE_RUNTIME_ENV}
     then
         rm ${FM_FILE_RUNTIME_ENV}
@@ -4704,7 +4552,7 @@ fsave_env() {
     echo "export HSFM_LS_SORTING=${HSFM_LS_SORTING}" >> ${FM_FILE_RUNTIME_ENV}
 }
 
-fsave_session() {
+fapp_save_session() {
     ## Save tab 
     if [[ ${#VAR_TERM_TAB_LINE_LIST_PATH[@]} -eq 1 ]]
     then
@@ -4729,11 +4577,11 @@ fsave_session() {
     echo "cd '${PWD}'" >> ${FM_FILE_SESSION}
 }
 
-fload_session() {
+fapp_load_session() {
     if test -f ${FM_FILE_SESSION}
     then
         source ${FM_FILE_SESSION}
-        flog_msg_debug "Load Session Tab: ${VAR_TERM_TAB_LINE_IDX}-${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]##*/}"
+        fview_log_debug "Load Session Tab: ${VAR_TERM_TAB_LINE_IDX}-${VAR_TERM_TAB_LINE_LIST_PATH[${VAR_TERM_TAB_LINE_IDX}]##*/}"
     else
         # load sessio fail, start a new one.
         VAR_TERM_TAB_LINE_IDX=0
@@ -4741,22 +4589,22 @@ fload_session() {
     fi
 }
 
-fload_env() {
+fapp_load_env() {
     if test -f ${FM_FILE_RUNTIME_ENV}
     then
         source ${FM_FILE_RUNTIME_ENV}
     fi
 }
 
-fsave_settings() {
-    fsave_env
-    fsave_session
+fapp_save_settings() {
+    fapp_save_env
+    fapp_save_session
 }
 
 ###########################################################
 ## Others
 ###########################################################
-fsetup_env_cache() {
+fapp_setup_env_cache() {
     # Setup patch env
     export FM_FILE_RUNTIME_ENV=${HSFM_PATH_CACHE}/hsfm_runtimeenv.sh
     export FM_FILE_SESSION=${HSFM_PATH_CACHE}/hsfm_session.sh
@@ -4765,7 +4613,7 @@ fsetup_env_cache() {
     export FM_FILE_LOGS=${HSFM_PATH_CACHE}/hsfm_logs.sh
 }
 
-fsetup_env() {
+fapp_setup_env() {
     # Figure out the current operating system to set some specific variables.
     # '$OSTYPE' typically stores the name of the OS kernel.
     case $OSTYPE in
@@ -4804,10 +4652,10 @@ fsetup_env() {
             # FM_ENV_DIR_LS_ARGS+=("-1")
         ;;
     esac
-    fsetup_env_cache
+    fapp_setup_env_cache
 }
 
-fsetup_options() {
+fapp_setup_options() {
 
     # source config file if exist.
     test -f ${HSFM_FILE_CONFIG} && {
@@ -4849,7 +4697,7 @@ fsetup_options() {
     done
 }
 
-fsetup_shell()
+fapp_setup_shell()
 {
     # Handle a directory as the first argument.
     # 'cd' is a cheap way of finding the full path to a directory.
@@ -4861,7 +4709,7 @@ fsetup_shell()
 
     # bash 5 and some versions of bash 4 don't allow SIGWINCH to interrupt
     # a 'read' command and instead wait for it to complete. In this case it
-    # causes the window to not fterminal_redraw on resize until the user has pressed
+    # causes the window to not fview_redraw on resize until the user has pressed
     # a key (causing the read to finish). This sets a read timeout on the
     # affected versions of bash.
     # NOTE: This shouldn't affect idle performance as the loop doesn't do
@@ -4871,7 +4719,7 @@ fsetup_shell()
         FM_INPUT_READ_ARGS=(-t 0.05)
 
     ((${HSFM_LS_COLORS:=1} == 1)) &&
-        fexport_ls_colors
+        fapp_export_ls_colors
 
     # Move to read dir to set opt.
     # ((${HSFM_ENABLE_HIDDEN:=0} == 1)) &&
@@ -4885,21 +4733,21 @@ fsetup_shell()
     shopt -s nocaseglob nullglob
 
     # Trap the exit signal (we need to reset the terminal to a useable state.)
-    # trap 'fterminal_reset' EXIT
-    # trap "trap - SIGTERM && fHSFM_exit &&kill -- -$$" SIGINT SIGTERM EXIT
-    trap "fHSFM_exit" SIGINT SIGTERM EXIT
+    # trap 'fout_reset' EXIT
+    # trap "trap - SIGTERM && fapp_exit &&kill -- -$$" SIGINT SIGTERM EXIT
+    trap "fapp_exit" SIGINT SIGTERM EXIT
 
     # Trap the window resize signal (handle window resize events).
-    trap 'fterminal_resize_win' WINCH
+    trap 'fapp_resize_win' WINCH
 }
 
-fexport_ls_colors() {
+fapp_export_ls_colors() {
     # Parse the LS_COLORS variable and declare each file type
     # as a separate variable.
     # Format: ':.ext=0;0:*.jpg=0;0;0:*png=0;0;0;0:'
     [[ -z $LS_COLORS ]] && {
         HSFM_LS_COLORS=0
-        flog_msg_debug "LS_COLORS is empty. use default one."
+        fview_log_debug "LS_COLORS is empty. use default one."
         local LS_COLORS="rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=00:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.avif=01;35:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:*~=00;90:*#=00;90:*.bak=00;90:*.crdownload=00;90:*.dpkg-dist=00;90:*.dpkg-new=00;90:*.dpkg-old=00;90:*.dpkg-tmp=00;90:*.old=00;90:*.orig=00;90:*.part=00;90:*.rej=00;90:*.rpmnew=00;90:*.rpmorig=00;90:*.rpmsave=00;90:*.swp=00;90:*.tmp=00;90:*.ucf-dist=00;90:*.ucf-new=00;90:*.ucf-old=00;90:"
         # return
     }
@@ -4937,7 +4785,7 @@ fexport_ls_colors() {
     export "${ls_cols[@]}" &>/dev/null
 }
 
-fsetup_theme() {
+fapp_setup_theme() {
     local var_colorscheme=""
     if [[ "${#}" -ge "1" ]]
     then
@@ -4988,179 +4836,177 @@ fsetup_theme() {
         export HSFM_COLOR_FLOAT_WIN="97;100"
         export HSFM_COLOR_FLOAT_WIN_LABEL="30;47"
     else
-        flog_msg "Theme ${var_colorscheme} not found."
+        fview_log "Theme ${var_colorscheme} not found."
         return -1
     fi
     HSFM_COLOR_THEME=${var_colorscheme}
 }
 
-fHelp_keymap() {
-    fterminal_print "[KeyMap]\n"
-    fterminal_print "\n%s\n" "## Movement."
-    fterminal_print "    % -32s: %s\n"  "Go to child directory"          "${HSFM_KEY_CHILD1}, ${HSFM_KEY_CHILD2}, ${HSFM_KEY_CHILD3}"
-    fterminal_print "    % -32s: %s\n"  "Go to parent directory"         "${HSFM_KEY_PARENT1}, ${HSFM_KEY_PARENT2}, ${HSFM_KEY_PARENT3}, ${HSFM_KEY_PARENT4}"
-    fterminal_print "    % -32s: %s\n"  "Scroll down"                    "${HSFM_KEY_SCROLL_DOWN1}, ${HSFM_KEY_SCROLL_DOWN2}"
-    fterminal_print "    % -32s: %s\n"  "Scroll up"                      "${HSFM_KEY_SCROLL_UP1}, ${HSFM_KEY_SCROLL_UP2}"
-    fterminal_print "    % -32s: %s\n"  "Go to top"                      "${HSFM_KEY_TO_TOP}"
-    fterminal_print "    % -32s: %s\n"  "Go to bottom"                   "${HSFM_KEY_TO_BOTTOM}"
-    fterminal_print "    % -32s: %s\n"  "Go to previous directory"       "${HSFM_KEY_PREVIOUS}"
-    fterminal_print "    % -32s: %s\n"  "Go to home"                     "${HSFM_KEY_GO_HOME}"
-    fterminal_print "    % -32s: %s\n"  "Go to trash"                    "${HSFM_KEY_GO_TRASH}"
+fapp_help_keymap() {
+    fout_print "[KeyMap]\n"
+    fout_print "\n%s\n" "## Movement."
+    fout_print "    % -32s: %s\n"  "Go to child directory"          "${HSFM_KEY_CHILD1}, ${HSFM_KEY_CHILD2}, ${HSFM_KEY_CHILD3}"
+    fout_print "    % -32s: %s\n"  "Go to parent directory"         "${HSFM_KEY_PARENT1}, ${HSFM_KEY_PARENT2}, ${HSFM_KEY_PARENT3}, ${HSFM_KEY_PARENT4}"
+    fout_print "    % -32s: %s\n"  "Scroll down"                    "${HSFM_KEY_SCROLL_DOWN1}, ${HSFM_KEY_SCROLL_DOWN2}"
+    fout_print "    % -32s: %s\n"  "Scroll up"                      "${HSFM_KEY_SCROLL_UP1}, ${HSFM_KEY_SCROLL_UP2}"
+    fout_print "    % -32s: %s\n"  "Go to top"                      "${HSFM_KEY_TO_TOP}"
+    fout_print "    % -32s: %s\n"  "Go to bottom"                   "${HSFM_KEY_TO_BOTTOM}"
+    fout_print "    % -32s: %s\n"  "Go to previous directory"       "${HSFM_KEY_PREVIOUS}"
+    fout_print "    % -32s: %s\n"  "Go to home"                     "${HSFM_KEY_GO_HOME}"
+    fout_print "    % -32s: %s\n"  "Go to trash"                    "${HSFM_KEY_GO_TRASH}"
 
-    fterminal_print "\n%s\n" "## Tab operations."
-    fterminal_print "    % -32s: %s\n"  "Go to previous tab"             "${HSFM_KEY_GO_PREVIOUS_TAB}"
-    fterminal_print "    % -32s: %s\n"  "Go to next tab"                 "${HSFM_KEY_GO_NEXT_TAB}"
-    fterminal_print "    % -32s: %s\n"  "Open new tab"                   "${HSFM_KEY_OPEN_TAB}"
-    fterminal_print "    % -32s: %s\n"  "Close current tab"              "${HSFM_KEY_CLOSE_TAB}"
-    fterminal_print "    % -32s: %s\n"  "Move tab previous"              "${HSFM_KEY_MOVE_TAB_PREVIOUS}"
-    fterminal_print "    % -32s: %s\n"  "Move tab next"                  "${HSFM_KEY_MOVE_TAB_NEXT}"
+    fout_print "\n%s\n" "## Tab operations."
+    fout_print "    % -32s: %s\n"  "Go to previous tab"             "${HSFM_KEY_GO_PREVIOUS_TAB}"
+    fout_print "    % -32s: %s\n"  "Go to next tab"                 "${HSFM_KEY_GO_NEXT_TAB}"
+    fout_print "    % -32s: %s\n"  "Open new tab"                   "${HSFM_KEY_OPEN_TAB}"
+    fout_print "    % -32s: %s\n"  "Close current tab"              "${HSFM_KEY_CLOSE_TAB}"
+    fout_print "    % -32s: %s\n"  "Move tab previous"              "${HSFM_KEY_MOVE_TAB_PREVIOUS}"
+    fout_print "    % -32s: %s\n"  "Move tab next"                  "${HSFM_KEY_MOVE_TAB_NEXT}"
 
-    fterminal_print "\n%s\n" "## Mode switches."
-    fterminal_print "    % -32s: %s\n"  "Visual select mode"             "${HSFM_KEY_VISUAL_SELECT}"
-    fterminal_print "    % -32s: %s\n"  "Selection mode"                 "${HSFM_KEY_SELECTION}"
-    fterminal_print "    % -32s: %s\n"  "Command mode"                   "${HSFM_KEY_OPEN_CMD}"
-    fterminal_print "    % -32s: %s\n"  "Search mode"                    "${HSFM_KEY_SEARCH}"
-    fterminal_print "    % -32s: %s\n"  "Find mode"                      "${HSFM_KEY_FIND}"
+    fout_print "\n%s\n" "## Mode switches."
+    fout_print "    % -32s: %s\n"  "Visual select mode"             "${HSFM_KEY_VISUAL_SELECT}"
+    fout_print "    % -32s: %s\n"  "Selection mode"                 "${HSFM_KEY_SELECTION}"
+    fout_print "    % -32s: %s\n"  "Command mode"                   "${HSFM_KEY_OPEN_CMD}"
+    fout_print "    % -32s: %s\n"  "Search mode"                    "${HSFM_KEY_SEARCH}"
+    fout_print "    % -32s: %s\n"  "Find mode"                      "${HSFM_KEY_FIND}"
 
-    fterminal_print "\n%s\n" "## File operations."
-    fterminal_print "    % -32s: %s\n"  "Yank (copy)"                    "${HSFM_KEY_YANK}"
-    fterminal_print "    % -32s: %s\n"  "Cut (move)"                     "${HSFM_KEY_CUT}"
-    fterminal_print "    % -32s: %s\n"  "Trash (delete)"                 "${HSFM_KEY_TRASH}"
-    fterminal_print "    % -32s: %s\n"  "Paste"                          "${HSFM_KEY_PASTE}"
+    fout_print "\n%s\n" "## File operations."
+    fout_print "    % -32s: %s\n"  "Yank (copy)"                    "${HSFM_KEY_YANK}"
+    fout_print "    % -32s: %s\n"  "Cut (move)"                     "${HSFM_KEY_CUT}"
+    fout_print "    % -32s: %s\n"  "Trash (delete)"                 "${HSFM_KEY_TRASH}"
+    fout_print "    % -32s: %s\n"  "Paste"                          "${HSFM_KEY_PASTE}"
 
-    fterminal_print "\n%s\n" "## Miscellaneous."
-    fterminal_print "    % -32s: %s\n"  "Show file attributes"           "${HSFM_KEY_ATTRIBUTES}"
-    fterminal_print "    % -32s: %s\n"  "Toggle hidden files"            "${HSFM_KEY_HIDDEN}"
-    fterminal_print "    % -32s: %s\n"  "Toggle sorting"                 "${HSFM_KEY_SORTING}"
-    fterminal_print "    % -32s: %s\n"  "Spawn a shell"                  "${HSFM_KEY_SHELL}"
-    fterminal_print "    % -32s: %s\n"  "Show help info"                 "${HSFM_KEY_HELP}"
-    fterminal_print "    % -32s: %s\n"  "Refresh window"                 "${HSFM_KEY_REFRESH}"
-    fterminal_print "    % -32s: %s\n"  "Toggle message window"          "${HSFM_KEY_TOGGLE_MSGWIN}"
-    fterminal_print "    % -32s: %s\n"  "Toggle task window"             "${HSFM_KEY_TOGGLE_TASKWIN}"
+    fout_print "\n%s\n" "## Miscellaneous."
+    fout_print "    % -32s: %s\n"  "Show file attributes"           "${HSFM_KEY_ATTRIBUTES}"
+    fout_print "    % -32s: %s\n"  "Toggle hidden files"            "${HSFM_KEY_HIDDEN}"
+    fout_print "    % -32s: %s\n"  "Toggle sorting"                 "${HSFM_KEY_SORTING}"
+    fout_print "    % -32s: %s\n"  "Spawn a shell"                  "${HSFM_KEY_SHELL}"
+    fout_print "    % -32s: %s\n"  "Show help info"                 "${HSFM_KEY_HELP}"
+    fout_print "    % -32s: %s\n"  "Refresh window"                 "${HSFM_KEY_REFRESH}"
+    fout_print "    % -32s: %s\n"  "Toggle message window"          "${HSFM_KEY_TOGGLE_MSGWIN}"
+    fout_print "    % -32s: %s\n"  "Toggle task window"             "${HSFM_KEY_TOGGLE_TASKWIN}"
 }
 
-fHelp_commands() {
+fapp_help_commands() {
     echo "FileManager"
-    fterminal_print "[Options]\n"
-    fterminal_print "    %- 16s\t%s\n" "-s|-setup   " "Copy hsfm config file."
-    fterminal_print "    %- 16s\t%s\n" "-d|--debug  " "Enable debug flag."
-    fterminal_print "    %- 16s\t%s\n" "--cache-path" "Specify cache path."
-    # fterminal_print "    %- 16s\t%s\n" "-r|--restore" "restore previous session."
-    fterminal_print "    %- 16s\t%s\n" "-n|--new" "Open new session session."
-    fterminal_print "    %- 16s\t%s\n" "-l|--last   " "Print last path & remove the last path file."
-    fterminal_print "    %- 16s\t%s\n" "--history   " "Store history."
-    fterminal_print "[Commands]\n"
-    fterminal_print "    % -16s: %s\n"  "redraw" "Redraws the current window."
-    fterminal_print "    % -16s: %s\n"  "help" "Shows help information. Accepts 'key' or 'map' for keybindings."
-    fterminal_print "    % -16s: %s\n"  "exit" "Exits the file manager."
-    fterminal_print "    % -16s: %s\n"  "shell" "Spawns a new shell."
-    fterminal_print "    % -16s: %s\n"  "cd" "Changes the current directory."
-    fterminal_print "    % -16s: %s\n"  "reenter" "Re-enters the current directory."
-    fterminal_print "    % -16s: %s\n"  "colorscheme" "Changes the color scheme (e.g., 'black', 'color')."
-    fterminal_print "    % -16s: %s\n"  "set" "Sets various options (e.g., 'set read fast', 'set hidden on')."
-    fterminal_print "    % -16s: %s\n"  "title" "Sets the window title."
-    fterminal_print "    % -16s: %s\n"  "config" "Opens the configuration file in the default editor."
-    fterminal_print "    % -16s: %s\n"  "debug" "Toggles debug mode ('on'/'off')."
-    fterminal_print "    % -16s: %s\n"  "select" "Shows selected files."
-    fterminal_print "    % -16s: %s\n"  "stat" "Displays file attributes for the current file."
-    fterminal_print "    % -16s: %s\n"  "eval" "Evaluates a shell command."
-    fterminal_print "    % -16s: %s\n"  "dump" "Dumps HSFM environment variables."
-    fterminal_print "    % -16s: %s\n"  "test" "Runs a test function."
-    fterminal_print "    % -16s: %s\n"  "task" "Toggles the task window."
-    fterminal_print "    % -16s: %s\n"  "msg" "Toggles the message window."
-    fterminal_print "    % -16s: %s\n"  "mkdir" "Creates a new directory."
-    fterminal_print "    % -16s: %s\n"  "touch" "Creates a new empty file."
-    fterminal_print "    % -16s: %s\n"  "rename" "Renames the current file."
-    fterminal_print "    % -16s: %s\n"  "search" "Searches for files in the current directory."
-    fterminal_print "    % -16s: %s\n"  "find" "Finds files recursively from the current directory."
-    fterminal_print "    % -16s: %s\n"  "sort" "Sorts files by 'none', 'size', 'time', 'version', or 'extension'."
-    fterminal_print "    % -16s: %s\n"  "backfile" "Creates a backup of the current file."
-    fterminal_print "    % -16s: %s\n"  "quitngo" "Quits and changes to the current directory in the parent shell."
-    fterminal_print "    % -16s: %s\n"  "tabclose" "Closes the current tab."
-    fterminal_print "    % -16s: %s\n"  "tabcloseright" "Closes tabs to the right of the current tab."
-    fterminal_print "    % -16s: %s\n"  "tabcloseleft" "Closes tabs to the left of the current tab."
-    fterminal_print "    % -16s: %s\n"  "tabcloseothers" "Closes all other tabs except the current one."
-    fterminal_print "    % -16s: %s\n"  "tabcloseduplicate" "Closes duplicate tabs."
-    fterminal_print "    % -16s: %s\n"  "open" "Opens the current file with the default opener."
-    fterminal_print "    % -16s: %s\n"  "editor" "Opens the current file in the default text editor."
-    fterminal_print "    % -16s: %s\n"  "vim" "Opens the current file in Vim."
-    fterminal_print "    % -16s: %s\n"  "hex" "Opens the current file in a hex viewer (xxd)."
-    fterminal_print "    % -16s: %s\n"  "media" "Opens the current file in the default media player."
-    fterminal_print "    % -16s: %s\n"  "play" "Opens the current file in the default media player."
-    fterminal_print "    % -16s: %s\n"  "image" "Opens the current file in the default image viewer."
-    fterminal_print "    % -16s: %s\n"  "preview" "Previews the current file (requires catimg for images)."
-    fterminal_print "    % -16s: %s\n"  "unzip" "Extracts a zip archive."
-    fterminal_print "    % -16s: %s\n"  "extract" "Extracts various archive types."
-    fterminal_print "    % -16s: %s\n"  "disk" "Displays disk usage information."
+    fout_print "[Options]\n"
+    fout_print "    %- 16s\t%s\n" "-s|-setup   " "Copy hsfm config file."
+    fout_print "    %- 16s\t%s\n" "-d|--debug  " "Enable debug flag."
+    fout_print "    %- 16s\t%s\n" "--cache-path" "Specify cache path."
+    fout_print "    %- 16s\t%s\n" "-n|--new" "Open new session session."
+    fout_print "    %- 16s\t%s\n" "-l|--last   " "Print last path & remove the last path file."
+    fout_print "    %- 16s\t%s\n" "--history   " "Store history."
+    fout_print "[Commands]\n"
+    fout_print "    % -16s: %s\n"  "redraw" "Redraws the current window."
+    fout_print "    % -16s: %s\n"  "help" "Shows help information. Accepts 'key' or 'map' for keybindings."
+    fout_print "    % -16s: %s\n"  "exit" "Exits the file manager."
+    fout_print "    % -16s: %s\n"  "shell" "Spawns a new shell."
+    fout_print "    % -16s: %s\n"  "cd" "Changes the current directory."
+    fout_print "    % -16s: %s\n"  "reenter" "Re-enters the current directory."
+    fout_print "    % -16s: %s\n"  "colorscheme" "Changes the color scheme (e.g., 'black', 'color')."
+    fout_print "    % -16s: %s\n"  "set" "Sets various options (e.g., 'set read fast', 'set hidden on')."
+    fout_print "    % -16s: %s\n"  "title" "Sets the window title."
+    fout_print "    % -16s: %s\n"  "config" "Opens the configuration file in the default editor."
+    fout_print "    % -16s: %s\n"  "debug" "Toggles debug mode ('on'/'off')."
+    fout_print "    % -16s: %s\n"  "select" "Shows selected files."
+    fout_print "    % -16s: %s\n"  "stat" "Displays file attributes for the current file."
+    fout_print "    % -16s: %s\n"  "eval" "Evaluates a shell command."
+    fout_print "    % -16s: %s\n"  "dump" "Dumps HSFM environment variables."
+    fout_print "    % -16s: %s\n"  "test" "Runs a test function."
+    fout_print "    % -16s: %s\n"  "task" "Toggles the task window."
+    fout_print "    % -16s: %s\n"  "msg" "Toggles the message window."
+    fout_print "    % -16s: %s\n"  "mkdir" "Creates a new directory."
+    fout_print "    % -16s: %s\n"  "touch" "Creates a new empty file."
+    fout_print "    % -16s: %s\n"  "rename" "Renames the current file."
+    fout_print "    % -16s: %s\n"  "search" "Searches for files in the current directory."
+    fout_print "    % -16s: %s\n"  "find" "Finds files recursively from the current directory."
+    fout_print "    % -16s: %s\n"  "sort" "Sorts files by 'none', 'size', 'time', 'version', or 'extension'."
+    fout_print "    % -16s: %s\n"  "backfile" "Creates a backup of the current file."
+    fout_print "    % -16s: %s\n"  "quitngo" "Quits and changes to the current directory in the parent shell."
+    fout_print "    % -16s: %s\n"  "tabclose" "Closes the current tab."
+    fout_print "    % -16s: %s\n"  "tabcloseright" "Closes tabs to the right of the current tab."
+    fout_print "    % -16s: %s\n"  "tabcloseleft" "Closes tabs to the left of the current tab."
+    fout_print "    % -16s: %s\n"  "tabcloseothers" "Closes all other tabs except the current one."
+    fout_print "    % -16s: %s\n"  "tabcloseduplicate" "Closes duplicate tabs."
+    fout_print "    % -16s: %s\n"  "open" "Opens the current file with the default opener."
+    fout_print "    % -16s: %s\n"  "editor" "Opens the current file in the default text editor."
+    fout_print "    % -16s: %s\n"  "vim" "Opens the current file in Vim."
+    fout_print "    % -16s: %s\n"  "hex" "Opens the current file in a hex viewer (xxd)."
+    fout_print "    % -16s: %s\n"  "media" "Opens the current file in the default media player."
+    fout_print "    % -16s: %s\n"  "play" "Opens the current file in the default media player."
+    fout_print "    % -16s: %s\n"  "image" "Opens the current file in the default image viewer."
+    fout_print "    % -16s: %s\n"  "preview" "Previews the current file (requires catimg for images)."
+    fout_print "    % -16s: %s\n"  "unzip" "Extracts a zip archive."
+    fout_print "    % -16s: %s\n"  "extract" "Extracts various archive types."
+    fout_print "    % -16s: %s\n"  "disk" "Displays disk usage information."
 
-    fterminal_print "\n%s\n" "## Selection Commands."
-    fterminal_print "    % -16s: %s\n"  "compress" "Compresses selected files."
+    fout_print "\n%s\n" "## Selection Commands."
+    fout_print "    % -16s: %s\n"  "compress" "Compresses selected files."
 
-    fterminal_print "\n%s\n" "## TODO Function."
-    fterminal_print "    %s\n"  "The following functions are under construction."
-    fterminal_print "    %s\n"  "#. Background task & task manager."
+    fout_print "\n%s\n" "## TODO Function."
+    fout_print "    %s\n"  "The following functions are under construction."
+    fout_print "    %s\n"  "#. Background task & task manager."
 }
 
-fHelp() {
+fapp_help() {
     local help_type=$1
     if [ "${help_type}" = "key" ] || [ "${help_type}" = "map" ]
     then
-        fHelp_keymap $@
+        fapp_help_keymap $@
     else
-        fHelp_commands $@
+        fapp_help_commands $@
     fi
 }
 
-# '--verbose' diagnostics. fMain calls them before the UI exists, so they write
+# '--verbose' diagnostics. fapp_main calls them before the UI exists, so they write
 # to stderr.
-fInfo()
+fapp_info()
 {
     printf '%s\n' "hsfm: verbose mode" >&2
 }
 
-fErrControl()
+fapp_err_control()
 {
     printf '%s\n' "hsfm: ${1:-?}:${2:-?}" >&2
 }
 
 ## Core Function
 ###########################################################
-function fCore() {
+function fapp_core() {
     # restore runtime env.
-    fload_env
+    fapp_load_env
 
-    fsetup_env
-    fsetup_options
-    fsetup_shell
-    fsetup_theme "${HSFM_COLOR_THEME}"
+    fapp_setup_env
+    fapp_setup_options
+    fapp_setup_shell
+    fapp_setup_theme "${HSFM_COLOR_THEME}"
 
-    fterminal_get_size
-    fterminal_setup
-    fterminal_redraw full
+    fview_get_size
+    fout_setup
+    fview_redraw full
 
-    flog_msg_debug "HSFM initialized."
+    fview_log_debug "HSFM initialized."
 
     FM_RUNNING=1
     # Vintage infinite loop.
     for ((;FM_RUNNING;)); {
         # read "${FM_INPUT_READ_ARGS[@]}" -srn 1 && {
-        fterminal_read_key && {
+        fin_read_key && {
             case ${FM_INPUT_MODE} in
                 "${DEF_TERM_MODE_VISUAL}")
-                    fvisual_mode_handler "$REPLY"
+                    fin_mode_visual "$REPLY"
                     ;;
                 "${DEF_TERM_MODE_SELECT}")
-                    fselection_mode_handler "$REPLY"
+                    fin_mode_select "$REPLY"
                     ;;
                 "${DEF_TERM_MODE_COMMAND}"|"${DEF_TERM_MODE_SEARCH}"|"${DEF_TERM_MODE_FIND}")
-                    fcommand_mode_handler "$REPLY"
+                    fin_mode_command "$REPLY"
                     ;;
                 *|"${DEF_TERM_MODE_NORMAL}")
-                    fnormal_mode_handler "$REPLY"
+                    fin_mode_normal "$REPLY"
                     ;;
                 esac
                 # FIXME, temporailly disable draw status line during keytyping.
-                # fterminal_draw_status_line
                 # Discard following input
                 # read -t 0 -rsn 10000 _
             }
@@ -5172,7 +5018,7 @@ function fCore() {
 
 ## Main Functions
 ###########################################################
-function fMain()
+function fapp_main()
 {
     # fPrintHeader "Launch ${VAR_SCRIPT_NAME}"
     local flag_verbose=false
@@ -5238,7 +5084,7 @@ function fMain()
                 if [[ "${#}" -ge "2" ]] && ! [[ $2 =~ -.* ]]
                 then
                     export HSFM_PATH_CACHE="${2}"
-                    fsetup_env_cache
+                    fapp_setup_env_cache
                     shift 1
                 fi
                 ;;
@@ -5250,7 +5096,7 @@ function fMain()
                 export HSFM_READ_DIR_MODE=${DEF_TERM_READ_DIR_MODE_FAST_LS}
                 ;;
             -h|--help)
-                fHelp
+                fapp_help
                 exit 0
                 ;;
             *)
@@ -5258,7 +5104,7 @@ function fMain()
                     var_new_path="$(realpath ${*})"
                 else
                     echo "Unknown Options: ${1}"
-                    fHelp
+                    fapp_help
                     exit 1
                 fi
                 ;;
@@ -5270,7 +5116,7 @@ function fMain()
     if [ ${flag_verbose} = true ]
     then
         OPTION_VERBOSE=y
-        fInfo; fErrControl ${FUNCNAME[0]} ${LINENO}
+        fapp_info; fapp_err_control ${FUNCNAME[0]} ${LINENO}
     fi
 
     if [[ $FM_RUNNING = 1 ]]
@@ -5281,7 +5127,7 @@ function fMain()
 
     if [ "${flag_load_session}" = "true" ]
     then
-        fload_session
+        fapp_load_session
     else
         VAR_TERM_TAB_LINE_IDX=0
         VAR_TERM_TAB_LINE_LIST_PATH=("${PWD}")
@@ -5293,7 +5139,7 @@ function fMain()
         local flash_found_tab=false
         for each_idx in "${!VAR_TERM_TAB_LINE_LIST_PATH[@]}"; do
             local tmp_path=${VAR_TERM_TAB_LINE_LIST_PATH[${each_idx}]}
-            flog_msg_debug "${each_idx}: ${tmp_path}, ${new_abs_path}"
+            fview_log_debug "${each_idx}: ${tmp_path}, ${new_abs_path}"
             if [ "${tmp_path}" = "${new_abs_path}" ] ; then
                 VAR_TERM_TAB_LINE_IDX=${each_idx}
                 flash_found_tab=true
@@ -5303,9 +5149,8 @@ function fMain()
 
         if [ ${flash_found_tab} = false ]
         then
-            flog_msg_debug "Open$(pwd), ${var_new_path}"
+            fview_log_debug "Open$(pwd), ${var_new_path}"
             # cd ${var_new_path}
-            # flog_msg_debug "New Path: ${var_new_path}"
             # TODO, use api for create new page?
             VAR_TERM_TAB_LINE_LIST_PATH+=("${var_new_path}")
             # 0 base idx.
@@ -5318,11 +5163,11 @@ function fMain()
     if [[ $FM_DEBUG = true ]]
     then
         # Record stderr
-        fCore 2> >(tee ${FM_FILE_LOGS} >&2)
+        fapp_core 2> >(tee ${FM_FILE_LOGS} >&2)
     else
-        fCore
+        fapp_core
     fi
 }
 
 # Sourceable: only run when executed, not when sourced by the test harness.
-[[ "${BASH_SOURCE[0]}" == "$0" ]] && fMain "$@"
+[[ "${BASH_SOURCE[0]}" == "$0" ]] && fapp_main "$@"

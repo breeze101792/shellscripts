@@ -63,6 +63,18 @@ check "right moves it back" "${FM_ED_BUF}/${FM_ED_POSTBUF}" "abc/"
 fedit_key $'\177'
 check "backspace deletes" "${FM_ED_BUF}" "ab"
 
+# Delete removes the character under the cursor, not the one before it.
+fedit_begin ":" "${DEF_TERM_MODE_COMMAND}" "${DEF_ED_DRIVER_MODE}"
+type_keys a b c
+fedit_key $'\e[D'
+fedit_key $'\e[D'
+fedit_key $'\e[3~'
+check "delete drops the character under the cursor" "${FM_ED_BUF}/${FM_ED_POSTBUF}" "a/c"
+
+fedit_key $'\e[3~'
+fedit_key $'\e[3~'
+check "delete stops at the end of the line" "${FM_ED_BUF}/${FM_ED_POSTBUF}" "a/"
+
 fedit_key ":"
 check "colon clears the command line" "${FM_ED_BUF}" ""
 

@@ -42,11 +42,11 @@ check() {
 # Callers keep a local named args_value; the helper must not read it.
 stale_scope_on() {
     local args_value="off"
-    fenv_left_hande_mode "on"
+    fcmd_left_hand_mode "on"
 }
 
 alias_unknown_fails() {
-    ! fenv_dir_alias_get nosuchalias
+    ! fcmd_alias_get nosuchalias
 }
 
 # K13: two elements, not one string "0,0".
@@ -54,8 +54,8 @@ check "K13 mainwin_start_idx has 2 elements" \
     test "${#FM_VIEW_MAINWIN_START_IDX[@]}" -eq 2
 
 # K10: alias lookup through parallel arrays.
-check "K10 alias home" test "$(fenv_dir_alias_get home)" = "${HOME}"
-check "K10 alias log" test "$(fenv_dir_alias_get log)" = "/var/log"
+check "K10 alias home" test "$(fcmd_alias_get home)" = "${HOME}"
+check "K10 alias log" test "$(fcmd_alias_get log)" = "/var/log"
 check "K10 alias unknown fails" alias_unknown_fails
 
 # K6: the mode helper reads its own argument, not a caller's local.
@@ -63,7 +63,7 @@ check "K6 on wins over caller local" stale_scope_on
 check "K6 mode flag set" test "${FM_LEFT_HAND_MODE}" = "1"
 check "K6 child key rebound" test "${HSFM_KEY_CHILD1}" = "g"
 
-fenv_left_hande_mode "off"
+fcmd_left_hand_mode "off"
 check "K6 mode flag cleared" test "${FM_LEFT_HAND_MODE}" = "0"
 check "K6 child key restored" test "${HSFM_KEY_CHILD1}" = "l"
 

@@ -5,7 +5,7 @@ Status: phases 0-7 implemented in `tools/filemanager/filemanager_llm.sh`.
 point at it.
 Owner: build department.
 Target: `tools/filemanager/filemanager_llm.sh`. Source: `filemanager.sh`
-(5,498 lines, 121 functions). Result: 5,324 lines, 153 functions.
+(5,498 lines, 121 functions). Result: 5,173 lines, 162 functions.
 Line numbers below are from the pre-refactor file.
 Test host: Linux, bash 5.3, GNU coreutils. The bash 3.2 checks in section 8.3
 were a static review, as planned; the fractional-`read` fallback is code, not a
@@ -54,12 +54,12 @@ The aliases `filmanager` (`tools/tools.sh:4`) and `cfm` (`shell/tools/tools.sh:7
 
 | Problem | Evidence |
 |---|---|
-| Two line editors implement the same behavior | `fcommand_mode_handler` `:2963-3328` (246 non-comment lines) and `fcommand_line_interact` `:3382-3695` (209 non-comment lines) |
-| Directory reading is 395 lines with three identical parse loops | `fterminal_read_dir` `:1359-1753`; loops at `:1461-1512`, `:1527-1578`, `:1593-1644` differ only in the producer command at `:1515`, `:1581`, `:1647` |
+| Two line editors implement the same behavior | `fin_mode_command` `:2963-3328` (246 non-comment lines) and `fin_prompt` `:3382-3695` (209 non-comment lines) |
+| Directory reading is 395 lines with three identical parse loops | `fdir_read` `:1359-1753`; loops at `:1461-1512`, `:1527-1578`, `:1593-1644` differ only in the producer command at `:1515`, `:1581`, `:1647` |
 | Globals are created by assignment in many functions | `previous_index` (`:1421-1726` writes, `:680` reads), `cur_list` (`:1752`, `:2663`), `VAR_SEARCH_MODE` (`:2537`, `:2666-2668`, `:4481`), `comp`/`c` (`:3526-3545`, `:3694`), `static_var_comp_*` (`:3085-3137`) |
-| A command handler is 309 lines of one `case` | `fnormal_mode_handler` `:2499-2807` |
-| View functions write model state | `fterminal_draw_file_line` `:939`, `:946`; `fterminal_draw_dir` `:768-769`, `:824` |
-| Editor state is written by a mode switch and read by a view | `fmode_setup` `:2440-2486`; `fterminal_draw_command_line` `:1193-1194` |
+| A command handler is 309 lines of one `case` | `fin_mode_normal` `:2499-2807` |
+| View functions write model state | `fview_draw_file_line` `:939`, `:946`; `fview_draw_dir` `:768-769`, `:824` |
+| Editor state is written by a mode switch and read by a view | `fin_mode_setup` `:2440-2486`; `fview_draw_command_line` `:1193-1194` |
 | The same block is repeated across handlers | yank/cut/trash `:2848-2872` = `:2931-2955`; top/bottom `:2570-2583` = `:2905-2918` |
 | The same file-resolution prologue is repeated five times | `:3838-3844`, `:3864-3870`, `:3890-3896`, `:3906-3912`, `:3922-3928` |
 
@@ -69,14 +69,19 @@ The aliases `filmanager` (`tools/tools.sh:4`) and `cfm` (`shell/tools/tools.sh:7
 
 The sections are a reading order and an ownership scheme. Bash cannot enforce call direction, so this document does not claim it does. Only the rules in section 4.2 are enforced.
 
-| Section | Owns | May read/call | Current code |
+Each layer owns one function prefix, so a call tells you its direction.
+
+| Section | Prefix | Owns | May read/call |
 |---|---|---|---|
-| L0 Driver | stdout and escape emission, print buffer, terminal modes, rectangle drawing | nothing above | `:409`, `:416-473`, `:531-604` |
-| L1 View | geometry, all `draw_*`, message and status output | L0 | `:475-510`, `:609-1255`, `:3696-3724` |
-| L2 Workspace | directory list, tabs, marks, cursor and scroll numbers, file getters | L1, L0 | `:1257-1358`, `:1359-1753`, `:1837-1945`, `:3330-3341` |
-| L3 Commands | `cmd_*`, `vcmd_*`, file operations, `fsys_open`, scroll and tab actions | L2, L1, L0, plus two L4 prompt entry points | `:1950-2413`, `:3725-4838` |
-| L4 Input and modes | key decoding, mode state machine, line editor | L3, L2, L1, L0 | `:1755-1835`, `:2415-3695` |
-| L5 Lifecycle | config, persistence, traps, help, `fCore`, `fMain` | everything below | `:511-526`, `:4843-5496` |
+| L0 Driver | `fout_*` | stdout and escape emission, print buffer, terminal modes, rectangle drawing | nothing above |
+| L1 View | `fview_*` | geometry, every `draw_*`, message and status output | L0 |
+| L2 Workspace | `fdir_*`, `fdirsrc_*` | directory list, tabs, marks, cursor and scroll numbers, file getters | L1, L0 |
+| L3 Commands | `cmd_*`, `vcmd_*`, `fcmd_*`, `ftab_*`, `fnav_*`, `fselect_*`, `fsys_*` | commands, file operations, scroll and tab actions | L2, L1, L0, plus the two L4 prompt entry points |
+| L4 Input and modes | `fin_*`, `fedit_*`, `fhist_*`, `fprompt_*` | key decoding, mode state machine, line editor | L3, L2, L1, L0 |
+| L5 Lifecycle | `fapp_*` | config, persistence, traps, help, `fapp_core`, `fapp_main` | everything below |
+
+`cmd_*` and `vcmd_*` keep their names because that string is what the user
+types; `fcmd_*` is the L3 helper namespace next to them.
 
 One upward edge is allowed: L3 commands may call exactly `fprompt_wait` and `fprompt_confirm` from L4. There are nine current call sites that need a prompt: `:3952`, `:4182`, `:4196`, `:4210`, `:4252`, `:4262`, `:4328`, `:4720`, `:4763`.
 
@@ -84,7 +89,7 @@ One upward edge is allowed: L3 commands may call exactly `fprompt_wait` and `fpr
 
 - **R1, declaration.** Every global is declared in the state block at the top of its section. Assigned but undeclared is a defect.
 - **R2, write ownership.** One section writes each global. The matrix in section 4.3 is the authority. Other sections may read published products: `FM_INPUT_KEY`, `REPLY`, and the L2 directory lists.
-- **R3, no shadowing.** A `local` may not reuse a state-block name. Bash dynamic scoping means a local in a callee silently captures an ancestor's read. This already happens by accident: `fenv_left_hande_mode` reads `args_value` from `cmd_set` (`:1951`, `:4349`).
+- **R3, no shadowing.** A `local` may not reuse a state-block name. Bash dynamic scoping means a local in a callee silently captures an ancestor's read. This already happens by accident: `fcmd_left_hand_mode` reads `args_value` from `cmd_set` (`:1951`, `:4349`).
 - **R4, prompts.** L3 does not call editor internals. It calls `fprompt_wait` or `fprompt_confirm`.
 
 ### 4.3 State namespaces
@@ -112,9 +117,9 @@ Internal state, by owner:
 
 Frozen names that are written to disk and must not be renamed:
 
-- `VAR_TERM_CMD_HISTORY`, `VAR_TERM_SEARCH_HISTORY`, `VAR_TERM_FIND_HISTORY` (`fsave_env`);
-- `VAR_TERM_TAB_LINE_IDX`, `VAR_TERM_TAB_LINE_LIST_PATH` (`fsave_session`);
-- `HSFM_COLOR_THEME`, `HSFM_READ_DIR_MODE`, `HSFM_LS_SORTING`, `HSFM_PATH_CACHE`, `HSFM_FILE_CONFIG` (`fsave_env`, `fsave_session`).
+- `VAR_TERM_CMD_HISTORY`, `VAR_TERM_SEARCH_HISTORY`, `VAR_TERM_FIND_HISTORY` (`fapp_save_env`);
+- `VAR_TERM_TAB_LINE_IDX`, `VAR_TERM_TAB_LINE_LIST_PATH` (`fapp_save_session`);
+- `HSFM_COLOR_THEME`, `HSFM_READ_DIR_MODE`, `HSFM_LS_SORTING`, `HSFM_PATH_CACHE`, `HSFM_FILE_CONFIG` (`fapp_save_env`, `fapp_save_session`).
 
 The persisted files are sourced as bash, so renaming any of these breaks
 existing user caches.
@@ -150,7 +155,7 @@ Removed as dead: `HSFM_NAME`, `HSFM_STAT_CMD`, `PATH_SCRIPT_ROOT`,
 
 ### 5.1 Behavior table
 
-This table is written from the current code and is the acceptance spec for Phase 4b. "Mode" means `fcommand_mode_handler` (called from `fCore`); "Prompt" means `fcommand_line_interact` (called by commands).
+This table is written from the current code and is the acceptance spec for Phase 4b. "Mode" means `fin_mode_command` (called from `fapp_core`); "Prompt" means `fin_prompt` (called by commands).
 
 | # | Behavior | Mode path | Prompt path | Phase 4b decision |
 |---|---|---|---|---|
@@ -160,7 +165,7 @@ This table is written from the current code and is the acceptance spec for Phase
 | 4 | Dispatch family | always `cmd_*` `:3202` | `cmd_*` when mode is normal, else `vcmd_*` `:3588` | Preserve: family is chosen by the ambient mode at submit time. |
 | 5 | Wait/confirm arrows walk command history | not applicable | yes `:3464-3469`, `:3488-3493` | Fix: wait and confirm have no history (K8). |
 | 6 | Tab at a wait prompt completes select commands | not applicable | yes `:3525-3539` | Fix: wait and confirm have no completion (same class as K8). |
-| 7 | Rendering stream | `fterminal_print` on stdout `:3305`, `:2970` | `read -p` on stderr `:3406` | Preserve: each driver owns its rendering. |
+| 7 | Rendering stream | `fout_print` on stdout `:3305`, `:2970` | `read -p` on stderr `:3406` | Preserve: each driver owns its rendering. |
 | 8 | Early return skips cursor show | `:3148`, `:3159`, `:3166`, `:3178`, `:3183`, `:3189` | always breaks | Preserve per driver. Do not normalize. |
 | 9 | `read -t 0` input flush | no `:5335` | yes `:3689` | Preserve: prompt only. |
 | 10 | ESC drain | `FM_INPUT_READ_ARGS` `:3266`, empty on bash 3.2, so it blocks | `-t 0.02` `:3409`, invalid on bash 3.2 | Fix: one reader. Use `-t 0.02` on bash 4+, a `-t 0` drain loop on bash 3.2 (K4). |
@@ -174,6 +179,7 @@ This table is written from the current code and is the acceptance spec for Phase
 | 18 | Resize during a prompt | editor state is global, so `draw_command_line` sees it `:1193-1194` | editor state is local `:3400-3401`, so redraw paints stale text | Fix: editor state becomes the declared `FM_ED_*` block (K19). |
 | 19 | History over max | drops the newest, six copies `:3149-3195`, `:3555-3581` | same | Fix once with `fhist_append` (K9). |
 | 20 | Enter on empty input | clears line and redraws `:3186-3189` | clears line `:3572-3574` | Preserve. |
+| 21 | Delete key | ignored | ignored | Fix: `\e[3~` drops the character under the cursor (K21). |
 
 ### 5.2 Target API
 
@@ -188,7 +194,7 @@ fprompt_wait(prompt)                # modal driver, wait flavor
 fprompt_confirm(prompt)             # modal driver, confirm flavor
 ```
 
-Driver A replaces the body of `fcommand_mode_handler`: it calls `fedit_key`, renders with `fterminal_print`, and runs the per-key search hook. Driver B replaces the `while` loop in `fcommand_line_interact`: it keeps `read -p` rendering, the ESC sequencer, and the trailing `read -t 0` flush. The core performs no terminal I/O, so the unit harness can drive it key by key.
+Driver A replaces the body of `fin_mode_command`: it calls `fedit_key`, renders with `fout_print`, and runs the per-key search hook. Driver B replaces the `while` loop in `fin_prompt`: it keeps `read -p` rendering, the ESC sequencer, and the trailing `read -t 0` flush. The core performs no terminal I/O, so the unit harness can drive it key by key.
 
 ## 6. Phase plan
 
@@ -199,8 +205,8 @@ Each phase leaves the script runnable. Pure moves are proven by function-body ha
 Steps:
 
 1. Publish this file.
-2. Replace the final `fMain $@` (`:5498`) with:
-   `[[ "${BASH_SOURCE[0]}" == "$0" ]] && fMain "$@"`
+2. Replace the final `fapp_main $@` (`:5498`) with:
+   `[[ "${BASH_SOURCE[0]}" == "$0" ]] && fapp_main "$@"`
    This keeps execution identical and makes the file sourceable.
 3. Create `tests/tools/function_hashes.sh`: print `name sha256` for every function body.
 4. Create `tests/unit/`: source the script with a fixed environment; assert function results.
@@ -214,7 +220,7 @@ Hermetic environment for every test:
 - `TERM=xterm-256color`, `LC_ALL=C`, fixed `LS_COLORS`;
 - 80x24 tmux window, fixed working directory, non-symlinked fixture path.
 
-Without this, the EXIT trap (`:5076` to `fHSFM_exit` `:518-526`) writes the real history and session, and favorite detection at `:284-293` depends on the current directory.
+Without this, the EXIT trap (`:5076` to `fapp_exit` `:518-526`) writes the real history and session, and favorite detection at `:284-293` depends on the current directory.
 
 Start with three smoke sessions: startup, navigation, command line. Add sessions only where a phase can fail.
 
@@ -240,7 +246,7 @@ Steps:
 
 - Declare the globals that survive every phase, grouped under their section banner.
 - Localize only temporaries that are written and read in the same function. Do not blanket-`local`: `ls_patterns` (`:5115-5116` to `:898-899`) and `shopt_flags`/`dotglob` (`:1385-1386`) are genuinely shared.
-- Fix `fenv_left_hande_mode` to read its argument: `local args_value="$1"` (K6).
+- Fix `fcmd_left_hand_mode` to read its argument: `local args_value="$1"` (K6).
 - Correct `VAR_TERM_MAINWIN_START_IDX=(0 0)` at `:62` (K13). The value is overwritten at `:497` before the first draw, so normal startup is unchanged.
 - Replace `HSFM_DIR_ALIAS` with a bash-3.2-safe lookup (K10). The current guard enables `declare -A` only above bash 4, then assigns string subscripts unconditionally (`:297-302`); on 3.2 and bash 4 both aliases collapse to index 0. Use two parallel arrays and a lookup function, and update the loop in `cmd_cd` (`:4120-4127`) to call it.
 - Do not rename editor state here. It is rewritten in Phase 4.
@@ -251,7 +257,7 @@ Exit: no undeclared state remains on the matrix; the three fixes are recorded in
 
 ### Phase 3: directory pipeline
 
-Extract from `fterminal_read_dir` (`:1359-1753`):
+Extract from `fdir_read` (`:1359-1753`):
 
 - three producers: `fdirsrc_find`, `fdirsrc_ls`, `fdirsrc_ls_sort`;
 - one ingest function. Call it as `fdir_ingest << EOF ... EOF`, never `producer | fdir_ingest`, because the pipe runs in a subshell and silently loses the list.
@@ -266,7 +272,7 @@ Verify:
 - ingest unit tests on fixtures: plain directory, unreadable subdirectory, symlink, empty directory, filename with a quote;
 - per-mode smoke for NONE, SORT, LS_SORT, FIND;
 - extracted bodies hash-identical to the originals;
-- FAST_LS: code review only. `fsetup_env` forces `LS_SORT` on macOS (`:4973`), and FAST_LS needs GNU `ls` plus `mapfile`, so it cannot run here.
+- FAST_LS: code review only. `fapp_setup_env` forces `LS_SORT` on macOS (`:4973`), and FAST_LS needs GNU `ls` plus `mapfile`, so it cannot run here.
 
 Exit: directory state has one declared owner; the three identical loops are one.
 
@@ -293,7 +299,7 @@ Exit: one implementation of line editing; the intentional changes in section 7.1
 
 ### Phase 5: scroll readability (comment-only)
 
-Do not move the scroll code in this stage. `fterminal_draw_file_line` mutates page state per row (`:935-953`) and is called from eight partial-scroll sites, so lifting it is the highest-risk change for the smallest readability gain.
+Do not move the scroll code in this stage. `fview_draw_file_line` mutates page state per row (`:935-953`) and is called from eight partial-scroll sites, so lifting it is the highest-risk change for the smallest readability gain.
 
 Instead, add a decision-table comment above the page arithmetic (`:711-764`) and record the update order in this document. A comment change cannot fail a test; confirm `bash -n` only.
 
@@ -329,30 +335,36 @@ Exit: no commented-out code remains; the plan reflects the result.
 
 | ID | Bug | Fix |
 |---|---|---|
-| K1 | Mode completion list survives across sessions; `fmode_setup` never resets it (`:2440-2450`) | `fedit_begin` resets both completion slots. |
+| K1 | Mode completion list survives across sessions; `fin_mode_setup` never resets it (`:2440-2450`) | `fedit_begin` resets both completion slots. |
 | K2 | Prompt completion appends an array to a string (`:3530`, `:3537`) | One engine, array append. |
 | K3 | `image` and `preview` resolve differently in the two editors (`:3220-3222` versus `:3603-3605`) | One dispatch table: `image` to `cmd_image`, `preview` to `cmd_preview`. |
 | K4 | Fractional `read -t 0.02` fails on bash 3.2 (`:3409`); the mode path blocks on ESC `:3266` | One reader with a bash 3.2 `-t 0` drain fallback. |
-| K6 | `fenv_left_hande_mode` reads `cmd_set`'s local through dynamic scope (`:1951`, `:4349`) | Function takes `$1`. |
+| K6 | `fcmd_left_hand_mode` reads `cmd_set`'s local through dynamic scope (`:1951`, `:4349`) | Function takes `$1`. |
 | K8 | Wait/confirm prompts walk command history and complete select commands (`:3464-3469`, `:3525-3539`) | Wait and confirm have no history and no completion. |
 | K9 | History over max drops the newest entry (six copies) | One `fhist_append`. |
 | K10 | `HSFM_DIR_ALIAS` collapses to index 0 on bash 3.2 and bash 4 (`:297-302`) | Parallel arrays plus a lookup function. |
 | K13 | `VAR_TERM_MAINWIN_START_IDX=(0,0)` is one element (`:62`) | Two-element declaration. |
 | K19 | Prompt editor state is local (`:3400-3401`), so a resize during a prompt repaints from stale globals (`:1193-1194`) | Editor state becomes the declared `FM_ED_*` block, readable by the view. |
-| K5 | `cmd_set left` returned failure on success, skipping the redraw and the message (`:4386-4388`) | `if ! fenv_left_hande_mode "${args_value}"`. |
+| K5 | `cmd_set left` returned failure on success, skipping the redraw and the message (`:4386-4388`) | `if ! fcmd_left_hand_mode "${args_value}"`. |
 | K7 | `fselect_copy` tested `*` before `d`/`n`, so those arms never matched (`:4738-4744`) | Arms split, `*` last and documented as the duplicate fallback. `d` now applies to the rest of the batch; `n` and an unknown answer ask again for the next file instead of silently switching the batch to duplicate. |
 | K11 | `vcmd_compress` compared an array expansion with `-eq` (`:4592`) | `${#VAR_TERM_SELECTION_FILE_LIST[@]} -eq 1`. |
 | K20 | `vcmd_compress` named a single-file archive from the first dot in the whole path (`:4595-4598`), so `/tmp/x.dir/a.tar.gz` became `/tmp/x.txz`; a dotfile lost its name entirely | Strip the directory, then the last extension; keep the whole name when the stem is empty. The name is quoted and separated from the command by a space, so the `zip -j` family keeps one argument per word. Found by the K11 test. |
 | K12 | Tab context serialized the lists with `\x1e`, which a file name can contain (`:1911-1919`, `:1854-1856`) | The cache is gone; a tab load re-reads the directory and restores the cursor. |
 | K15 | The NONE OLDPWD lookup used a regex and could return several line numbers, producing a malformed index | `fdir_prev_index`, shared by the NONE and FAST_LS paths: fixed-string whole-line grep, first hit, no `eval`. |
-| K16 | `fInfo` and `fErrControl` were undefined and `--verbose` failed (`:5442`) | Both defined; they write to stderr. |
+| K16 | `fapp_info` and `fapp_err_control` were undefined and `--verbose` failed (`:5442`) | Both defined; they write to stderr. |
 | K17 | `elif ... || true` made the fallback branch unconditional (`:5454`) | `|| true` removed. |
 | K18 | An empty `HSFM_OPENER` passed `command -v`, then `nohup ""` failed (`:4549-4552`) | Non-empty guard before the lookup. |
+| K21 | Neither editor handled the Delete key, so `\e[3~` was swallowed by the escape fallthrough and the character under the cursor stayed | `fedit_key` maps `\e[3~` to dropping the first character of the post buffer. |
+| K22 | `vcmd_compress` ran `command -v zip` without redirecting it, so the path printed over the TUI (`:3003`) | Redirected to `/dev/null`. |
+
 
 ### 7.2 Logged only
 
-None. Every bug from the first pass is fixed in section 7.1. The remaining
-known-unfixed items are in section 9.
+| ID | Bug | Evidence |
+|---|---|---|
+| K23 | FAST_LS keeps the blank line `ls` prints before a directory header, so a listing with a subdirectory gains a phantom empty entry; Enter on it opens `/` | `fdir_read` mapfile parse, `:1631-1632`. Inherited from `filemanager.sh:1675`. Needs a macOS/GNU-ls run to fix safely, so it stays logged. |
+
+Every other logged bug is fixed in section 7.1.
 
 ## 8. Verification
 
@@ -430,19 +442,23 @@ Deferred to a later stage:
 | 4a | done | `fedit_line`, `fedit_cursor_offset`, `fhist_append`, `fedit_complete`, `fedit_read_seq`. |
 | 4b | done | One core (`fedit_key`/`fedit_submit`/`fedit_cancel`/`fedit_dispatch`) plus two drivers. K1-K4, K8, K9, K19 fixed. `tests/unit/editor_test.sh` and `tests/smoke/keys_test.sh`. |
 | 5 | done | Decision-table comment above the page arithmetic. No code moved; body hashes unchanged. |
-| 6 | done | `fhandler_file_op`, `fhandler_quit`, `fcmd_file_get`, `fcmd_bottomwin_toggle`; `fselect_remove` prompt collapsed. |
+| 6 | done | `fin_file_op`, `fin_quit`, `fcmd_file_get`, `fcmd_bottomwin_toggle`; `fselect_remove` prompt collapsed. |
 | 7 | done | Dead `fgui_tab_create` and its call removed; commented-out blocks removed; this log updated; `README.md` added. |
 | 8 | done | Section 7.1 bugs fixed: K5, K7, K11, K12, K15, K16, K17, K18, plus K20 found while testing K11. `tests/unit/bugs_test.sh` fails on the pre-fix file and passes now. |
 | 9 | done | Namespace pass: internal state renamed to `FM_*` groups, external config left on `HSFM_*`, the header reordered constants, external, internal. Six dead globals removed. Loaded values are byte-identical to the pre-pass file. |
+| 10 | done | Function families merged: ten pairs of near-identical functions became one helper plus thin wrappers, no public entry point renamed. `tests/unit/merge_test.sh` drives the helpers directly. The `:help` screen was compared against the baseline pane and is unchanged. |
+| 11 | done | Function namespace: every function renamed to its layer prefix, and the one straggler moved into its section. 739 references across the script, tests and docs. The `:help` pane still matches the baseline. |
+| 12 | done | K21: the Delete key now deletes under the cursor in both drivers. Unit test plus a real-terminal check (`:cd`, Left, Delete gives `:c`). |
+| 13 | done | One case per function: `tests/unit/functions_test.sh`, 162 cases and 462 assertions, 2.7 s. 146 commented-out code lines removed from function bodies. K22 fixed (zip probe leaked to stdout); K23 logged (FAST_LS phantom entry, macOS path). |
 
 ### 10.1 Behavior changes shipped
 
 Only section 7.1 bugs changed behavior, plus the consequences recorded here:
 
-- `FM_ED_ACTIVE` is new view-visible state (K19); `fterminal_draw_command_line`
+- `FM_ED_ACTIVE` is new view-visible state (K19); `fview_draw_command_line`
   now paints the live line during any prompt.
 - `fprompt_wait` and `fprompt_confirm` replace the direct
-  `fcommand_line_interact` calls in L3. The old third argument was unused and is
+  `fin_prompt` calls in L3. The old third argument was unused and is
   gone. A prompt opened from inside a `:` command borrows the one global editor
   state; `fprompt_open` saves and restores it, so the outer session still ends in
   normal mode.
