@@ -9,8 +9,8 @@
 set -uo pipefail
 
 here=$(dirname "$(realpath "$0")")
-new=${1:-filemanager_llm.sh}
-baseline=${2:-filemanager.sh}
+new=${1:-filemanager.sh}
+baseline=${2:-filemanager_legacy.sh}
 probe=${here}/probe_read_dir.sh
 
 case ${new} in

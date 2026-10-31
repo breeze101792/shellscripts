@@ -7,7 +7,7 @@
 
 set -uo pipefail
 
-script=${1:-filemanager_llm.sh}
+script=${1:-filemanager.sh}
 case ${script} in
     /*) ;;
     *) script=$(realpath "${script}") ;;

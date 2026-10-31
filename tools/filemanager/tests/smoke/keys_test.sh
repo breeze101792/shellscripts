@@ -20,8 +20,8 @@ start() {
         "bash -c 'cd ${fx}/tree && HOME=${fx}/home HSFM_FILE_CONFIG=${fx}/home/.hsfm.sh HSFM_PATH_CACHE=${fx}/home/.cache/hsfm TERM=xterm-256color bash ${script_dir}/${script}' 2>${fx}/${name}.err"
 }
 
-start base filemanager.sh
-start llm filemanager_llm.sh
+start base filemanager_legacy.sh
+start llm filemanager.sh
 sleep 3
 
 fail=0

@@ -1,11 +1,11 @@
-# Refactor plan: `filemanager.sh` -> `filemanager_llm.sh`
+# Refactor plan: `filemanager.sh` into six layers
 
-Status: phases 0-7 implemented in `tools/filemanager/filemanager_llm.sh`.
-`filemanager.sh` is untouched and stays the shipped script; the aliases still
-point at it.
+Status: phases 0-17 done. The refactored script ships as
+`tools/filemanager/filemanager.sh`; the pre-refactor script is kept as
+`filemanager_legacy.sh` and is the baseline for the differential tests.
 Owner: build department.
-Target: `tools/filemanager/filemanager_llm.sh`. Source: `filemanager.sh`
-(5,498 lines, 121 functions). Result: 5,173 lines, 162 functions.
+Source: `filemanager.sh` (5,498 lines, 121 functions). Result: 5,185 lines,
+162 functions.
 Line numbers below are from the pre-refactor file.
 Test host: Linux, bash 5.3, GNU coreutils. The bash 3.2 checks in section 8.3
 were a static review, as planned; the fractional-`read` fallback is code, not a
@@ -453,6 +453,7 @@ Deferred to a later stage:
 | 14 | done | Scrolling is per row: the two edge branches of the page arithmetic shift the window by one instead of a page. Verified in a real terminal for normal and visual mode, both directions, plus the `g`/`G` jumps. |
 | 15 | done | Scroll flash and lag: the edge repaints in place (no `fout_clear`) and the draw path uses `printf -v`. Measured on a pty: zero screen clears during an edge sweep (was one per row), 20 edge scrolls in 91 ms (was 585 ms). |
 | 16 | done | Directory read made cheaper, so a tab switch can stay fresh: the `ls -l` parser finds the path at the first slash instead of backtracking a `*/` glob, the per-entry `stat` is gone, and the per-line regexes are globs. 2,000 entries went from 156 ms to 72 ms. |
+| 17 | done | The refactored file is promoted to `filemanager.sh`; the pre-refactor script is kept as `filemanager_legacy.sh`. Test defaults and the README follow. The `filmanager` and `cfm` aliases already ran `filemanager.sh`, so they need no change. |
 
 ### 10.1 Behavior changes shipped
 

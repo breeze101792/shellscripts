@@ -5,13 +5,13 @@ A terminal file manager written as one bash script, derived from
 
 | File | Purpose |
 |---|---|
-| `filemanager.sh` | The shipped script. The `filmanager` and `cfm` aliases run it. |
-| `filemanager_llm.sh` | Refactored implementation. Same behavior, six-layer layout. |
+| `filemanager.sh` | The shipped script, in six layers. The `filmanager` and `cfm` aliases run it. |
+| `filemanager_legacy.sh` | The pre-refactor script, kept as the baseline for the differential tests. |
 | `REFACTOR.md` | The refactor plan, phase log, and the known-bug list. |
 | `hsfm_template.sh` | Config template copied by `filemanager.sh -s`. |
 | `tests/` | Hash oracle, unit tests and tmux pane-diff smoke test. |
 
-## Layout of `filemanager_llm.sh`
+## Layout of `filemanager.sh`
 
 Read top down; each section may call the ones below it.
 
@@ -75,17 +75,17 @@ Commands reach it only through `fprompt_wait` and `fprompt_confirm`.
 ## Tests
 
 ```sh
-tests/tools/function_hashes.sh filemanager_llm.sh   # name sha256 per function
-tests/unit/state_test.sh                            # declared state and the K6/K10/K13 fixes
-tests/unit/read_dir_test.sh                         # directory model vs filemanager.sh
-tests/unit/ingest_test.sh                           # one parse line at a time
-tests/unit/editor_test.sh                           # editor core, key by key
-tests/unit/bugs_test.sh                             # the bugs REFACTOR.md section 7.1 lists
-tests/unit/merge_test.sh                            # the generic helpers
-tests/unit/functions_test.sh                        # one case per function, all 162
-tests/smoke/keys_test.sh                            # tmux pane diff vs filemanager.sh
-tests/smoke/nested_prompt_test.sh                   # a prompt inside a : command
+tests/tools/function_hashes.sh filemanager.sh   # name sha256 per function
+tests/unit/state_test.sh                        # declared state and the K6/K10/K13 fixes
+tests/unit/read_dir_test.sh                     # directory model vs filemanager_legacy.sh
+tests/unit/ingest_test.sh                       # one parse line at a time
+tests/unit/editor_test.sh                       # editor core, key by key
+tests/unit/bugs_test.sh                         # the bugs REFACTOR.md section 7.1 lists
+tests/unit/merge_test.sh                        # the generic helpers
+tests/unit/functions_test.sh                    # one case per function, all 162
+tests/smoke/keys_test.sh                        # tmux pane diff vs filemanager_legacy.sh
+tests/smoke/nested_prompt_test.sh               # a prompt inside a : command
 ```
 
 `read_dir_test.sh` and `keys_test.sh` take the baseline path as their second
-argument, defaulting to `filemanager.sh`.
+argument, defaulting to `filemanager_legacy.sh`.

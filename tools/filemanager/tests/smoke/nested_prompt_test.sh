@@ -9,7 +9,7 @@
 set -uo pipefail
 
 here=$(dirname "$(realpath "$0")")
-script=${1:-filemanager_llm.sh}
+script=${1:-filemanager.sh}
 case ${script} in
     /*) ;;
     *) script=${here}/../../${script} ;;

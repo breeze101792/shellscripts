@@ -7,7 +7,7 @@
 
 set -uo pipefail
 
-script=${1:-filemanager_llm.sh}
+script=${1:-filemanager.sh}
 script=$(realpath "${script}")
 
 fixture=$(mktemp -d "${TMPDIR:-/tmp}/hsfm-unit.XXXXXX")
